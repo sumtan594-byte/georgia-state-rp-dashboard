@@ -2,8 +2,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../auth/[...nextauth]';
 import { ROLES, hasRole, isAdmin } from '../../../lib/auth';
 
-// Widened to 45 s so a couple of missed heartbeats (sent every ~10 s)
-// don't suddenly drop the viewer count to 0 and halt server-side refreshes.
 const ACTIVE_WINDOW_MS = 45000;
 
 globalThis.__gsrpPresence ??= new Map();
@@ -19,10 +17,6 @@ export function getActiveViewerCount() {
     if (now - ts > ACTIVE_WINDOW_MS) store.delete(key);
   }
   return store.size;
-}
-
-export function hasActiveViewers() {
-  return getActiveViewerCount() > 0;
 }
 
 export default async function handler(req, res) {

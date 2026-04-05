@@ -11,28 +11,16 @@ function isBlocked(command) {
   return BLOCKED_COMMANDS.includes(first);
 }
 
-// ─── Server-side command rate limiter ────────────────────────────────────────
-// PRC allows 1 command per 5 seconds on the command bucket.
-// We keep a tiny global queue so concurrent panel users don't collide.
-//
-// globalThis persists across requests within the same Vercel function instance,
-// which is good enough to prevent rapid-fire 429s from this origin.
-
-const CMD_INTERVAL_MS = 5500; // 5.5s — slightly over PRC's 5s limit for safety
+const CMD_INTERVAL_MS = 5500;
 
 globalThis.__gsrpCmdQueue ??= {
-  lastSentAt: 0,   // epoch ms of last successful dispatch
-  queue: [],       // pending { command, resolve, reject } entries
+  lastSentAt: 0,
+  queue: [],
   running: false,
 };
 
 function getQueue() { return globalThis.__gsrpCmdQueue; }
 
-/**
- * Enqueue a command. Returns a promise that resolves with the PRC fetch response
- * (or rejects on network error). Commands are dispatched one at a time,
- * at least CMD_INTERVAL_MS apart.
- */
 function enqueueCommand(command, erlcKey) {
   const q = getQueue();
   return new Promise((resolve, reject) => {
@@ -66,13 +54,11 @@ async function drainQueue() {
 
       q.lastSentAt = Date.now();
 
-      // If PRC itself says 429, back off by however long it asks, then retry once
       if (erlcRes.status === 429) {
         const body       = await erlcRes.json().catch(() => ({}));
         const retryAfter = parseFloat(body.retry_after ?? 5) * 1000;
         await sleep(retryAfter + 500);
 
-        // Retry the same command once
         const retryRes = await fetch('https://api.policeroleplay.community/v1/server/command', {
           method: 'POST',
           headers: {
@@ -96,7 +82,6 @@ async function drainQueue() {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-// ─── Handler ──────────────────────────────────────────────────────────────────
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -113,7 +98,6 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Missing ERLC_API_KEY env var' });
   }
 
-  // Parse body
   let command;
   try {
     const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
@@ -128,7 +112,6 @@ export default async function handler(req, res) {
 
   const cmd = command.trim();
 
-  // Block restricted commands server-side (never reaches PRC)
   if (isBlocked(cmd)) {
     return res.status(403).json({
       error: 'This command is restricted and cannot be executed via the panel.',
@@ -136,7 +119,6 @@ export default async function handler(req, res) {
     });
   }
 
-  // Tell the client how long to expect to wait if the queue is backed up
   const q         = getQueue();
   const queueSize = q.queue.length;
   const msUntilRun = Math.max(
@@ -150,7 +132,6 @@ export default async function handler(req, res) {
   try {
     const erlcRes = await enqueueCommand(cmd, ERLC_KEY);
 
-    // Forward rate limit headers
     for (const h of ['X-RateLimit-Limit','X-RateLimit-Remaining','X-RateLimit-Reset','X-RateLimit-Bucket']) {
       const v = erlcRes.headers.get(h);
       if (v) res.setHeader(h, v);
