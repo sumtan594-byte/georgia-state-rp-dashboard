@@ -62,9 +62,7 @@ export default function Sidebar({ open, onToggle }) {
       <div className="flex items-center justify-between p-4 border-b border-gsrp-dark-border/50">
         {open && (
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gsrp-orange to-gsrp-teal flex items-center justify-center">
-              <span className="text-white font-black text-xs">G</span>
-            </div>
+            <img src="https://i.imgur.com/70GfmYd.gif" alt="GSRP" className="w-8 h-8 rounded-lg object-cover" />
             <span className="text-white font-bold text-sm">GSRP</span>
           </div>
         )}
