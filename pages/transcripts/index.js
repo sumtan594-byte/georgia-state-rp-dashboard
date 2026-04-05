@@ -1,12 +1,11 @@
 import { useSession } from "next-auth/react";
-import { Octokit } from "@octokit/rest";
 import Link from "next/link";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import {
   FileText, ChevronRight, Briefcase, Search, Calendar, Layers, Clock, Hash,
   Filter, ArrowUpRight, ChevronLeft, AlertTriangle, X,
-  Sun, Sunset, Users, FileCheck, BarChart3, Sparkles, ShieldCheck
+  Sun, Sunset, Users, FileCheck, BarChart3, Sparkles, ShieldCheck, RefreshCw
 } from "lucide-react";
 
 const BG_IMAGE = "https://i.imgur.com/QVVQSK2.png";
@@ -29,9 +28,12 @@ function TypeBadge({ type }) {
   );
 }
 
-export default function Transcripts({ transcripts, isAdmin, currentSort }) {
+export default function Transcripts({ transcripts: initialTranscripts, isAdmin: initialIsAdmin, currentSort }) {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const [transcripts, setTranscripts] = useState(initialTranscripts || []);
+  const [isAdmin, setIsAdmin] = useState(initialIsAdmin || false);
+  const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("ALL");
   const [query, setQuery] = useState("");
   const [date, setDate] = useState("");
@@ -39,9 +41,31 @@ export default function Transcripts({ transcripts, isAdmin, currentSort }) {
 
   useEffect(() => { setCurrentPage(1); }, [activeTab, query, date]);
 
+  const fetchTranscripts = useCallback(async () => {
+    setLoading(true);
+    try {
+      const sort = router.query.sort || currentSort || 'latest';
+      const res = await fetch(`/api/transcripts/list?sort=${sort}&_t=${Date.now()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTranscripts(data.transcripts || []);
+        setIsAdmin(data.isAdmin || false);
+      }
+    } catch (e) {
+      console.error('[Transcripts] Fetch error:', e);
+    }
+    setLoading(false);
+  }, [router.query.sort, currentSort]);
+
   const handleSortChange = (newSort) => {
     router.push({ pathname: router.pathname, query: { ...router.query, sort: newSort } });
   };
+
+  useEffect(() => {
+    if (status === 'authenticated') {
+      fetchTranscripts();
+    }
+  }, [status, fetchTranscripts]);
 
   const filteredTranscripts = useMemo(() => {
     if (!Array.isArray(transcripts)) return [];
@@ -103,7 +127,7 @@ export default function Transcripts({ transcripts, isAdmin, currentSort }) {
     );
   };
 
-  if (status === "loading") return (
+  if (status === "loading" || loading && transcripts.length === 0) return (
     <div className="flex items-center justify-center min-h-[60vh]">
       <div className="flex flex-col items-center">
         <div className="w-10 h-10 border-2 border-gsrp-orange/20 border-t-gsrp-orange rounded-full animate-spin mb-4" />
@@ -144,16 +168,17 @@ export default function Transcripts({ transcripts, isAdmin, currentSort }) {
           </div>
           <div className="flex items-center gap-2.5">
             <button
-              onClick={() => window.location.reload()}
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 text-gsrp-teal-light/70 text-[10px] font-bold uppercase tracking-wider hover:bg-gsrp-dark-surface/60 hover:border-gsrp-teal/30 hover:text-gsrp-teal-light transition-all duration-200 cursor-pointer"
+              onClick={fetchTranscripts}
+              disabled={loading}
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 text-gsrp-teal-light/70 text-[10px] font-bold uppercase tracking-wider hover:bg-gsrp-dark-surface/60 hover:border-gsrp-teal/30 hover:text-gsrp-teal-light transition-all duration-200 disabled:opacity-50 cursor-pointer"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+              <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
               Refresh
             </button>
             <div className="flex items-center bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-xl px-3.5 py-2.5 gap-2">
               <Clock size={12} className="text-gsrp-teal-light/40 flex-shrink-0" />
               <select
-                value={currentSort}
+                value={currentSort || router.query.sort || 'latest'}
                 onChange={(e) => handleSortChange(e.target.value)}
                 className="bg-transparent outline-none text-[10px] font-bold text-gsrp-teal-light/70 uppercase tracking-wider cursor-pointer"
               >
@@ -302,13 +327,18 @@ export async function getServerSideProps(context) {
   const adminIds = (process.env.ADMIN_USER_IDS || "").split(',').map(id => String(id).trim()).filter(Boolean);
   const isAdmin = adminIds.includes(currentUserId);
 
+  const { Octokit } = require("@octokit/rest");
   const octokit = new Octokit({ auth: process.env.GITHUB_ACCESS_TOKEN });
 
   try {
     const { data } = await octokit.repos.getContent({
       owner: process.env.GITHUB_OWNER,
       repo: process.env.GITHUB_REPO,
-      path: "transcripts"
+      path: "transcripts",
+      headers: {
+        'If-None-Match': '',
+        'Cache-Control': 'no-cache',
+      },
     });
 
     const files = Array.isArray(data)
