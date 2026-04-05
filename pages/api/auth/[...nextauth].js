@@ -11,6 +11,7 @@ export const authOptions = {
   ],
   callbacks: {
     async signIn({ account, profile }) {
+      console.log('[next-auth] signIn called, account:', !!account, 'profile:', !!profile);
       if (!account?.access_token) {
         console.error('[next-auth] No access token');
         return false;
@@ -21,8 +22,9 @@ export const authOptions = {
           headers: { Authorization: `Bearer ${account.access_token}` },
         });
         const guilds = await guildsRes.json();
-        console.log('[next-auth] Guilds check:', guildsRes.status, guilds.length || 0, 'guilds');
+        console.log('[next-auth] Guilds response status:', guildsRes.status, 'count:', Array.isArray(guilds) ? guilds.length : 'not array');
         const inGuild = Array.isArray(guilds) && guilds.some(g => g.id === process.env.ALLOWED_GUILD_ID);
+        console.log('[next-auth] In guild?', inGuild, 'looking for:', process.env.ALLOWED_GUILD_ID);
         if (!inGuild) {
           console.error('[next-auth] User not in allowed guild', process.env.ALLOWED_GUILD_ID);
           return false;
@@ -36,10 +38,11 @@ export const authOptions = {
         if (memberRes.ok) {
           const member = await memberRes.json();
           account.roles = member.roles || [];
+          console.log('[next-auth] Roles:', account.roles);
         }
         return true;
       } catch (err) {
-        console.error('[next-auth] SignIn error:', err.message);
+        console.error('[next-auth] SignIn error:', err.message, err.stack);
         return false;
       }
     },
