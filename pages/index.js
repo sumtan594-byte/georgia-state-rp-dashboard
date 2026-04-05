@@ -108,9 +108,8 @@ export default function Dashboard({ transcripts, isAdmin, currentSort }) {
   if (status === "loading") return (
     <div className="h-screen flex flex-col items-center justify-center bg-gsrp-dark relative overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-gsrp-dark via-gsrp-dark-card to-gsrp-dark-surface" />
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gsrp-orange/5 rounded-full blur-3xl animate-glow-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gsrp-teal/5 rounded-full blur-3xl animate-glow-pulse" style={{ animationDelay: '1s' }} />
+        <img src={BG_IMAGE} alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gsrp-dark/70" />
       </div>
       <div className="relative flex flex-col items-center">
         <div className="relative w-16 h-16 mb-6 animate-float">
@@ -167,8 +166,8 @@ export default function Dashboard({ transcripts, isAdmin, currentSort }) {
   return (
     <div className="min-h-screen bg-gsrp-dark text-gray-300 relative">
       <div className="fixed inset-0">
-        <img src={BG_IMAGE} alt="" className="w-full h-full object-cover opacity-[0.07]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-gsrp-dark/95 via-gsrp-dark/98 to-gsrp-dark" />
+        <img src={BG_IMAGE} alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gsrp-dark/80" />
       </div>
 
       <nav className="sticky top-0 z-50 border-b border-gsrp-dark-border/50 bg-gsrp-dark/80 backdrop-blur-xl animate-fade-in-down">

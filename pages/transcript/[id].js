@@ -170,8 +170,8 @@ export default function Viewer({ htmlContent, id, error }) {
   if (status === "loading") return (
     <div className="h-screen bg-gsrp-dark flex flex-col items-center justify-center relative overflow-hidden">
       <div className="absolute inset-0">
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-gsrp-orange/5 rounded-full blur-3xl animate-glow-pulse" />
-        <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-gsrp-teal/5 rounded-full blur-3xl animate-glow-pulse" style={{ animationDelay: '1s' }} />
+        <img src={BG_IMAGE} alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gsrp-dark/70" />
       </div>
       <div className="relative flex flex-col items-center">
         <Loader2 className="w-7 h-7 text-gsrp-orange animate-spin mb-4" />
@@ -183,8 +183,8 @@ export default function Viewer({ htmlContent, id, error }) {
   if (error) return (
     <div className="h-screen bg-gsrp-dark flex items-center justify-center p-6 relative overflow-hidden">
       <div className="absolute inset-0">
-        <img src={BG_IMAGE} alt="" className="w-full h-full object-cover opacity-[0.07]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-gsrp-dark/95 via-gsrp-dark/98 to-gsrp-dark" />
+        <img src={BG_IMAGE} alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gsrp-dark/80" />
       </div>
       <div className="relative card-glass rounded-[2rem] p-12 max-w-sm w-full text-center shadow-2xl animate-scale-in">
         <div className="w-14 h-14 rounded-2xl bg-gsrp-sunset/10 border border-gsrp-sunset/20 flex items-center justify-center mx-auto mb-6">
@@ -202,8 +202,8 @@ export default function Viewer({ htmlContent, id, error }) {
   return (
     <div className="min-h-screen bg-gsrp-dark relative">
       <div className="fixed inset-0">
-        <img src={BG_IMAGE} alt="" className="w-full h-full object-cover opacity-[0.07]" />
-        <div className="absolute inset-0 bg-gradient-to-b from-gsrp-dark/95 via-gsrp-dark/98 to-gsrp-dark" />
+        <img src={BG_IMAGE} alt="" className="w-full h-full object-cover" />
+        <div className="absolute inset-0 bg-gsrp-dark/80" />
       </div>
 
       <nav className="sticky top-0 z-50 bg-gsrp-dark/80 backdrop-blur-xl border-b border-gsrp-dark-border/50 px-6 lg:px-10 py-4 flex items-center justify-between animate-fade-in-down">
