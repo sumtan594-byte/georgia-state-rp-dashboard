@@ -1,8 +1,8 @@
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
-  const GITHUB_REPO  = process.env.GITHUB_REPO;
+  const GITHUB_TOKEN = process.env.GITHUB_ACCESS_TOKEN;
+  const GITHUB_REPO  = process.env.GITHUB_OWNER + '/' + process.env.GITHUB_REPO;
 
   if (!GITHUB_TOKEN || !GITHUB_REPO) {
     return res.status(500).json({ error: 'GitHub not configured' });
