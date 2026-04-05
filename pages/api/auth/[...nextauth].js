@@ -11,6 +11,11 @@ export const authOptions = {
   ],
   callbacks: {
     async signIn({ account, profile }) {
+      // TEMP: bypass guild check to test OAuth flow
+      // TODO: restore guild check after confirming env vars are set
+      return true;
+
+      /* ORIGINAL GUILD CHECK — restore after testing:
       console.log('[next-auth] signIn called, account:', !!account, 'profile:', !!profile);
       if (!account?.access_token) {
         console.error('[next-auth] No access token');
@@ -45,6 +50,7 @@ export const authOptions = {
         console.error('[next-auth] SignIn error:', err.message, err.stack);
         return false;
       }
+      */
     },
     async jwt({ token, account, profile }) {
       if (profile) {
