@@ -28,7 +28,7 @@ export default function Sidebar({ open, onToggle }) {
         if (data) {
           setServerStatus({
             online: true,
-            players: data.players?.length || 0,
+            players: (data.Players || data.players)?.length || 0,
             staff: data.staff?.length || 0,
           });
         }
