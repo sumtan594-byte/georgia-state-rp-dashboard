@@ -11,6 +11,7 @@ import {
   ChevronRight,
   Users,
   ClipboardList,
+  ShoppingCart,
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts } from '../../lib/auth';
 
@@ -55,6 +56,7 @@ export default function Sidebar({ open, onToggle }) {
     ...(hasTraining ? [{ href: '/training', icon: BookOpen, label: 'Training' }] : []),
     ...(hasAttempts ? [{ href: '/training/attempts', icon: ClipboardList, label: 'Attempts' }] : []),
     { href: '/verify', icon: ShieldCheck, label: 'Verification' },
+    { href: '/shop', icon: ShoppingCart, label: 'Store' },
   ];
 
   return (

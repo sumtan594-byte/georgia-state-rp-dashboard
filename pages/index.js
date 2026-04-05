@@ -1,6 +1,6 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2 } from 'lucide-react';
+import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2, ShoppingCart } from 'lucide-react';
 import FeatureCard from '../components/dashboard/FeatureCard';
 import LoginScreen from '../components/auth/LoginScreen';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts } from '../lib/auth';
@@ -83,6 +83,13 @@ export default function Dashboard() {
           icon={ShieldCheck}
           title="Verification"
           description="Link your Roblox account to Discord"
+        />
+
+        <FeatureCard
+          href="/shop"
+          icon={ShoppingCart}
+          title="Store"
+          description="Purchase premium roles, pings, and donations"
         />
 
         {hasAttempts && (
