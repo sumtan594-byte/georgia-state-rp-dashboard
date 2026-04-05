@@ -30,7 +30,7 @@ export default function LoginScreen() {
             You must be a member of the Georgia State Roleplay Discord server to access this dashboard.
           </p>
           <a
-            href="/api/auth/signin"
+            href="/api/auth/signin/discord"
             className="inline-flex items-center gap-2 bg-[#5865F2] hover:bg-[#4752c4] text-white px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 cursor-pointer"
           >
             <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
