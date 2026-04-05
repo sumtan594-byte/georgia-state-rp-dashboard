@@ -14,11 +14,24 @@ export default async function handler(req, res) {
   const octokit = new Octokit({ auth: process.env.GITHUB_ACCESS_TOKEN });
 
   try {
-    const { data } = await octokit.repos.getContent({
+    const repoInfo = await octokit.repos.get({
       owner: process.env.GITHUB_OWNER,
       repo: process.env.GITHUB_REPO,
-      path: "transcripts"
     });
+    const { data: branchData } = await octokit.repos.getBranch({
+      owner: process.env.GITHUB_OWNER,
+      repo: process.env.GITHUB_REPO,
+      branch: repoInfo.data.default_branch,
+    });
+    const { data: treeData } = await octokit.git.getTree({
+      owner: process.env.GITHUB_OWNER,
+      repo: process.env.GITHUB_REPO,
+      tree_sha: branchData.commit.commit.tree.sha,
+      recursive: true,
+    });
+    const data = treeData.tree
+      .filter(f => f.path.startsWith('transcripts/') && f.path.endsWith('.html'))
+      .map(f => ({ name: f.path.replace('transcripts/', '') }));
 
     const files = Array.isArray(data) ? data.filter(f => f.name.endsWith('.html')) : [];
     const count = isAdmin

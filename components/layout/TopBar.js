@@ -14,7 +14,7 @@ export default function TopBar({ onMenuClick }) {
         >
           <Menu size={18} />
         </button>
-        <img src="https://i.imgur.com/70GfmYd.gif" alt="GSRP" className="w-7 h-7 rounded-lg object-cover hidden sm:block" />
+        <img src="https://i.imgur.com/SSbZ8VZ.png" alt="GSRP" className="w-7 h-7 rounded-lg object-cover hidden sm:block" />
         <div>
           <h1 className="text-white font-bold text-sm md:text-base">Georgia State Roleplay</h1>
           <p className="text-[10px] text-gsrp-teal-light/40 uppercase tracking-widest hidden sm:block">Dashboard</p>

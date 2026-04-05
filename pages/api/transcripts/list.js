@@ -14,16 +14,28 @@ export default async function handler(req, res) {
   const octokit = new Octokit({ auth: process.env.GITHUB_ACCESS_TOKEN });
 
   try {
-    // Add cache-busting header
-    const { data } = await octokit.repos.getContent({
+    // Use Git Trees API to bypass the 1,000 files limit
+    const repoInfo = await octokit.repos.get({
       owner: process.env.GITHUB_OWNER,
       repo: process.env.GITHUB_REPO,
-      path: 'transcripts',
-      headers: {
-        'If-None-Match': '',
-        'Cache-Control': 'no-cache',
-      },
     });
+    
+    const { data: branchData } = await octokit.repos.getBranch({
+      owner: process.env.GITHUB_OWNER,
+      repo: process.env.GITHUB_REPO,
+      branch: repoInfo.data.default_branch,
+    });
+
+    const { data: treeData } = await octokit.git.getTree({
+      owner: process.env.GITHUB_OWNER,
+      repo: process.env.GITHUB_REPO,
+      tree_sha: branchData.commit.commit.tree.sha,
+      recursive: true,
+    });
+
+    const data = treeData.tree
+      .filter(f => f.path.startsWith('transcripts/') && f.path.endsWith('.html'))
+      .map(f => ({ name: f.path.replace('transcripts/', '') }));
 
     const files = Array.isArray(data)
       ? data
