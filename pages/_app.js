@@ -1,14 +1,26 @@
 import '../styles/globals.css';
-import { SessionProvider } from "next-auth/react";
+import { SessionProvider, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import Sidebar from "../components/layout/Sidebar";
 import TopBar from "../components/layout/TopBar";
+
+function DebugSessionLogger() {
+  const { status, data } = useSession();
+  useEffect(() => {
+    console.log('[APP] SessionProvider status:', status);
+    console.log('[APP] SessionProvider data:', data);
+  }, [status, data]);
+  return null;
+}
 
 export default function App({ Component, pageProps: { session, ...pageProps } }) {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => { setMounted(true); }, []);
+  useEffect(() => {
+    setMounted(true);
+    console.log('[APP] App mounted, initial session:', session ? 'exists' : 'null');
+  }, []);
 
   const isPublicPage = mounted && (
     window.location.pathname === '/verify' ||
@@ -17,9 +29,12 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
     window.location.pathname === '/login'
   );
 
+  console.log('[APP] Render — pathname:', mounted ? window.location.pathname : 'SSR', 'mounted:', mounted, 'isPublic:', isPublicPage);
+
   if (!mounted) {
     return (
       <SessionProvider session={session}>
+        <DebugSessionLogger />
         <div className="min-h-screen relative">
           <div className="fixed inset-0 z-0">
             <img src="https://i.imgur.com/QVVQSK2.png" alt="" className="w-full h-full object-cover" aria-hidden="true" />
@@ -44,6 +59,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
   if (isPublicPage) {
     return (
       <SessionProvider session={session}>
+        <DebugSessionLogger />
         <div className="min-h-screen relative">
           <div className="fixed inset-0 z-0">
             <img src="https://i.imgur.com/QVVQSK2.png" alt="" className="w-full h-full object-cover" aria-hidden="true" />
@@ -59,6 +75,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
 
   return (
     <SessionProvider session={session}>
+      <DebugSessionLogger />
       <div className="min-h-screen relative">
         <div className="fixed inset-0 z-0">
           <img src="https://i.imgur.com/QVVQSK2.png" alt="" className="w-full h-full object-cover" aria-hidden="true" />
