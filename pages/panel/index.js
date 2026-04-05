@@ -122,11 +122,11 @@ export default function PanelPage() {
     );
   }
 
-  const players = serverData?.players || [];
-  const staff = serverData?.staff || [];
-  const joinLogs = serverData?.joinLogs || [];
-  const killLogs = serverData?.killLogs || [];
-  const commandLogs = serverData?.commandLogs || [];
+  const players = serverData?.Players || [];
+  const staff = serverData?.Staff || [];
+  const joinLogs = serverData?.JoinLogs || [];
+  const killLogs = serverData?.KillLogs || [];
+  const commandLogs = serverData?.CommandLogs || [];
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 animate-fade-in-up">

@@ -18,7 +18,7 @@ export default function Dashboard() {
     ]).then(([transcriptResult, panelResult]) => {
       setStats({
         transcripts: transcriptResult.status === 'fulfilled' ? transcriptResult.value.count || 0 : 0,
-        players: panelResult.status === 'fulfilled' && panelResult.value ? panelResult.value.players?.length || 0 : 0,
+        players: panelResult.status === 'fulfilled' && panelResult.value ? panelResult.value.Players?.length || 0 : 0,
         online: panelResult.status === 'fulfilled' && panelResult.value !== null,
       });
     });
