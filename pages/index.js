@@ -84,18 +84,16 @@ export default function Dashboard() {
           title="Verification"
           description="Link your Roblox account to Discord"
         />
-      </div>
 
-      {hasAttempts && (
-        <div className="mt-4">
+        {hasAttempts && (
           <FeatureCard
             href="/training/attempts"
             icon={Users}
             title="Quiz Attempts"
             description="View all staff training quiz attempts"
           />
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 }
