@@ -7,51 +7,41 @@ export const authOptions = {
     DiscordProvider({
       clientId: process.env.DISCORD_CLIENT_ID,
       clientSecret: process.env.DISCORD_CLIENT_SECRET,
-      authorization: { params: { scope: 'identify guilds guilds.members.read guilds.channels.read' } },
+      authorization: { params: { scope: 'identify guilds' } },
     }),
   ],
   callbacks: {
     async signIn({ account, profile }) {
-      // TEMP: bypass guild check to test OAuth flow
-      // TODO: restore guild check after confirming env vars are set
-      return true;
-
-      /* ORIGINAL GUILD CHECK — restore after testing:
-      console.log('[next-auth] signIn called, account:', !!account, 'profile:', !!profile);
-      if (!account?.access_token) {
-        console.error('[next-auth] No access token');
-        return false;
-      }
-
       try {
+        // Check guild membership from user's guild list
         const guildsRes = await fetch('https://discord.com/api/users/@me/guilds', {
           headers: { Authorization: `Bearer ${account.access_token}` },
         });
+        if (!guildsRes.ok) {
+          console.error('[next-auth] Guilds fetch failed:', guildsRes.status);
+          return false;
+        }
         const guilds = await guildsRes.json();
-        console.log('[next-auth] Guilds response status:', guildsRes.status, 'count:', Array.isArray(guilds) ? guilds.length : 'not array');
         const inGuild = Array.isArray(guilds) && guilds.some(g => g.id === process.env.ALLOWED_GUILD_ID);
-        console.log('[next-auth] In guild?', inGuild, 'looking for:', process.env.ALLOWED_GUILD_ID);
         if (!inGuild) {
-          console.error('[next-auth] User not in allowed guild', process.env.ALLOWED_GUILD_ID);
+          console.error('[next-auth] User not in allowed guild');
           return false;
         }
 
+        // Fetch member roles using bot token (no privileged scopes needed)
         const memberRes = await fetch(
-          `https://discord.com/api/users/@me/guilds/${process.env.ALLOWED_GUILD_ID}/member`,
-          { headers: { Authorization: `Bearer ${account.access_token}` } }
+          `https://discord.com/api/guilds/${process.env.ALLOWED_GUILD_ID}/members/${profile.id}`,
+          { headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` } }
         );
-        console.log('[next-auth] Member check:', memberRes.status);
         if (memberRes.ok) {
           const member = await memberRes.json();
           account.roles = member.roles || [];
-          console.log('[next-auth] Roles:', account.roles);
         }
         return true;
       } catch (err) {
-        console.error('[next-auth] SignIn error:', err.message, err.stack);
+        console.error('[next-auth] SignIn error:', err.message);
         return false;
       }
-      */
     },
     async jwt({ token, account, profile }) {
       if (profile) {
