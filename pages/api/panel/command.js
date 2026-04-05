@@ -1,0 +1,183 @@
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]';
+import { ROLES, hasRole, isAdmin } from '../../../lib/auth';
+
+// ─── Blocked commands ─────────────────────────────────────────────────────────
+const BLOCKED_COMMANDS = [':shutdown', ':ban', ':admin', ':mod', ':unadmin', ':unmod'];
+
+function isBlocked(command) {
+  if (!command || typeof command !== 'string') return true;
+  const first = command.trim().toLowerCase().split(/\s+/)[0];
+  return BLOCKED_COMMANDS.includes(first);
+}
+
+// ─── Server-side command rate limiter ────────────────────────────────────────
+// PRC allows 1 command per 5 seconds on the command bucket.
+// We keep a tiny global queue so concurrent panel users don't collide.
+//
+// globalThis persists across requests within the same Vercel function instance,
+// which is good enough to prevent rapid-fire 429s from this origin.
+
+const CMD_INTERVAL_MS = 5500; // 5.5s — slightly over PRC's 5s limit for safety
+
+globalThis.__gsrpCmdQueue ??= {
+  lastSentAt: 0,   // epoch ms of last successful dispatch
+  queue: [],       // pending { command, resolve, reject } entries
+  running: false,
+};
+
+function getQueue() { return globalThis.__gsrpCmdQueue; }
+
+/**
+ * Enqueue a command. Returns a promise that resolves with the PRC fetch response
+ * (or rejects on network error). Commands are dispatched one at a time,
+ * at least CMD_INTERVAL_MS apart.
+ */
+function enqueueCommand(command, erlcKey) {
+  const q = getQueue();
+  return new Promise((resolve, reject) => {
+    q.queue.push({ command, erlcKey, resolve, reject });
+    if (!q.running) drainQueue();
+  });
+}
+
+async function drainQueue() {
+  const q = getQueue();
+  if (q.running || q.queue.length === 0) return;
+  q.running = true;
+
+  while (q.queue.length > 0) {
+    const now  = Date.now();
+    const wait = CMD_INTERVAL_MS - (now - q.lastSentAt);
+    if (wait > 0) await sleep(wait);
+
+    const item = q.queue.shift();
+    if (!item) break;
+
+    try {
+      const erlcRes = await fetch('https://api.policeroleplay.community/v1/server/command', {
+        method: 'POST',
+        headers: {
+          'server-key': item.erlcKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ command: item.command }),
+      });
+
+      q.lastSentAt = Date.now();
+
+      // If PRC itself says 429, back off by however long it asks, then retry once
+      if (erlcRes.status === 429) {
+        const body       = await erlcRes.json().catch(() => ({}));
+        const retryAfter = parseFloat(body.retry_after ?? 5) * 1000;
+        await sleep(retryAfter + 500);
+
+        // Retry the same command once
+        const retryRes = await fetch('https://api.policeroleplay.community/v1/server/command', {
+          method: 'POST',
+          headers: {
+            'server-key': item.erlcKey,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ command: item.command }),
+        });
+        q.lastSentAt = Date.now();
+        item.resolve(retryRes);
+      } else {
+        item.resolve(erlcRes);
+      }
+    } catch (err) {
+      item.reject(err);
+    }
+  }
+
+  q.running = false;
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ─── Handler ──────────────────────────────────────────────────────────────────
+export default async function handler(req, res) {
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) return res.status(401).json({ error: 'Not logged in' });
+  if (!hasRole(session, ROLES.PANEL) && !isAdmin(session)) {
+    return res.status(403).json({ error: 'Missing required Discord role' });
+  }
+
+  const ERLC_KEY = process.env.ERLC_API_KEY;
+  if (!ERLC_KEY) {
+    return res.status(500).json({ error: 'Missing ERLC_API_KEY env var' });
+  }
+
+  // Parse body
+  let command;
+  try {
+    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    command = body?.command;
+  } catch {
+    return res.status(400).json({ error: 'Invalid JSON body' });
+  }
+
+  if (!command || typeof command !== 'string' || !command.trim()) {
+    return res.status(400).json({ error: 'command is required', code: 3001 });
+  }
+
+  const cmd = command.trim();
+
+  // Block restricted commands server-side (never reaches PRC)
+  if (isBlocked(cmd)) {
+    return res.status(403).json({
+      error: 'This command is restricted and cannot be executed via the panel.',
+      code: 4002,
+    });
+  }
+
+  // Tell the client how long to expect to wait if the queue is backed up
+  const q         = getQueue();
+  const queueSize = q.queue.length;
+  const msUntilRun = Math.max(
+    0,
+    queueSize * CMD_INTERVAL_MS + Math.max(0, CMD_INTERVAL_MS - (Date.now() - q.lastSentAt))
+  );
+  if (msUntilRun > 0) {
+    res.setHeader('X-Queue-Wait-Ms', String(Math.round(msUntilRun)));
+  }
+
+  try {
+    const erlcRes = await enqueueCommand(cmd, ERLC_KEY);
+
+    // Forward rate limit headers
+    for (const h of ['X-RateLimit-Limit','X-RateLimit-Remaining','X-RateLimit-Reset','X-RateLimit-Bucket']) {
+      const v = erlcRes.headers.get(h);
+      if (v) res.setHeader(h, v);
+    }
+
+    if (erlcRes.status === 204) return res.status(204).end();
+
+    if (erlcRes.status === 429) {
+      const body = await erlcRes.json().catch(() => ({}));
+      return res.status(429).json({ error: 'Rate limited by PRC — queued retry failed', ...body });
+    }
+
+    if (erlcRes.status === 422) {
+      return res.status(422).json({ error: 'Server has no players in it', code: 3002 });
+    }
+
+    if (erlcRes.status === 403) {
+      return res.status(403).json({ error: 'Unauthorized — check your ERLC_API_KEY', code: 2002 });
+    }
+
+    const text = await erlcRes.text().catch(() => '');
+    let body = {};
+    try { body = JSON.parse(text); } catch {}
+    return res.status(erlcRes.status).json({ error: body?.message || `ERLC error ${erlcRes.status}`, ...body });
+
+  } catch (err) {
+    console.error('[GSRP] command proxy error:', err);
+    return res.status(500).json({ error: 'Failed to reach ERLC API', detail: err.message });
+  }
+}

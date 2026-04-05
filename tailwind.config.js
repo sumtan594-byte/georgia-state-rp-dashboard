@@ -2,6 +2,7 @@
 module.exports = {
   content: [
     './pages/**/*.{js,ts,jsx,tsx}',
+    './components/**/*.{js,ts,jsx,tsx}',
   ],
   theme: {
     extend: {
@@ -25,6 +26,9 @@ module.exports = {
         },
       },
       fontFamily: {
+        'syne': ['Syne', 'sans-serif'],
+        'dm': ['DM Sans', 'sans-serif'],
+        'inter': ['Inter', 'sans-serif'],
         'fredoka': ['Fredoka', 'sans-serif'],
         'nunito': ['Nunito', 'sans-serif'],
       },
