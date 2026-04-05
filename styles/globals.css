@@ -1,0 +1,201 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800;900&display=swap');
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: #0A0E1A;
+  color: #d1d5db;
+  font-family: 'Nunito', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ===================== SCROLLBAR ===================== */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(15, 22, 41, 0.5);
+}
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #F97316, #0D9488);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #FB923C, #14B8A6);
+}
+
+/* ===================== DATE INPUT ===================== */
+input[type="date"] {
+  color-scheme: dark;
+}
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7) sepia(1) saturate(3) hue-rotate(340deg);
+  cursor: pointer;
+  opacity: 0.7;
+}
+input[type="date"]::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
+}
+
+/* ===================== SELECT ===================== */
+select option {
+  background-color: #0F1629;
+  color: #d1d5db;
+}
+
+/* ===================== SELECTION ===================== */
+::selection {
+  background: rgba(249, 115, 22, 0.3);
+  color: #fff;
+}
+
+/* ===================== TRANSCRIPT VIEWER ===================== */
+discord-messages {
+  --discord-background-primary: #0F1629 !important;
+  --background-primary: #0F1629 !important;
+}
+
+/* ===================== PRINT STYLES ===================== */
+@media print {
+  nav,
+  button,
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+    color: black !important;
+  }
+
+  main,
+  div {
+    background: white !important;
+  }
+}
+
+/* ===================== ANIMATIONS ===================== */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fade-in-down {
+  from { opacity: 0; transform: translateY(-10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scale-in {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.5s ease-out forwards;
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down 0.4s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scale-in 0.3s ease-out forwards;
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.4s ease-out forwards;
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+/* Staggered list animation for ticket rows */
+.ticket-row {
+  animation: fade-in-up 0.35s ease-out forwards;
+  opacity: 0;
+}
+.ticket-row:nth-child(1)  { animation-delay: 0.03s; }
+.ticket-row:nth-child(2)  { animation-delay: 0.06s; }
+.ticket-row:nth-child(3)  { animation-delay: 0.09s; }
+.ticket-row:nth-child(4)  { animation-delay: 0.12s; }
+.ticket-row:nth-child(5)  { animation-delay: 0.15s; }
+.ticket-row:nth-child(6)  { animation-delay: 0.18s; }
+.ticket-row:nth-child(7)  { animation-delay: 0.21s; }
+.ticket-row:nth-child(8)  { animation-delay: 0.24s; }
+.ticket-row:nth-child(9)  { animation-delay: 0.27s; }
+.ticket-row:nth-child(10) { animation-delay: 0.30s; }
+.ticket-row:nth-child(11) { animation-delay: 0.33s; }
+.ticket-row:nth-child(12) { animation-delay: 0.36s; }
+.ticket-row:nth-child(13) { animation-delay: 0.39s; }
+.ticket-row:nth-child(14) { animation-delay: 0.42s; }
+.ticket-row:nth-child(15) { animation-delay: 0.45s; }
+
+/* ===================== REDUCED MOTION ===================== */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ===================== GLOW EFFECTS ===================== */
+.glow-orange {
+  box-shadow: 0 0 15px rgba(249, 115, 22, 0.15), 0 0 30px rgba(249, 115, 22, 0.05);
+}
+.glow-teal {
+  box-shadow: 0 0 15px rgba(13, 148, 136, 0.15), 0 0 30px rgba(13, 148, 136, 0.05);
+}
+
+/* ===================== CARD GLASS ===================== */
+.card-glass {
+  background: linear-gradient(145deg, rgba(15, 22, 41, 0.7) 0%, rgba(21, 29, 53, 0.5) 100%);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(30, 42, 74, 0.6);
+}
+
+/* ===================== SHIMMER LOADER ===================== */
+.shimmer-loader {
+  background: linear-gradient(90deg, rgba(15, 22, 41, 0.3) 25%, rgba(30, 42, 74, 0.5) 50%, rgba(15, 22, 41, 0.3) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
