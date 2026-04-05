@@ -10,10 +10,10 @@
   "dependencies": {
     "@octokit/rest": "^20.0.2",
     "lucide-react": "^0.300.0",
-    "next": "latest",
+    "next": "14.2.15",
     "next-auth": "^4.24.5",
-    "react": "latest",
-    "react-dom": "latest"
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.16",
