@@ -109,53 +109,57 @@ export default function AttemptsPage() {
           </div>
         ) : (
           <div className="divide-y divide-gsrp-dark-border/50">
-            {filtered.map((a, i) => (
-              <div key={a.attemptId || i}>
-                <button
-                  onClick={() => setExpanded(expanded === i ? null : i)}
-                  className="w-full flex items-center justify-between px-5 py-4 hover:bg-gsrp-dark-surface/40 transition-colors cursor-pointer"
-                >
-                  <div className="flex items-center gap-4 min-w-0">
-                    <div className="w-8 h-8 rounded-full overflow-hidden bg-gsrp-dark-surface flex-shrink-0">
-                      {a.avatar ? (
-                        <img src={`https://cdn.discordapp.com/avatars/${a.userId}/${a.avatar}.png?size=32`} alt="" className="w-full h-full object-cover" />
-                      ) : (
-                        <div className="w-full h-full bg-gsrp-dark-border" />
-                      )}
+            {filtered.map((a, i) => {
+              const avUrl = a.avatar
+                ? `https://cdn.discordapp.com/avatars/${a.userId}/${a.avatar}.png?size=32`
+                : `https://cdn.discordapp.com/embed/avatars/0.png`;
+              const dateStr = a.timestamp ? new Date(a.timestamp).toLocaleString() : '—';
+              return (
+                <div key={a.attemptId || i}>
+                  <button
+                    onClick={() => setExpanded(expanded === i ? null : i)}
+                    className="w-full flex items-center justify-between px-5 py-4 hover:bg-white/[0.02] transition-colors cursor-pointer text-left"
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      <img src={avUrl} alt="" className="w-8 h-8 rounded-full object-cover flex-shrink-0" />
+                      <div className="min-w-0">
+                        <p className="text-white text-sm font-medium truncate">{a.globalName || a.username}</p>
+                        <p className="text-[10px] text-gsrp-teal-light/30 font-mono">{a.userId}</p>
+                      </div>
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-white text-sm font-medium truncate">{a.globalName || a.username}</p>
-                      <p className="text-[10px] text-gsrp-teal-light/30 font-mono">{a.userId}</p>
+                    <div className="flex items-center gap-4 flex-shrink-0">
+                      <div className="text-right hidden sm:block">
+                        <p className="text-[10px] text-gsrp-teal-light/30">{dateStr}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className={`text-sm font-bold ${a.pass ? 'text-green-400' : 'text-red-400'}`}>{a.pct}%</p>
+                        <p className="text-[10px] text-gsrp-teal-light/30">{a.score}/{a.total}</p>
+                      </div>
+                      <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${a.pass ? 'bg-green-400/10 text-green-400 border border-green-400/20' : 'bg-red-400/10 text-red-400 border border-red-400/20'}`}>
+                        {a.pass ? 'PASS' : 'FAIL'}
+                      </span>
+                      {expanded === i ? <ChevronUp size={14} className="text-gsrp-teal-light/30" /> : <ChevronDown size={14} className="text-gsrp-teal-light/30" />}
                     </div>
-                  </div>
-                  <div className="flex items-center gap-4 flex-shrink-0">
-                    <div className="text-right">
-                      <p className={`text-sm font-bold ${a.pass ? 'text-green-400' : 'text-red-400'}`}>{a.pct}%</p>
-                      <p className="text-[10px] text-gsrp-teal-light/30">{a.score}/{a.total}</p>
+                  </button>
+                  {expanded === i && a.answers && (
+                    <div className="px-5 pb-5 bg-black/20">
+                      <p className="text-[10px] uppercase tracking-widest text-gsrp-teal-light/30 font-medium pt-3 pb-2">Answer Breakdown</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {a.answers.map((ans, j) => (
+                          <div key={j} className={`p-3 rounded-lg text-xs border ${ans.correct ? 'bg-green-400/5 border-green-400/15' : 'bg-red-400/5 border-red-400/15'}`}>
+                            <p className="text-gsrp-teal-light/50 mb-1.5 leading-relaxed line-clamp-2">{ans.question || '—'}</p>
+                            <p className={ans.correct ? 'text-green-400 font-medium' : 'text-red-400 font-medium'}>
+                              {ans.correct ? '✓' : '✗'} {ans.chosen || '—'}
+                            </p>
+                            {!ans.correct && <p className="text-green-400/60 mt-0.5">Correct: {ans.answer || ''}</p>}
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                    <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded-full ${a.pass ? 'bg-green-400/10 text-green-400 border border-green-400/20' : 'bg-red-400/10 text-red-400 border border-red-400/20'}`}>
-                      {a.pass ? 'PASS' : 'FAIL'}
-                    </span>
-                    {expanded === i ? <ChevronUp size={14} className="text-gsrp-teal-light/30" /> : <ChevronDown size={14} className="text-gsrp-teal-light/30" />}
-                  </div>
-                </button>
-                {expanded === i && a.answers && (
-                  <div className="px-5 pb-4 bg-gsrp-dark-surface/30">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2">
-                      {a.answers.map((ans, j) => (
-                        <div key={j} className={`p-3 rounded-lg text-xs border ${ans.correct ? 'bg-green-400/5 border-green-400/20' : 'bg-red-400/5 border-red-400/20'}`}>
-                          <p className="text-gsrp-teal-light/40 mb-1 truncate">{esc(ans.question || '').substring(0, 80)}</p>
-                          <p className={ans.correct ? 'text-green-400' : 'text-red-400'}>
-                            {ans.correct ? '✓' : '✗'} {esc(ans.chosen || '—')}
-                          </p>
-                          {!ans.correct && <p className="text-green-400/70 mt-0.5">✓ {esc(ans.answer || '')}</p>}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
+                  )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
