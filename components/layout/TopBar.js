@@ -25,7 +25,7 @@ export default function TopBar({ onMenuClick }) {
         <div className="flex items-center gap-3">
           <div className="text-right hidden sm:block">
             <p className="text-white text-sm font-semibold">{session.user.name}</p>
-            <p className="text-[10px] text-gsrp-teal-light/40 uppercase tracking-wider">ID: {session.user.id}</p>
+            <p className="text-[10px] text-gsrp-teal-light/40 font-bold uppercase tracking-wider">{session.user.displayRole}</p>
           </div>
           <div className="relative w-8 h-8 rounded-full overflow-hidden bg-gsrp-dark-surface border border-gsrp-dark-border/50">
             {session.user.image ? (

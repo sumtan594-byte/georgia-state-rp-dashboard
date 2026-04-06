@@ -36,6 +36,33 @@ export const authOptions = {
         if (memberRes.ok) {
           const member = await memberRes.json();
           account.roles = member.roles || [];
+          
+          let displayRole = 'User';
+          
+          const rolesRes = await fetch(
+            `https://discord.com/api/guilds/${process.env.ALLOWED_GUILD_ID}/roles`,
+            { headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` } }
+          );
+          
+          if (rolesRes.ok) {
+            const allRoles = await rolesRes.json();
+            
+            const userRoles = allRoles.filter(r => account.roles.includes(r.id));
+            userRoles.sort((a, b) => b.position - a.position);
+            
+            for (const role of userRoles) {
+              if (role.name.includes('────')) continue;
+              
+              if (role.id === '1391175328545636444') { displayRole = 'Donator +'; break; }
+              if (role.id === '1372482493701165118') { displayRole = 'Donator'; break; }
+              if (role.id === '1438063270631182376') { displayRole = 'Former foundation member'; break; }
+              if (role.id === '1372481017436438579') { displayRole = 'Retired staff member'; break; }
+              
+              displayRole = role.name;
+              break;
+            }
+          }
+          account.displayRole = displayRole;
         }
         return true;
       } catch (err) {
@@ -53,6 +80,7 @@ export const authOptions = {
       }
       if (account?.roles) {
         token.roles = account.roles;
+        token.displayRole = account.displayRole;
       }
       return token;
     },
@@ -61,6 +89,7 @@ export const authOptions = {
         session.user.id = token.id;
         session.user.avatar = token.avatar;
         session.user.roles = token.roles || [];
+        session.user.displayRole = token.displayRole || 'User';
       }
       return session;
     },
