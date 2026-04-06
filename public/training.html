@@ -1501,6 +1501,8 @@ function renderOrder(q) {
 function bindOrder(q) {
   const list = document.getElementById('order-list');
   let dragSrc = null;
+
+  // Desktop Drag
   list.addEventListener('dragstart', e => { dragSrc = e.target.closest('.order-item'); dragSrc.classList.add('dragging'); });
   list.addEventListener('dragend',   e => { e.target.closest('.order-item')?.classList.remove('dragging'); updateOrderNums(); });
   list.addEventListener('dragover',  e => {
@@ -1510,7 +1512,38 @@ function bindOrder(q) {
     const mid = target.getBoundingClientRect().top + target.getBoundingClientRect().height / 2;
     list.insertBefore(dragSrc, e.clientY < mid ? target : target.nextSibling);
   });
-  // btn-check enabled after clone in bindEvents — set a flag instead
+
+  // Mobile Touch
+  list.addEventListener('touchstart', e => {
+    const item = e.target.closest('.order-item');
+    if (!item) return;
+    dragSrc = item;
+    dragSrc.classList.add('dragging');
+  }, { passive: true });
+
+  list.addEventListener('touchmove', e => {
+    if (!dragSrc) return;
+    const touch = e.touches[0];
+    dragSrc.style.pointerEvents = 'none';
+    const target = document.elementFromPoint(touch.clientX, touch.clientY)?.closest('.order-item');
+    dragSrc.style.pointerEvents = '';
+    
+    if (!target || target === dragSrc || target.parentNode !== list) return;
+    e.preventDefault();
+    const rect = target.getBoundingClientRect();
+    const mid = rect.top + rect.height / 2;
+    if (touch.clientY < mid) list.insertBefore(dragSrc, target);
+    else list.insertBefore(dragSrc, target.nextSibling);
+  }, { passive: false });
+
+  list.addEventListener('touchend', () => {
+    if (dragSrc) {
+      dragSrc.classList.remove('dragging');
+      dragSrc = null;
+      updateOrderNums();
+    }
+  });
+
   window._orderReady = true;
 }
 function checkOrder(q) {
