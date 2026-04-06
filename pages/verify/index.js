@@ -35,11 +35,6 @@ export default function VerifyPage() {
 
     setStatus('loading');
 
-    try {
-      const cleanUrl = window.location.origin + window.location.pathname;
-      window.history.replaceState({}, document.title, cleanUrl);
-    } catch {}
-
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
 
@@ -61,16 +56,20 @@ export default function VerifyPage() {
       if (data?.success) {
         setStatus('success');
         setMessage('Your citizenship has been verified! Check your Discord Direct Messages for confirmation.');
+        
+        // Clean URL only on success
+        try {
+          const cleanUrl = window.location.origin + window.location.pathname;
+          window.history.replaceState({}, document.title, cleanUrl);
+        } catch {}
       } else {
         throw new Error(data?.error || 'An unexpected error occurred.');
       }
     })
     .catch(err => {
       clearTimeout(timeout);
-      setStatus('error');
-      if (err.name === 'AbortError') {
-        setMessage('Request timed out. Please try again.');
-      } else {
+      if (err.name !== 'AbortError') {
+        setStatus('error');
         setMessage(err.message || 'An unexpected error occurred.');
       }
     });

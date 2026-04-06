@@ -1,35 +1,29 @@
 import '../styles/globals.css';
 import { SessionProvider, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
+import { useRouter } from 'next/router';
 import Sidebar from "../components/layout/Sidebar";
 import TopBar from "../components/layout/TopBar";
 
 function DebugSessionLogger() {
   const { status, data } = useSession();
   useEffect(() => {
-    console.log('[APP] SessionProvider status:', status);
-    console.log('[APP] SessionProvider data:', data);
+    // console.log('[APP] SessionProvider status:', status);
   }, [status, data]);
   return null;
 }
 
 export default function App({ Component, pageProps: { session, ...pageProps } }) {
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-    console.log('[APP] App mounted, initial session:', session ? 'exists' : 'null');
   }, []);
 
-  const isPublicPage = mounted && (
-    window.location.pathname === '/verify' ||
-    window.location.pathname === '/privacy-policy' ||
-    window.location.pathname === '/terms-of-service' ||
-    window.location.pathname === '/login'
-  );
-
-  console.log('[APP] Render — pathname:', mounted ? window.location.pathname : 'SSR', 'mounted:', mounted, 'isPublic:', isPublicPage);
+  const publicRoutes = ['/verify', '/privacy-policy', '/terms-of-service', '/login'];
+  const isPublicPage = publicRoutes.includes(router.pathname);
 
   if (!mounted) {
     return (
