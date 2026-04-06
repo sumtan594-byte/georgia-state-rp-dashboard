@@ -19,18 +19,11 @@ const PREMIUM_PERKS = [
 
 const PRODUCTS = {
   premium: [
-    { name: "GSRP | Premium", price: 250, link: "https://www.roblox.com/game-pass/1288437153/GSRP-Premium", icon: Crown, featured: true, perks: PREMIUM_PERKS },
-    { name: "GSRP | VIP", price: 300, link: "#", icon: Star, perks: ["All Premium Perks", "VIP in-game tag", "Custom vehicle plates"] },
-    { name: "GSRP Premium +", price: 500, link: "#", icon: Sparkles, featured: true, perks: ["All VIP Perks", "Dedicated voice channel", "Bypass queue priority"] },
+    { name: "GSRP | Premium", price: 500, link: "https://www.roblox.com/game-pass/1288437153/GSRP-Premium", icon: Crown, featured: true, perks: PREMIUM_PERKS },
   ],
-  pings: [
+  advertisements: [
     { name: "@Here Ping", price: 100, link: "https://www.roblox.com/game-pass/1288508785/Here-Ping", icon: Zap, perks: ["Ping all online users in a designated channel"] },
     { name: "@everyone Ping", price: 500, link: "https://www.roblox.com/game-pass/1283601162/everyone-Ping", icon: Zap, featured: true, perks: ["Ping every member in the server with an announcement"] },
-    { name: "Ping Exemptions Role!", price: 650, link: "#", icon: Shield, perks: ["Immunity from all @here and @everyone pings", "Special 'Do Not Disturb' role"] },
-  ],
-  fun: [
-    { name: "Kolt ❤️", price: 1500, link: "#", icon: Heart, perks: ["Special Kolt role", "Custom heart icon next to name"], overlay: "Owned" },
-    { name: "Morg told me to", price: 5000, link: "#", icon: Star, perks: ["Because Morg said so", "Ultimate flex role", "Global server announcement on purchase"] },
   ],
   donations: [
     { name: "GSRP Donate 100", price: 100, link: "https://www.roblox.com/game-pass/1283365474/GSRP-Donate-100" },
@@ -80,7 +73,7 @@ export default function Shop() {
       </div>
 
       <div className="flex space-x-2 mb-8 overflow-x-auto pb-2 scrollbar-none">
-        {['premium', 'pings', 'fun', 'donations'].map((tab) => (
+        {['premium', 'advertisements', 'donations'].map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
@@ -90,7 +83,7 @@ export default function Shop() {
                 : 'bg-gsrp-dark-card/50 text-gsrp-teal-light/40 hover:bg-gsrp-dark-surface hover:text-white border border-gsrp-dark-border/50'
             }`}
           >
-            {tab === 'fun' ? 'Special/Fun' : tab}
+            {tab === 'advertisements' ? 'Paid Advertisements' : tab}
           </button>
         ))}
       </div>
