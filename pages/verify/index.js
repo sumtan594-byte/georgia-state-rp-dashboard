@@ -5,9 +5,7 @@ import Link from 'next/link';
 import LoginScreen from '../../components/auth/LoginScreen';
 
 const ROBLOX_CLIENT_ID = '4646799346124146894';
-const REDIRECT_URI = process.env.NEXT_PUBLIC_VERCEL_URL
-  ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}/verify`
-  : 'https://georgia-state-rp-dashboard.vercel.app/verify';
+const REDIRECT_URI = 'https://georgia-state-rp-dashboard.vercel.app/verify';
 
 export default function VerifyPage() {
   const { data: session, status: sessionStatus } = useSession();
