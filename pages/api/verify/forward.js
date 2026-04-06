@@ -61,7 +61,7 @@ async function sendLog(fetchFn, logWebhookUrl, { type, discordId, ip, detail, ex
 }
 // ─────────────────────────────────────────────────────────────────────────────
 
-module.exports = async function handler(req, res) {
+export default async function handler(req, res) {
     // CORS Headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -90,7 +90,7 @@ module.exports = async function handler(req, res) {
         console.error('[forward] DISCORD_WEBHOOK_URL is not set in Vercel environment variables');
         return res.status(500).json({
             success: false,
-            error: 'Server is not configured. Please contact server staff.'
+            error: 'Missing DISCORD_WEBHOOK_URL environment variable'
         });
     }
 
