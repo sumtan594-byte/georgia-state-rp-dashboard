@@ -13,7 +13,7 @@ import {
   ClipboardList,
   ShoppingCart,
 } from 'lucide-react';
-import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts } from '../../lib/auth';
+import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook } from '../../lib/auth';
 
 export default function Sidebar({ open, onToggle }) {
   const { data: session } = useSession();
@@ -45,6 +45,7 @@ export default function Sidebar({ open, onToggle }) {
   }, [session, open]);
 
   const hasPanel = canAccessPanel(session);
+  const hasHandbook = canAccessHandbook(session);
   const hasTraining = canAccessTraining(session);
   const hasAttempts = canViewAttempts(session);
   const showAllTranscripts = canViewAllTranscripts(session);
@@ -53,6 +54,7 @@ export default function Sidebar({ open, onToggle }) {
     { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/transcripts', icon: FileText, label: 'Transcripts', badge: transcriptCount > 0 ? transcriptCount : null },
     ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null }] : []),
+    ...(hasHandbook ? [{ href: '/staff-handbook', icon: BookOpen, label: 'Staff Handbook' }] : []),
     ...(hasTraining ? [{ href: '/training', icon: BookOpen, label: 'Training' }] : []),
     ...(hasAttempts ? [{ href: '/training/attempts', icon: ClipboardList, label: 'Attempts' }] : []),
     { href: '/verify', icon: ShieldCheck, label: 'Verification' },
