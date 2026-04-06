@@ -239,6 +239,19 @@ body::before {
 .order-item.ok-order  { border-color:var(--correct-b);background:var(--correct); }
 .order-item.bad-order { border-color:var(--wrong-b);background:var(--wrong); }
 
+/* Order Controls */
+.order-controls { display:flex; flex-direction:column; gap:4px; margin-left:auto; }
+.order-btn {
+  background:rgba(255,255,255,0.05); border:1px solid var(--border);
+  color:var(--muted); font-size:.65rem; padding:4px 8px; border-radius:6px;
+  cursor:pointer; transition:all .15s; line-height:1;
+}
+.order-btn:hover { background:var(--blue-dim); color:var(--sky); border-color:var(--blue); }
+@media (max-width: 768px) {
+  .order-btn { padding: 6px 12px; font-size: .8rem; }
+  .order-controls { gap: 6px; }
+}
+
 /* Hotspot question */
 .hotspot-wrap { position:relative;display:inline-block;max-width:100%;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);margin-bottom:1.5rem; }
 .hotspot-wrap img { display:block;width:100%;max-width:680px;border-radius:var(--radius); }
@@ -1492,15 +1505,35 @@ function renderOrder(q) {
   const items = shuffled.map((item, i) =>
     `<div class="order-item" draggable="true" data-pos="${i}">
       <div class="order-num">${i+1}</div>
-      <span>${item.text}</span>
-      <span class="drag-handle">&#8597;</span>
+      <span style="flex:1">${item.text}</span>
+      <div class="order-controls">
+        <button class="order-btn up-btn">&#9650;</button>
+        <button class="order-btn down-btn">&#9660;</button>
+      </div>
+      <span class="drag-handle" style="margin-left:1.5rem">&#8597;</span>
     </div>`).join('');
   return `<div class="order-items" id="order-list">${items}</div>
-    <p style="font-size:.78rem;color:var(--muted);margin-top:.9rem;">Drag items into the correct order, then click Check Answer.</p>`;
+    <p style="font-size:.78rem;color:var(--muted);margin-top:.9rem;">Drag or use arrows to reorder, then click Check Answer.</p>`;
 }
 function bindOrder(q) {
   const list = document.getElementById('order-list');
   let dragSrc = null;
+
+  // Arrow controls
+  list.addEventListener('click', e => {
+    const btn = e.target.closest('.order-btn');
+    if (!btn) return;
+    const item = btn.closest('.order-item');
+    if (!item) return;
+    if (btn.classList.contains('up-btn')) {
+      const prev = item.previousElementSibling;
+      if (prev) list.insertBefore(item, prev);
+    } else {
+      const next = item.nextElementSibling;
+      if (next) list.insertBefore(item, next.nextSibling);
+    }
+    updateOrderNums();
+  });
 
   // Desktop Drag
   list.addEventListener('dragstart', e => { dragSrc = e.target.closest('.order-item'); dragSrc.classList.add('dragging'); });
