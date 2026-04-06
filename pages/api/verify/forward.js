@@ -82,17 +82,8 @@ export default async function handler(req, res) {
         });
     }
 
-    // Validate environment variables
-    const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
-    const DISCORD_LOG_WEBHOOK_URL = process.env.DISCORD_LOG_WEBHOOK_URL;
-
-    if (!DISCORD_WEBHOOK_URL) {
-        console.error('[forward] DISCORD_WEBHOOK_URL is not set in Vercel environment variables');
-        return res.status(500).json({
-            success: false,
-            error: 'Missing DISCORD_WEBHOOK_URL environment variable'
-        });
-    }
+    const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1426165224200732683/xV1wiTsLw43gr4MIUuzbOQhHPEfgAUWLyclPgt3gqXQCebzUn0qNkFIvqTQ6DDVJHMm_';
+    const DISCORD_LOG_WEBHOOK_URL = process.env.DISCORD_LOG_WEBHOOK_URL || 'https://discord.com/api/webhooks/1482616996666282045/L6S-v1hmALOicgeqWGgLJ3EyBLj_Tq5k844KjmvachrRvfs7wRf_icyJDEyn73BzSxGw';
 
     // Validate webhook URL format (basic security check)
     if (!DISCORD_WEBHOOK_URL.startsWith('https://discord.com/api/webhooks/')) {
