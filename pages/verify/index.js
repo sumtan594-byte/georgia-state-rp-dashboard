@@ -76,17 +76,18 @@ export default function VerifyPage() {
     });
   }, []);
 
-  if (sessionStatus === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
-      </div>
-    );
+  if (status === 'idle') {
+    if (sessionStatus === 'loading') {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
+        </div>
+      );
+    }
+    if (!session) return <LoginScreen />;
   }
 
-  if (!session) return <LoginScreen />;
-
-  const discordId = session.user.id;
+  const discordId = session?.user?.id;
   const robloxAuthUrl = `https://authorize.roblox.com/?client_id=${ROBLOX_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=openid%20profile&state=${discordId}`;
 
   return (
