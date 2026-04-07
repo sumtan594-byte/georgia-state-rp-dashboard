@@ -8,16 +8,32 @@ export default async function handler(req, res) {
   }
 
   const discordId = session.user.id;
-  const usernamesUrl = 'https://raw.githubusercontent.com/sumtan594-byte/gsrp-management/main/usernames.json';
-  const rolesUrl = 'https://raw.githubusercontent.com/sumtan594-byte/gsrp-management/main/roles.json';
+  const githubToken = process.env.GITHUB_ACCESS_TOKEN;
+  
+  const githubFetch = async (path) => {
+    const url = `https://api.github.com/repos/sumtan594-byte/gsrp-management/contents/${path}`;
+    const headers = {
+      'Accept': 'application/vnd.github.v3.raw',
+      'User-Agent': 'GSRP-Dashboard-App'
+    };
+    if (githubToken) {
+      headers['Authorization'] = `token ${githubToken}`;
+    }
+    
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      throw new Error(`Failed to fetch ${path} from GitHub: ${res.statusText} (${res.status})`);
+    }
+    return res.json();
+  };
 
   try {
-    const [usernamesRes, rolesRes] = await Promise.all([
-      fetch(usernamesUrl).then(r => r.json()),
-      fetch(rolesUrl).then(r => r.json())
+    const [usernamesData, rolesRes] = await Promise.all([
+      githubFetch('usernames.json'),
+      githubFetch('roles.json')
     ]);
 
-    const userData = usernamesRes[discordId];
+    const userData = usernamesData[discordId];
     if (!userData || !userData.verified) {
       return res.status(200).json({ linked: false });
     }
