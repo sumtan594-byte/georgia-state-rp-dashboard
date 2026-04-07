@@ -1,5 +1,5 @@
 import { useSession } from 'next-auth/react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Loader2, ShieldCheck, ArrowLeft, Gamepad2 } from 'lucide-react';
 import Link from 'next/link';
 import LoginScreen from '../../components/auth/LoginScreen';
@@ -14,6 +14,7 @@ export default function VerifyPage() {
   const [verificationData, setVerificationData] = useState(null);
   const [isChecking, setIsChecking] = useState(true);
   const [isUnlinking, setIsUnlinking] = useState(false);
+  const codeHandledRef = useRef(false);
 
   useEffect(() => {
     const checkLinking = async () => {
@@ -56,6 +57,9 @@ export default function VerifyPage() {
       setIsChecking(false);
       return;
     }
+
+    if (codeHandledRef.current) return;
+    codeHandledRef.current = true;
 
     setStatus('loading');
 
