@@ -13,6 +13,7 @@ export default function VerifyPage() {
   const [message, setMessage] = useState('');
   const [verificationData, setVerificationData] = useState(null);
   const [isChecking, setIsChecking] = useState(true);
+  const [isUnlinking, setIsUnlinking] = useState(false);
 
   useEffect(() => {
     const checkLinking = async () => {
@@ -101,6 +102,33 @@ export default function VerifyPage() {
       setIsChecking(false);
     });
   }, [sessionStatus]);
+
+  const handleUnlink = async () => {
+    if (!window.confirm('Are you sure you want to unlink your Roblox account? This will remove your Discord roles and access to verified channels.')) {
+      return;
+    }
+
+    setIsUnlinking(true);
+    try {
+      const res = await fetch('/api/verify/unlink', { method: 'POST' });
+      const data = await res.json();
+      
+      if (data.success) {
+        setVerificationData(null);
+        setStatus('idle');
+        setMessage('');
+        // Force re-check
+        window.location.reload();
+      } else {
+        alert(data.error || 'Failed to unlink account.');
+      }
+    } catch (err) {
+      console.error('Unlink error:', err);
+      alert('An error occurred while unlinking.');
+    } finally {
+      setIsUnlinking(false);
+    }
+  };
 
   if (isChecking || (status === 'idle' && sessionStatus === 'loading')) {
     return (
@@ -200,6 +228,29 @@ export default function VerifyPage() {
                       </span>
                     )}
                   </div>
+                </div>
+
+                <div className="mt-8 pt-8 border-t border-gsrp-dark-border/20">
+                  <button
+                    onClick={handleUnlink}
+                    disabled={isUnlinking}
+                    className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group/btn"
+                  >
+                    {isUnlinking ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin" />
+                        Unlinking Account...
+                      </>
+                    ) : (
+                      <>
+                        < ShieldCheck size={14} className="group-hover/btn:scale-110 transition-transform" />
+                        Unlink Roblox Account
+                      </>
+                    )}
+                  </button>
+                  <p className="text-center text-[9px] text-gsrp-teal-light/20 mt-3 font-medium uppercase tracking-widest italic">
+                    Unlinking will reset your Discord roles & nickname
+                  </p>
                 </div>
               </div>
             </div>
