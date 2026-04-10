@@ -73,7 +73,7 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className={isReady ? 'animate-pop-up stagger-1' : ''}>
+          <div className={`w-full h-full ${isReady ? 'animate-pop-up stagger-1' : 'opacity-0'}`}>
             <FeatureCard
               href="/transcripts"
               icon={FileText}
@@ -83,7 +83,7 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className={isReady ? 'animate-pop-up stagger-2' : ''}>
+          <div className={`w-full h-full ${isReady ? 'animate-pop-up stagger-2' : 'opacity-0'}`}>
             <FeatureCard
               href="/panel"
               icon={Map}
@@ -94,7 +94,7 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className={isReady ? 'animate-pop-up stagger-3' : ''}>
+          <div className={`w-full h-full ${isReady ? 'animate-pop-up stagger-3' : 'opacity-0'}`}>
             <FeatureCard
               href="/training"
               icon={BookOpen}
@@ -104,7 +104,7 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className={isReady ? 'animate-pop-up stagger-4' : ''}>
+          <div className={`w-full h-full ${isReady ? 'animate-pop-up stagger-4' : 'opacity-0'}`}>
             <FeatureCard
               href="/verify"
               icon={ShieldCheck}
@@ -113,7 +113,7 @@ export default function Dashboard() {
             />
           </div>
 
-          <div className={isReady ? 'animate-pop-up stagger-5' : ''}>
+          <div className={`w-full h-full ${isReady ? 'animate-pop-up stagger-5' : 'opacity-0'}`}>
             <FeatureCard
               href="/shop"
               icon={ShoppingCart}
@@ -123,7 +123,7 @@ export default function Dashboard() {
           </div>
 
           {hasAttempts && (
-            <div className={isReady ? 'animate-pop-up stagger-6' : ''}>
+            <div className={`w-full h-full ${isReady ? 'animate-pop-up stagger-6' : 'opacity-0'}`}>
               <FeatureCard
                 href="/training/attempts"
                 icon={Users}

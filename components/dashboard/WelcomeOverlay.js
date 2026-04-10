@@ -7,19 +7,19 @@ export default function WelcomeOverlay({ onComplete }) {
 
   useEffect(() => {
     // Phase 1: Show "Welcome" (slight delay for entrance)
-    const t1 = setTimeout(() => setPhase('welcome'), 100);
+    const t1 = setTimeout(() => setPhase('welcome'), 50);
     
-    // Phase 2: Start Gliding after 2s
+    // Phase 2: Start Gliding after 1.2s (faster than before)
     const t2 = setTimeout(() => {
       setPhase('gliding');
       
-      // Phase 3: Complete transition after glide finishes (1s)
+      // Phase 3: Complete transition after glide finishes (0.6s)
       const t3 = setTimeout(() => {
         setPhase('hidden');
         onComplete();
-      }, 1000);
+      }, 600);
       return () => clearTimeout(t3);
-    }, 2500);
+    }, 1400);
 
     return () => {
       clearTimeout(t1);
@@ -30,22 +30,22 @@ export default function WelcomeOverlay({ onComplete }) {
   if (!session || phase === 'hidden') return null;
 
   return (
-    <div className={`fixed inset-0 z-[100] transition-opacity duration-1000 ${phase === 'gliding' ? 'bg-transparent pointer-events-none' : 'bg-gsrp-dark'}`}>
+    <div className={`fixed inset-0 z-[100] transition-opacity duration-500 ${phase === 'gliding' ? 'bg-transparent pointer-events-none' : 'bg-gsrp-dark'}`}>
       {/* Background Image - stays centered and fades out during glide */}
-      <div className={`absolute inset-0 transition-opacity duration-1000 ${phase === 'gliding' ? 'opacity-0' : 'opacity-100'}`}>
+      <div className={`absolute inset-0 transition-opacity duration-700 ${phase === 'gliding' ? 'opacity-0' : 'opacity-100'}`}>
         <img 
           src="https://i.imgur.com/QVVQSK2.png" 
           alt="" 
-          className="w-full h-full object-cover scale-110" 
+          className="w-full h-full object-cover" 
         />
-        <div className="absolute inset-0 bg-gsrp-dark/80 backdrop-blur-md" />
+        <div className="absolute inset-0 bg-gsrp-dark/90 backdrop-blur-sm" />
       </div>
 
       <div className="relative h-full flex items-center justify-center">
         <div 
-          className={`transition-all duration-1000 ease-in-out ${
-            phase === 'entering' ? 'opacity-0 scale-75 translate-y-12 blur-xl' :
-            phase === 'welcome' ? 'opacity-100 scale-100 translate-y-0 blur-0' :
+          className={`transition-all duration-700 ease-in-out ${
+            phase === 'entering' ? 'opacity-0 scale-90 translate-y-4' :
+            phase === 'welcome' ? 'opacity-100 scale-100 translate-y-0' :
             'animate-welcome-glide'
           }`}
         >

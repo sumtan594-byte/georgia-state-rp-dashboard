@@ -125,13 +125,14 @@ discord-messages {
 }
 
 @keyframes welcome-glide {
-  0% { opacity: 1; transform: scale(1.2) translate(0, 0); }
-  100% { opacity: 0; transform: scale(0.5) translate(40vw, -45vh); }
+  0% { opacity: 1; transform: scale(1) translate(0, 0); }
+  80% { opacity: 0.1; transform: scale(0.4) translate(35vw, -45vh); }
+  100% { opacity: 0; transform: scale(0.3) translate(35vw, -45vh); }
 }
 
 @keyframes pop-up {
-  0% { opacity: 0; transform: translateY(30px) scale(0.9); filter: blur(10px); }
-  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+  0% { opacity: 0; transform: translateY(20px) scale(0.95); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .animate-fade-in-up {
