@@ -4,7 +4,7 @@ import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2, ShoppingCart } fr
 import FeatureCard from '../components/dashboard/FeatureCard';
 import LoginScreen from '../components/auth/LoginScreen';
 import WelcomeOverlay from '../components/dashboard/WelcomeOverlay';
-import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts } from '../lib/auth';
+import { canAccessPanel, canAccessTraining, canViewAttempts } from '../lib/auth';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -22,7 +22,6 @@ export default function Dashboard() {
 
   useEffect(() => {
     if (!session) return;
-
     Promise.allSettled([
       fetch('/api/transcripts/count').then(r => r.ok ? r.json() : { count: 0 }),
       fetch('/api/panel/players').then(r => r.ok ? r.json() : null),
@@ -52,9 +51,7 @@ export default function Dashboard() {
     );
   }
 
-  if (!session) {
-    return <LoginScreen />;
-  }
+  if (!session) return <LoginScreen />;
 
   const hasPanel = canAccessPanel(session);
   const hasTraining = canAccessTraining(session);
@@ -63,72 +60,78 @@ export default function Dashboard() {
   return (
     <>
       {showWelcome && <WelcomeOverlay onComplete={handleWelcomeComplete} />}
-      
-      <div className={`max-w-5xl mx-auto transition-opacity duration-500 ${isReady ? 'opacity-100' : 'opacity-0'}`}>
-        <div className={`mb-8 ${isReady ? 'animate-fade-in-up' : ''}`}>
-          <h1 className="text-white font-black text-2xl md:text-3xl mb-2">
-            Welcome back, <span className="text-gsrp-orange">{session.user.name}</span>
-          </h1>
-          <p className="text-gsrp-teal-light/40 text-sm">Georgia State Roleplay Dashboard</p>
-        </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <FeatureCard
-            href="/transcripts"
-            icon={FileText}
-            title="Transcripts"
-            description="View and manage Discord ticket transcripts"
-            badge={stats.transcripts > 0 ? `${stats.transcripts} records` : null}
-            className={isReady ? 'animate-pop-up stagger-1' : 'opacity-0'}
-          />
+      {/* 
+        Only mount the dashboard content AFTER isReady.
+        This means animate-pop-up fires from scratch on mount,
+        so no dynamic class toggling — nothing gets purged by Tailwind.
+      */}
+      {isReady && (
+        <div className="max-w-5xl mx-auto">
+          <div className="animate-fade-in-up mb-8">
+            <h1 className="text-white font-black text-2xl md:text-3xl mb-2">
+              Welcome back, <span className="text-gsrp-orange">{session.user.name}</span>
+            </h1>
+            <p className="text-gsrp-teal-light/40 text-sm">Georgia State Roleplay Dashboard</p>
+          </div>
 
-          <FeatureCard
-            href="/panel"
-            icon={Map}
-            title="Live Panel"
-            description="ERLC server map, player management, and commands"
-            badge={stats.online ? `${stats.players} online` : null}
-            locked={!hasPanel}
-            className={isReady ? 'animate-pop-up stagger-2' : 'opacity-0'}
-          />
-
-          <FeatureCard
-            href="/training"
-            icon={BookOpen}
-            title="Staff Training"
-            description="SSD training quiz and staff handbook"
-            locked={!hasTraining}
-            className={isReady ? 'animate-pop-up stagger-3' : 'opacity-0'}
-          />
-
-          <FeatureCard
-            href="/verify"
-            icon={ShieldCheck}
-            title="Verification"
-            description="Link your Roblox account to Discord"
-            className={isReady ? 'animate-pop-up stagger-4' : 'opacity-0'}
-          />
-
-          <FeatureCard
-            href="/shop"
-            icon={ShoppingCart}
-            title="Store"
-            description="Purchase premium roles, pings, and donations"
-            className={isReady ? 'animate-pop-up stagger-5' : 'opacity-0'}
-          />
-
-          {hasAttempts && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             <FeatureCard
-              href="/training/attempts"
-              icon={Users}
-              title="Quiz Attempts"
-              description="View all staff training quiz attempts"
-              className={isReady ? 'animate-pop-up stagger-6' : 'opacity-0'}
+              href="/transcripts"
+              icon={FileText}
+              title="Transcripts"
+              description="View and manage Discord ticket transcripts"
+              badge={stats.transcripts > 0 ? `${stats.transcripts} records` : null}
+              className="animate-pop-up stagger-1"
             />
-          )}
+
+            <FeatureCard
+              href="/panel"
+              icon={Map}
+              title="Live Panel"
+              description="ERLC server map, player management, and commands"
+              badge={stats.online ? `${stats.players} online` : null}
+              locked={!hasPanel}
+              className="animate-pop-up stagger-2"
+            />
+
+            <FeatureCard
+              href="/training"
+              icon={BookOpen}
+              title="Staff Training"
+              description="SSD training quiz and staff handbook"
+              locked={!hasTraining}
+              className="animate-pop-up stagger-3"
+            />
+
+            <FeatureCard
+              href="/verify"
+              icon={ShieldCheck}
+              title="Verification"
+              description="Link your Roblox account to Discord"
+              className="animate-pop-up stagger-4"
+            />
+
+            <FeatureCard
+              href="/shop"
+              icon={ShoppingCart}
+              title="Store"
+              description="Purchase premium roles, pings, and donations"
+              className="animate-pop-up stagger-5"
+            />
+
+            {hasAttempts && (
+              <FeatureCard
+                href="/training/attempts"
+                icon={Users}
+                title="Quiz Attempts"
+                description="View all staff training quiz attempts"
+                className="animate-pop-up stagger-6"
+              />
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }
-

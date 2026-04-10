@@ -1,33 +1,45 @@
 import { useSession, signOut } from 'next-auth/react';
-import { LogOut, User } from 'lucide-react';
-import { Menu } from 'lucide-react';
+import { LogOut, User, Menu } from 'lucide-react';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 
 export default function TopBar({ onMenuClick }) {
   const { data: session } = useSession();
-  const [isVisible, setIsVisible] = useState(false);
+  const router = useRouter();
+  const [userVisible, setUserVisible] = useState(false);
 
   useEffect(() => {
-    // Check if welcome has been played or if we are not on the dashboard (index page)
-    const checkVisibility = () => {
-      const played = sessionStorage.getItem('welcome_played');
-      if (played || window.location.pathname !== '/') {
-        setIsVisible(true);
-      } else {
-        // If welcome is active, we'll wait for it to finish
-        // We can poll or just wait a bit, but better to check storage changes
-        const interval = setInterval(() => {
-          if (sessionStorage.getItem('welcome_played')) {
-            setIsVisible(true);
-            clearInterval(interval);
-          }
-        }, 500);
-        return () => clearInterval(interval);
+    // If we're not on the home page, show immediately
+    if (router.pathname !== '/') {
+      setUserVisible(true);
+      return;
+    }
+    // If welcome has already played this session, show immediately
+    if (sessionStorage.getItem('welcome_played')) {
+      setUserVisible(true);
+      return;
+    }
+    // Otherwise poll until welcome_played is set (overlay calls onComplete)
+    const interval = setInterval(() => {
+      if (sessionStorage.getItem('welcome_played')) {
+        setUserVisible(true);
+        clearInterval(interval);
       }
-    };
-    
-    checkVisibility();
-  }, []);
+    }, 200);
+    return () => clearInterval(interval);
+  }, [router.pathname]);
+
+  // Inline styles so nothing gets Tailwind-purged
+  const userSectionStyle = {
+    display: 'flex',
+    alignItems: 'center',
+    gap: 12,
+    opacity: userVisible ? 1 : 0,
+    transform: userVisible ? 'translateX(0)' : 'translateX(16px)',
+    transition: 'opacity 0.6s ease, transform 0.6s ease',
+    pointerEvents: userVisible ? 'auto' : 'none',
+    willChange: 'opacity, transform',
+  };
 
   return (
     <header className="sticky top-0 z-40 bg-gsrp-dark/80 backdrop-blur-xl border-b border-gsrp-dark-border/50 px-4 md:px-6 py-3 flex items-center justify-between">
@@ -46,7 +58,7 @@ export default function TopBar({ onMenuClick }) {
       </div>
 
       {session?.user && (
-        <div className={`flex items-center gap-3 transition-all duration-700 ${isVisible ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-4 pointer-events-none'}`}>
+        <div style={userSectionStyle}>
           <div className="text-right hidden sm:block">
             <p className="text-white text-sm font-semibold">{session.user.name}</p>
             <p className="text-[10px] text-gsrp-teal-light/40 font-bold uppercase tracking-wider">{session.user.displayRole}</p>
@@ -70,4 +82,3 @@ export default function TopBar({ onMenuClick }) {
     </header>
   );
 }
-
