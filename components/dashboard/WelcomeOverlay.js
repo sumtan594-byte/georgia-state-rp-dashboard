@@ -24,14 +24,14 @@ export default function WelcomeOverlay({ onComplete }) {
   const [visible, setVisible] = useState(true);
 
   const overlayRef = useRef(null);
-  const bgRef = useRef(null);
+  const bgRef      = useRef(null);
   const contentRef = useRef(null);
 
   useEffect(() => {
     if (!session) return;
 
     const overlay = overlayRef.current;
-    const bg = bgRef.current;
+    const bg      = bgRef.current;
     const content = contentRef.current;
     if (!overlay || !bg || !content) return;
 
@@ -42,8 +42,8 @@ export default function WelcomeOverlay({ onComplete }) {
     const t1 = setTimeout(() => {
       requestAnimationFrame(() => {
         content.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-        content.style.opacity = '1';
-        content.style.transform = 'scale(1) translateY(0)';
+        content.style.opacity    = '1';
+        content.style.transform  = 'scale(1) translateY(0)';
       });
     }, 80);
 
@@ -55,20 +55,20 @@ export default function WelcomeOverlay({ onComplete }) {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           // Overlay background fades to transparent
-          overlay.style.transition = 'background-color 0.5s ease';
-          overlay.style.backgroundColor = 'transparent';
-          overlay.style.pointerEvents = 'none';
+          overlay.style.transition       = 'background-color 0.5s ease';
+          overlay.style.backgroundColor  = 'transparent';
+          overlay.style.pointerEvents    = 'none';
 
           // Background image fades out
           bg.style.transition = 'opacity 0.6s ease';
-          bg.style.opacity = '0';
+          bg.style.opacity    = '0';
 
           // Content glides to the top-right corner (where TopBar user info lives)
           content.style.transition = [
             'opacity   0.55s cubic-bezier(0.4, 0, 0.2, 1)',
             'transform 0.80s cubic-bezier(0.4, 0, 0.2, 1)',
           ].join(', ');
-          content.style.opacity = '0';
+          content.style.opacity   = '0';
           content.style.transform = 'scale(0.35) translate(38vw, -48vh)';
         });
       });

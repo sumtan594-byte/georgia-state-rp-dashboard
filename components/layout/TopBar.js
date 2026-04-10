@@ -34,8 +34,8 @@ export default function TopBar({ onMenuClick }) {
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-          el.style.opacity = '1';
-          el.style.transform = 'translateX(0)';
+          el.style.opacity    = '1';
+          el.style.transform  = 'translateX(0)';
         });
       });
     };
