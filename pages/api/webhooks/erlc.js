@@ -77,20 +77,29 @@ export default async function handler(req, res) {
           console.log('[ERLC Webhook] Command:', command, 'Argument:', argument);
 
           if (command.toLowerCase() === 'report') {
-            const target = argument.split(' ')[0] || 'Unknown';
-            const reason = argument.split(' ').slice(1).join(' ') || 'No reason provided';
-            const reporter = player.split(':')[0] || player;
+            console.log('[ERLC Webhook] REPORT DETECTED!');
+
+            const parts = argument.split(' ');
+            const target = parts[0] || 'Unknown';
+            const reason = parts.slice(1).join(' ') || 'No reason provided';
+            const reporter = player; // player is just username here
+
+            console.log('[ERLC Webhook] Reporter:', reporter, 'Target:', target, 'Reason:', reason);
 
             const payload = {
               content: `REPORT_DATA:${reporter}:${target}:${reason}`,
               allowed_mentions: { parse: [] }
             };
 
-            await fetch(TARGET_WEBHOOK_URL, {
+            console.log('[ERLC Webhook] Sending to Discord:', JSON.stringify(payload));
+
+            const discordRes = await fetch(TARGET_WEBHOOK_URL, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(payload)
             });
+
+            console.log('[ERLC Webhook] Discord response:', discordRes.status);
 
             console.log(`[ERLC Webhook] Forwarded report from ${reporter} against ${target}`);
           }
