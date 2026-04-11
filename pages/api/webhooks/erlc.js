@@ -68,8 +68,8 @@ export default async function handler(req, res) {
       for (const evt of data.events) {
         console.log('[ERLC Webhook] Event:', evt.event);
 
-        // Handle Chat events (commands starting with ;)
-        if (evt.event === 'Chat') {
+        // Handle CustomCommand events (commands starting with ;)
+        if (evt.event === 'CustomCommand') {
           const msg = evt.data?.message || '';
           const player = evt.data?.player || '';
 
