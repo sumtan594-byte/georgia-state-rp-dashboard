@@ -61,7 +61,10 @@ export default async function handler(req, res) {
 
     // 4. Parse and Process Data
     const data = JSON.parse(rawBody.toString());
-    console.log('[ERLC Webhook] Received:', JSON.stringify(data));
+    console.log('[ERLC Webhook] Raw body:', rawBody.toString());
+    console.log('[ERLC Webhook] Parsed data:', JSON.stringify(data));
+    console.log('[ERLC Webhook] Message:', data.Message);
+    console.log('[ERLC Webhook] Type:', data.Type);
 
     if (data.Type === 'Chat' && data.Message?.toLowerCase().startsWith(';report')) {
       const parts = data.Message.split(' ');
