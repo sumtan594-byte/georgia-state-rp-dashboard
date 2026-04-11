@@ -73,8 +73,11 @@ export default async function handler(req, res) {
           const command = evt.data?.command || '';
           const argument = evt.data?.argument || '';
           const player = evt.data?.player || '';
+          const origin = evt.data?.origin || '';
 
-          console.log('[ERLC Webhook] Command:', command, 'Argument:', argument);
+          console.log('[ERLC Webhook] Full CustomCommand data:', JSON.stringify(evt.data));
+
+          if (command.toLowerCase() === 'report') {
 
           if (command.toLowerCase() === 'report') {
             console.log('[ERLC Webhook] REPORT DETECTED!');
@@ -107,10 +110,15 @@ export default async function handler(req, res) {
           if (command.toLowerCase() === 'kick') {
             console.log('[ERLC Webhook] KICK DETECTED!');
 
+            // Player info might be in origin (Roblox user ID) or player field
+            const playerId = evt.data?.origin || evt.data?.player || '';
+            const argument = evt.data?.argument || '';
+            
             const parts = argument.split(' ');
             const target = parts[0] || 'Unknown';
             const reason = parts.slice(1).join(' ') || '';
-            const commandUser = player;
+            // For now use the origin/userId as identifier since player name may be missing
+            const commandUser = playerId || 'Unknown';
 
             console.log('[ERLC Webhook] CommandUser:', commandUser, 'Target:', target, 'Reason:', reason);
 
