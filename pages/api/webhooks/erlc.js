@@ -91,40 +91,13 @@ export default async function handler(req, res) {
           const origin = evt.data?.origin || '';
 
           console.log('[ERLC Webhook] Full CustomCommand data:', JSON.stringify(evt.data));
-
-          if (command.toLowerCase() === 'report') {
-            console.log('[ERLC Webhook] REPORT DETECTED!');
-
-            const parts = argument.split(' ');
-            const target = parts[0] || 'Unknown';
-            const reason = parts.slice(1).join(' ') || 'No reason provided';
-            const reporter = player;
-
-            console.log('[ERLC Webhook] Reporter:', reporter, 'Target:', target, 'Reason:', reason);
-
-            const payload = {
-              content: `REPORT_DATA:${reporter}:${target}:${reason}`,
-              allowed_mentions: { parse: [] }
-            };
-
-            console.log('[ERLC Webhook] Sending to Discord:', JSON.stringify(payload));
-
-            const discordRes = await fetch(TARGET_WEBHOOK_URL, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(payload)
-            });
-
-            console.log('[ERLC Webhook] Discord response:', discordRes.status);
-
-            console.log(`[ERLC Webhook] Forwarded report from ${reporter} against ${target}`);
-          }
+          console.log('[ERLC Webhook] Event origin:', evt.origin);
 
           if (command.toLowerCase() === 'kick') {
             console.log('[ERLC Webhook] KICK DETECTED!');
 
-            // origin is the Roblox user ID
-            const playerId = evt.data?.origin || '';
+            // origin is at event level, not inside data
+            const playerId = evt.origin || '';
             const argument = evt.data?.argument || '';
             
             const parts = argument.split(' ');
