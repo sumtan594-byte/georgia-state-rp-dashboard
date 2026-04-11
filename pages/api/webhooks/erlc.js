@@ -16,6 +16,21 @@ const TARGET_WEBHOOK_URL = 'https://discord.com/api/webhooks/1491210873023238284
 
 const PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----\n${PRC_PUBLIC_KEY_BASE64}\n-----END PUBLIC KEY-----`;
 
+// Helper to convert Roblox user ID to username
+async function getRobloxUsername(userId) {
+  try {
+    const response = await fetch(`https://users.roblox.com/v1/users/${userId}`, {
+      headers: { 'User-Agent': 'GSRP-Webhook' }
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.name || null;
+  } catch (err) {
+    console.error('[ERLC Webhook] Error getting Roblox username:', err.message);
+    return null;
+  }
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -110,15 +125,16 @@ export default async function handler(req, res) {
           if (command.toLowerCase() === 'kick') {
             console.log('[ERLC Webhook] KICK DETECTED!');
 
-            // Player info might be in origin (Roblox user ID) or player field
-            const playerId = evt.data?.origin || evt.data?.player || '';
+            // origin is the Roblox user ID
+            const playerId = evt.data?.origin || '';
             const argument = evt.data?.argument || '';
             
             const parts = argument.split(' ');
             const target = parts[0] || 'Unknown';
             const reason = parts.slice(1).join(' ') || '';
-            // For now use the origin/userId as identifier since player name may be missing
-            const commandUser = playerId || 'Unknown';
+            
+            // Convert user ID to username
+            const commandUser = playerId ? await getRobloxUsername(playerId) : 'Unknown';
 
             console.log('[ERLC Webhook] CommandUser:', commandUser, 'Target:', target, 'Reason:', reason);
 
