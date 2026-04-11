@@ -61,30 +61,58 @@ export default async function handler(req, res) {
 
     // 4. Parse and Process Data
     const data = JSON.parse(rawBody.toString());
-    console.log('[ERLC Webhook] Raw body:', rawBody.toString());
     console.log('[ERLC Webhook] Parsed data:', JSON.stringify(data));
-    console.log('[ERLC Webhook] Message:', data.Message);
-    console.log('[ERLC Webhook] Type:', data.Type);
 
-    if (data.Type === 'Chat' && data.Message?.toLowerCase().startsWith(';report')) {
-      const parts = data.Message.split(' ');
-      const target = parts[1] || 'Unknown';
-      const reason = parts.slice(2).join(' ') || 'No reason provided';
-      const reporter = data.Player.split(':')[0] || data.Player;
+    // Handle events array - each event has .event type
+    if (data.events && Array.isArray(data.events)) {
+      for (const evt of data.events) {
+        console.log('[ERLC Webhook] Event:', evt.event);
 
-      // Forward to Discord for bot to pick up
-      const payload = {
-        content: `REPORT_DATA:${reporter}:${target}:${reason}`,
-        allowed_mentions: { parse: [] }
-      };
+        // Handle Chat events (commands starting with ;)
+        if (evt.event === 'Chat') {
+          const msg = evt.data?.message || '';
+          const player = evt.data?.player || '';
 
-      await fetch(TARGET_WEBHOOK_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      
-      console.log(`[ERLC Webhook] Forwarded report from ${reporter} against ${target}`);
+          if (msg.toLowerCase().startsWith(';report')) {
+            const parts = msg.split(' ');
+            const target = parts[1] || 'Unknown';
+            const reason = parts.slice(2).join(' ') || 'No reason provided';
+            const reporter = player.split(':')[0] || player;
+
+            const payload = {
+              content: `REPORT_DATA:${reporter}:${target}:${reason}`,
+              allowed_mentions: { parse: [] }
+            };
+
+            await fetch(TARGET_WEBHOOK_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            console.log(`[ERLC Webhook] Forwarded report from ${reporter} against ${target}`);
+          }
+        }
+
+        // Handle Emergency Calls
+        if (evt.event === 'EmergencyCallStarted') {
+          const callData = evt.data;
+          console.log('[ERLC Webhook] Emergency call:', callData);
+
+          const payload = {
+            content: `🚨 EMERGENCY CALL\nCall #: ${callData.callNumber}\nTeam: ${callData.team}\nLocation: ${callData.positionDescriptor}\nDescription: ${callData.description}`,
+            allowed_mentions: { parse: [] }
+          };
+
+          await fetch(TARGET_WEBHOOK_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+          });
+
+          console.log(`[ERLC Webhook] Forwarded emergency call ${callData.callNumber}`);
+        }
+      }
     }
 
     return res.status(200).json({ success: true });
