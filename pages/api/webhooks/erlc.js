@@ -104,25 +104,6 @@ export default async function handler(req, res) {
             console.log(`[ERLC Webhook] Forwarded report from ${reporter} against ${target}`);
           }
         }
-
-        // Handle Emergency Calls
-        if (evt.event === 'EmergencyCallStarted') {
-          const callData = evt.data;
-          console.log('[ERLC Webhook] Emergency call:', callData);
-
-          const payload = {
-            content: `🚨 EMERGENCY CALL\nCall #: ${callData.callNumber}\nTeam: ${callData.team}\nLocation: ${callData.positionDescriptor}\nDescription: ${callData.description}`,
-            allowed_mentions: { parse: [] }
-          };
-
-          await fetch(TARGET_WEBHOOK_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(payload)
-          });
-
-          console.log(`[ERLC Webhook] Forwarded emergency call ${callData.callNumber}`);
-        }
       }
     }
 
