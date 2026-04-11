@@ -158,6 +158,42 @@ export default async function handler(req, res) {
 
             console.log(`[ERLC Webhook] Forwarded ban command from ${commandUser} for ${target}`);
           }
+
+          if (command.toLowerCase() === 'pm') {
+            console.log('[ERLC Webhook] PM STAFF DETECTED!');
+
+            const playerId = evt.origin || '';
+            const argument = evt.data?.argument || '';
+            
+            // Check if it's "staff" command
+            const parts = argument.split(' ');
+            if (parts[0]?.toLowerCase() !== 'staff') {
+                console.log('[ERLC Webhook] Not a staff pm command, skipping');
+                return;
+            }
+            
+            const content = parts.slice(1).join(' ') || '';
+            const commandUser = playerId ? await getRobloxUsername(playerId) : 'Unknown';
+
+            console.log('[ERLC Webhook] CommandUser:', commandUser, 'Content:', content);
+
+            const payload = {
+              content: `PMSTAFF_DATA:${commandUser}:${content}`,
+              allowed_mentions: { parse: [] }
+            };
+
+            console.log('[ERLC Webhook] Sending pm staff to Discord:', JSON.stringify(payload));
+
+            const discordRes = await fetch(TARGET_WEBHOOK_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            console.log('[ERLC Webhook] Discord response:', discordRes.status);
+
+            console.log(`[ERLC Webhook] Forwarded pm staff command from ${commandUser}`);
+          }
         }
       }
     }
