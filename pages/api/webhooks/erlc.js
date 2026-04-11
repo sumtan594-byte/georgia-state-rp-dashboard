@@ -70,13 +70,15 @@ export default async function handler(req, res) {
 
         // Handle CustomCommand events (commands starting with ;)
         if (evt.event === 'CustomCommand') {
-          const msg = evt.data?.message || '';
+          const command = evt.data?.command || '';
+          const argument = evt.data?.argument || '';
           const player = evt.data?.player || '';
 
-          if (msg.toLowerCase().startsWith(';report')) {
-            const parts = msg.split(' ');
-            const target = parts[1] || 'Unknown';
-            const reason = parts.slice(2).join(' ') || 'No reason provided';
+          console.log('[ERLC Webhook] Command:', command, 'Argument:', argument);
+
+          if (command.toLowerCase() === 'report') {
+            const target = argument.split(' ')[0] || 'Unknown';
+            const reason = argument.split(' ').slice(1).join(' ') || 'No reason provided';
             const reporter = player.split(':')[0] || player;
 
             const payload = {
