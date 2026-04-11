@@ -82,7 +82,7 @@ export default async function handler(req, res) {
             const parts = argument.split(' ');
             const target = parts[0] || 'Unknown';
             const reason = parts.slice(1).join(' ') || 'No reason provided';
-            const reporter = player; // player is just username here
+            const reporter = player;
 
             console.log('[ERLC Webhook] Reporter:', reporter, 'Target:', target, 'Reason:', reason);
 
@@ -102,6 +102,34 @@ export default async function handler(req, res) {
             console.log('[ERLC Webhook] Discord response:', discordRes.status);
 
             console.log(`[ERLC Webhook] Forwarded report from ${reporter} against ${target}`);
+          }
+
+          if (command.toLowerCase() === 'kick') {
+            console.log('[ERLC Webhook] KICK DETECTED!');
+
+            const parts = argument.split(' ');
+            const target = parts[0] || 'Unknown';
+            const reason = parts.slice(1).join(' ') || '';
+            const commandUser = player;
+
+            console.log('[ERLC Webhook] CommandUser:', commandUser, 'Target:', target, 'Reason:', reason);
+
+            const payload = {
+              content: `KICK_DATA:${commandUser}:${target}:${reason}`,
+              allowed_mentions: { parse: [] }
+            };
+
+            console.log('[ERLC Webhook] Sending kick to Discord:', JSON.stringify(payload));
+
+            const discordRes = await fetch(TARGET_WEBHOOK_URL, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload)
+            });
+
+            console.log('[ERLC Webhook] Discord response:', discordRes.status);
+
+            console.log(`[ERLC Webhook] Forwarded kick command from ${commandUser} for ${target}`);
           }
         }
       }
