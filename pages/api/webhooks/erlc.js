@@ -93,8 +93,6 @@ export default async function handler(req, res) {
           console.log('[ERLC Webhook] Full CustomCommand data:', JSON.stringify(evt.data));
 
           if (command.toLowerCase() === 'report') {
-
-          if (command.toLowerCase() === 'report') {
             console.log('[ERLC Webhook] REPORT DETECTED!');
 
             const parts = argument.split(' ');
