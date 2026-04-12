@@ -61,6 +61,15 @@ export default function VerifyPage() {
     if (codeHandledRef.current) return;
     codeHandledRef.current = true;
 
+    // Double-submit guard - store pending code to prevent race conditions
+    const pendingKey = `verify_pending:${discordId}:${code}`;
+    if (global.pendingVerifications?.has(pendingKey)) {
+      console.log('[verify] Duplicate request detected, ignoring');
+      return;
+    }
+    if (!global.pendingVerifications) global.pendingVerifications = new Set();
+    global.pendingVerifications.add(pendingKey);
+
     setStatus('loading');
 
     const controller = new AbortController();
@@ -93,12 +102,17 @@ export default function VerifyPage() {
         
         // Re-check linking after successful verification
         checkLinking();
+        
+        // Clear pending guard
+        global.pendingVerifications?.delete(pendingKey);
       } else {
         throw new Error(data?.error || 'An unexpected error occurred.');
       }
     })
     .catch(err => {
       clearTimeout(timeout);
+      // Clear pending guard on error too
+      global.pendingVerifications?.delete(pendingKey);
       if (err.name !== 'AbortError') {
         setStatus('error');
         setMessage(err.message || 'An unexpected error occurred.');

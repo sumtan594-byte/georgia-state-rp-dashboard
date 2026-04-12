@@ -171,6 +171,22 @@ export default async function handler(req, res) {
     const cleanId = discordId.trim();
     const cleanCode = authCode.trim();
 
+    // In-flight deduplication: prevent duplicate processing within same request window
+    const inFlightKey = `inflight:${cleanId}:${cleanCode}`;
+    if (!global.inFlightRequests) global.inFlightRequests = new Map();
+    
+    if (global.inFlightRequests.has(inFlightKey)) {
+        console.log('[forward] Duplicate in-flight request detected, returning early');
+        return res.status(200).json({ 
+            success: true,
+            message: 'Request already being processed'
+        });
+    }
+    global.inFlightRequests.set(inFlightKey, true);
+    
+    // Clean up after response
+    const cleanupInFlight = () => global.inFlightRequests?.delete(inFlightKey);
+
     // Rate limiting check (simple in-memory, consider Redis for production)
     const rateLimitKey = `ratelimit:${cleanId}`;
     const now = Date.now();
@@ -190,6 +206,7 @@ export default async function handler(req, res) {
 
     if (rateLimitEntry.count >= rateLimitMax) {
         const retryAfter = Math.ceil((rateLimitEntry.resetAt - now) / 1000);
+        cleanupInFlight();
         await sendLog(fetchFn, DISCORD_LOG_WEBHOOK_URL, {
             type: 'ratelimit',
             discordId: cleanId,
@@ -242,6 +259,7 @@ export default async function handler(req, res) {
             
             // Handle specific error codes
             if (webhookRes.status === 404) {
+                cleanupInFlight();
                 await sendLog(fetchFn, DISCORD_LOG_WEBHOOK_URL, {
                     type: 'failure',
                     discordId: cleanId,
@@ -257,6 +275,7 @@ export default async function handler(req, res) {
             if (webhookRes.status === 429) {
                 const retryData = await webhookRes.json().catch(() => ({}));
                 const retryAfter = retryData.retry_after || 5;
+                cleanupInFlight();
                 await sendLog(fetchFn, DISCORD_LOG_WEBHOOK_URL, {
                     type: 'failure',
                     discordId: cleanId,
@@ -278,6 +297,7 @@ export default async function handler(req, res) {
                 detail: `Main webhook returned HTTP ${webhookRes.status}`,
                 extra: errText.substring(0, 512),
             });
+            cleanupInFlight();
             return res.status(502).json({
                 success: false,
                 error: 'Failed to reach the Discord bot. Please try again in a moment.'
@@ -285,6 +305,7 @@ export default async function handler(req, res) {
         }
 
         // Success
+        cleanupInFlight();
         await sendLog(fetchFn, DISCORD_LOG_WEBHOOK_URL, {
             type: 'success',
             discordId: cleanId,
@@ -301,6 +322,7 @@ export default async function handler(req, res) {
         
         // Handle timeout errors
         if (err.name === 'TimeoutError' || err.message.includes('timeout')) {
+            cleanupInFlight();
             await sendLog(fetchFn, DISCORD_LOG_WEBHOOK_URL, {
                 type: 'error',
                 discordId: cleanId,
@@ -316,6 +338,7 @@ export default async function handler(req, res) {
 
         // Handle network errors
         if (err.name === 'FetchError' || err.message.includes('fetch')) {
+            cleanupInFlight();
             await sendLog(fetchFn, DISCORD_LOG_WEBHOOK_URL, {
                 type: 'error',
                 discordId: cleanId,
@@ -329,6 +352,7 @@ export default async function handler(req, res) {
             });
         }
 
+        cleanupInFlight();
         await sendLog(fetchFn, DISCORD_LOG_WEBHOOK_URL, {
             type: 'error',
             discordId: cleanId,
