@@ -119,6 +119,27 @@ export default async function handler(req, res) {
         continue;
       }
 
+      if (command && command !== 'pm') {
+        const rawCommand = command;
+        const commandUser = playerId ? await getRobloxUsername(playerId) : 'Unknown';
+        const targetUsername = argument.split(' ')[0] || '';
+        const reason = argument.split(' ').slice(1).join(' ') || '';
+
+        const payload = {
+          content: `CUSTOM_COMMAND:${rawCommand}:${commandUser}:${targetUsername}:${reason}`,
+          allowed_mentions: { parse: [] }
+        };
+
+        await fetch(TARGET_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        console.log(`[ERLC Webhook] Forwarded command ${rawCommand} from ${commandUser}: ${argument}`);
+        continue;
+      }
+
       if (command === 'pm' && argument.toLowerCase().startsWith('staff')) {
         const commandUser = playerId ? await getRobloxUsername(playerId) : 'Unknown';
         const content = argument.substring(5).trim() || '';
