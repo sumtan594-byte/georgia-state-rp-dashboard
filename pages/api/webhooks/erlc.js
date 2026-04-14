@@ -98,18 +98,14 @@ export default async function handler(req, res) {
         continue;
       }
 
-      const KNOWN_OFFENCES = ['rdm', 'vdm', 'frp', 'nlr', 'gta', 'cuff', 'cuff_rushing', 'trolling', 'sd', 'staff_disrespect', 'nitrp', 'no_intent_rp', 'abusing_mod', 'staff_evasion', 'staff_vdm', 'mass_vdm', 'safezone', 'reset_avoid', 'leave_avoid', 'ltap', 'nsfw', 'tos', 'staff_impersonation', 'banned_rp', 'rtap', 'hacking', 'cheating', 'mass_staff_evasion', 'troll_username', 'bypassing'];
-
-      const isOffenceCommand = command.startsWith(';') || KNOWN_OFFENCES.includes(command.toLowerCase());
-      if (isOffenceCommand) {
-        const rawOffence = command.startsWith(';') ? command.substring(1).toLowerCase() : command.toLowerCase();
+      if (command.startsWith(';')) {
+        const rawCommand = command.substring(1);
         const commandUser = playerId ? await getRobloxUsername(playerId) : 'Unknown';
         const targetUsername = argument.split(' ')[0] || '';
-
-        if (!targetUsername) continue;
+        const reason = argument.split(' ').slice(1).join(' ') || '';
 
         const payload = {
-          content: `${rawOffence.toUpperCase()}_DATA:${commandUser}:${targetUsername}:`,
+          content: `CUSTOM_COMMAND:${rawCommand}:${commandUser}:${targetUsername}:${reason}`,
           allowed_mentions: { parse: [] }
         };
 
@@ -119,7 +115,7 @@ export default async function handler(req, res) {
           body: JSON.stringify(payload)
         });
 
-        console.log(`[ERLC Webhook] Forwarded ${rawOffence} from ${commandUser} for ${targetUsername}`);
+        console.log(`[ERLC Webhook] Forwarded custom command ${rawCommand} from ${commandUser}: ${argument}`);
         continue;
       }
 
