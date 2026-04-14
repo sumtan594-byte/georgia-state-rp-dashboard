@@ -98,8 +98,11 @@ export default async function handler(req, res) {
         continue;
       }
 
-      if (command.startsWith(';')) {
-        const rawOffence = command.substring(1).toLowerCase();
+      const KNOWN_OFFENCES = ['rdm', 'vdm', 'frp', 'nlr', 'gta', 'cuff', 'cuff_rushing', 'trolling', 'sd', 'staff_disrespect', 'nitrp', 'no_intent_rp', 'abusing_mod', 'staff_evasion', 'staff_vdm', 'mass_vdm', 'safezone', 'reset_avoid', 'leave_avoid', 'ltap', 'nsfw', 'tos', 'staff_impersonation', 'banned_rp', 'rtap', 'hacking', 'cheating', 'mass_staff_evasion', 'troll_username', 'bypassing'];
+
+      const isOffenceCommand = command.startsWith(';') || KNOWN_OFFENCES.includes(command.toLowerCase());
+      if (isOffenceCommand) {
+        const rawOffence = command.startsWith(';') ? command.substring(1).toLowerCase() : command.toLowerCase();
         const commandUser = playerId ? await getRobloxUsername(playerId) : 'Unknown';
         const targetUsername = argument.split(' ')[0] || '';
 
