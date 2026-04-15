@@ -56,14 +56,14 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
     const publicRoutes = ['/verify', '/privacy-policy', '/terms-of-service', '/login'];
     const isPublicPage = publicRoutes.includes(router.pathname);
     
-    if (!isPublicPage && !localStorage.getItem('hasSeenWelcome')) {
+    if (!isPublicPage && !sessionStorage.getItem('hasSeenWelcome')) {
       setShowWelcome(true);
     }
   }, [router.pathname]);
 
   const handleWelcomeComplete = () => {
     setShowWelcome(false);
-    localStorage.setItem('hasSeenWelcome', 'true');
+    sessionStorage.setItem('hasSeenWelcome', 'true');
   };
 
   const publicRoutes = ['/verify', '/privacy-policy', '/terms-of-service', '/login'];
