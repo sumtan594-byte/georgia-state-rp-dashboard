@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from 'next/router';
 import Sidebar from "../components/layout/Sidebar";
 import TopBar from "../components/layout/TopBar";
+import WelcomeScreen from "../components/auth/WelcomeScreen";
 
 function DebugSessionLogger() {
   const { status, data } = useSession();
@@ -13,69 +14,19 @@ function DebugSessionLogger() {
   return null;
 }
 
-export default function App({ Component, pageProps: { session, ...pageProps } }) {
-  const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const publicRoutes = ['/verify', '/privacy-policy', '/terms-of-service', '/login'];
-  const isPublicPage = publicRoutes.includes(router.pathname);
-
-  if (!mounted) {
-    return (
-      <SessionProvider session={session}>
-        <DebugSessionLogger />
-        <div className="min-h-screen relative">
-          <div className="fixed inset-0 z-0">
-            <img src="https://i.imgur.com/QVVQSK2.png" alt="" className="w-full h-full object-cover" aria-hidden="true" />
-            <div className="absolute inset-0 bg-gsrp-dark/80" />
-          </div>
-          <div className="relative z-10 flex min-h-screen">
-            <div className="hidden md:block flex-shrink-0 transition-all duration-300 w-64">
-              <Sidebar open={true} onToggle={() => setSidebarOpen(false)} />
-            </div>
-            <div className="flex-1 flex flex-col min-w-0">
-              <TopBar onMenuClick={() => setSidebarOpen(false)} />
-              <main className="flex-1 p-4 md:p-6 lg:p-8">
-                <Component {...pageProps} />
-              </main>
-            </div>
-          </div>
-        </div>
-      </SessionProvider>
-    );
-  }
-
-  if (isPublicPage) {
-    return (
-      <SessionProvider session={session}>
-        <DebugSessionLogger />
-        <div className="min-h-screen relative">
-          <div className="fixed inset-0 z-0">
-            <img src="https://i.imgur.com/QVVQSK2.png" alt="" className="w-full h-full object-cover" aria-hidden="true" />
-            <div className="absolute inset-0 bg-gsrp-dark/80" />
-          </div>
-          <div className="relative z-10">
-            <Component {...pageProps} />
-          </div>
-        </div>
-      </SessionProvider>
-    );
-  }
-
+function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPublicPage }) {
   return (
-    <SessionProvider session={session}>
-      <DebugSessionLogger />
-      <div className="min-h-screen relative">
-        <div className="fixed inset-0 z-0">
-          <img src="https://i.imgur.com/QVVQSK2.png" alt="" className="w-full h-full object-cover" aria-hidden="true" />
-          <div className="absolute inset-0 bg-gsrp-dark/80" />
-        </div>
+    <div className="min-h-screen relative">
+      <div className="fixed inset-0 z-0">
+        <img src="https://i.imgur.com/QVVQSK2.png" alt="" className="w-full h-full object-cover" aria-hidden="true" />
+        <div className="absolute inset-0 bg-gsrp-dark/80" />
+      </div>
 
+      {isPublicPage ? (
+        <div className="relative z-10">
+          <Component {...pageProps} />
+        </div>
+      ) : (
         <div className="relative z-10 flex min-h-screen">
           <div className={`hidden md:block flex-shrink-0 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-[72px]'}`}>
             <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
@@ -88,7 +39,56 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
             </main>
           </div>
         </div>
-      </div>
+      )}
+    </div>
+  );
+}
+
+export default function App({ Component, pageProps: { session, ...pageProps } }) {
+  const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    // Only show welcome animation if we are on a private page and the user is logged in
+    const publicRoutes = ['/verify', '/privacy-policy', '/terms-of-service', '/login'];
+    const isPublicPage = publicRoutes.includes(router.pathname);
+    
+    if (!isPublicPage && !localStorage.getItem('hasSeenWelcome')) {
+      setShowWelcome(true);
+    }
+  }, [router.pathname]);
+
+  const handleWelcomeComplete = () => {
+    setShowWelcome(false);
+    localStorage.setItem('hasSeenWelcome', 'true');
+  };
+
+  const publicRoutes = ['/verify', '/privacy-policy', '/terms-of-service', '/login'];
+  const isPublicPage = publicRoutes.includes(router.pathname);
+
+  if (!mounted) return null;
+
+  return (
+    <SessionProvider session={session}>
+      <DebugSessionLogger />
+      
+      {showWelcome && (
+        <WelcomeScreen 
+          session={session} 
+          onComplete={handleWelcomeComplete} 
+        />
+      )}
+
+      <AppContent 
+        Component={Component} 
+        pageProps={pageProps} 
+        sidebarOpen={sidebarOpen} 
+        setSidebarOpen={setSidebarOpen} 
+        isPublicPage={isPublicPage} 
+      />
     </SessionProvider>
   );
 }
