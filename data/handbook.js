@@ -221,10 +221,50 @@ From SHR to HR:
   },
   {
     id: "chapter-11",
-    title: "Chapter 11: Retirement",
+    title: "Chapter 11: In Game Custom Commands",
     sections: [
       {
         id: "11.1",
+        title: "Command Reference",
+        content: `
+| Command Name | Trigger | 1st Offense | 2nd Offense | 3rd Offense |
+| :--- | :--- | :--- | :--- | :--- |
+| **Random Death Match** | \`;rdm\` | Warning | Kick | Ban |
+| **Vehicle Death Match** | \`;vdm\` | Warning | Kick | Ban |
+| **Failing to Roleplay** | \`;frp\` | Warning | Kick | Ban |
+| **New Life Rule** | \`;nlr\` | Warning | Kick | Ban |
+| **GTA Driving** | \`;gta\` | Warning | Kick | Ban |
+| **Cuff Rushing** | \`;cuff\` or \`;cuff_rushing\` | Kick | Ban | — |
+| **Trolling** | \`;trolling\` or \`;troll\` | Kick | Ban | — |
+| **Staff Disrespect** | \`;sd\` or \`;staff_disrespect\` | Warning | Kick | Ban |
+| **No Intent to Roleplay** | \`;nitrp\`, \`;nointent\`, or \`;no-intent\` | Warning | Kick | Ban |
+| **Abusing !mod System** | \`;abusing_mod\` or \`;abuse_mod\` | Verbal Warning | Warning | Kick |
+| **Staff Evasion** | \`;staff_evasion\` or \`;evasion\` | Kick | Ban | — |
+| **Staff VDM / RDM** | \`;staff_vdm\` or \`;svdm\` | Kick | Ban | — |
+| **Mass VDM / RDM** | \`;mass_vdm\` | Ban | — | — |
+| **Safezone RDM / VDM** | \`;safezone\` | Kick | Ban | — |
+| **Reset to Avoid Punishment** | \`;reset_avoid\` or \`;rtap\` | Ban | — | — |
+| **Leaving to Avoid Punishment** | \`;leave_avoid\` or \`;ltap\` | Ban | — | — |
+| **Not Safe for Work** | \`;nsfw\` | Ban | — | — |
+| **Terms of Service** | \`;tos\` | Ban | — | — |
+| **Staff Impersonation** | \`;staff_impersonation\` | Ban | — | — |
+| **Banned Roleplays** | \`;banned_rp\` | Ban | — | — |
+| **RTAP / ST-TAP** | \`;rtap\` | Ban | — | — |
+| **Cheating / Exploiting** | \`;hacking\` or \`;cheating\` | Ban | — | — |
+| **Mass Staff Evasion** | \`;mass_staff_evasion\` | Ban | — | — |
+| **Troll Username** | \`;troll_username\` | Ban | — | — |
+| **Bypassing** | \`;bypassing\` | Ban | — | — |
+| **Tool Abuse** | \`;ta\` or \`;tool\` | Kick | Ban | Ban |
+| **Unrealistic Avatar** | \`;unrealistic\` or \`;avatar\` | Kick | Ban | — |`
+      }
+    ]
+  },
+  {
+    id: "chapter-12",
+    title: "Chapter 12: Retirement",
+    sections: [
+      {
+        id: "12.1",
         title: "Return Policy",
         content: "If you retire and want to come back, well, this is for you! You may come back, but be aware that depending on how long you have retired for you will be demoted accordingly.\n- Retired for under a week: 1 rank demotion.\n- Retired for over a week: 2 rank demotion.\n- Retired for over 3 weeks: 3 rank demotion.\n- Retired for over a month: Back to Junior Mod."
       }
