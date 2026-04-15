@@ -1,5 +1,6 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { Loader2, BookOpen, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import LoginScreen from '../../components/auth/LoginScreen';
@@ -132,7 +133,19 @@ Appeal Windows:
 
 export default function HandbookPage() {
   const { data: session, status } = useSession();
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState('overview');
+
+  useEffect(() => {
+    // Handle URL hash on page load
+    const hash = router.asPath.split('#')[1];
+    if (hash && sections.find(s => s.id === hash)) {
+      setActiveSection(hash);
+      setTimeout(() => {
+        document.getElementById('hb-' + hash)?.scrollIntoView({ behavior: 'smooth' });
+      }, 100);
+    }
+  }, [router.asPath]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -184,6 +197,7 @@ export default function HandbookPage() {
                   key={s.id}
                   onClick={() => {
                     setActiveSection(s.id);
+                    router.push(router.asPath.split('#')[0] + '#' + s.id, undefined, { shallow: true });
                     document.getElementById('hb-' + s.id)?.scrollIntoView({ behavior: 'smooth' });
                   }}
                   className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer ${
@@ -205,7 +219,18 @@ export default function HandbookPage() {
             const content = handbookContent[s.id];
             if (!content) return null;
             return (
-              <div key={s.id} id={'hb-' + s.id} className="card-glass rounded-2xl p-6 scroll-mt-24">
+              <div key={s.id} id={'hb-' + s.id} className="card-glass rounded-2xl p-6 scroll-mt-24 relative group">
+                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <button
+                    onClick={() => {
+                      const url = window.location.origin + '/training/handbook#' + s.id;
+                      navigator.clipboard.writeText(url);
+                    }}
+                    className="text-xs text-gsrp-teal-light/40 hover:text-gsrp-teal-light px-2 py-1 rounded bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50"
+                  >
+                    Copy Link
+                  </button>
+                </div>
                 <div className="text-[10px] font-black text-gsrp-teal-light/30 uppercase tracking-widest mb-1">{s.num}</div>
                 <h2 className="text-white font-bold text-lg mb-4 pb-3 border-b border-gsrp-dark-border/50">{s.title}</h2>
                 <div className="text-gsrp-teal-light/60 text-sm leading-relaxed whitespace-pre-line">{content.content}</div>
