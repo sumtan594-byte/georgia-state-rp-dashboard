@@ -1,20 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 
-export default function WelcomeScreen({ session, onComplete }) {
+export default function WelcomeScreen({ onComplete }) {
+  const { data: session, status } = useSession();
   const [stage, setStage] = useState('welcome'); // 'welcome' -> 'gliding' -> 'complete'
 
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setStage('gliding');
-      setTimeout(() => {
-        onComplete();
-      }, 1000);
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [onComplete]);
+    if (status === 'authenticated') {
+      const timer = setTimeout(() => {
+        setStage('gliding');
+        setTimeout(() => {
+          onComplete();
+        }, 1000);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [status, onComplete]);
 
-  if (stage === 'complete') return null;
+  if (stage === 'complete' || status === 'loading') return null;
+  if (status === 'unauthenticated') {
+    onComplete(); // Skip animation for guests
+    return null;
+  }
 
   const isGliding = stage === 'gliding';
   const userName = session?.user?.name || 'User';
@@ -34,9 +42,9 @@ export default function WelcomeScreen({ session, onComplete }) {
       >
         <motion.div 
           animate={isGliding ? { 
-            x: typeof window !== 'undefined' ? window.innerWidth * 0.35 : 0, 
-            y: typeof window !== 'undefined' ? -window.innerHeight * 0.4 : 0, 
-            scale: 0.3,
+            x: typeof window !== 'undefined' ? window.innerWidth * 0.32 : 0, 
+            y: typeof window !== 'undefined' ? -window.innerHeight * 0.42 : 0, 
+            scale: 0.25,
             opacity: 0 
           } : { 
             x: 0, 

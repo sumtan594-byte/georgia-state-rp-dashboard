@@ -5,6 +5,7 @@ import { useRouter } from 'next/router';
 import Sidebar from "../components/layout/Sidebar";
 import TopBar from "../components/layout/TopBar";
 import WelcomeScreen from "../components/auth/WelcomeScreen";
+import { motion, AnimatePresence } from 'framer-motion';
 
 function DebugSessionLogger() {
   const { status, data } = useSession();
@@ -13,6 +14,93 @@ function DebugSessionLogger() {
   }, [status, data]);
   return null;
 }
+
+function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPublicPage, animationFinished }) {
+  return (
+    <<divdiv className="min-h-screen relative">
+      <<divdiv className="fixed inset-0 z-0">
+        <<imgimg src="https://i.imgur.com/QVVQSK2.png" alt="" className="w-full h-full object-cover" aria-hidden="true" />
+        <<divdiv className="absolute inset-0 bg-gsrp-dark/80" />
+      </div>
+
+      {isPublicPage ? (
+        <<divdiv className="relative z-10">
+          <<ComponentComponent {...pageProps} />
+        </div>
+      ) : (
+        <<motionmotion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={animationFinished ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6, ease: "easeOut" }}
+          className="relative z-10 flex min-h-screen"
+        >
+          <<divdiv className={`hidden md:block flex-shrink-0 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-[72px]'}`}>
+            <<SidebarSidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
+          </div>
+
+          <<divdiv className="flex-1 flex flex-col min-w-0">
+            <<TopTopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+            <<mainmain className="flex-1 p-4 md:p-6 lg:p-8">
+              <<ComponentComponent {...pageProps} />
+            </main>
+          </div>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+export default function App({ Component, pageProps: { session, ...pageProps } }) {
+  const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [animationFinished, setAnimationFinished] = useState(true);
+
+  useEffect(() => {
+    setMounted(true);
+    const publicRoutes = ['/verify', '/privacy-policy', '/terms-of-service', '/login'];
+    const isPublicPage = publicRoutes.includes(router.pathname);
+    
+    if (!isPublicPage && !sessionStorage.getItem('hasSeenWelcome')) {
+      setShowWelcome(true);
+      setAnimationFinished(false);
+    }
+  }, [router.pathname]);
+
+  const handleWelcomeComplete = () => {
+    setShowWelcome(false);
+    setAnimationFinished(true);
+    sessionStorage.setItem('hasSeenWelcome', 'true');
+  };
+
+  const publicRoutes = ['/verify', '/privacy-policy', '/terms-of-service', '/login'];
+  const isPublicPage = publicRoutes.includes(router.pathname);
+
+  if (!mounted) return null;
+
+  return (
+    <<SessionSessionProvider session={session}>
+      <<DebugDebugSessionLogger />
+      
+      {showWelcome && (
+        <<WelcomeWelcomeScreen 
+          onComplete={handleWelcomeComplete} 
+        />
+      )}
+
+      <<AppAppContent 
+        Component={Component} 
+        pageProps={pageProps} 
+        sidebarOpen={sidebarOpen} 
+        setSidebarOpen={setSidebarOpen} 
+        isPublicPage={isPublicPage} 
+        animationFinished={animationFinished}
+      />
+    </SessionProvider>
+  );
+}
+
 
 function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPublicPage }) {
   return (
