@@ -77,7 +77,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
       
       {showWelcome && (
         <WelcomeScreen 
-          session={session} 
+          session={session?.user ? { user: session.user } : null} 
           onComplete={handleWelcomeComplete} 
         />
       )}
