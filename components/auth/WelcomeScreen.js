@@ -17,19 +17,26 @@ export default function WelcomeScreen({ session, onComplete }) {
   if (stage === 'complete') return null;
 
   const isGliding = stage === 'gliding';
+  const userName = session?.user?.name || 'User';
+  const userRole = session?.user?.displayRole || 'Member';
+  const userImage = session?.user?.image || 'https://cdn-icons-png.flaticon.com/512/149/149071.png';
 
   return (
     <AnimatePresence>
       <motion.div 
         initial={{ opacity: 1 }}
         exit={{ opacity: 0 }}
-        className="fixed inset-0 z-[100] flex items-center justify-center bg-gsrp-dark overflow-hidden"
+        className="fixed inset-0 z-[100] flex items-center justify-center overflow-hidden"
+        style={{ 
+          backgroundColor: 'transparent', 
+          pointerEvents: 'none' 
+        }}
       >
         <motion.div 
           animate={isGliding ? { 
-            x: typeof window !== 'undefined' && window.innerWidth > 768 ? window.innerWidth - 300 : 0, 
-            y: -window.innerHeight / 2 + 50, // Approximate movement toward top right
-            scale: 0.4,
+            x: typeof window !== 'undefined' ? window.innerWidth * 0.35 : 0, 
+            y: typeof window !== 'undefined' ? -window.innerHeight * 0.4 : 0, 
+            scale: 0.3,
             opacity: 0 
           } : { 
             x: 0, 
@@ -37,18 +44,18 @@ export default function WelcomeScreen({ session, onComplete }) {
             scale: 1, 
             opacity: 1 
           }}
-          transition={{ duration: 0.8, ease: "easeInOut" }}
-          className="flex flex-col items-center scale-110"
+          transition={{ duration: 0.8, ease: [0.4, 0, 0.2, 1] }}
+          className="flex flex-col items-center"
         >
           <motion.div 
             initial={{ scale: 0, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            transition={{ duration: 0.5, type: 'spring' }}
-            className="relative w-24 h-24 rounded-full overflow-hidden border-4 border-gsrp-teal-light/30 shadow-lg shadow-gsrp-teal-light/20"
+            transition={{ duration: 0.5, type: 'spring', bounce: 0.4 }}
+            className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-gsrp-teal-light/30 shadow-lg shadow-gsrp-teal-light/20"
           >
             <img 
-              src={session?.user?.image || 'https://cdn-icons-png.flaticon.com/512/149/149071.png'} 
-              alt={session?.user?.name} 
+              src={userImage} 
+              alt={userName} 
               className="w-full h-full object-cover"
             />
           </motion.div>
@@ -57,13 +64,13 @@ export default function WelcomeScreen({ session, onComplete }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="text-center mt-6"
+            className="text-center mt-8"
           >
-            <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight">
-              Welcome, <span className="text-gsrp-teal-light">{session?.user?.name}</span>
+            <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight drop-shadow-lg">
+              Welcome, <span className="text-gsrp-teal-light">{userName}</span>
             </h1>
-            <p className="text-lg md:text-xl text-gsrp-teal-light/60 font-bold uppercase tracking-widest mt-2">
-              {session?.user?.displayRole || 'Member'}
+            <p className="text-xl md:text-2xl text-gsrp-teal-light/60 font-bold uppercase tracking-widest mt-4">
+              {userRole}
             </p>
           </motion.div>
         </motion.div>
