@@ -2,11 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800;900&display=swap');
-
 *, *::before, *::after {
   box-sizing: border-box;
 }
+
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800;900&display=swap');
 
 html {
   scroll-behavior: smooth;
@@ -124,6 +124,16 @@ discord-messages {
   50% { transform: translateY(-8px); }
 }
 
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.2; transform: scale(1); }
+  50% { opacity: 0.35; transform: scale(1.05); }
+}
+
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 .animate-fade-in-up {
   animation: fade-in-up 0.5s ease-out forwards;
 }
@@ -148,6 +158,14 @@ discord-messages {
   animation: glow-pulse 2s ease-in-out infinite;
 }
 
+.animate-pulse-slow {
+  animation: pulse-slow 4s ease-in-out infinite;
+}
+
+.animate-fade-up {
+  animation: fade-up 0.5s ease-out forwards;
+}
+
 /* Staggered list animation for ticket rows */
 .ticket-row {
   animation: fade-in-up 0.35s ease-out forwards;
@@ -169,14 +187,6 @@ discord-messages {
 .ticket-row:nth-child(14) { animation-delay: 0.42s; }
 .ticket-row:nth-child(15) { animation-delay: 0.45s; }
 
-/* ===================== REDUCED MOTION ===================== */
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-}
 
 /* ===================== GLOW EFFECTS ===================== */
 .glow-orange {
