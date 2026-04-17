@@ -109,8 +109,8 @@ export default function VerifyPage() {
           window.history.replaceState({}, document.title, cleanUrl);
         } catch {}
         
-        // Re-check linking after successful verification (allow time for bot to process)
-        setTimeout(() => checkLinking(5, 3000), 2000);
+        // Refresh page after 2 seconds to show the dashboard
+        setTimeout(() => window.location.reload(), 2000);
         
         // Clear pending guard
         global.pendingVerifications?.delete(pendingKey);
