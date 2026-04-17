@@ -17,21 +17,30 @@ export default function VerifyPage() {
   const codeHandledRef = useRef(false);
 
   useEffect(() => {
-    const checkLinking = async () => {
+    const checkLinking = async (retries = 3, delayMs = 2000) => {
       if (sessionStatus !== 'authenticated') return;
       
-      try {
-        const res = await fetch('/api/verify/check');
-        const data = await res.json();
-        if (data.linked) {
-          setVerificationData(data);
-          setStatus('idle'); // We're linked, so we'll show the dashboard instead of verify button
+      for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+          const res = await fetch('/api/verify/check');
+          const data = await res.json();
+          if (data.linked) {
+            setVerificationData(data);
+            setStatus('idle');
+            setIsChecking(false);
+            return;
+          }
+          if (attempt < retries) {
+            await new Promise(r => setTimeout(r, delayMs));
+          }
+        } catch (err) {
+          console.error('Error checking linking:', err);
+          if (attempt < retries) {
+            await new Promise(r => setTimeout(r, delayMs));
+          }
         }
-      } catch (err) {
-        console.error('Error checking linking:', err);
-      } finally {
-        setIsChecking(false);
       }
+      setIsChecking(false);
     };
 
     const params = new URLSearchParams(window.location.search);
@@ -100,8 +109,8 @@ export default function VerifyPage() {
           window.history.replaceState({}, document.title, cleanUrl);
         } catch {}
         
-        // Re-check linking after successful verification
-        checkLinking();
+        // Re-check linking after successful verification (allow time for bot to process)
+        setTimeout(() => checkLinking(5, 3000), 2000);
         
         // Clear pending guard
         global.pendingVerifications?.delete(pendingKey);
