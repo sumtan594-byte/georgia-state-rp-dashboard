@@ -6,6 +6,7 @@ import Sidebar from "../components/layout/Sidebar";
 import TopBar from "../components/layout/TopBar";
 import WelcomeScreen from "../components/auth/WelcomeScreen";
 import { motion } from 'framer-motion';
+import { Analytics } from '@vercel/analytics/next';
 
 function DebugSessionLogger() {
   const { status, data } = useSession();
@@ -97,6 +98,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
         isPublicPage={isPublicPage} 
         animationFinished={animationFinished}
       />
+      <Analytics />
     </SessionProvider>
   );
 }
