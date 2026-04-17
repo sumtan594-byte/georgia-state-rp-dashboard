@@ -17,6 +17,23 @@ export default function VerifyPage() {
   const codeHandledRef = useRef(false);
 
   useEffect(() => {
+    // Check sessionStorage for previous verification status
+    const savedStatus = sessionStorage.getItem('verificationStatus');
+    const savedData = sessionStorage.getItem('verificationData');
+    if (savedStatus === 'success' && savedData) {
+      try {
+        setStatus('success');
+        setVerificationData(JSON.parse(savedData));
+        setIsChecking(false);
+        return; // Don't run the main useEffect logic if we have cached data
+      } catch {}
+    }
+  }, []);
+
+  useEffect(() => {
+    // Skip if we already have verification data from sessionStorage
+    if (verificationData && status === 'success') return;
+    
     const checkLinking = async (retries = 3, delayMs = 2000) => {
       if (sessionStatus !== 'authenticated') return;
       
@@ -104,6 +121,9 @@ export default function VerifyPage() {
         setStatus('success');
         setMessage('Your citizenship has been verified! Check your Discord Direct Messages for confirmation.');
         
+        // Save to sessionStorage to persist across refresh
+        sessionStorage.setItem('verificationStatus', 'success');
+        
         // Clean URL only on success
         try {
           const cleanUrl = window.location.origin + window.location.pathname;
@@ -113,9 +133,8 @@ export default function VerifyPage() {
         // Re-check linking after successful verification (allow time for bot to process)
         // Wait for linking to complete, or show minimal success view if it takes too long
         checkLinking(5, 3000).then(linked => {
-          if (!linked) {
-            // Show minimal success view since linking check is taking too long
-            setIsChecking(false);
+          if (linked && verificationData) {
+            sessionStorage.setItem('verificationData', JSON.stringify(verificationData));
           }
         });
         
