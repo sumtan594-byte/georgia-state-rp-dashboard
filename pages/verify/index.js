@@ -17,23 +17,6 @@ export default function VerifyPage() {
   const codeHandledRef = useRef(false);
 
   useEffect(() => {
-    // Check sessionStorage for previous verification status
-    const savedStatus = sessionStorage.getItem('verificationStatus');
-    const savedData = sessionStorage.getItem('verificationData');
-    if (savedStatus === 'success' && savedData) {
-      try {
-        setStatus('success');
-        setVerificationData(JSON.parse(savedData));
-        setIsChecking(false);
-        return; // Don't run the main useEffect logic if we have cached data
-      } catch {}
-    }
-  }, []);
-
-  useEffect(() => {
-    // Skip if we already have verification data from sessionStorage
-    if (verificationData && status === 'success') return;
-    
     const checkLinking = async (retries = 3, delayMs = 2000) => {
       if (sessionStatus !== 'authenticated') return;
       
@@ -45,7 +28,7 @@ export default function VerifyPage() {
             setVerificationData(data);
             setStatus('idle');
             setIsChecking(false);
-            return true;
+            return;
           }
           if (attempt < retries) {
             await new Promise(r => setTimeout(r, delayMs));
@@ -58,7 +41,6 @@ export default function VerifyPage() {
         }
       }
       setIsChecking(false);
-      return false;
     };
 
     const params = new URLSearchParams(window.location.search);
@@ -121,9 +103,6 @@ export default function VerifyPage() {
         setStatus('success');
         setMessage('Your citizenship has been verified! Check your Discord Direct Messages for confirmation.');
         
-        // Save to sessionStorage to persist across refresh
-        sessionStorage.setItem('verificationStatus', 'success');
-        
         // Clean URL only on success
         try {
           const cleanUrl = window.location.origin + window.location.pathname;
@@ -131,20 +110,7 @@ export default function VerifyPage() {
         } catch {}
         
         // Re-check linking after successful verification (allow time for bot to process)
-        // Wait for linking to complete, or show minimal success view if it takes too long
-        checkLinking(5, 3000).then(linked => {
-          if (linked && verificationData) {
-            sessionStorage.setItem('verificationData', JSON.stringify(verificationData));
-          }
-        });
-        
-        // Fallback: ensure we exit loading state after timeout regardless
-        setTimeout(() => {
-          if (!verificationData) {
-            setIsChecking(false);
-            setStatus('success');
-          }
-        }, 25000);
+        setTimeout(() => checkLinking(5, 3000), 2000);
         
         // Clear pending guard
         global.pendingVerifications?.delete(pendingKey);
@@ -207,39 +173,8 @@ export default function VerifyPage() {
   const discordId = session?.user?.id;
   const robloxAuthUrl = `https://authorize.roblox.com/?client_id=${ROBLOX_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=openid%20profile&state=${discordId}`;
 
-  // Show verification dashboard if we have verification data OR if verification was successful
-  if ((status === 'success' && verificationData) || (status === 'success' && !isChecking && !verificationData)) {
-    if (!verificationData) {
-      return (
-        <div className="min-h-screen flex items-center justify-center p-6 bg-[#0A0E1A]">
-          <div className="max-w-md w-full">
-            <Link href="/" className="inline-flex items-center gap-2 text-gsrp-teal-light/40 hover:text-gsrp-orange-light text-[10px] font-bold uppercase tracking-widest transition-colors mb-8 cursor-pointer">
-              <ArrowLeft size={12} /> Back to Dashboard
-            </Link>
-
-            <div className="card-glass rounded-2xl p-8 text-center shadow-2xl animate-scale-in border-gsrp-dark-border/50">
-              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500/20 to-green-500/10 border border-green-500/30 flex items-center justify-center mx-auto mb-6">
-                <ShieldCheck size={28} className="text-green-400" />
-              </div>
-              <h1 className="text-green-400 font-black text-xl mb-2">Verification Complete!</h1>
-              <p className="text-gsrp-teal-light/40 text-sm mb-6">
-                Your citizenship has been verified! Check your Discord Direct Messages for confirmation.
-              </p>
-              <p className="text-gsrp-teal-light/30 text-xs mb-4">
-                Your profile data is being loaded...
-              </p>
-              <button 
-                onClick={() => window.location.reload()} 
-                className="inline-flex items-center gap-2 bg-gsrp-orange hover:bg-gsrp-orange-light text-white px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 cursor-pointer"
-              >
-                Refresh to View Profile
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
-    
+  // If we have verification data, show the dashboard
+  if (verificationData && status === 'idle') {
     const { roblox, discord, erlc, melonly } = verificationData;
     const isBanned = erlc?.ban?.isBanned;
 
