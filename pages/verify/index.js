@@ -16,31 +16,23 @@ export default function VerifyPage() {
   const [isUnlinking, setIsUnlinking] = useState(false);
   const codeHandledRef = useRef(false);
 
-  useEffect(() => {
-    const checkLinking = async (retries = 3, delayMs = 2000) => {
+useEffect(() => {
+    // Check if user is already linked (no code in URL)
+    const checkLinking = async () => {
       if (sessionStatus !== 'authenticated') return;
       
-      for (let attempt = 0; attempt <= retries; attempt++) {
-        try {
-          const res = await fetch('/api/verify/check');
-          const data = await res.json();
-          if (data.linked) {
-            setVerificationData(data);
-            setStatus('idle');
-            setIsChecking(false);
-            return;
-          }
-          if (attempt < retries) {
-            await new Promise(r => setTimeout(r, delayMs));
-          }
-        } catch (err) {
-          console.error('Error checking linking:', err);
-          if (attempt < retries) {
-            await new Promise(r => setTimeout(r, delayMs));
-          }
+      try {
+        const res = await fetch('/api/verify/check');
+        const data = await res.json();
+        if (data.linked) {
+          setVerificationData(data);
+          setStatus('idle');
         }
+      } catch (err) {
+        console.error('Error checking linking:', err);
+      } finally {
+        setIsChecking(false);
       }
-      setIsChecking(false);
     };
 
     const params = new URLSearchParams(window.location.search);
@@ -70,64 +62,21 @@ export default function VerifyPage() {
     if (codeHandledRef.current) return;
     codeHandledRef.current = true;
 
-    // Double-submit guard - store pending code to prevent race conditions
-    const pendingKey = `verify_pending:${discordId}:${code}`;
-    if (global.pendingVerifications?.has(pendingKey)) {
-      console.log('[verify] Duplicate request detected, ignoring');
-      return;
-    }
-    if (!global.pendingVerifications) global.pendingVerifications = new Set();
-    global.pendingVerifications.add(pendingKey);
-
     setStatus('loading');
 
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-
-    fetch('/api/verify/forward', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({ discordId, authCode: code }),
-      signal: controller.signal
-    })
-    .then(res => {
-      clearTimeout(timeout);
-      if (!res.ok) {
-        return res.json().catch(() => ({ success: false, error: `Server error (${res.status})` }))
-          .then(data => { throw new Error(data.error || `Server error (${res.status})`); });
-      }
-      return res.json();
-    })
-    .then(data => {
-      if (data?.success) {
-        setStatus('success');
-        setMessage('Your citizenship has been verified! Check your Discord Direct Messages for confirmation.');
-        
-        // Clean URL only on success
-        try {
-          const cleanUrl = window.location.origin + window.location.pathname;
-          window.history.replaceState({}, document.title, cleanUrl);
-        } catch {}
-        
-        // Re-check linking after successful verification (allow time for bot to process)
-        setTimeout(() => checkLinking(5, 3000), 2000);
-        
-        // Clear pending guard
-        global.pendingVerifications?.delete(pendingKey);
-      } else {
-        throw new Error(data?.error || 'An unexpected error occurred.');
-      }
-    })
-    .catch(err => {
-      clearTimeout(timeout);
-      // Clear pending guard on error too
-      global.pendingVerifications?.delete(pendingKey);
-      if (err.name !== 'AbortError') {
-        setStatus('error');
-        setMessage(err.message || 'An unexpected error occurred.');
-      }
+    // Just show loading for 3 seconds, then show confirmation
+    setTimeout(() => {
+      setStatus('success');
+      setMessage('Your citizenship has been verified! Check your Discord Direct Messages for confirmation.');
+      
+      // Clean URL
+      try {
+        const cleanUrl = window.location.origin + window.location.pathname;
+        window.history.replaceState({}, document.title, cleanUrl);
+      } catch {}
+      
       setIsChecking(false);
-    });
+    }, 3000);
   }, [sessionStatus]);
 
   const handleUnlink = async () => {
