@@ -112,6 +112,14 @@ export default function VerifyPage() {
         // Re-check linking after successful verification (allow time for bot to process)
         setTimeout(() => checkLinking(5, 3000), 2000);
         
+        // Also force update after some time to catch any edge cases
+        setTimeout(() => {
+          setIsChecking(false);
+          if (!verificationData) {
+            setStatus('success');
+          }
+        }, 25000);
+        
         // Clear pending guard
         global.pendingVerifications?.delete(pendingKey);
       } else {
@@ -174,7 +182,7 @@ export default function VerifyPage() {
   const robloxAuthUrl = `https://authorize.roblox.com/?client_id=${ROBLOX_CLIENT_ID}&response_type=code&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=openid%20profile&state=${discordId}`;
 
   // If we have verification data, show the dashboard
-  if (verificationData && status === 'idle') {
+  if (verificationData && (status === 'idle' || status === 'success')) {
     const { roblox, discord, erlc, melonly } = verificationData;
     const isBanned = erlc?.ban?.isBanned;
 
