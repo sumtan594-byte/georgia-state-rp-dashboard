@@ -1,6 +1,6 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2, ShoppingCart } from 'lucide-react';
+import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2, ShoppingCart, Building2 } from 'lucide-react';
 import FeatureCard from '../components/dashboard/FeatureCard';
 import LoginScreen from '../components/auth/LoginScreen';
 import { canAccessPanel, canAccessTraining, canViewAttempts } from '../lib/auth';
@@ -53,6 +53,13 @@ export default function Dashboard() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+        <FeatureCard
+          href="/departments"
+          icon={Building2}
+          title="Departments"
+          description="View and join GSRP's official departments"
+        />
+
         <FeatureCard
           href="/transcripts"
           icon={FileText}

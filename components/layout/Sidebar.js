@@ -12,6 +12,7 @@ import {
   Users,
   ClipboardList,
   ShoppingCart,
+  Building2,
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook } from '../../lib/auth';
 
@@ -52,6 +53,7 @@ export default function Sidebar({ open, onToggle }) {
 
   const navItems = [
     { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+    { href: '/departments', icon: Building2, label: 'Departments' },
     { href: '/transcripts', icon: FileText, label: 'Transcripts', badge: transcriptCount > 0 ? transcriptCount : null },
     ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null }] : []),
     ...(hasHandbook ? [{ href: '/staff-handbook', icon: BookOpen, label: 'Staff Handbook' }] : []),
