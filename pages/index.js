@@ -1,6 +1,7 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2, ShoppingCart, Building2 } from 'lucide-react';
+import Link from 'next/link';
 import FeatureCard from '../components/dashboard/FeatureCard';
 import LoginScreen from '../components/auth/LoginScreen';
 import { canAccessPanel, canAccessTraining, canViewAttempts } from '../lib/auth';
@@ -107,6 +108,12 @@ export default function Dashboard() {
             description="View all staff training quiz attempts"
           />
         )}
+      </div>
+
+      <div className="flex items-center justify-center gap-4 mt-8 text-xs text-gsrp-teal-light/30">
+        <Link href="/privacy-policy" className="hover:text-gsrp-orange transition-colors">Privacy Policy</Link>
+        <span className="text-gsrp-dark-border">•</span>
+        <Link href="/terms-of-service" className="hover:text-gsrp-orange transition-colors">Terms of Service</Link>
       </div>
     </div>
   );
