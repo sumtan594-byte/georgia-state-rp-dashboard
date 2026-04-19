@@ -1,49 +1,144 @@
 export default async function handler(req, res) {
-  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
-
   const GITHUB_TOKEN = process.env.GITHUB_ACCESS_TOKEN;
   const GITHUB_REPO  = process.env.GITHUB_OWNER + '/' + process.env.GITHUB_REPO;
+  const TRAINER_ROLE = '1372482495035211908';
 
-  if (!GITHUB_TOKEN || !GITHUB_REPO) {
-    return res.status(500).json({ error: 'GitHub not configured' });
-  }
-
-  try {
-    // List all files in /attempts/
-    const listRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/attempts`, {
-      headers: {
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
-        Accept: 'application/vnd.github+json',
-      },
-    });
-
-    if (!listRes.ok) {
-      if (listRes.status === 404) return res.status(200).json([]);
-      return res.status(500).json({ error: 'Failed to list attempts' });
+  // GET - List all attempts
+  if (req.method === 'GET') {
+    if (!GITHUB_TOKEN || !GITHUB_REPO) {
+      return res.status(500).json({ error: 'GitHub not configured' });
     }
 
-    const files = await listRes.json();
-    const allAttempts = [];
-
-    // Fetch each file in parallel
-    const fetches = files
-      .filter(f => f.name.endsWith('.json'))
-      .map(async f => {
-        try {
-          const fileRes = await fetch(f.download_url);
-          const attempts = await fileRes.json();
-          if (Array.isArray(attempts)) allAttempts.push(...attempts);
-        } catch { /* skip corrupt files */ }
+    try {
+      const listRes = await fetch(`https://api.github.com/repos/${GITHUB_REPO}/contents/attempts`, {
+        headers: {
+          Authorization: `Bearer ${GITHUB_TOKEN}`,
+          Accept: 'application/vnd.github+json',
+        },
       });
 
-    await Promise.all(fetches);
+      if (!listRes.ok) {
+        if (listRes.status === 404) return res.status(200).json([]);
+        return res.status(500).json({ error: 'Failed to list attempts' });
+      }
 
-    // Sort newest first
-    allAttempts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      const files = await listRes.json();
+      const allAttempts = [];
 
-    res.status(200).json(allAttempts);
-  } catch (err) {
-    console.error('[attempts/list] Error:', err.message);
-    res.status(500).json({ error: err.message });
+      const fetches = files
+        .filter(f => f.name.endsWith('.json'))
+        .map(async f => {
+          try {
+            const fileRes = await fetch(f.download_url);
+            const userData = await fileRes.json();
+            if (userData.attempts && Array.isArray(userData.attempts)) {
+              allAttempts.push(...userData.attempts);
+            }
+          } catch { /* skip corrupt files */ }
+        });
+
+      await Promise.all(fetches);
+      allAttempts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      res.status(200).json(allAttempts);
+    } catch (err) {
+      console.error('[attempts/list] Error:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+    return;
   }
+
+  // POST - Check cooldown status or revoke cooldown
+  if (req.method === 'POST') {
+    const { action, userId, userId: targetUserId } = req.body || {};
+
+    // Check if requester is a trainer or admin
+    const sessionUserId = req.headers['x-user-id'] || req.headers['x-user-id'];
+    const userRoles = req.headers['x-user-roles'] ? JSON.parse(req.headers['x-user-roles']) : [];
+    const isTrainer = userRoles.includes(TRAINER_ROLE);
+    const adminIds = (process.env.ADMIN_USER_IDS || '').split(',').map(i => i.trim()).filter(Boolean);
+    const isAdmin = adminIds.includes(sessionUserId);
+
+    if (!isTrainer && !isAdmin) {
+      return res.status(403).json({ error: 'Trainer role required' });
+    }
+
+    if (!GITHUB_TOKEN || !GITHUB_REPO) {
+      return res.status(500).json({ error: 'GitHub not configured' });
+    }
+
+    try {
+      const filePath = `attempts/${targetUserId}.json`;
+      const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`;
+
+      let userData = { attempts: [], cooldownUntil: null, hasPassed: false, hasPassedAt: null };
+      let sha = null;
+
+      const fetchExisting = await fetch(apiUrl, {
+        headers: {
+          Authorization: `Bearer ${GITHUB_TOKEN}`,
+          Accept: 'application/vnd.github+json',
+        },
+      });
+      if (fetchExisting.ok) {
+        const existing = await fetchExisting.json();
+        sha = existing.sha;
+        try {
+          userData = JSON.parse(Buffer.from(existing.content, 'base64').toString('utf8'));
+        } catch { userData = { attempts: [], cooldownUntil: null, hasPassed: false, hasPassedAt: null }; }
+      }
+
+      // Handle different actions
+      if (action === 'check') {
+        // Return cooldown status for a user
+        const now = new Date();
+        const cooldown = userData.cooldownUntil ? new Date(userData.cooldownUntil) : null;
+        const isOnCooldown = cooldown && cooldown > now;
+        const hasPassed = userData.hasPassed || false;
+        
+        res.status(200).json({
+          userId: targetUserId,
+          cooldownUntil: userData.cooldownUntil,
+          isOnCooldown,
+          hasPassed,
+          hasPassedAt: userData.hasPassedAt,
+          lastAttempt: userData.attempts?.[userData.attempts.length - 1] || null,
+        });
+        return;
+      }
+
+      if (action === 'revoke') {
+        // Revoke cooldown - set to now so they can retake immediately
+        userData.cooldownUntil = null;
+
+        const content = Buffer.from(JSON.stringify(userData, null, 2)).toString('base64');
+        const putBody = {
+          message: `Cooldown revoked for user ${targetUserId} by trainer ${sessionUserId}`,
+          content,
+          sha,
+        };
+
+        await fetch(apiUrl, {
+          method: 'PUT',
+          headers: {
+            Authorization: `Bearer ${GITHUB_TOKEN}`,
+            Accept: 'application/vnd.github+json',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(putBody),
+        });
+
+        res.status(200).json({ ok: true, message: 'Cooldown revoked', userId: targetUserId });
+        return;
+      }
+
+      res.status(400).json({ error: 'Invalid action' });
+    } catch (err) {
+      console.error('[attempts/post] Error:', err.message);
+      res.status(500).json({ error: err.message });
+    }
+    return;
+  }
+
+  res.status(405).json({ error: 'Method not allowed' });
 }

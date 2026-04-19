@@ -13,25 +13,25 @@
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 
 :root {
-  --bg:        #06101a;
-  --bg2:       #091520;
-  --surface:   #0d1f2d;
-  --surface2:  #102436;
-  --border:    rgba(80,160,230,0.15);
-  --border-h:  rgba(80,160,230,0.3);
-  --blue:      #1a7fd4;
-  --blue-lt:   #3b9fe8;
-  --blue-dim:  rgba(26,127,212,0.15);
-  --blue-glow: rgba(26,127,212,0.25);
-  --sky:       #7ec8f0;
-  --gold:      #c9a84c;
-  --text:      #d8eaf8;
-  --muted:     #5a7d99;
-  --correct:   rgba(34,197,94,0.12);
-  --correct-b: #22c55e;
-  --wrong:     rgba(239,68,68,0.12);
-  --wrong-b:   #ef4444;
-  --radius:    10px;
+  --bg:        #0A0E1A;
+  --bg2:       #0F1629;
+  --surface:   #0F1629;
+  --surface2:  #151D35;
+  --border:    #1E2A4A;
+  --border-h:  #2a3f6a;
+  --blue:     #0D9488;
+  --blue-lt:   #14B8A6;
+  --blue-dim:  rgba(13,148,136,0.15);
+  --blue-glow: rgba(13,148,136,0.25);
+  --sky:      #F97316;
+  --gold:     #FBBF24;
+  --text:     #F8FAFC;
+  --muted:    #94A3B8;
+  --correct:  rgba(34,197,94,0.12);
+  --correct-b:#22C55E;
+  --wrong:    rgba(239,68,68,0.12);
+  --wrong-b:  #EF4444;
+  --radius:   12px;
 }
 
 html { scroll-behavior: smooth; }
@@ -48,10 +48,10 @@ body::before {
   content: '';
   position: fixed; inset: 0;
   background:
-    radial-gradient(ellipse 70% 50% at 15% 10%, rgba(26,127,212,0.08) 0%, transparent 55%),
-    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(26,127,212,0.06) 0%, transparent 50%),
-    repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(80,160,230,0.018) 60px),
-    repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(80,160,230,0.018) 60px);
+    radial-gradient(ellipse 70% 50% at 15% 10%, rgba(249,115,22,0.08) 0%, transparent 55%),
+    radial-gradient(ellipse 50% 40% at 85% 85%, rgba(13,148,136,0.06) 0%, transparent 50%),
+    repeating-linear-gradient(0deg, transparent, transparent 59px, rgba(249,115,22,0.015) 60px),
+    repeating-linear-gradient(90deg, transparent, transparent 59px, rgba(249,115,22,0.015) 60px);
   pointer-events: none; z-index: 0;
 }
 
@@ -83,7 +83,7 @@ body::before {
   gap: 1.25rem;
   width: 100%;
 }
-.topnav-logo { width:34px;height:34px;border-radius:50%;border:1px solid rgba(26,127,212,0.5);object-fit:cover;flex-shrink:0; }
+.topnav-logo { width:34px;height:34px;border-radius:50%;border:1px solid rgba(249,115,22,0.5);object-fit:cover;flex-shrink:0; }
 .topnav-title { font-family:'Syne',sans-serif;font-weight:700;font-size:.92rem;color:#fff;flex:1; }
 .topnav-title small { display:block;font-family:'DM Sans',sans-serif;font-weight:400;font-size:.72rem;color:var(--muted); }
 .topnav-links { display:flex;gap:.5rem; }
@@ -92,8 +92,8 @@ body::before {
   font-weight:600;font-size:.78rem;letter-spacing:.04em;border:1px solid var(--border);
   background:transparent;color:var(--muted);cursor:pointer;transition:all .15s;text-transform:uppercase;
 }
-.nav-btn:hover { border-color:var(--border-h);color:var(--text);background:var(--blue-dim); }
-.nav-btn.active { background:var(--blue-dim);border-color:var(--blue);color:var(--sky); }
+.nav-btn:hover { border-color:var(--border-h);color:var(--text);background:rgba(249,115,22,0.1); }
+.nav-btn.active { background:rgba(249,115,22,0.15);border-color:var(--sky);color:var(--sky); }
 .user-chip {
   display:flex;align-items:center;gap:.5rem;
   background:rgba(255,255,255,0.04);border:1px solid var(--border);
@@ -117,7 +117,7 @@ body::before {
 
 /* Progress bar */
 .progress-wrap { width:100%;height:3px;background:var(--border); }
-.progress-bar { height:100%;background:linear-gradient(90deg,#0d4a8a,var(--blue-lt));transition:width .5s cubic-bezier(.4,0,.2,1);box-shadow:0 0 8px var(--blue); }
+.progress-bar { height:100%;background:linear-gradient(90deg,#F97316,var(--sky));transition:width .5s cubic-bezier(.4,0,.2,1);box-shadow:0 0 8px var(--sky); }
 
 /* ══════════════════════════════════════════════════════════
    LOGIN SCREEN
@@ -125,8 +125,8 @@ body::before {
 #screen-login { text-align:center; }
 .login-logo {
   width:110px;height:110px;border-radius:50%;
-  border:2px solid rgba(26,127,212,0.5);
-  box-shadow:0 0 40px rgba(26,127,212,0.2);
+  border:2px solid rgba(249,115,22,0.5);
+  box-shadow:0 0 40px rgba(249,115,22,0.2);
   margin-bottom:2rem;object-fit:cover;
 }
 .login-card {
@@ -140,7 +140,7 @@ body::before {
 }
 .badge {
   display:inline-flex;align-items:center;gap:.4rem;
-  background:var(--blue-dim);border:1px solid rgba(26,127,212,0.3);
+  background:var(--blue-dim);border:1px solid rgba(249,115,22,0.3);
   color:var(--sky);font-size:.7rem;font-weight:600;letter-spacing:.12em;
   text-transform:uppercase;padding:.32rem .9rem;border-radius:100px;margin-bottom:1.4rem;
 }
@@ -217,7 +217,7 @@ body::before {
 .match-grid { display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.25rem; }
 .match-col-label { font-size:.68rem;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:.65rem; }
 .match-item { padding:.8rem 1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);font-size:.865rem;cursor:pointer;transition:all .15s; }
-.match-item.left { border-left:3px solid rgba(26,127,212,0.4); }
+.match-item.left { border-left:3px solid rgba(249,115,22,0.4); }
 .match-item.right { border-right:3px solid rgba(126,200,240,0.3); }
 .match-item.sel-left { border-color:var(--blue) !important;background:var(--blue-dim); }
 .match-item.sel-right { border-color:var(--sky) !important;background:rgba(126,200,240,0.08); }
@@ -263,8 +263,8 @@ body::before {
   transition:all .2s;box-shadow:0 2px 12px rgba(0,0,0,.5);
   transform:translate(-50%,-50%);
 }
-.hotspot-point.hp-neutral { background:rgba(26,127,212,0.85); }
-.hotspot-point.hp-neutral:hover { transform:translate(-50%,-50%) scale(1.15);box-shadow:0 4px 18px rgba(26,127,212,.6); }
+.hotspot-point.hp-neutral { background:rgba(249,115,22,0.85); }
+.hotspot-point.hp-neutral:hover { transform:translate(-50%,-50%) scale(1.15);box-shadow:0 4px 18px rgba(249,115,22,.6); }
 .hotspot-point.hp-correct { background:#22c55e !important;animation:pop .3s ease; }
 .hotspot-point.hp-wrong   { background:#ef4444 !important; }
 .hotspot-point.hp-show-correct { background:#22c55e;box-shadow:0 0 0 4px rgba(34,197,94,.4); }
@@ -303,7 +303,7 @@ body::before {
 
 /* Session resume banner */
 .resume-banner {
-  background:var(--blue-dim);border:1px solid rgba(26,127,212,.4);
+  background:var(--blue-dim);border:1px solid rgba(249,115,22,.4);
   border-radius:var(--radius);padding:1rem 1.5rem;margin-bottom:2rem;
   display:flex;align-items:center;gap:1rem;flex-wrap:wrap;
 }
@@ -350,51 +350,6 @@ body::before {
 .review-q { font-size:.82rem;color:var(--muted);margin-bottom:.35rem; }
 .review-a { font-size:.85rem;color:var(--text); }
 .review-ca { font-size:.78rem;color:#86efac;margin-top:.28rem; }
-
-/* ══════════════════════════════════════════════════════════
-   HANDBOOK PAGE
-══════════════════════════════════════════════════════════ */
-#screen-handbook { align-items:stretch;padding:0;justify-content:flex-start; }
-.handbook-layout { display:grid;grid-template-columns:260px 1fr;max-width:1200px;margin:0 auto;width:100%;gap:0; }
-.handbook-sidebar {
-  border-right:1px solid var(--border);padding:2rem 1.25rem;
-  position:sticky;top:53px;height:calc(100vh - 53px);overflow-y:auto;
-}
-.sidebar-title { font-family:'Syne',sans-serif;font-weight:700;font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:1rem;padding-bottom:.6rem;border-bottom:1px solid var(--border); }
-.sidebar-link {
-  display:block;padding:.55rem .75rem;border-radius:7px;font-size:.83rem;
-  color:var(--muted);text-decoration:none;transition:all .15s;margin-bottom:.15rem;
-  border:1px solid transparent;
-}
-.sidebar-link:hover { color:var(--text);background:var(--blue-dim);border-color:var(--border); }
-.sidebar-link.active { color:var(--sky);background:var(--blue-dim);border-color:rgba(26,127,212,.3); }
-.sidebar-link .link-num { color:var(--blue-lt);font-family:'Syne',sans-serif;font-weight:700;font-size:.7rem;margin-right:.4rem; }
-.handbook-content { padding:3rem 3rem 6rem;max-width:820px; }
-.hb-section { margin-bottom:3.5rem;scroll-margin-top:80px; }
-.hb-section-num { font-family:'Syne',sans-serif;font-size:.68rem;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--blue-lt);margin-bottom:.4rem; }
-.hb-section h2 { font-family:'Syne',sans-serif;font-size:1.5rem;font-weight:800;color:#fff;margin-bottom:1.25rem;padding-bottom:.75rem;border-bottom:1px solid var(--border); }
-.hb-section h3 { font-family:'Syne',sans-serif;font-size:1.05rem;font-weight:700;color:var(--sky);margin:1.5rem 0 .65rem; }
-.hb-section p { color:#a8c4d8;line-height:1.75;margin-bottom:.9rem; }
-.hb-section ul, .hb-section ol { padding-left:1.4rem;margin-bottom:.9rem; }
-.hb-section li { color:#a8c4d8;line-height:1.7;margin-bottom:.25rem; }
-.hb-section strong { color:var(--text); }
-.hb-callout {
-  background:var(--blue-dim);border:1px solid rgba(26,127,212,.3);border-left:3px solid var(--blue);
-  border-radius:var(--radius);padding:1rem 1.25rem;margin:1.25rem 0;
-}
-.hb-callout p { color:var(--sky);margin:0; }
-.hb-warn { background:rgba(201,168,76,.08);border:1px solid rgba(201,168,76,.25);border-left:3px solid var(--gold);border-radius:var(--radius);padding:1rem 1.25rem;margin:1.25rem 0; }
-.hb-warn p { color:#e5c97a;margin:0; }
-.hb-table { width:100%;border-collapse:collapse;margin:1.25rem 0;font-size:.875rem; }
-.hb-table th { background:var(--surface2);color:var(--sky);font-family:'Syne',sans-serif;font-weight:700;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;padding:.75rem 1rem;text-align:left;border:1px solid var(--border); }
-.hb-table td { padding:.7rem 1rem;border:1px solid var(--border);color:#a8c4d8;vertical-align:top; }
-.hb-table tr:nth-child(even) td { background:rgba(255,255,255,0.02); }
-.tag { display:inline-block;padding:.18rem .55rem;border-radius:5px;font-size:.73rem;font-weight:600;font-family:'Syne',sans-serif; }
-.tag-warn { background:rgba(234,179,8,.12);color:#fde047;border:1px solid rgba(234,179,8,.25); }
-.tag-kick { background:rgba(249,115,22,.12);color:#fdba74;border:1px solid rgba(249,115,22,.25); }
-.tag-ban  { background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.25); }
-.tag-suspension { background:rgba(168,85,247,.12);color:#d8b4fe;border:1px solid rgba(168,85,247,.25); }
-.tag-termination { background:rgba(239,68,68,.18);color:#f87171;border:1px solid rgba(239,68,68,.35); }
 
 /* ══════════════════════════════════════════════════════════
    ATTEMPTS PAGE
@@ -479,7 +434,7 @@ body::before {
 .inter-section-tag {
   display:inline-block;margin-bottom:1.5rem;
   padding:.32rem 1rem;border-radius:100px;
-  background:var(--blue-dim);border:1px solid rgba(26,127,212,.35);
+  background:var(--blue-dim);border:1px solid rgba(249,115,22,.35);
   font-family:'Syne',sans-serif;font-size:.7rem;font-weight:700;
   letter-spacing:.14em;text-transform:uppercase;color:var(--sky);
   opacity:0;transform:translateY(12px);
@@ -523,9 +478,6 @@ body::before {
 .q-animate { animation:slideIn .28s ease; }
 
 @media (max-width:768px) {
-  .handbook-layout { grid-template-columns:1fr; }
-  .handbook-sidebar { display:none; }
-  .handbook-content { padding:2rem 1rem 4rem; }
   .tf-options { grid-template-columns:1fr; }
   .match-grid { grid-template-columns:1fr; }
   .quiz-body { padding:2rem 1rem 5rem; }
@@ -554,7 +506,7 @@ body::before {
     <ul class="req-list">
       <li><span class="ck">&#10003;</span> Member of the GSRP Discord server</li>
       <li><span class="ck">&#10003;</span> Assigned Staff Development role</li>
-      <li><span class="ck">&#10003;</span> Minimum passing score: 75%</li>
+      <li><span class="ck">&#10003;</span> Minimum passing score: {PASS_SCORE} correct answers</li>
     </ul>
     <a id="discord-login-btn" class="btn-discord" href="#">
       <svg viewBox="0 0 24 24"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.001.022.015.04.033.056a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028 14.09 14.09 0 0 0 1.226-1.994.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/></svg>
@@ -573,7 +525,6 @@ body::before {
     <div class="topnav-title">SSD Training Quiz <small>Georgia State Roleplay</small></div>
     <div class="topnav-links">
       <button class="nav-btn active" onclick="showPage('quiz')"><span>Quiz</span></button>
-      <button class="nav-btn" onclick="showPage('handbook')"><span>Handbook</span></button>
       <button class="nav-btn trainer-only" onclick="showPage('attempts')" style="display:none"><span>Attempts</span></button>
     </div>
     <div class="user-chip" id="user-chip" style="display:none">
@@ -584,6 +535,7 @@ body::before {
     <button class="btn-logout" onclick="logout()">&#8594; Log Out</button>
   </nav>
   <div class="progress-wrap"><div class="progress-bar" id="progress-bar" style="width:0%"></div></div>
+  <div id="cooldown-banner" class="resume-banner" style="display:none"></div>
   <div class="quiz-body">
     <div id="resume-banner" class="resume-banner" style="display:none">
       <p id="resume-text">You have an in-progress quiz. Would you like to resume?</p>
@@ -613,7 +565,6 @@ body::before {
     <div class="topnav-title">SSD Training Quiz <small>Georgia State Roleplay</small></div>
     <div class="topnav-links">
       <button class="nav-btn" onclick="showPage('quiz')"><span>Quiz</span></button>
-      <button class="nav-btn" onclick="showPage('handbook')"><span>Handbook</span></button>
       <button class="nav-btn trainer-only" onclick="showPage('attempts')" style="display:none"><span>Attempts</span></button>
     </div>
     <div class="user-chip" id="user-chip2" style="display:none">
@@ -623,7 +574,7 @@ body::before {
     <button class="btn-logout" onclick="logout()">&#8594; Log Out</button>
   </nav>
     <div class="results-card" id="results-card">
-      <img src="https://i.imgur.com/whmKhnb.gif" alt="GSRP" style="width:58px;height:58px;border-radius:50%;border:2px solid rgba(26,127,212,.4);margin-bottom:1.5rem;object-fit:cover;">
+      <img src="https://i.imgur.com/whmKhnb.gif" alt="GSRP" style="width:58px;height:58px;border-radius:50%;border:2px solid rgba(249,115,22,.4);margin-bottom:1.5rem;object-fit:cover;">
       <div class="score-ring" id="score-ring">
         <svg viewBox="0 0 130 130"><circle class="ring-bg" cx="65" cy="65" r="54"/><circle class="ring-fg" id="ring-fg" cx="65" cy="65" r="54" stroke-dasharray="339.3" stroke-dashoffset="339.3"/></svg>
         <div class="score-inner"><div class="score-pct" id="score-pct">0%</div><div class="score-label">Score</div></div>
@@ -644,15 +595,7 @@ body::before {
 <!-- ══════════════════════════════════════════════════════════
      HANDBOOK SCREEN
 ══════════════════════════════════════════════════════════ -->
-<div id="screen-handbook" class="screen" style="align-items:stretch;padding:0;justify-content:flex-start;">
-  <nav class="topnav">
-    <img src="https://i.imgur.com/whmKhnb.gif" alt="GSRP" class="topnav-logo">
-    <div class="topnav-title">Staff Handbook <small>Georgia State Roleplay</small></div>
-    <div class="topnav-links">
-      <button class="nav-btn" onclick="showPage('quiz')"><span>Quiz</span></button>
-      <button class="nav-btn active" onclick="showPage('handbook')"><span>Handbook</span></button>
-      <button class="nav-btn trainer-only" onclick="showPage('attempts')" style="display:none"><span>Attempts</span></button>
-    </div>
+
     <div class="user-chip" id="user-chip3" style="display:none">
       <img id="user-avatar3" src="" alt="">
       <span id="user-name3"></span>
@@ -850,9 +793,7 @@ body::before {
         </table>
       </div>
 
-    </div><!-- /handbook-content -->
-  </div><!-- /handbook-layout -->
-</div>
+    
 
 <!-- ══════════════════════════════════════════════════════════
      ATTEMPTS SCREEN (Trainer only)
@@ -863,7 +804,6 @@ body::before {
     <div class="topnav-title">Attempt Records <small>Trainer View — Georgia State Roleplay</small></div>
     <div class="topnav-links">
       <button class="nav-btn" onclick="showPage('quiz')"><span>Quiz</span></button>
-      <button class="nav-btn" onclick="showPage('handbook')"><span>Handbook</span></button>
       <button class="nav-btn active trainer-only" onclick="showPage('attempts')" style="display:none"><span>Attempts</span></button>
     </div>
     <span class="trainer-badge">Trainer</span>
@@ -898,7 +838,8 @@ body::before {
             <th>Percentage</th>
             <th>Result</th>
             <th>Date</th>
-            <th>Details</th>
+            <th>Status</th>
+            <th>Actions</th>
           </tr>
         </thead>
         <tbody id="attempts-tbody"></tbody>
@@ -937,7 +878,8 @@ function esc(str) {
 
 const DISCORD_CLIENT_ID = '1396099251498651748';
 const REDIRECT_URI      = window.location.origin + '/api/callback';
-const PASS_THRESHOLD    = 0.75;
+const PASS_SCORE      = 17;
+const COOLDOWN_HOURS   = 6;
 const SESSION_KEY       = 'gsrp_quiz_session';
 
 // ════════════════════════════════════════════════════
@@ -994,9 +936,9 @@ const QUESTION_SECTIONS = [
     {
       type: 'mc',
       text: 'Which of the following is a Warning-level offence?',
-      options: ['Staff Disrespect', 'No Intent to Roleplay', 'Cuff Rushing', 'Staff Scene Interference'],
+      options: ['Staff Disrespect', 'No Intent to Roleplay', 'GTA Driving', 'Staff Scene Interference'],
       correct: 2,
-      explanation: '"Cuff or Tow Rushing" is listed under Warnings. The others are kick-level offences.'
+      explanation: '"GTA Driving" is listed under Warnings. The others are kick-level offences.'
     },
     {
       type: 'mc',
@@ -1183,10 +1125,9 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     showScreen('login');
   }
-  // Handle /quiz and /handbook paths
+  // Handle /quiz and /attempts paths
   const path = window.location.pathname;
-  if (path === '/handbook' && currentUser) showPage('handbook');
-  else if (path === '/attempts' && currentUser?.isTrainer) showPage('attempts');
+  if (path === '/attempts' && currentUser?.isTrainer) showPage('attempts');
 });
 
 function setupDiscordLogin() {
@@ -1205,6 +1146,94 @@ function getCookie(name) {
   return m ? decodeURIComponent(m[2]) : null;
 }
 
+let userCooldown = { isOnCooldown: false, cooldownUntil: null, hasPassed: false };
+let cooldownCheckDone = false;
+
+async function checkUserCooldown() {
+  if (!currentUser || cooldownCheckDone) return;
+  try {
+    const res = await fetch(`/api/training/cooldown?userId=${currentUser.id}`);
+    const data = await res.json();
+    userCooldown = {
+      isOnCooldown: data.isOnCooldown || false,
+      cooldownUntil: data.cooldownUntil,
+      hasPassed: data.hasPassed || false,
+    };
+    cooldownCheckDone = true;
+    updateCooldownUI();
+  } catch (e) { console.warn('Cooldown check failed:', e); }
+}
+
+function updateCooldownUI() {
+  const cooldownEl = document.getElementById('cooldown-banner');
+  if (!cooldownEl) return;
+
+  if (userCooldown.hasPassed) {
+    cooldownEl.innerHTML = `<div style="background:var(--correct-b);color:#fff;padding:1rem;border-radius:var(--radius);text-align:center">
+      <strong>You have already passed the SSD Training Quiz.</strong><br>
+      <span style="opacity:0.8">You may now apply for staff positions.</span>
+    </div>`;
+    cooldownEl.style.display = 'block';
+    return;
+  }
+
+  if (userCooldown.isOnCooldown && userCooldown.cooldownUntil) {
+    const until = new Date(userCooldown.cooldownUntil);
+    const now = new Date();
+    const remaining = until - now;
+
+    if (remaining > 0) {
+      const hours = Math.floor(remaining / (1000 * 60 * 60));
+      const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      cooldownEl.innerHTML = `<div style="background:rgba(239,68,68,0.15);border:1px solid rgba(239,68,68,0.3);color:#fca5a5;padding:1rem;border-radius:var(--radius);text-align:center">
+        <strong>Quiz on cooldown</strong><br>
+        <span style="font-size:1.1em">Next attempt in: <strong>${hours}h ${mins}m</strong></span>
+      </div>`;
+      cooldownEl.style.display = 'block';
+      return;
+    }
+  }
+
+  cooldownEl.style.display = 'none';
+}
+
+function updateCooldownCountdown() {
+  if (!userCooldown.isOnCooldown || !userCooldown.cooldownUntil) return;
+  const el = document.getElementById('cooldown-countdown');
+  if (!el) return;
+
+  const until = new Date(userCooldown.cooldownUntil);
+  const now = new Date();
+  const remaining = until - now;
+
+  if (remaining <= 0) {
+    userCooldown.isOnCooldown = false;
+    userCooldown.cooldownUntil = null;
+    updateCooldownUI();
+    return;
+  }
+
+  const hours = Math.floor(remaining / (1000 * 60 * 60));
+  const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+  el.textContent = `${hours}h ${mins}m`;
+}
+
+setInterval(updateCooldownCountdown, 30000);
+
+function showPassCongrats() {
+  showScreen('results');
+  document.getElementById('progress-bar').style.width = '100%';
+  document.getElementById('results-card').className = 'results-card pass';
+  document.getElementById('results-verdict').textContent = 'Quiz Completed!';
+  document.getElementById('results-sub').textContent = 'Congratulations! You have completed the SSD Training Quiz. You may now apply for staff positions.';
+  document.getElementById('stat-correct').textContent = '—';
+  document.getElementById('stat-wrong').textContent = '—';
+  document.getElementById('stat-total').textContent = '—';
+  document.getElementById('score-ring').className = 'score-ring pass';
+  document.getElementById('score-pct').textContent = '✓';
+  document.getElementById('results-card').querySelector('.score-label').textContent = 'Completed';
+}
+
 function applyUser(user) {
   if (!user) return;
   const avatarUrl = user.avatar
@@ -1221,6 +1250,8 @@ function applyUser(user) {
   if (user.isTrainer) {
     document.querySelectorAll('.trainer-only').forEach(el => el.style.display = '');
   }
+
+  checkUserCooldown();
 }
 
 // ════════════════════════════════════════════════════
@@ -1248,6 +1279,50 @@ function clearSession() {
 
 function checkSessionResume() {
   if (!currentUser) { showScreen('quiz'); launchFresh(); return; }
+
+  // Check cooldown/pass status first
+  if (!cooldownCheckDone) {
+    showScreen('quiz');
+    checkUserCooldown().then(() => {
+      if (userCooldown.hasPassed) {
+        showPassCongrats();
+        return;
+      }
+      const raw = localStorage.getItem(SESSION_KEY + '_' + currentUser.id);
+      if (userCooldown.isOnCooldown) {
+        updateCooldownUI();
+        return;
+      }
+      if (!raw) { showScreen('quiz'); launchFresh(); return; }
+      try {
+        const s = JSON.parse(raw);
+        if (!Array.isArray(s.shuffledQs) || !s.shuffledQs.length || !s.shuffledQs[0]?.text) {
+          clearSession(); showScreen('quiz'); launchFresh(); return;
+        }
+        if (s.userId !== currentUser.id || Date.now() - s.timestamp > 7200000) {
+          clearSession(); showScreen('quiz'); launchFresh(); return;
+        }
+        showScreen('quiz');
+        document.getElementById('resume-banner').style.display = 'flex';
+        document.getElementById('resume-text').textContent =
+          `You have a quiz in progress — Question ${s.currentQ + 1} of ${(s.shuffledQs || []).length} (Score: ${s.score}). Resume where you left off?`;
+        window._pendingSession = s;
+        launchFresh(true);
+      } catch { showScreen('quiz'); launchFresh(); }
+    });
+    return;
+  }
+
+  if (userCooldown.hasPassed) {
+    showPassCongrats();
+    return;
+  }
+
+  if (userCooldown.isOnCooldown) {
+    updateCooldownUI();
+    return;
+  }
+
   const raw = localStorage.getItem(SESSION_KEY + '_' + currentUser.id);
   if (!raw) { showScreen('quiz'); launchFresh(); return; }
   try {
@@ -1321,7 +1396,6 @@ function showPage(page) {
   if (page === 'attempts' && !currentUser?.isTrainer) return;
 
   if (page === 'quiz')     { showScreen('quiz');     }
-  if (page === 'handbook') { showScreen('handbook'); }
   if (page === 'results')  { showScreen('results');  }
   if (page === 'attempts') { showScreen('attempts'); loadAttempts(); }
 
@@ -1612,7 +1686,7 @@ function bindHotspot(q) {
       document.querySelectorAll('.hotspot-point').forEach(p => p.className = 'hotspot-point hp-neutral');
       chosen = pt;
       pt.classList.add('hp-selected');
-      pt.style.background = 'rgba(26,127,212,0.85)';
+      pt.style.background = 'rgba(249,115,22,0.85)';
       pendingCheck = true;
       document.getElementById('btn-check').disabled = false;
     });
@@ -1719,7 +1793,7 @@ function showResults() {
   clearSession();
   const total = shuffledQs.length;
   const pct   = Math.round((score / total) * 100);
-  const pass  = pct >= PASS_THRESHOLD * 100;
+  const pass  = score >= PASS_SCORE;
 
   // Show splash first, then summary
   showResultSplash(pass, pct, () => {
@@ -1741,7 +1815,7 @@ function buildResultsSummary(total, pct, pass) {
   document.getElementById('results-verdict').textContent = pass ? 'Quiz Passed' : 'Quiz Failed';
   document.getElementById('results-sub').textContent = pass
     ? `Great work. You scored ${score}/${total} and have demonstrated sufficient knowledge of the GSRP Staff Handbook.`
-    : `You scored ${score}/${total}. A minimum of 75% is required. Review the handbook and try again.`;
+    : `You scored ${score}/${total}. A minimum of ${PASS_SCORE} correct answers is required. Review the Staff Handbook and try again.`;
   document.getElementById('results-card').className = 'results-card ' + (pass ? 'pass' : 'fail');
   document.getElementById('stat-correct').textContent = score;
   document.getElementById('stat-wrong').textContent   = total - score;
@@ -1837,14 +1911,14 @@ function showResultSplash(pass, pct, callback) {
   } else {
     document.getElementById('splash-icon').textContent  = '📋';
     document.getElementById('splash-title').textContent = 'Unfortunately, You Failed.';
-    document.getElementById('splash-msg').innerHTML     = `You scored <strong>${pct}%</strong> — a minimum of 75% is required. Please read over the <a class="splash-link" onclick="dismissSplash();showPage('handbook')">Staff Handbook</a> before retaking the quiz.`;
+    document.getElementById('splash-msg').innerHTML     = `You scored <strong>${score}/${total}</strong> — a minimum of ${PASS_SCORE} correct answers is required. Please read over the <a class="splash-link" href="/staff-handbook" target="_blank">Staff Handbook</a> before retaking the quiz. You may attempt again in <span id="cooldown-countdown"></span>.`;
     const btn = document.getElementById('splash-btn');
     btn.className = 'splash-btn splash-btn-fail';
   }
 
   el.style.background = pass
     ? 'radial-gradient(ellipse 60% 50% at 50% 40%, rgba(34,197,94,0.08) 0%, var(--bg) 60%)'
-    : 'radial-gradient(ellipse 60% 50% at 50% 40%, rgba(26,127,212,0.08) 0%, var(--bg) 60%)';
+    : 'radial-gradient(ellipse 60% 50% at 50% 40%, rgba(249,115,22,0.08) 0%, var(--bg) 60%)';
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => el.classList.add('show'));
@@ -1874,20 +1948,7 @@ function hbNav(el) {
   }, 100);
 }
 
-// Highlight sidebar on scroll
-window.addEventListener('scroll', () => {
-  if (!document.getElementById('screen-handbook').classList.contains('active')) return;
-  const sections = document.querySelectorAll('.hb-section');
-  let active = null;
-  sections.forEach(s => {
-    if (s.getBoundingClientRect().top < 120) active = s.id;
-  });
-  if (active) {
-    document.querySelectorAll('.sidebar-link').forEach(l => {
-      l.classList.toggle('active', l.getAttribute('href') === '#' + active);
-    });
-  }
-}, { passive: true });
+
 
 // ════════════════════════════════════════════════════
 // ATTEMPTS PAGE
@@ -1927,21 +1988,35 @@ function filterAttempts() {
   renderAttempts(filtered);
 }
 
-function renderAttempts(data) {
+async function renderAttempts(data) {
   document.getElementById('attempts-loading').style.display = 'none';
   document.getElementById('attempts-table').style.display   = 'table';
   document.getElementById('attempts-count').textContent     = `${data.length} attempt${data.length !== 1 ? 's' : ''}`;
 
   const tbody = document.getElementById('attempts-tbody');
   if (data.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:2rem">No attempts found.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:2rem">No attempts found.</td></tr>`;
     return;
   }
+
+  // Group by userId and get latest status
+  const userStatuses = {};
+  const userIds = [...new Set(data.map(a => a.userId))];
+  await Promise.all(userIds.slice(0, 20).map(async uid => {
+    try {
+      const res = await fetch(`/api/training/cooldown?userId=${uid}`);
+      userStatuses[uid] = await res.json();
+    } catch { userStatuses[uid] = { isOnCooldown: false, hasPassed: false }; }
+  }));
+
   tbody.innerHTML = data.map((a, i) => {
     const av = a.avatar
       ? `https://cdn.discordapp.com/avatars/${a.userId}/${a.avatar}.png?size=32`
       : `https://cdn.discordapp.com/embed/avatars/0.png`;
     const date = a.timestamp ? new Date(a.timestamp).toLocaleString() : '—';
+    const status = userStatuses[a.userId] || {};
+    const showRevoke = currentUser?.isTrainer && status.isOnCooldown && !a.pass;
+
     return `
       <tr>
         <td><img class="avatar-sm" src="${av}" alt=""><strong>${esc(a.globalName || a.username)}</strong></td>
@@ -1950,10 +2025,14 @@ function renderAttempts(data) {
         <td><strong style="color:${a.pass ? 'var(--correct-b)' : 'var(--wrong-b)'}">${a.pct}%</strong></td>
         <td><span class="pill ${a.pass ? 'pill-pass' : 'pill-fail'}">${a.pass ? 'PASS' : 'FAIL'}</span></td>
         <td style="font-size:.78rem;color:var(--muted)">${date}</td>
-        <td><button class="btn-expand" onclick="toggleExpand(${i})">&#9660; Details</button></td>
+        <td>${status.isOnCooldown ? '<span class="pill" style="background:rgba(239,68,68,0.15);color:#fca5a5;border-color:rgba(239,68,68,0.3)">COOLDOWN</span>' : ''}${status.hasPassed && a.pass ? '<span class="pill pill-pass">COMPLETED</span>' : ''}</td>
+        <td>
+          ${showRevoke ? `<button class="btn-sm" style="background:rgba(239,68,68,0.15);border-color:rgba(239,68,68,0.3);color:#fca5a5" onclick="revokeCooldown('${a.userId}')">Revoke</button>` : ''}
+          <button class="btn-expand" onclick="toggleExpand(${i})">&#9660;</button>
+        </td>
       </tr>
       <tr class="expand-row" id="expand-${i}">
-        <td colspan="7">
+        <td colspan="8">
           <div class="expand-inner">
             <strong style="font-size:.82rem;color:var(--sky)">Answer Breakdown</strong>
             <div class="answer-grid">
@@ -1968,6 +2047,26 @@ function renderAttempts(data) {
         </td>
       </tr>`;
   }).join('');
+}
+
+async function revokeCooldown(userId) {
+  if (!confirm('Revoke cooldown for this user? They will be able to retake the quiz immediately.')) return;
+  try {
+    const res = await fetch('/api/training/attempts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'revoke', userId }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      alert('Cooldown revoked!');
+      loadAttempts();
+    } else {
+      alert('Failed: ' + data.error);
+    }
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
 }
 
 function toggleExpand(i) {
