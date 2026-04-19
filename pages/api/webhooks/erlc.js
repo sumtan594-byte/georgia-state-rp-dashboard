@@ -62,20 +62,42 @@ export default async function handler(req, res) {
     }
 
     const data = JSON.parse(rawBody.toString());
-    console.log('[ERLC Webhook] Parsed data:', JSON.stringify(data));
+    console.log('[ERLC Webhook] Raw data:', JSON.stringify(data));
 
-    if (!data.events || !Array.isArray(data.events)) {
+    const events = data.events || (data.event ? [data] : []);
+    if (!events.length) {
       return res.status(200).json({ success: true });
     }
 
-    for (const evt of data.events) {
-      if (evt.event !== 'CustomCommand') continue;
+    for (const evt of events) {
+      const eventType = evt.event || evt.type || '';
+      const command = evt.data?.command?.toLowerCase() || evt.command?.toLowerCase() || evt.content?.toLowerCase() || '';
+      const argument = evt.data?.argument || evt.argument || evt.args || '';
+      const playerId = evt.data?.origin || evt.origin || evt.userId || evt.playerId || '';
 
-      const command = evt.data?.command?.toLowerCase() || '';
-      const argument = evt.data?.argument || '';
-      const playerId = evt.data?.origin || evt.origin || '';
+      console.log('[ERLC Webhook] Event type:', eventType, 'Command:', command, 'Argument:', argument);
 
-      console.log('[ERLC Webhook] Command:', command, 'Argument:', argument);
+      if (eventType === 'EmergencyCall' || eventType === '911' || eventType === 'emergency') {
+        const commandUser = playerId ? await getRobloxUsername(playerId) : 'Unknown';
+        const location = argument || evt.location || '';
+        const description = evt.description || '';
+
+        const payload = {
+          content: `EMERGENCY_CALL:${commandUser}:${location}:${description}`,
+          allowed_mentions: { parse: [] }
+        };
+
+        await fetch(TARGET_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        console.log(`[ERLC Webhook] Emergency call from ${commandUser}`);
+        continue;
+      }
+
+      if (!command) continue;
 
       if (command === 'kick' || command === 'ban') {
         const commandUser = playerId ? await getRobloxUsername(playerId) : 'Unknown';
