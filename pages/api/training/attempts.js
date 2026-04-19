@@ -30,9 +30,18 @@ export default async function handler(req, res) {
         .map(async f => {
           try {
             const fileRes = await fetch(f.download_url);
-            const userData = await fileRes.json();
-            if (userData.attempts && Array.isArray(userData.attempts)) {
-              allAttempts.push(...userData.attempts);
+            const data = await fileRes.json();
+            // Handle both old format (direct array) and new format (object with attempts array)
+            let attemptsArray = null;
+            if (Array.isArray(data)) {
+              // Old format: data IS the attempts array
+              attemptsArray = data;
+            } else if (data.attempts && Array.isArray(data.attempts)) {
+              // New format: data.attempts
+              attemptsArray = data.attempts;
+            }
+            if (attemptsArray && attemptsArray.length > 0) {
+              allAttempts.push(...attemptsArray);
             }
           } catch { /* skip corrupt files */ }
         });
@@ -84,7 +93,21 @@ export default async function handler(req, res) {
         const existing = await fetchExisting.json();
         sha = existing.sha;
         try {
-          userData = JSON.parse(Buffer.from(existing.content, 'base64').toString('utf8'));
+          const rawData = JSON.parse(Buffer.from(existing.content, 'base64').toString('utf8'));
+          // Handle both old format (direct array) and new format (object)
+          if (Array.isArray(rawData)) {
+            // Old format: convert to new format
+            userData = {
+              attempts: rawData,
+              cooldownUntil: null,
+              hasPassed: rawData.some(a => a.pass === true),
+              hasPassedAt: null,
+            };
+          } else {
+            // New format
+            userData = rawData;
+            if (!userData.attempts) userData.attempts = [];
+          }
         } catch { userData = { attempts: [], cooldownUntil: null, hasPassed: false, hasPassedAt: null }; }
       }
 

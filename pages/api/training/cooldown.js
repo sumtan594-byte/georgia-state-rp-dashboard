@@ -40,7 +40,19 @@ export default async function handler(req, res) {
       const existing = await fetchExisting.json();
       let userData = { attempts: [], cooldownUntil: null, hasPassed: false, hasPassedAt: null };
       try {
-        userData = JSON.parse(Buffer.from(existing.content, 'base64').toString('utf8'));
+        const rawData = JSON.parse(Buffer.from(existing.content, 'base64').toString('utf8'));
+        // Handle both old format (direct array) and new format (object)
+        if (Array.isArray(rawData)) {
+          userData = {
+            attempts: rawData,
+            cooldownUntil: null,
+            hasPassed: rawData.some(a => a.pass === true),
+            hasPassedAt: null,
+          };
+        } else {
+          userData = rawData;
+          if (!userData.attempts) userData.attempts = [];
+        }
       } catch { userData = { attempts: [], cooldownUntil: null, hasPassed: false, hasPassedAt: null }; }
 
       const now = new Date();

@@ -35,10 +35,21 @@ export default async function handler(req, res) {
         const existing = await fetchExisting.json();
         sha = existing.sha;
         try {
-          userData = JSON.parse(Buffer.from(existing.content, 'base64').toString('utf8'));
-          if (!userData.attempts) userData.attempts = [];
-          if (userData.hasPassed === undefined) userData.hasPassed = false;
-          if (!userData.cooldownUntil) userData.cooldownUntil = null;
+          const rawData = JSON.parse(Buffer.from(existing.content, 'base64').toString('utf8'));
+          // Handle both old format (direct array) and new format (object)
+          if (Array.isArray(rawData)) {
+            userData = {
+              attempts: rawData,
+              cooldownUntil: null,
+              hasPassed: rawData.some(a => a.pass === true),
+              hasPassedAt: null,
+            };
+          } else {
+            userData = rawData;
+            if (!userData.attempts) userData.attempts = [];
+            if (userData.hasPassed === undefined) userData.hasPassed = false;
+            if (!userData.cooldownUntil) userData.cooldownUntil = null;
+          }
         } catch { userData = { attempts: [], cooldownUntil: null, hasPassed: false, hasPassedAt: null }; }
       }
 
