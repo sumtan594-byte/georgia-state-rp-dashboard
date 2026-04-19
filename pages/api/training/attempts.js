@@ -3,8 +3,10 @@ export default async function handler(req, res) {
   const GITHUB_REPO  = process.env.GITHUB_OWNER + '/' + process.env.GITHUB_REPO;
   const TRAINER_ROLE = '1372482495035211908';
 
-  // GET - List all attempts
+  // GET - List all attempts (with user data for trainers)
   if (req.method === 'GET') {
+    const includeUserData = req.query.userData === 'true';
+    
     if (!GITHUB_TOKEN || !GITHUB_REPO) {
       return res.status(500).json({ error: 'GitHub not configured' });
     }
@@ -18,12 +20,13 @@ export default async function handler(req, res) {
       });
 
       if (!listRes.ok) {
-        if (listRes.status === 404) return res.status(200).json([]);
+        if (listRes.status === 404) return res.status(200).json({ attempts: [], users: {} });
         return res.status(500).json({ error: 'Failed to list attempts' });
       }
 
       const files = await listRes.json();
       const allAttempts = [];
+      const userDataMap = {};
 
       const fetches = files
         .filter(f => f.name.endsWith('.json'))
@@ -33,13 +36,23 @@ export default async function handler(req, res) {
             const data = await fileRes.json();
             // Handle both old format (direct array) and new format (object with attempts array)
             let attemptsArray = null;
+            let userData = { cooldownUntil: null, hasPassed: false, hasPassedAt: null };
+            
             if (Array.isArray(data)) {
               // Old format: data IS the attempts array
               attemptsArray = data;
+              userData.hasPassed = data.some(a => a.pass === true);
             } else if (data.attempts && Array.isArray(data.attempts)) {
               // New format: data.attempts
               attemptsArray = data.attempts;
+              userData.cooldownUntil = data.cooldownUntil || null;
+              userData.hasPassed = data.hasPassed || false;
+              userData.hasPassedAt = data.hasPassedAt || null;
             }
+            
+            const userId = f.name.replace('.json', '');
+            userDataMap[userId] = userData;
+            
             if (attemptsArray && attemptsArray.length > 0) {
               allAttempts.push(...attemptsArray);
             }
@@ -49,7 +62,11 @@ export default async function handler(req, res) {
       await Promise.all(fetches);
       allAttempts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
 
-      res.status(200).json(allAttempts);
+      if (includeUserData) {
+        res.status(200).json({ attempts: allAttempts, users: userDataMap });
+      } else {
+        res.status(200).json(allAttempts);
+      }
     } catch (err) {
       console.error('[attempts/list] Error:', err.message);
       res.status(500).json({ error: err.message });

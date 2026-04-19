@@ -1,32 +1,70 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { Loader2, Users, Search, Filter, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Users, Search, Filter, ChevronDown, ChevronUp, Clock, RotateCcw } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
 
 function esc(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+function formatCooldown(cooldownUntil) {
+  if (!cooldownUntil) return null;
+  const until = new Date(cooldownUntil);
+  const now = new Date();
+  if (until <= now) return null;
+  const mins = Math.max(0, Math.ceil((until - now) / 60000));
+  const hours = Math.floor(mins / 60);
+  const minsLeft = mins % 60;
+  if (hours > 0) return `${hours}h ${minsLeft}m`;
+  return `${minsLeft}m`;
+}
+
 export default function AttemptsPage() {
   const { data: session, status } = useSession();
   const [attempts, setAttempts] = useState([]);
+  const [userData, setUserData] = useState({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [resultFilter, setResultFilter] = useState('all');
   const [sort, setSort] = useState('newest');
   const [expanded, setExpanded] = useState(null);
+  const [revoking, setRevoking] = useState(null);
 
   useEffect(() => {
     if (status === 'authenticated') {
-      fetch('/api/training/attempts')
+      fetch('/api/training/attempts?userData=true')
         .then(r => r.json())
         .then(data => {
-          setAttempts(Array.isArray(data) ? data : []);
+          if (Array.isArray(data)) {
+            setAttempts(data);
+          } else if (data.attempts) {
+            setAttempts(data.attempts);
+            setUserData(data.users || {});
+          }
           setLoading(false);
         })
         .catch(() => setLoading(false));
     }
   }, [status]);
+
+  const handleRevoke = async (userId) => {
+    if (!confirm('Revoke cooldown for this user? They will be able to retake immediately.')) return;
+    setRevoking(userId);
+    try {
+      const res = await fetch('/api/training/attempts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'revoke', userId }),
+      });
+      if (res.ok) {
+        setUserData(prev => ({
+          ...prev,
+          [userId]: { ...prev[userId], cooldownUntil: null },
+        }));
+      }
+    } catch {}
+    setRevoking(null);
+  };
 
   if (status === 'loading' || loading) {
     return (
@@ -128,6 +166,35 @@ export default function AttemptsPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-4 flex-shrink-0">
+                      {(() => {
+                        const ud = userData[a.userId] || {};
+                        const cooldown = formatCooldown(ud.cooldownUntil);
+                        return (
+                          <>
+                            {cooldown && (
+                              <div className="flex items-center gap-1.5 text-orange-400 text-[10px] font-medium bg-orange-400/10 px-2 py-1 rounded-lg">
+                                <Clock size={10} />
+                                <span>{cooldown}</span>
+                              </div>
+                            )}
+                            {ud.hasPassed && (
+                              <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded-full bg-green-400/10 text-green-400 border border-green-400/20">
+                                PASSED
+                              </span>
+                            )}
+                            {!ud.hasPassed && !cooldown && (
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleRevoke(a.userId); }}
+                                disabled={revoking === a.userId}
+                                className="flex items-center gap-1 text-[9px] text-gsrp-teal-light/50 hover:text-cyan-400 px-2 py-0.5 rounded border border-gsrp-dark-border/30 hover:border-cyan-400/30 transition-colors disabled:opacity-50"
+                              >
+                                <RotateCcw size={10} />
+                                {revoking === a.userId ? '...' : 'Revoke'}
+                              </button>
+                            )}
+                          </>
+                        );
+                      })()}
                       <div className="text-right hidden sm:block">
                         <p className="text-[10px] text-gsrp-teal-light/30">{dateStr}</p>
                       </div>
