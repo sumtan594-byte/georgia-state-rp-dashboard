@@ -1594,7 +1594,7 @@ function showResults() {
   const pass  = score >= PASS_SCORE;
 
   // Show splash first, then summary
-  showResultSplash(pass, pct, () => {
+  showResultSplash(pass, pct, total, () => {
     buildResultsSummary(total, pct, pass);
     showScreen('results');
     document.getElementById('progress-bar').style.width = '100%';
@@ -1696,14 +1696,14 @@ function dismissInterstitial() {
 
 let _splashCallback = null;
 
-function showResultSplash(pass, pct, callback) {
+function showResultSplash(pass, pct, total, callback) {
   _splashCallback = callback;
   const el = document.getElementById('result-splash');
 
   if (pass) {
     document.getElementById('splash-icon').textContent  = '🎉';
     document.getElementById('splash-title').textContent = 'Congratulations! You Passed!';
-    document.getElementById('splash-msg').innerHTML     = `You scored <strong>${pct}%</strong> — you have demonstrated sufficient knowledge of the GSRP Staff Handbook and are ready for active duty.`;
+    document.getElementById('splash-msg').innerHTML     = `You scored <strong>${score}/${total}</strong> — you have demonstrated sufficient knowledge of the GSRP Staff Handbook and are ready for active duty.`;
     const btn = document.getElementById('splash-btn');
     btn.className = 'splash-btn splash-btn-pass';
   } else {
