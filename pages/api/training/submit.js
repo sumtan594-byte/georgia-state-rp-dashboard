@@ -17,6 +17,46 @@ export default async function handler(req, res) {
 
   if (!userId || score === undefined) return res.status(400).json({ error: 'Missing fields' });
 
+  // ── Check cooldown before accepting attempt ───────────────────────────────
+  try {
+    const filePath = `attempts/${userId}.json`;
+    const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`;
+    const fetchExisting = await fetch(apiUrl, {
+      headers: {
+        Authorization: `Bearer ${GITHUB_TOKEN}`,
+        Accept: 'application/vnd.github+json',
+      },
+    });
+    if (fetchExisting.ok) {
+      const existing = await fetchExisting.json();
+      try {
+        const rawData = JSON.parse(Buffer.from(existing.content, 'base64').toString('utf8'));
+        let existingData;
+        if (Array.isArray(rawData)) {
+          existingData = { attempts: rawData, cooldownUntil: null, hasPassed: false };
+        } else {
+          existingData = rawData;
+        }
+        const cooldown = existingData.cooldownUntil ? new Date(existingData.cooldownUntil) : null;
+        const now = new Date();
+        if (cooldown && cooldown > now) {
+          const remainingMs = cooldown - now;
+          const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60 * 1000));
+          return res.status(429).json({ 
+            error: 'Cooldown active', 
+            cooldownUntil: existingData.cooldownUntil,
+            retryAfter: remainingHours 
+          });
+        }
+        if (existingData.hasPassed) {
+          return res.status(400).json({ error: 'Already passed' });
+        }
+      } catch {}
+    }
+  } catch (err) {
+    console.error('[Cooldown check] Error:', err.message);
+  }
+
   // ── Save to GitHub ───────────────────────────────────────────────────────
   if (GITHUB_TOKEN && GITHUB_REPO) {
     try {
