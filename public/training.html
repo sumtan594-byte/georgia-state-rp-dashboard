@@ -1637,7 +1637,7 @@ function buildResultsSummary(total, pct, pass) {
 
 async function submitResult(pct, pass, total) {
   try {
-    await fetch('/api/training/submit', {
+    const res = await fetch('/api/training/submit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1658,6 +1658,17 @@ async function submitResult(pct, pass, total) {
         })),
       }),
     });
+    const data = await res.json();
+    if (!res.ok) {
+      if (data.error === 'Cooldown active' || data.error === 'Already passed') {
+        alert(data.error === 'Cooldown active' 
+          ? `You are on cooldown. Try again in ${data.retryAfter} hours.`
+          : 'You have already passed the training quiz!');
+        window.location.reload();
+      } else {
+        console.warn('Submit error:', data.error);
+      }
+    }
   } catch (e) { console.warn('Submit failed:', e); }
 }
 
