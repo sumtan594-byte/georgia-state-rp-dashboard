@@ -53,7 +53,11 @@ export default function AttemptsPage() {
     try {
       const res = await fetch('/api/training/attempts', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-user-id': session.user.id,
+          'x-user-roles': JSON.stringify(session.user.roles || []),
+        },
         body: JSON.stringify({ action: 'revoke', userId }),
       });
       if (res.ok) {
