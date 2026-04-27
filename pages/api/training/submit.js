@@ -5,7 +5,7 @@ export default async function handler(req, res) {
   const GITHUB_REPO  = process.env.GITHUB_OWNER + '/' + process.env.GITHUB_REPO;
   const WEBHOOK_URL  = process.env.TRAINING_WEBHOOK_URL;
   const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
-  const DISCORD_GUILD_ID = process.env.DISCORD_GUILD_ID;
+  const DISCORD_GUILD_ID = process.env.ALLOWED_GUILD_ID;
   const DISCORD_ROLE_ID = process.env.DISCORD_ROLE_ID;
   const COOLDOWN_HOURS = 6;
 
