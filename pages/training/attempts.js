@@ -182,7 +182,7 @@ export default function AttemptsPage() {
                                 PASSED
                               </span>
                             )}
-                            {!ud.hasPassed && !cooldown && (
+                            {cooldown && (
                               <button
                                 onClick={(e) => { e.stopPropagation(); handleRevoke(a.userId); }}
                                 disabled={revoking === a.userId}
