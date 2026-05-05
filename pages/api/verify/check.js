@@ -61,14 +61,14 @@ export default async function handler(req, res) {
     const headshotPromise = fetch(`https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${robloxId}&size=150x150&format=Png&isCircular=false`).then(r => r.json());
     const currentlyWearingPromise = fetch(`https://avatar.roblox.com/v1/users/${robloxId}/currently-wearing`).then(r => r.json());
 
-    // 3. Fetch ERLC Ban Status
+    // 3. Fetch ERLC Players (v2 API doesn't expose bans directly)
     const erlcKey = process.env.ERLC_API_KEY;
-    const erlcBanPromise = erlcKey ? fetch('https://api.policeroleplay.community/v1/server/bans', {
+    const erlcPlayersPromise = erlcKey ? fetch('https://api.erlc.gg/v2/server?Players=true', {
       headers: { 'server-key': erlcKey }
     }).then(r => r.json()).catch(err => {
-      console.error('ERLC Ban API Error:', err);
-      return {};
-    }) : Promise.resolve({});
+      console.error('ERLC Players API Error:', err);
+      return { Players: [] };
+    }) : Promise.resolve({ Players: [] });
 
     // 4. Fetch Melonly Logs
     const melonlyKey = process.env.MELONLY_API_KEY;
@@ -79,12 +79,12 @@ export default async function handler(req, res) {
       return null;
     }) : Promise.resolve(null);
 
-    const [profile, avatar, headshot, currentlyWearing, erlcBans, melonlyLogs] = await Promise.all([
+    const [profile, avatar, headshot, currentlyWearing, erlcPlayers, melonlyLogs] = await Promise.all([
       profilePromise,
       avatarPromise,
       headshotPromise,
       currentlyWearingPromise,
-      erlcBanPromise,
+      erlcPlayersPromise,
       melonlyLogsPromise
     ]);
 
@@ -109,22 +109,17 @@ export default async function handler(req, res) {
     // Role mapping
     const roleMapping = rolesRes.roles || {};
     const reversedRoleMapping = Object.fromEntries(Object.entries(roleMapping).map(([name, id]) => [id, name]));
-    const userRoleNames = (session.user.roles || []).map(id => reversedRoleMapping[id] || id).filter(name => !name.includes('\u3164')); // Filter out invisible characters
+    const userRoleNames = (session.user.roles || []).map(id => reversedRoleMapping[id] || id).filter(name => !name.includes('\u3164'));
 
-    // Check if banned in ERLC
-    const isErlcBanned = erlcBans && (erlcBans[robloxId] !== undefined || Object.values(erlcBans).some(b => b === actualRobloxUsername || b === String(robloxId)));
+    // Check if player is in ERLC (v2 API - check if they're in the player list as staff indicator)
+    const erlcStaff = erlcPlayers?.Players?.filter(p => p.Permission === 'Server Administrator' || p.Permission === 'Server Moderator') || [];
+    const isErlcPlayer = erlcPlayers?.Players?.some(p => p.Player?.includes(`:${robloxId}:`) || p.Player?.startsWith(`${actualRobloxUsername}:`)) || false;
+    const playerTeam = erlcPlayers?.Players?.find(p => p.Player?.includes(`:${robloxId}:`) || p.Player?.startsWith(`${actualRobloxUsername}:`))?.Team || null;
     
-    let banInfo = null;
-    if (isErlcBanned) {
-      // Find ban log in Melonly
-      const banLog = melonlyLogs && melonlyLogs.data ? melonlyLogs.data.find(log => (log.type === 2 || log.typeId === 'ban' || log.text?.toLowerCase().includes('ban')) && !log.expired) : null;
-      banInfo = {
-        isBanned: true,
-        logger: banLog?.createdBy || 'Staff Member',
-        reason: banLog?.text || banLog?.description || 'No reason provided'
-      };
-    }
-
+let banInfo = null;
+    // Note: v2 API doesn't expose bans directly - simplified to just show player status
+    // For full ban information, would need to check the Melonly logs
+    
     return res.status(200).json({
       linked: true,
       roblox: {
@@ -138,11 +133,21 @@ export default async function handler(req, res) {
       },
       discord: {
         id: discordId,
-        name: session.user.name,
+        username: session.user.name,
+        avatarUrl: session.user.image,
         roles: userRoleNames
       },
       erlc: {
-        ban: banInfo
+        inServer: isErlcPlayer,
+        team: playerTeam,
+        isStaff: erlcStaff.length > 0,
+        staffRole: erlcStaff.length > 0 ? erlcStaff[0].Permission : null
+      },
+      erlc: {
+        inServer: isErlcPlayer,
+        team: playerTeam,
+        isStaff: erlcStaff.length > 0,
+        staffRole: erlcStaff.length > 0 ? erlcStaff[0].Permission : null
       },
       melonly: {
         logs: (melonlyLogs?.data || []).slice(0, 10)

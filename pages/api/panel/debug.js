@@ -8,16 +8,15 @@ export default async function handler(req, res) {
 
   // Test 1: Players endpoint
   try {
-    const playersRes = await fetch('https://api.policeroleplay.community/v2/server?Players=true&Staff=true&JoinLogs=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true', {
+    const playersRes = await fetch('https://api.erlc.gg/v2/server?Players=true&Staff=true&JoinLogs=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true', {
       headers: { 'server-key': ERLC_KEY },
     });
     results.players_status = playersRes.status;
     if (playersRes.ok) {
       const data = await playersRes.json();
-      results.players_count = data.players?.length || 0;
-      results.server_name = data.server?.name || 'unknown';
-      results.has_map = !!data.map;
-      results.map_name = data.map || null;
+      results.players_count = data.Players?.length || 0;
+      results.server_name = data.Name || 'unknown';
+      results.has_commandlogs = !!data.CommandLogs;
       results.keys_returned = Object.keys(data);
     } else {
       results.players_error = await playersRes.text();
@@ -28,7 +27,7 @@ export default async function handler(req, res) {
 
   // Test 2: Map image
   try {
-    const mapRes = await fetch('https://api.policeroleplay.community/maps/fall_postals.png');
+    const mapRes = await fetch('https://api.erlc.gg/maps/fall_postals.png');
     results.map_image_status = mapRes.status;
     if (!mapRes.ok) {
       results.map_image_error = await mapRes.text();

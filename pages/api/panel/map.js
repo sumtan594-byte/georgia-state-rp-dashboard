@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch('https://api.policeroleplay.community/maps/fall_postals.png');
+    const response = await fetch('https://api.erlc.gg/maps/fall_postals.png');
 
     if (!response.ok) {
       return res.status(response.status).json({ error: 'Failed to fetch map image' });

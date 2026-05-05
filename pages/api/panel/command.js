@@ -43,7 +43,7 @@ async function drainQueue() {
     if (!item) break;
 
     try {
-      const erlcRes = await fetch('https://api.policeroleplay.community/v1/server/command', {
+      const erlcRes = await fetch('https://api.erlc.gg/v2/server/command', {
         method: 'POST',
         headers: {
           'server-key': item.erlcKey,
@@ -59,7 +59,7 @@ async function drainQueue() {
         const retryAfter = parseFloat(body.retry_after ?? 5) * 1000;
         await sleep(retryAfter + 500);
 
-        const retryRes = await fetch('https://api.policeroleplay.community/v1/server/command', {
+        const retryRes = await fetch('https://api.erlc.gg/v2/server/command', {
           method: 'POST',
           headers: {
             'server-key': item.erlcKey,

@@ -22,7 +22,7 @@ async function refreshFromErlc(cache, key) {
   if (cache.fetching) return cache.fetching;
 
   cache.fetching = (async () => {
-    const url = 'https://api.policeroleplay.community/v2/server?Players=true&Staff=true&JoinLogs=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true';
+    const url = 'https://api.erlc.gg/v2/server?Players=true&Staff=true&JoinLogs=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true';
     const response = await fetch(url, { headers: { 'server-key': key } });
 
     if (response.status === 429) {
