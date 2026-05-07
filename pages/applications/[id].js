@@ -253,9 +253,13 @@ export default function ApplicationDetail() {
         <div className="lg:col-span-3 space-y-8">
           <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-8">
             <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="w-20 h-20 rounded-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 flex items-center justify-center text-gsrp-teal-light font-black text-3xl shadow-xl">
-                {application.username.charAt(0).toUpperCase()}
-              </div>
+              {application.userImage ? (
+                <img src={application.userImage} alt="" className="w-20 h-20 rounded-full border border-gsrp-dark-border/50 shadow-xl object-cover" />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 flex items-center justify-center text-gsrp-teal-light font-black text-3xl shadow-xl">
+                  {application.username.charAt(0).toUpperCase()}
+                </div>
+              )}
               <div className="text-center md:text-left flex-1">
                 <h1 className="text-2xl font-black text-white mb-1">{application.username}</h1>
                 <p className="text-xs font-mono text-gsrp-teal-light/40 uppercase tracking-widest">{application.userId}</p>

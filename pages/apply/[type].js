@@ -154,6 +154,7 @@ export default function DynamicApplyPage() {
       typeName: appType.name,
       username: session.user.name,
       userId: session.user.id,
+      userImage: session.user.image,
       answers: answers,
       keystrokeData: keystrokes,
       pasteData: pastes,

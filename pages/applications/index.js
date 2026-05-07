@@ -109,9 +109,13 @@ export default function ApplicationsList() {
                   <tr key={app._id} className="border-b border-gsrp-dark-border/30 hover:bg-white/5 transition-colors group">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 flex items-center justify-center text-gsrp-teal-light font-black text-xs">
-                          {app.username.charAt(0).toUpperCase()}
-                        </div>
+                        {app.userImage ? (
+                          <img src={app.userImage} alt="" className="w-10 h-10 rounded-full border border-gsrp-dark-border/50 object-cover" />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 flex items-center justify-center text-gsrp-teal-light font-black text-xs">
+                            {app.username.charAt(0).toUpperCase()}
+                          </div>
+                        )}
                         <div>
                           <p className="text-white font-bold text-sm">{app.username}</p>
                           <p className="text-[10px] text-gsrp-teal-light/30 font-mono">{app.userId}</p>
