@@ -64,7 +64,7 @@ export default function Sidebar({ open, onToggle }) {
     ...(hasAttempts ? [{ href: '/training/attempts', icon: ClipboardList, label: 'Attempts' }] : []),
     { href: '/verify', icon: ShieldCheck, label: 'Verification' },
     { href: '/shop', icon: ShoppingCart, label: 'Store' },
-    { href: '/apply', icon: UserPlus, label: 'Staff Application' },
+    { href: '/apply', icon: UserPlus, label: 'Applications' },
     ...(canReviewApps ? [
       { href: '/applications', icon: Users, label: 'Review Apps' },
       { href: '/applications/manage', icon: Settings, label: 'Manage Apps' }

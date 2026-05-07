@@ -39,6 +39,25 @@ export default function ManageApplicationTypes() {
       fetch('/api/applications/types')
         .then(r => r.json())
         .then(data => {
+          // If no staff app exists, add the default one so it can be edited
+          const hasStaff = data.find(t => t.slug === 'staff');
+          if (!hasStaff) {
+            data.unshift({
+              name: 'Staff Application',
+              slug: 'staff',
+              description: 'Apply to join the Georgia State Roleplay staff team',
+              fields: [
+                { id: '1', label: 'Roblox username', type: 'text', subtitle: 'Username, not display name.', required: true },
+                { id: '2', label: 'In game PD rank?', type: 'text', subtitle: 'e.g. Commander', required: true },
+                { id: '3', label: 'What is your Time zone?', type: 'textarea', placeholder: 'e.g. EST', required: true },
+                { id: '4', label: 'Explain RDM', type: 'textarea', sentences: 2, required: true },
+                { id: '5', label: 'Explain VDM', type: 'textarea', sentences: 2, required: true },
+                { id: '6', label: 'Scenario 1: Safezone Shooting', type: 'textarea', sentences: 2, required: true },
+                { id: '7', label: 'Final Questions?', type: 'text', required: false },
+                { id: '8', label: 'Ready to submit?', type: 'radio', options: ['Yes!'], required: true },
+              ]
+            });
+          }
           setTypes(data);
           setLoading(false);
         });
