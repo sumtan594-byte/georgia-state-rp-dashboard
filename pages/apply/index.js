@@ -10,6 +10,8 @@ import {
 import Link from 'next/link';
 import LoginScreen from '../../components/auth/LoginScreen';
 
+import { hasRole } from '../../lib/auth';
+
 export default function ApplicationList() {
   const { data: session, status } = useSession();
   const [types, setTypes] = useState([]);
@@ -30,7 +32,14 @@ export default function ApplicationList() {
                 description: 'Apply to join the Georgia State Roleplay staff team'
              });
           }
-          setTypes(data);
+          
+          // Filter by role
+          const visibleTypes = data.filter(type => {
+            if (!type.requiredRole) return true;
+            return hasRole(session, type.requiredRole);
+          });
+
+          setTypes(visibleTypes);
           setLoading(false);
         });
     }

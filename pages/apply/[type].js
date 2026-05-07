@@ -15,6 +15,7 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
+import { hasRole } from '../../lib/auth';
 
 const QuestionLabel = ({ children, required = true, subtitle, sentences = 0 }) => (
   <label className="block mb-3">
@@ -95,6 +96,11 @@ export default function DynamicApplyPage() {
           if (!Array.isArray(data)) return;
           const type = data.find(t => t.slug === typeSlug);
           if (type) {
+            // Role Check
+            if (type.requiredRole && !hasRole(session, type.requiredRole)) {
+              router.push('/apply');
+              return;
+            }
             setAppType(type);
           } else if (typeSlug === 'staff') {
             // Default legacy Staff Application if not in DB yet
