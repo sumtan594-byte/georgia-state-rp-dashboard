@@ -14,6 +14,7 @@ import {
   ShoppingCart,
   Building2,
   UserPlus,
+  Settings,
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications } from '../../lib/auth';
 
