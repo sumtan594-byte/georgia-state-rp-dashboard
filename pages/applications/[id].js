@@ -366,7 +366,15 @@ export default function ApplicationDetail() {
                 </div>
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-gsrp-teal-light/40">Avg. Consistency</span>
-                  <span className="text-white font-bold">Good</span>
+                  <span className={`font-bold ${
+                    Object.keys(application.pasteData || {}).length >= 10 ? 'text-red-500' :
+                    Object.keys(application.pasteData || {}).length > 5 ? 'text-gsrp-orange' :
+                    'text-green-500'
+                  }`}>
+                    {Object.keys(application.pasteData || {}).length >= 10 ? 'High chance of AI' :
+                     Object.keys(application.pasteData || {}).length > 5 ? 'Poor' :
+                     'Good'}
+                  </span>
                 </div>
               </div>
             </div>

@@ -70,17 +70,7 @@ export default async function handler(req, res) {
           components: [
             {
               type: 10, // TEXT_DISPLAY
-              content: `# ${appName} Outcome\nDear <@${application.userId}>,\n\nWe ${informingText} to inform you that your **${appName}** has been **${outcomeText}** by <@${session.user.id}>.\n\n` +
-                        `### Reason\n${reason}`
-            },
-            {
-              type: 14, // SEPARATOR
-              divider: true,
-              spacing: 1
-            },
-            {
-              type: 10, // TEXT_DISPLAY
-              content: `-# Status: ${outcomeText.toUpperCase()}`
+              content: `# ${appName} Outcome\nDear <@${application.userId}>,\n\nWe ${informingText} to inform you that your **${appName}** has been **${outcomeText}** by <@${session.user.id}>.\n\n**Reason:**\n${reason}`
             }
           ]
         }
@@ -105,32 +95,12 @@ export default async function handler(req, res) {
           components: [
             {
               type: 10,
-              content: `<@${session.user.id}> has **${outcomeText}** <@${application.userId}>'s **${appName}**.\n\n**Reason:**\n> ${reason}`
+              content: `<@${session.user.id}> has **${outcomeText}** <@${application.userId}>'s **${appName}**.\n\n**Reason:** ${reason}`
             }
           ]
         }
       ]
     });
-
-    // 4. Send to Webhook (as described)
-    try {
-      await fetch("https://discord.com/api/webhooks/1501869763343814698/6lH3Ut_hRcyef9xDtta-uN8mzqdbImwAM7ICalxptq37jALFlXPu1pi_o-X-vozRR_ns", {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          content: null,
-          embeds: [{
-            title: `Application ${outcomeText.toUpperCase()}`,
-            description: `Applicant: <@${application.userId}>\nReviewer: <@${session.user.id}>\nReason: ${reason}`,
-            color: color,
-            timestamp: new Date().toISOString()
-          }],
-          username: "Application Management"
-        })
-      });
-    } catch (e) {
-      console.error('Webhook failed', e);
-    }
 
     return res.status(200).json({ success: true });
   } catch (error) {
