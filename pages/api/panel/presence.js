@@ -1,5 +1,5 @@
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../auth/[...nextauth]';
+import { authOptions } from "../../../lib/auth-options";
 import { ROLES, hasRole, isAdmin } from '../../../lib/auth';
 
 const ACTIVE_WINDOW_MS = 45000;
