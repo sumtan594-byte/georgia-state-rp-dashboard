@@ -60,14 +60,56 @@ const Input = ({ name, type = "text", placeholder, trackEvent, required = true, 
   />
 );
 
-const RadioGroup = ({ name, options, value, onChange }) => (
-  <div className="space-y-3 mb-8">
+const RadioGroup = ({ name, options = ['Yes', 'No'], value, onChange }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
     {options.map((opt, i) => (
-      <label key={i} className={`flex items-center gap-4 p-5 rounded-2xl cursor-pointer transition-all border-2 ${value === opt ? 'bg-gsrp-orange/10 border-gsrp-orange shadow-lg shadow-gsrp-orange/5' : 'bg-gsrp-dark-surface/50 border-gsrp-dark-border/50 hover:bg-gsrp-dark-surface hover:border-gsrp-dark-border'} group`}>
-        <input type="radio" name={name} value={opt} checked={value === opt} onChange={() => onChange(opt)} required className="accent-gsrp-orange w-5 h-5" />
-        <span className={`text-base font-bold ${value === opt ? 'text-white' : 'text-gsrp-teal-light/70 group-hover:text-white'} transition-colors`}>{opt}</span>
+      <label key={i} className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all border-2 ${value === opt ? 'bg-gsrp-orange/10 border-gsrp-orange shadow-lg shadow-gsrp-orange/5' : 'bg-gsrp-dark-surface/50 border-gsrp-dark-border/50 hover:bg-gsrp-dark-surface hover:border-gsrp-dark-border'} group`}>
+        <input type="radio" name={name} value={opt} checked={value === opt} onChange={() => onChange(opt)} className="accent-gsrp-orange w-5 h-5" />
+        <span className={`text-sm font-bold ${value === opt ? 'text-white' : 'text-gsrp-teal-light/70 group-hover:text-white'} transition-colors`}>{opt}</span>
       </label>
     ))}
+  </div>
+);
+
+const CheckboxGroup = ({ name, options = [], value = [], onChange }) => (
+  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-8">
+    {options.map((opt, i) => {
+      const isChecked = Array.isArray(value) && value.includes(opt);
+      return (
+        <label key={i} className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all border-2 ${isChecked ? 'bg-gsrp-orange/10 border-gsrp-orange shadow-lg shadow-gsrp-orange/5' : 'bg-gsrp-dark-surface/50 border-gsrp-dark-border/50 hover:bg-gsrp-dark-surface hover:border-gsrp-dark-border'} group`}>
+          <input 
+            type="checkbox" 
+            name={name} 
+            value={opt} 
+            checked={isChecked} 
+            onChange={() => {
+              const newValue = isChecked ? value.filter(v => v !== opt) : [...(Array.isArray(value) ? value : []), opt];
+              onChange(newValue);
+            }} 
+            className="accent-gsrp-orange w-5 h-5 rounded" 
+          />
+          <span className={`text-sm font-bold ${isChecked ? 'text-white' : 'text-gsrp-teal-light/70 group-hover:text-white'} transition-colors`}>{opt}</span>
+        </label>
+      );
+    })}
+  </div>
+);
+
+const Slider = ({ name, min = 0, max = 10, value = min, onChange }) => (
+  <div className="mb-8 p-6 bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-2xl">
+    <div className="flex justify-between items-center mb-4">
+      <span className="text-xs font-black text-white/40 uppercase tracking-widest">{min}</span>
+      <span className="text-2xl font-black text-gsrp-orange">{value}</span>
+      <span className="text-xs font-black text-white/40 uppercase tracking-widest">{max}</span>
+    </div>
+    <input 
+      type="range" 
+      min={min} 
+      max={max} 
+      value={value} 
+      onChange={(e) => onChange(parseInt(e.target.value))}
+      className="w-full accent-gsrp-orange h-2 bg-gsrp-dark-border rounded-lg appearance-none cursor-pointer"
+    />
   </div>
 );
 
@@ -258,13 +300,29 @@ export default function DynamicApplyPage() {
               ) : field.type === 'radio' ? (
                 <RadioGroup 
                   name={field.id} 
-                  options={field.options || ['Yes', 'No']} 
+                  options={field.options} 
+                  value={answers[field.id]} 
+                  onChange={(val) => setAnswers({...answers, [field.id]: val})}
+                />
+              ) : field.type === 'checkbox' ? (
+                <CheckboxGroup 
+                  name={field.id} 
+                  options={field.options} 
+                  value={answers[field.id]} 
+                  onChange={(val) => setAnswers({...answers, [field.id]: val})}
+                />
+              ) : field.type === 'slider' ? (
+                <Slider 
+                  name={field.id} 
+                  min={field.min} 
+                  max={field.max} 
                   value={answers[field.id]} 
                   onChange={(val) => setAnswers({...answers, [field.id]: val})}
                 />
               ) : (
                 <Input 
                   name={field.id} 
+                  required={field.required}
                   value={answers[field.id] || ''} 
                   trackEvent={trackEvent}
                   onChange={(e) => setAnswers({...answers, [field.id]: e.target.value})}

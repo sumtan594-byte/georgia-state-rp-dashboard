@@ -295,9 +295,60 @@ export default function ManageApplicationTypes() {
                     >
                       <option value="text">Input (Short)</option>
                       <option value="textarea">TextArea (Long)</option>
-                      <option value="radio">Radio Buttons (Yes/No)</option>
+                      <option value="radio">Multiple Choice (Radio)</option>
+                      <option value="checkbox">Checkboxes (Multi-select)</option>
+                      <option value="slider">Slider (Range)</option>
                     </select>
                   </div>
+                </div>
+
+                <div className="mt-4 flex flex-wrap gap-6 items-end">
+                  <div className="flex items-center gap-2">
+                    <input 
+                      type="checkbox" 
+                      checked={field.required} 
+                      onChange={e => updateField(field.id, { required: e.target.checked })}
+                      id={`req-${field.id}`}
+                      className="w-4 h-4 rounded border-white/10 bg-gsrp-dark-surface accent-gsrp-orange"
+                    />
+                    <label htmlFor={`req-${field.id}`} className="text-[10px] font-black uppercase text-white/40 cursor-pointer">Required Question</label>
+                  </div>
+
+                  {(field.type === 'radio' || field.type === 'checkbox') && (
+                    <div className="flex-1 min-w-[200px]">
+                      <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Options (Comma separated)</label>
+                      <input 
+                        type="text" 
+                        value={Array.isArray(field.options) ? field.options.join(', ') : (field.options || '')} 
+                        onChange={e => updateField(field.id, { options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
+                        placeholder="Option 1, Option 2, Option 3"
+                        className="w-full bg-gsrp-dark-surface border border-white/5 rounded-lg px-3 py-2 text-white text-sm"
+                      />
+                    </div>
+                  )}
+
+                  {field.type === 'slider' && (
+                    <div className="flex gap-4">
+                      <div>
+                        <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Min</label>
+                        <input 
+                          type="number" 
+                          value={field.min || 0} 
+                          onChange={e => updateField(field.id, { min: parseInt(e.target.value) })}
+                          className="w-20 bg-gsrp-dark-surface border border-white/5 rounded-lg px-3 py-2 text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Max</label>
+                        <input 
+                          type="number" 
+                          value={field.max || 10} 
+                          onChange={e => updateField(field.id, { max: parseInt(e.target.value) })}
+                          className="w-20 bg-gsrp-dark-surface border border-white/5 rounded-lg px-3 py-2 text-white text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
