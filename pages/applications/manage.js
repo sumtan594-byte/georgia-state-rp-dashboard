@@ -25,6 +25,9 @@ export default function ManageApplicationTypes() {
   const [loading, setLoading] = useState(true);
   const [editingType, setEditingType] = useState(null);
   const [serverRoles, setServerRoles] = useState([]);
+  const [originalForm, setOriginalForm] = useState(null);
+  const [isShaking, setIsShaking] = useState(false);
+  const router = require('next/router').useRouter();
   
   // Form State for New/Edit
   const [form, setForm] = useState({
@@ -86,20 +89,80 @@ export default function ManageApplicationTypes() {
     }
   }, [session]);
 
-  const RoleSelector = ({ label, value, onChange, placeholder = "Select Roles..." }) => {
+  const hasChanges = editingType && JSON.stringify(form) !== JSON.stringify(originalForm);
+
+  useEffect(() => {
+    const handleWindowClose = (e) => {
+      if (!hasChanges) return;
+      e.preventDefault();
+      return (e.returnValue = 'You have unsaved changes. Are you sure you want to leave?');
+    };
+
+    const handleBrowseAway = (url) => {
+      if (!hasChanges) return;
+      setIsShaking(true);
+      setTimeout(() => setIsShaking(false), 500);
+      router.events.emit('routeChangeError');
+      if (confirm('All unsaved changes will be lost. Do you want to leave?')) {
+        return true;
+      }
+      throw 'routeChange aborted';
+    };
+
+    window.addEventListener('beforeunload', handleWindowClose);
+    router.events.on('routeChangeStart', handleBrowseAway);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleWindowClose);
+      router.events.off('routeChangeStart', handleBrowseAway);
+    };
+  }, [hasChanges]);
+
+  const CustomSelect = ({ value, onChange, options, placeholder = "Select..." }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    return (
+      <div className="relative">
+        <div 
+          onClick={() => setIsOpen(!isOpen)}
+          className="w-full bg-gsrp-dark-surface border border-white/10 rounded-xl px-4 py-3 text-white text-sm cursor-pointer flex items-center justify-between hover:border-gsrp-orange/50 transition-all"
+        >
+          <span className={value ? 'text-white' : 'text-white/20'}>
+            {options.find(o => o.value === value)?.label || placeholder}
+          </span>
+          <ChevronRight size={16} className={`transition-transform ${isOpen ? 'rotate-90' : ''}`} />
+        </div>
+        {isOpen && (
+          <div className="absolute top-full left-0 w-full mt-2 bg-gsrp-dark-card border border-white/10 rounded-xl overflow-hidden z-50 shadow-2xl">
+            {options.map(opt => (
+              <div 
+                key={opt.value}
+                onClick={() => { onChange(opt.value); setIsOpen(false); }}
+                className="px-4 py-3 text-sm text-white/60 hover:text-white hover:bg-white/5 cursor-pointer transition-colors"
+              >
+                {opt.label}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const RoleSelector = ({ label, value, onChange, placeholder = "+ Add Role" }) => {
     const selectedRoles = Array.isArray(value) ? value : (value ? [value] : []);
+    const [isOpen, setIsOpen] = useState(false);
     
     return (
       <div className="mb-4">
         <label className="block text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-2">{label}</label>
-        <div className="flex flex-wrap gap-2 p-3 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl min-h-[50px]">
+        <div className="flex flex-wrap gap-2 p-3 bg-gsrp-dark-surface border border-white/5 rounded-xl min-h-[50px] relative">
           {selectedRoles.map(roleId => {
             const role = serverRoles.find(r => r.id === roleId);
             if (!role) return null;
             return (
               <div 
                 key={roleId} 
-                className="flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold border border-white/5"
+                className="flex items-center gap-2 px-3 py-1 rounded-full text-[11px] font-bold border border-white/5 animate-fade-in"
                 style={{ backgroundColor: `${role.color ? `rgba(${role.color >> 16 & 255}, ${role.color >> 8 & 255}, ${role.color & 255}, 0.15)` : 'rgba(255,255,255,0.05)'}`, color: role.color ? `#${role.color.toString(16).padStart(6, '0')}` : '#fff' }}
               >
                 {role.icon && <img src={`https://cdn.discordapp.com/role-icons/${roleId}/${role.icon}.png`} className="w-3 h-3 rounded-sm" />}
@@ -108,20 +171,30 @@ export default function ManageApplicationTypes() {
               </div>
             );
           })}
-          <select 
-            className="bg-transparent border-none outline-none text-xs text-white/40 flex-1 min-w-[100px]"
-            onChange={(e) => {
-              if (e.target.value && !selectedRoles.includes(e.target.value)) {
-                onChange([...selectedRoles, e.target.value]);
-              }
-              e.target.value = "";
-            }}
-          >
-            <option value="">{placeholder}</option>
-            {serverRoles.filter(r => !selectedRoles.includes(r.id)).map(role => (
-              <option key={role.id} value={role.id}>{role.name}</option>
-            ))}
-          </select>
+          
+          <div className="flex-1 relative">
+            <button 
+              onClick={() => setIsOpen(!isOpen)}
+              className="text-xs text-white/20 hover:text-gsrp-orange transition-colors h-full flex items-center px-2 min-w-[100px]"
+            >
+              {placeholder}
+            </button>
+            
+            {isOpen && (
+              <div className="absolute top-full left-0 mt-2 w-64 max-h-60 overflow-y-auto bg-gsrp-dark-card border border-white/10 rounded-xl z-[60] shadow-2xl animate-fade-in-up">
+                {serverRoles.filter(r => !selectedRoles.includes(r.id)).map(role => (
+                  <div 
+                    key={role.id}
+                    onClick={() => { onChange([...selectedRoles, role.id]); setIsOpen(false); }}
+                    className="px-4 py-2 text-xs flex items-center gap-3 hover:bg-white/5 cursor-pointer transition-colors"
+                  >
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: role.color ? `#${role.color.toString(16).padStart(6, '0')}` : '#666' }} />
+                    <span className="text-white/80">{role.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -135,8 +208,13 @@ export default function ManageApplicationTypes() {
     });
     
     if (res.ok) {
-      window.location.reload();
+      setOriginalForm(JSON.parse(JSON.stringify(form)));
+      alert('Changes saved successfully!');
     }
+  };
+
+  const handleDiscard = () => {
+    setForm(JSON.parse(JSON.stringify(originalForm)));
   };
 
   const handleDelete = async (slug) => {
@@ -173,10 +251,33 @@ export default function ManageApplicationTypes() {
   if (!canReviewApplications(session)) return <div>Access Denied</div>;
 
   return (
-    <div className="max-w-6xl mx-auto py-12 px-6">
+    <div className={`max-w-6xl mx-auto py-12 px-6 transition-transform duration-500 ${isShaking ? 'animate-shake' : ''}`}>
       <Head>
         <title>Manage Application Types | GSRP</title>
       </Head>
+
+      {/* Floating Action Bar */}
+      {hasChanges && (
+        <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 bg-gsrp-dark-card border-2 ${isShaking ? 'border-gsrp-orange' : 'border-white/10'} p-4 rounded-2xl shadow-2xl animate-fade-in-up`}>
+          <div className="px-4 border-r border-white/5">
+            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gsrp-orange">Unsaved Changes</p>
+            <p className="text-[9px] text-white/40 font-bold">You have modified the application structure.</p>
+          </div>
+          <button 
+            onClick={handleDiscard}
+            className="px-6 py-2 rounded-xl text-xs font-black text-white/40 hover:text-white hover:bg-white/5 transition-all"
+          >
+            Discard
+          </button>
+          <button 
+            onClick={handleSave}
+            className="px-8 py-2.5 bg-gsrp-orange hover:bg-gsrp-orange-light text-white font-black rounded-xl text-xs shadow-lg shadow-gsrp-orange/20 transition-all flex items-center gap-2"
+          >
+            <Save size={14} />
+            Save Changes
+          </button>
+        </div>
+      )}
 
       <div className="flex items-center justify-between mb-10">
         <div>
@@ -189,8 +290,20 @@ export default function ManageApplicationTypes() {
         
         <button 
           onClick={() => {
+            const initial = { 
+              name: '', 
+              slug: '', 
+              description: '', 
+              requiredRole: [], 
+              roleAddAccepted: [], 
+              roleRemoveAccepted: [], 
+              roleAddDenied: [], 
+              roleRemoveDenied: [], 
+              fields: [] 
+            };
             setEditingType('new');
-            setForm({ name: '', slug: '', description: '', requiredRole: '', fields: [] });
+            setForm(initial);
+            setOriginalForm(JSON.parse(JSON.stringify(initial)));
           }}
           className="bg-gsrp-orange hover:bg-gsrp-orange-light text-white px-6 py-3 rounded-xl font-black text-sm transition-all flex items-center gap-2 shadow-lg shadow-gsrp-orange/20"
         >
@@ -288,17 +401,17 @@ export default function ManageApplicationTypes() {
                   </div>
                   <div>
                     <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Type</label>
-                    <select 
+                    <CustomSelect 
                       value={field.type} 
-                      onChange={e => updateField(field.id, { type: e.target.value })}
-                      className="w-full bg-gsrp-dark-surface border border-white/5 rounded-lg px-3 py-2 text-white text-sm"
-                    >
-                      <option value="text">Input (Short)</option>
-                      <option value="textarea">TextArea (Long)</option>
-                      <option value="radio">Multiple Choice (Radio)</option>
-                      <option value="checkbox">Checkboxes (Multi-select)</option>
-                      <option value="slider">Slider (Range)</option>
-                    </select>
+                      onChange={val => updateField(field.id, { type: val })}
+                      options={[
+                        { value: 'text', label: 'Input (Short)' },
+                        { value: 'textarea', label: 'TextArea (Long)' },
+                        { value: 'radio', label: 'Multiple Choice (Radio)' },
+                        { value: 'checkbox', label: 'Checkboxes (Multi-select)' },
+                        { value: 'slider', label: 'Slider (Range)' }
+                      ]}
+                    />
                   </div>
                 </div>
 
@@ -372,8 +485,10 @@ export default function ManageApplicationTypes() {
                 <div className="flex gap-2">
                   <button 
                     onClick={() => {
-                      setForm(type);
-                      setEditingType('edit');
+                      const initial = JSON.parse(JSON.stringify(type));
+                      setForm(initial);
+                      setOriginalForm(initial);
+                      setEditingType(type.slug);
                     }}
                     className="p-2 rounded-lg hover:bg-white/5 text-white/20 hover:text-white transition-all"
                   >
