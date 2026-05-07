@@ -60,6 +60,8 @@ export default async function handler(req, res) {
 
     // 1. Send Outcome notification in 1372508850602905621
     const outcomeChannel = "1372508850602905621";
+    const appName = application.typeName || 'Staff Application';
+    
     const outcomeEmbed = {
       components: [
         {
@@ -68,7 +70,7 @@ export default async function handler(req, res) {
           components: [
             {
               type: 10, // TEXT_DISPLAY
-              content: `# Staff Application Outcome\nDear <@${application.userId}>,\n\nWe ${informingText} to inform you that your staff application has been **${outcomeText}** by <@${session.user.id}>.\n\n` +
+              content: `# ${appName} Outcome\nDear <@${application.userId}>,\n\nWe ${informingText} to inform you that your **${appName}** has been **${outcomeText}** by <@${session.user.id}>.\n\n` +
                         `### Reason\n${reason}`
             },
             {
@@ -103,7 +105,7 @@ export default async function handler(req, res) {
           components: [
             {
               type: 10,
-              content: `<@${session.user.id}> has **${outcomeText}** <@${application.userId}>'s application.\n\n**Reason:**\n> ${reason}`
+              content: `<@${session.user.id}> has **${outcomeText}** <@${application.userId}>'s **${appName}**.\n\n**Reason:**\n> ${reason}`
             }
           ]
         }
