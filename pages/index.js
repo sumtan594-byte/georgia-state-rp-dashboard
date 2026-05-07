@@ -9,7 +9,6 @@ import { canAccessPanel, canAccessTraining, canViewAttempts, canReviewApplicatio
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const [stats, setStats] = useState({ transcripts: 0, players: 0, online: false });
-  const [appTypes, setAppTypes] = useState([]);
 
   useEffect(() => {
     if (!session) return;
@@ -26,12 +25,6 @@ export default function Dashboard() {
     });
   }, [session]);
 
-  useEffect(() => {
-    if (!session) return;
-    fetch('/api/applications/types')
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setAppTypes(data));
-  }, [session]);
 
   if (status === 'loading') {
     return (
@@ -109,23 +102,12 @@ export default function Dashboard() {
           description="Purchase premium roles, pings, and donations"
         />
 
-        {/* Dynamic Applications */}
-        {appTypes.length > 0 ? appTypes.map(type => (
-          <FeatureCard
-            key={type.slug}
-            href={`/apply/${type.slug}`}
-            icon={UserPlus}
-            title={type.name}
-            description={type.description || `Apply for the ${type.name} team`}
-          />
-        )) : (
-          <FeatureCard
-            href="/apply/staff"
-            icon={UserPlus}
-            title="Staff Application"
-            description="Apply to join the Georgia State Roleplay staff team"
-          />
-        )}
+        <FeatureCard
+          href="/apply"
+          icon={UserPlus}
+          title="Applications"
+          description="Apply for staff, departments, or special roles"
+        />
 
         {canReviewApps && (
           <FeatureCard
