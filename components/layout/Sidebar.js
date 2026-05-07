@@ -88,26 +88,91 @@ export default function Sidebar({ open, onToggle }) {
         </button>
       </div>
 
-      <nav className="flex-1 py-4 px-2 space-y-1">
-        {navItems.map(item => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/60 hover:text-white hover:bg-gsrp-dark-surface/60 transition-all duration-200 group cursor-pointer"
-          >
-            <item.icon size={18} className="flex-shrink-0" />
-            {open && (
-              <>
-                <span className="text-sm font-medium flex-1">{item.label}</span>
-                {item.badge && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-gsrp-orange bg-gsrp-orange/10 px-2 py-0.5 rounded-full">
-                    {item.badge}
-                  </span>
+      <nav className="flex-1 py-4 px-2 space-y-8 overflow-y-auto custom-scrollbar">
+        {/* Community Resources */}
+        <div>
+          <p className={`text-[10px] font-black uppercase tracking-[0.2em] text-gsrp-teal-light/20 mb-3 px-4 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}>
+            General
+          </p>
+          <div className="space-y-1">
+            {[
+              { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
+              { href: '/departments', icon: Building2, label: 'Departments' },
+              { href: '/transcripts', icon: FileText, label: 'Transcripts', badge: transcriptCount > 0 ? transcriptCount : null },
+              ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null }] : []),
+              { href: '/verify', icon: ShieldCheck, label: 'Verification' },
+              { href: '/shop', icon: ShoppingCart, label: 'Store' },
+            ].map((item, idx) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/60 hover:text-white hover:bg-gsrp-dark-surface/60 transition-all duration-200 group animate-slide-left stagger-${idx+1}`}
+              >
+                <item.icon size={18} className="flex-shrink-0 group-hover:text-gsrp-orange transition-colors" />
+                {open && (
+                  <>
+                    <span className="text-sm font-medium flex-1">{item.label}</span>
+                    {item.badge && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-gsrp-orange bg-gsrp-orange/10 px-2 py-0.5 rounded-full">
+                        {item.badge}
+                      </span>
+                    )}
+                  </>
                 )}
-              </>
-            )}
-          </Link>
-        ))}
+              </Link>
+            ))}
+          </div>
+        </div>
+
+        {/* Staff Training */}
+        {(hasHandbook || hasTraining || hasAttempts) && (
+          <div>
+            <p className={`text-[10px] font-black uppercase tracking-[0.2em] text-gsrp-teal-light/20 mb-3 px-4 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}>
+              Staff Training
+            </p>
+            <div className="space-y-1">
+              {[
+                ...(hasHandbook ? [{ href: '/staff-handbook', icon: BookOpen, label: 'Handbook' }] : []),
+                ...(hasTraining ? [{ href: '/training', icon: BookOpen, label: 'ssd quiz' }] : []),
+                ...(hasAttempts ? [{ href: '/training/attempts', icon: ClipboardList, label: 'Attempts' }] : []),
+              ].map((item, idx) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/60 hover:text-white hover:bg-gsrp-dark-surface/60 transition-all duration-200 group animate-slide-left stagger-${idx+1}`}
+                >
+                  <item.icon size={18} className="flex-shrink-0 group-hover:text-gsrp-orange transition-colors" />
+                  {open && <span className="text-sm font-medium flex-1">{item.label}</span>}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Applications */}
+        <div>
+          <p className={`text-[10px] font-black uppercase tracking-[0.2em] text-gsrp-teal-light/20 mb-3 px-4 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}>
+            Applications
+          </p>
+          <div className="space-y-1">
+            {[
+              { href: '/apply', icon: UserPlus, label: 'Apply Now' },
+              ...(canReviewApps ? [
+                { href: '/applications', icon: Users, label: 'Review Hub' },
+                { href: '/applications/manage', icon: Settings, label: 'Manage Forms' }
+              ] : []),
+            ].map((item, idx) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/60 hover:text-white hover:bg-gsrp-dark-surface/60 transition-all duration-200 group animate-slide-left stagger-${idx+1}`}
+              >
+                <item.icon size={18} className="flex-shrink-0 group-hover:text-gsrp-orange transition-colors" />
+                {open && <span className="text-sm font-medium flex-1">{item.label}</span>}
+              </Link>
+            ))}
+          </div>
+        </div>
       </nav>
 
       {open && serverStatus && (

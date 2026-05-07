@@ -146,9 +146,30 @@ discord-messages {
   animation: shake 0.15s ease-in-out 0s 3;
 }
 
-.animate-fade-in-up {
-  animation: fade-in-up 0.5s ease-out forwards;
+@keyframes slide-in-up {
+  from { opacity: 0; transform: translateY(30px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
+
+@keyframes slide-in-left {
+  from { opacity: 0; transform: translateX(-30px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.animate-fade-in-up {
+  animation: slide-in-up 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-left {
+  animation: slide-in-left 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.stagger-1 { animation-delay: 0.1s; }
+.stagger-2 { animation-delay: 0.15s; }
+.stagger-3 { animation-delay: 0.2s; }
+.stagger-4 { animation-delay: 0.25s; }
+.stagger-5 { animation-delay: 0.3s; }
+.stagger-6 { animation-delay: 0.35s; }
 
 .animate-fade-in-down {
   animation: fade-in-down 0.4s ease-out forwards;

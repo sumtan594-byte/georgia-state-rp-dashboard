@@ -55,86 +55,72 @@ export default function Dashboard() {
         <p className="text-gsrp-teal-light/40 text-sm">Georgia State Roleplay Dashboard</p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <FeatureCard
-          href="/departments"
-          icon={Building2}
-          title="Departments"
-          description="View and join GSRP's official departments"
-        />
+      {/* Community Resources Section */}
+      <div className="mb-12">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-gsrp-orange mb-6 flex items-center gap-4">
+          Community Resources
+          <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="animate-fade-in-up stagger-1">
+            <FeatureCard href="/departments" icon={Building2} title="Departments" description="View and join GSRP's official departments" />
+          </div>
+          <div className="animate-fade-in-up stagger-2">
+            <FeatureCard href="/transcripts" icon={FileText} title="Transcripts" description="View and manage Discord ticket transcripts" badge={stats.transcripts > 0 ? `${stats.transcripts} records` : null} />
+          </div>
+          <div className="animate-fade-in-up stagger-3">
+            <FeatureCard href="/panel" icon={Map} title="Live Panel" description="ERLC server map, player management, and commands" badge={stats.online ? `${stats.players} online` : null} locked={!hasPanel} />
+          </div>
+          <div className="animate-fade-in-up stagger-4">
+            <FeatureCard href="/verify" icon={ShieldCheck} title="Verification" description="Link your Roblox account to Discord" />
+          </div>
+          <div className="animate-fade-in-up stagger-5">
+            <FeatureCard href="/shop" icon={ShoppingCart} title="Store" description="Purchase premium roles, pings, and donations" />
+          </div>
+        </div>
+      </div>
 
-        <FeatureCard
-          href="/transcripts"
-          icon={FileText}
-          title="Transcripts"
-          description="View and manage Discord ticket transcripts"
-          badge={stats.transcripts > 0 ? `${stats.transcripts} records` : null}
-        />
+      {/* Staff Training Section */}
+      {(hasTraining || hasAttempts) && (
+        <div className="mb-12">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-gsrp-orange mb-6 flex items-center gap-4">
+            Staff Training
+            <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="animate-fade-in-up stagger-1">
+              <FeatureCard href="/training" icon={BookOpen} title="Staff Training" description="SSD training quiz and staff handbook" locked={!hasTraining} />
+            </div>
+            {hasAttempts && (
+              <div className="animate-fade-in-up stagger-2">
+                <FeatureCard href="/training/attempts" icon={Users} title="Quiz Attempts" description="View all staff training quiz attempts" />
+              </div>
+            )}
+          </div>
+        </div>
+      )}
 
-        <FeatureCard
-          href="/panel"
-          icon={Map}
-          title="Live Panel"
-          description="ERLC server map, player management, and commands"
-          badge={stats.online ? `${stats.players} online` : null}
-          locked={!hasPanel}
-        />
-
-        <FeatureCard
-          href="/training"
-          icon={BookOpen}
-          title="Staff Training"
-          description="SSD training quiz and staff handbook"
-          locked={!hasTraining}
-        />
-
-        <FeatureCard
-          href="/verify"
-          icon={ShieldCheck}
-          title="Verification"
-          description="Link your Roblox account to Discord"
-        />
-
-        <FeatureCard
-          href="/shop"
-          icon={ShoppingCart}
-          title="Store"
-          description="Purchase premium roles, pings, and donations"
-        />
-
-        <FeatureCard
-          href="/apply"
-          icon={UserPlus}
-          title="Applications"
-          description="Apply for staff, departments, or special roles"
-        />
-
-        {canReviewApps && (
-          <FeatureCard
-            href="/applications"
-            icon={Users}
-            title="Review Apps"
-            description="Manage and review incoming staff applications"
-          />
-        )}
-
-        {canReviewApps && (
-          <FeatureCard
-            href="/applications/manage"
-            icon={Settings}
-            title="Manage Forms"
-            description="Create and edit application types and questions"
-          />
-        )}
-
-        {hasAttempts && (
-          <FeatureCard
-            href="/training/attempts"
-            icon={Users}
-            title="Quiz Attempts"
-            description="View all staff training quiz attempts"
-          />
-        )}
+      {/* Applications Section */}
+      <div className="mb-12">
+        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-gsrp-orange mb-6 flex items-center gap-4">
+          Applications
+          <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="animate-fade-in-up stagger-1">
+            <FeatureCard href="/apply" icon={UserPlus} title="Applications" description="Apply for staff, departments, or special roles" />
+          </div>
+          {canReviewApps && (
+            <>
+              <div className="animate-fade-in-up stagger-2">
+                <FeatureCard href="/applications" icon={Users} title="Review Apps" description="Manage and review incoming staff applications" />
+              </div>
+              <div className="animate-fade-in-up stagger-3">
+                <FeatureCard href="/applications/manage" icon={Settings} title="Manage Forms" description="Create and edit application types and questions" />
+              </div>
+            </>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center justify-center gap-4 mt-8 text-xs text-gsrp-teal-light/30">
