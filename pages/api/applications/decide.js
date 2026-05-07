@@ -35,15 +35,19 @@ export default async function handler(req, res) {
     const color = isAccepted ? 0x22C55E : 0xEF4444; // Green vs Red
     const outcomeText = isAccepted ? 'accepted' : 'denied';
     const informingText = isAccepted ? 'are pleased' : 'regret';
-    const guildId = "1251347648351506485"; // GSRP Guild ID
+    const guildId = process.env.ALLOWED_GUILD_ID || "1251347648351506485";
+
+    console.log(`[Role Sync] Processing decision for ${application.userId} in guild ${guildId}. Status: ${status}`);
 
     // Role Automation Logic
     if (appType) {
+      console.log(`[Role Sync] Found application type config for: ${appType.slug}`);
       const helper = async (action, roles) => {
         if (!roles) return;
         const roleList = Array.isArray(roles) ? roles : [roles];
         for (const rId of roleList) {
           if (!rId) continue;
+          console.log(`[Role Sync] Action: ${action}, Role: ${rId} for User: ${application.userId}`);
           if (action === 'add') await addMemberRole(guildId, application.userId, rId);
           if (action === 'remove') await removeMemberRole(guildId, application.userId, rId);
         }
@@ -55,13 +59,19 @@ export default async function handler(req, res) {
         
         // Legacy fallback for main staff app
         if (appType.slug === 'staff') {
+          console.log(`[Role Sync] Applying legacy staff roles...`);
           const legacyRoles = ["1372480733234593812", "1372476380096237609"];
-          for (const roleId of legacyRoles) await addMemberRole(guildId, application.userId, roleId);
+          for (const roleId of legacyRoles) {
+            console.log(`[Role Sync] Adding legacy role: ${roleId}`);
+            await addMemberRole(guildId, application.userId, roleId);
+          }
         }
       } else {
         await helper('add', appType.roleAddDenied);
         await helper('remove', appType.roleRemoveDenied);
       }
+    } else {
+      console.warn(`[Role Sync] No application type configuration found for slug: ${application.type}`);
     }
 
     // 1. Send Outcome notification in 1372508850602905621
