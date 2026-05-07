@@ -1,8 +1,8 @@
-import clientPromise from '../../lib/mongodb';
+import clientPromise from '../../../lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
-import { canReviewApplications } from "../../lib/auth";
+import { canReviewApplications } from "../../../lib/auth";
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);

@@ -33,6 +33,15 @@ export default async function handler(req, res) {
     const outcomeText = isAccepted ? 'accepted' : 'denied';
     const informingText = isAccepted ? 'are pleased' : 'regret';
 
+    // Automatic Role Assignment if Accepted
+    if (isAccepted) {
+      const rolesToAdd = ["1372480733234593812", "1372476380096237609"];
+      const guildId = "1251347648351506485"; // GSRP Guild ID
+      for (const roleId of rolesToAdd) {
+        await addMemberRole(guildId, application.userId, roleId);
+      }
+    }
+
     // 1. Send Outcome notification in 1372508850602905621
     const outcomeChannel = "1372508850602905621";
     const outcomeEmbed = {
