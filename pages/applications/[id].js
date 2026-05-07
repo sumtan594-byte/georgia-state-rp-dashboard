@@ -292,7 +292,7 @@ export default function ApplicationDetail() {
                     </div>
                     <div className="bg-gsrp-dark-surface/30 rounded-xl p-4 border border-gsrp-dark-border/30 hover:border-gsrp-dark-border transition-colors">
                       <p className="text-white font-medium text-sm leading-relaxed whitespace-pre-wrap">
-                        {val || "N/A"}
+                        {Array.isArray(val) ? val.join(', ') : (val || "N/A")}
                       </p>
                     </div>
                     
