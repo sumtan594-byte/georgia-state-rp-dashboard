@@ -1,15 +1,58 @@
-import { useState, useEffect, useRef } from 'react';
-import Head from 'next/head';
-import { useSession } from 'next-auth/react';
-import { FileText, Send, AlertCircle, CheckCircle2, Loader2, MousePointer2, Keyboard, ShieldCheck, HelpCircle } from 'lucide-react';
-import LoginScreen from '../components/auth/LoginScreen';
+const QuestionLabel = ({ children, required = true, subtitle, sentences = 0 }) => (
+  <label className="block mb-2">
+    <div className="flex justify-between items-center">
+      <span className="text-xs font-black uppercase tracking-widest text-gsrp-teal-light/40 ml-1">
+        {children} {required && <span className="text-red-500">*</span>}
+      </span>
+      <span className="flex items-center gap-1 opacity-20 text-[10px] font-bold uppercase tracking-widest">
+        <Keyboard size={10} /> Active
+      </span>
+    </div>
+    {subtitle && <p className="text-[10px] text-gsrp-teal-light/30 ml-1 mt-1 font-medium">{subtitle}</p>}
+    {sentences > 0 && <p className="text-[10px] text-gsrp-orange/60 ml-1 mt-0.5 font-black uppercase tracking-tighter">({sentences} Sentences Required)</p>}
+  </label>
+);
+
+const TextArea = ({ name, placeholder, trackEvent, sentences = 0 }) => (
+  <textarea 
+    name={name}
+    required 
+    rows={4}
+    onKeyDown={(e) => trackEvent(name, 'keystroke', e.key)}
+    onPaste={(e) => trackEvent(name, 'paste', e.clipboardData.getData('text'))}
+    placeholder={placeholder}
+    className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl px-4 py-3 text-white focus:border-gsrp-orange/50 focus:outline-none transition-colors font-medium resize-none mb-6"
+  />
+);
+
+const Input = ({ name, type = "text", placeholder, trackEvent, required = true }) => (
+  <input 
+    name={name}
+    type={type}
+    required={required}
+    onKeyDown={(e) => trackEvent(name, 'keystroke', e.key)}
+    onPaste={(e) => trackEvent(name, 'paste', e.clipboardData.getData('text'))}
+    placeholder={placeholder}
+    className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl px-4 py-3 text-white focus:border-gsrp-orange/50 focus:outline-none transition-colors font-medium mb-6"
+  />
+);
+
+const RadioGroup = ({ name, options }) => (
+  <div className="space-y-2 mb-6">
+    {options.map((opt, i) => (
+      <label key={i} className="flex items-center gap-3 p-4 bg-gsrp-dark-surface/50 border border-gsrp-dark-border/30 rounded-xl cursor-pointer hover:bg-gsrp-dark-surface transition-colors group">
+        <input type="radio" name={name} value={opt} required className="accent-gsrp-orange" />
+        <span className="text-sm font-medium text-gsrp-teal-light/60 group-hover:text-white transition-colors">{opt}</span>
+      </label>
+    ))}
+  </div>
+);
 
 export default function ApplyPage() {
   const { data: session, status } = useSession();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
-  const [step, setStep] = useState(1);
   
   // Monitoring data
   const [keystrokes, setKeystrokes] = useState({});
@@ -91,56 +134,6 @@ export default function ApplyPage() {
     );
   }
 
-  const QuestionLabel = ({ children, required = true, subtitle, sentences = 0 }) => (
-    <label className="block mb-2">
-      <div className="flex justify-between items-center">
-        <span className="text-xs font-black uppercase tracking-widest text-gsrp-teal-light/40 ml-1">
-          {children} {required && <span className="text-red-500">*</span>}
-        </span>
-        <span className="flex items-center gap-1 opacity-20 text-[10px] font-bold uppercase tracking-widest">
-          <Keyboard size={10} /> Active
-        </span>
-      </div>
-      {subtitle && <p className="text-[10px] text-gsrp-teal-light/30 ml-1 mt-1 font-medium">{subtitle}</p>}
-      {sentences > 0 && <p className="text-[10px] text-gsrp-orange/60 ml-1 mt-0.5 font-black uppercase tracking-tighter">({sentences} Sentences Required)</p>}
-    </label>
-  );
-
-  const TextArea = ({ name, placeholder, sentences = 0 }) => (
-    <textarea 
-      name={name}
-      required 
-      rows={4}
-      onKeyDown={(e) => trackEvent(name, 'keystroke', e.key)}
-      onPaste={(e) => trackEvent(name, 'paste', e.clipboardData.getData('text'))}
-      placeholder={placeholder}
-      className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl px-4 py-3 text-white focus:border-gsrp-orange/50 focus:outline-none transition-colors font-medium resize-none mb-6"
-    />
-  );
-
-  const Input = ({ name, type = "text", placeholder, required = true }) => (
-    <input 
-      name={name}
-      type={type}
-      required={required}
-      onKeyDown={(e) => trackEvent(name, 'keystroke', e.key)}
-      onPaste={(e) => trackEvent(name, 'paste', e.clipboardData.getData('text'))}
-      placeholder={placeholder}
-      className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl px-4 py-3 text-white focus:border-gsrp-orange/50 focus:outline-none transition-colors font-medium mb-6"
-    />
-  );
-
-  const RadioGroup = ({ name, options }) => (
-    <div className="space-y-2 mb-6">
-      {options.map((opt, i) => (
-        <label key={i} className="flex items-center gap-3 p-4 bg-gsrp-dark-surface/50 border border-gsrp-dark-border/30 rounded-xl cursor-pointer hover:bg-gsrp-dark-surface transition-colors group">
-          <input type="radio" name={name} value={opt} required className="accent-gsrp-orange" />
-          <span className="text-sm font-medium text-gsrp-teal-light/60 group-hover:text-white transition-colors">{opt}</span>
-        </label>
-      ))}
-    </div>
-  );
-
   return (
     <div className="max-w-3xl mx-auto animate-fade-in-up pb-20">
       <Head>
@@ -176,13 +169,13 @@ export default function ApplyPage() {
             <input type="text" name="discord_username" value={session.user.name} disabled className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl px-4 py-3 text-white font-bold opacity-50 cursor-not-allowed mb-6" />
 
             <QuestionLabel subtitle="Username, not display name.">Roblox username</QuestionLabel>
-            <Input name="roblox_username" placeholder="Your Roblox username" />
+            <Input name="roblox_username" placeholder="Your Roblox username" trackEvent={trackEvent} />
 
             <QuestionLabel subtitle="What rank are you in game (e.g. Major, Commander etc.)">In game PD rank?</QuestionLabel>
-            <Input name="pd_rank" placeholder="e.g. Commander" />
+            <Input name="pd_rank" placeholder="e.g. Commander" trackEvent={trackEvent} />
             
             <QuestionLabel>What is your Time zone?</QuestionLabel>
-            <TextArea name="timezone" placeholder="e.g. EST, GMT+1" />
+            <TextArea name="timezone" placeholder="e.g. EST, GMT+1" trackEvent={trackEvent} />
           </div>
 
           {/* Section 2: Game Rules */}
@@ -193,16 +186,16 @@ export default function ApplyPage() {
             </h2>
             
             <QuestionLabel sentences={2} subtitle="Elaborate, What is RDM? What may be a valid punishment for offenders?">Explain RDM</QuestionLabel>
-            <TextArea name="explain_rdm" placeholder="Response here..." sentences={2} />
+            <TextArea name="explain_rdm" placeholder="Response here..." sentences={2} trackEvent={trackEvent} />
 
             <QuestionLabel sentences={2} subtitle="Elaborate, What is VDM? What may be a valid punishment for offenders?">Explain VDM</QuestionLabel>
-            <TextArea name="explain_vdm" placeholder="Response here..." sentences={2} />
+            <TextArea name="explain_vdm" placeholder="Response here..." sentences={2} trackEvent={trackEvent} />
 
             <QuestionLabel sentences={2} subtitle="Elaborate, What is FRP? What may be a valid punishment for offenders?">Explain FRP</QuestionLabel>
-            <TextArea name="explain_frp" placeholder="Response here..." sentences={2} />
+            <TextArea name="explain_frp" placeholder="Response here..." sentences={2} trackEvent={trackEvent} />
 
             <QuestionLabel sentences={2} subtitle="Elaborate, What is LTAP? What may be a valid punishment for offenders?">Explain LTAP</QuestionLabel>
-            <TextArea name="explain_ltap" placeholder="Response here..." sentences={2} />
+            <TextArea name="explain_ltap" placeholder="Response here..." sentences={2} trackEvent={trackEvent} />
           </div>
 
           {/* Section 3: Scenarios */}
@@ -213,19 +206,19 @@ export default function ApplyPage() {
             </h2>
 
             <QuestionLabel sentences={2} subtitle="A player is shooting inside civilian spawn, which is a safezone. What would you do to this player?">Scenario 1</QuestionLabel>
-            <TextArea name="scenario_1" placeholder="Response here..." sentences={2} />
+            <TextArea name="scenario_1" placeholder="Response here..." sentences={2} trackEvent={trackEvent} />
 
             <QuestionLabel sentences={2} subtitle="A police officer is arresting criminals through the 'arrest' button. What is this classified as and what will you do in this situation?">Scenario 2</QuestionLabel>
-            <TextArea name="scenario_2" placeholder="Response here..." sentences={2} />
+            <TextArea name="scenario_2" placeholder="Response here..." sentences={2} trackEvent={trackEvent} />
 
             <QuestionLabel sentences={2} subtitle="A sniper on a roof is killing people for no reason. What would you do?">Scenario 3</QuestionLabel>
-            <TextArea name="scenario_3" placeholder="Response here..." sentences={2} />
+            <TextArea name="scenario_3" placeholder="Response here..." sentences={2} trackEvent={trackEvent} />
 
             <QuestionLabel sentences={2} subtitle="A player is spamming stop sticks. What is this classified as and what would you do?">Scenario 4</QuestionLabel>
-            <TextArea name="scenario_4" placeholder="Response here..." sentences={2} />
+            <TextArea name="scenario_4" placeholder="Response here..." sentences={2} trackEvent={trackEvent} />
 
             <QuestionLabel sentences={2} subtitle="A player does not respond for more than 2 minutes on a mod call. What is your decision?">Scenario 5</QuestionLabel>
-            <TextArea name="scenario_5" placeholder="Response here..." sentences={2} />
+            <TextArea name="scenario_5" placeholder="Response here..." sentences={2} trackEvent={trackEvent} />
           </div>
 
           {/* Section 4: Serious Punishments */}
@@ -236,13 +229,13 @@ export default function ApplyPage() {
             </h2>
 
             <QuestionLabel sentences={2} subtitle="A player is threatening to jump off a building, what is this classified as and what would your first instinct be?">Scenario 6</QuestionLabel>
-            <Input name="scenario_6" placeholder="Response here..." />
+            <Input name="scenario_6" placeholder="Response here..." trackEvent={trackEvent} />
 
             <QuestionLabel sentences={2} subtitle="A player is saying swear words bypassing the roblox filter. What is your decision?">Scenario 7</QuestionLabel>
-            <Input name="scenario_7" placeholder="Response here..." />
+            <Input name="scenario_7" placeholder="Response here..." trackEvent={trackEvent} />
 
             <QuestionLabel sentences={2} subtitle="You see a player exploiting. What would you do?">Scenario 8</QuestionLabel>
-            <Input name="scenario_8" placeholder="Response here..." />
+            <Input name="scenario_8" placeholder="Response here..." trackEvent={trackEvent} />
           </div>
 
           {/* Section 5: Agreements */}
@@ -262,7 +255,7 @@ export default function ApplyPage() {
             <RadioGroup name="agree_quota" options={["Yes", "No"]} />
 
             <QuestionLabel subtitle="Note, asking for an update on your application will result in an instant denial + Blacklist.">Questions or Comments?</QuestionLabel>
-            <Input name="final_questions" placeholder="Any questions?" required={false} />
+            <Input name="final_questions" placeholder="Any questions?" required={false} trackEvent={trackEvent} />
 
             <QuestionLabel>Do you agree to not ask anyone when your application will be read?</QuestionLabel>
             <RadioGroup name="agree_no_ask" options={["Yes", "No"]} />
