@@ -13,8 +13,9 @@ import {
   ClipboardList,
   ShoppingCart,
   Building2,
+  UserPlus,
 } from 'lucide-react';
-import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook } from '../../lib/auth';
+import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications } from '../../lib/auth';
 
 export default function Sidebar({ open, onToggle }) {
   const { data: session } = useSession();
@@ -50,6 +51,7 @@ export default function Sidebar({ open, onToggle }) {
   const hasTraining = canAccessTraining(session);
   const hasAttempts = canViewAttempts(session);
   const showAllTranscripts = canViewAllTranscripts(session);
+  const canReviewApps = canReviewApplications(session);
 
   const navItems = [
     { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -61,6 +63,8 @@ export default function Sidebar({ open, onToggle }) {
     ...(hasAttempts ? [{ href: '/training/attempts', icon: ClipboardList, label: 'Attempts' }] : []),
     { href: '/verify', icon: ShieldCheck, label: 'Verification' },
     { href: '/shop', icon: ShoppingCart, label: 'Store' },
+    { href: '/apply', icon: UserPlus, label: 'Staff Application' },
+    ...(canReviewApps ? [{ href: '/applications', icon: Users, label: 'Review Apps' }] : []),
   ];
 
   return (

@@ -1,10 +1,10 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2, ShoppingCart, Building2 } from 'lucide-react';
+import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2, ShoppingCart, Building2, UserPlus } from 'lucide-react';
 import Link from 'next/link';
 import FeatureCard from '../components/dashboard/FeatureCard';
 import LoginScreen from '../components/auth/LoginScreen';
-import { canAccessPanel, canAccessTraining, canViewAttempts } from '../lib/auth';
+import { canAccessPanel, canAccessTraining, canViewAttempts, canReviewApplications } from '../lib/auth';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -43,6 +43,7 @@ export default function Dashboard() {
   const hasPanel = canAccessPanel(session);
   const hasTraining = canAccessTraining(session);
   const hasAttempts = canViewAttempts(session);
+  const canReviewApps = canReviewApplications(session);
 
   return (
     <div className="max-w-5xl mx-auto animate-fade-in-up">
@@ -99,6 +100,22 @@ export default function Dashboard() {
           title="Store"
           description="Purchase premium roles, pings, and donations"
         />
+
+        <FeatureCard
+          href="/apply"
+          icon={UserPlus}
+          title="Staff Application"
+          description="Apply to join the Georgia State Roleplay staff team"
+        />
+
+        {canReviewApps && (
+          <FeatureCard
+            href="/applications"
+            icon={Users}
+            title="Review Apps"
+            description="Manage and review incoming staff applications"
+          />
+        )}
 
         {hasAttempts && (
           <FeatureCard
