@@ -225,24 +225,24 @@ export default function DynamicApplyPage() {
               
               {field.type === 'textarea' ? (
                 <TextArea 
-                  name={field.label} 
-                  value={answers[field.label] || ''} 
+                  name={field.id} 
+                  value={answers[field.id] || ''} 
                   trackEvent={trackEvent}
-                  onChange={(e) => setAnswers({...answers, [field.label]: e.target.value})}
+                  onChange={(e) => setAnswers({...answers, [field.id]: e.target.value})}
                 />
               ) : field.type === 'radio' ? (
                 <RadioGroup 
-                  name={field.label} 
+                  name={field.id} 
                   options={field.options || ['Yes', 'No']} 
-                  value={answers[field.label]} 
-                  onChange={(val) => setAnswers({...answers, [field.label]: val})}
+                  value={answers[field.id]} 
+                  onChange={(val) => setAnswers({...answers, [field.id]: val})}
                 />
               ) : (
                 <Input 
-                  name={field.label} 
-                  value={answers[field.label] || ''} 
+                  name={field.id} 
+                  value={answers[field.id] || ''} 
                   trackEvent={trackEvent}
-                  onChange={(e) => setAnswers({...answers, [field.label]: e.target.value})}
+                  onChange={(e) => setAnswers({...answers, [field.id]: e.target.value})}
                 />
               )}
             </div>

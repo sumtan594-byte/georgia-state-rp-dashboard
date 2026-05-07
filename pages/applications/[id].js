@@ -115,6 +115,7 @@ export default function ApplicationDetail() {
   const [application, setApplication] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [appType, setAppType] = useState(null);
   
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [decisionType, setDecisionType] = useState(null); 
@@ -124,13 +125,21 @@ export default function ApplicationDetail() {
   useEffect(() => {
     if (id && session && canReviewApplications(session)) {
       fetch(`/api/applications/${id}`)
-        .then(r => {
-          if (!r.ok) throw new Error('Failed to fetch application');
-          return r.json();
-        })
+        .then(r => r.ok ? r.json() : null)
         .then(data => {
           setApplication(data);
-          setLoading(false);
+          // Fetch type info
+          if (data?.type) {
+            fetch('/api/applications/types')
+              .then(r => r.json())
+              .then(types => {
+                const type = types.find(t => t.slug === data.type);
+                setAppType(type);
+                setLoading(false);
+              });
+          } else {
+            setLoading(false);
+          }
         })
         .catch(err => {
           setError(err.message);
@@ -178,9 +187,9 @@ export default function ApplicationDetail() {
     );
   }
 
-  const getStats = (field) => {
-    const keys = application.keystrokeData?.[field] || [];
-    const pastes = application.pasteData?.[field] || [];
+  const getStats = (fieldId) => {
+    const keys = application.keystrokeData?.[fieldId] || [];
+    const pastes = application.pasteData?.[fieldId] || [];
     if (keys.length === 0) return { speed: 0, count: 0, hasPastes: pastes.length > 0 };
     
     const startTime = keys[0].timestamp;
@@ -194,60 +203,6 @@ export default function ApplicationDetail() {
       hasPastes: pastes.length > 0
     };
   };
-
-  const sections = [
-    {
-      title: "Applicant Profile",
-      icon: User,
-      fields: [
-        { label: "Roblox Username", key: "roblox_username" },
-        { label: "PD Rank", key: "pd_rank" },
-        { label: "Timezone", key: "timezone" },
-      ]
-    },
-    {
-      title: "Game Knowledge",
-      icon: Shield,
-      fields: [
-        { label: "RDM Explanation", key: "explain_rdm" },
-        { label: "VDM Explanation", key: "explain_vdm" },
-        { label: "FRP Explanation", key: "explain_frp" },
-        { label: "LTAP Explanation", key: "explain_ltap" },
-      ]
-    },
-    {
-      title: "Scenarios",
-      icon: Zap,
-      fields: [
-        { label: "Scenario 1 (Spawn Shooting)", key: "scenario_1" },
-        { label: "Scenario 2 (Arrest Button)", key: "scenario_2" },
-        { label: "Scenario 3 (Sniper)", key: "scenario_3" },
-        { label: "Scenario 4 (Stop Sticks)", key: "scenario_4" },
-        { label: "Scenario 5 (No Response)", key: "scenario_5" },
-      ]
-    },
-    {
-      title: "Serious Punishments",
-      icon: AlertCircle,
-      fields: [
-        { label: "Scenario 6 (Threats)", key: "scenario_6" },
-        { label: "Scenario 7 (Swearing)", key: "scenario_7" },
-        { label: "Scenario 8 (Exploiting)", key: "scenario_8" },
-      ]
-    },
-    {
-      title: "Agreements & Familiarity",
-      icon: Info,
-      fields: [
-        { label: "Tiring/Frustrating?", key: "agree_workload" },
-        { label: "SPaG/Professionalism?", key: "agree_spag" },
-        { label: "4 Hour Quota?", key: "agree_quota" },
-        { label: "No Ask Rule?", key: "agree_no_ask" },
-        { label: "Melonly Familiarity (1-5)", key: "melonly_familiarity" },
-        { label: "Final Questions/Comments", key: "final_questions" },
-      ]
-    }
-  ];
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in-up pb-20 px-4">
@@ -273,6 +228,7 @@ export default function ApplicationDetail() {
               <div className="text-center md:text-left flex-1">
                 <h1 className="text-2xl font-black text-white mb-1">{application.username}</h1>
                 <p className="text-xs font-mono text-gsrp-teal-light/40 uppercase tracking-widest">{application.userId}</p>
+                <p className="text-[10px] font-black text-gsrp-orange uppercase tracking-widest mt-2">{application.typeName || "Application"}</p>
               </div>
               <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest text-center border
                 ${application.status === 'pending' ? 'bg-gsrp-orange/10 text-gsrp-orange border-gsrp-orange/20' : 
@@ -284,43 +240,45 @@ export default function ApplicationDetail() {
             </div>
           </div>
 
-          {sections.map((section, idx) => (
-            <div key={idx} className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-8">
-              <h2 className="text-white font-black text-sm uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
-                <section.icon size={18} className="text-gsrp-orange" />
-                {section.title}
-              </h2>
-              <div className="space-y-8">
-                {section.fields.map((field, fIdx) => {
-                  const val = application.answers?.[field.key];
-                  const stats = getStats(field.key);
-                  return (
-                    <div key={fIdx} className="relative group">
-                      <div className="flex justify-between items-start mb-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/30">{field.label}</label>
-                        {stats.hasPastes && <span className="text-[8px] font-black uppercase bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full border border-red-500/20">Paste Detected</span>}
-                      </div>
-                      <div className="bg-gsrp-dark-surface/30 rounded-xl p-4 border border-gsrp-dark-border/30 hover:border-gsrp-dark-border transition-colors">
-                        <p className="text-white font-medium text-sm leading-relaxed whitespace-pre-wrap">
-                          {val || "N/A"}
-                        </p>
-                      </div>
-                      
-                      {stats.count > 0 && (
-                        <>
-                          <div className="mt-2 flex gap-4 text-[9px] font-bold text-gsrp-teal-light/20 uppercase tracking-widest">
-                            <span>{stats.count} Keystrokes</span>
-                            <span>{stats.wpm} WPM</span>
-                          </div>
-                          <KeystrokePlayer keystrokes={application.keystrokeData?.[field.key] || []} originalText={val} />
-                        </>
-                      )}
+          <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-8">
+            <h2 className="text-white font-black text-sm uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
+              <FileText size={18} className="text-gsrp-orange" />
+              Submission Details
+            </h2>
+            <div className="space-y-8">
+              {appType ? appType.fields.map((field, fIdx) => {
+                const val = application.answers?.[field.id] || application.answers?.[field.label];
+                const stats = getStats(field.id);
+                return (
+                  <div key={field.id} className="relative group">
+                    <div className="flex justify-between items-start mb-2">
+                      <label className="text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/30">{field.label}</label>
+                      {stats.hasPastes && <span className="text-[8px] font-black uppercase bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full border border-red-500/20">Paste Detected</span>}
                     </div>
-                  );
-                })}
-              </div>
+                    <div className="bg-gsrp-dark-surface/30 rounded-xl p-4 border border-gsrp-dark-border/30 hover:border-gsrp-dark-border transition-colors">
+                      <p className="text-white font-medium text-sm leading-relaxed whitespace-pre-wrap">
+                        {val || "N/A"}
+                      </p>
+                    </div>
+                    
+                    {stats.count > 0 && (
+                      <>
+                        <div className="mt-2 flex gap-4 text-[9px] font-bold text-gsrp-teal-light/20 uppercase tracking-widest">
+                          <span>{stats.count} Keystrokes</span>
+                          <span>{stats.wpm} WPM</span>
+                        </div>
+                        <KeystrokePlayer keystrokes={application.keystrokeData?.[field.id] || []} originalText={val} />
+                      </>
+                    )}
+                  </div>
+                );
+              }) : (
+                <div className="text-gsrp-teal-light/40 text-sm italic">
+                  Could not load application structure. This might be an older submission.
+                </div>
+              )}
             </div>
-          ))}
+          </div>
         </div>
 
         {/* Right Column: Actions & Global Stats */}
