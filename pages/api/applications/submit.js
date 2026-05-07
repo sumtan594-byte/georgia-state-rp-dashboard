@@ -44,7 +44,7 @@ export default async function handler(req, res) {
                   type: 2, // BUTTON
                   style: 5, // LINK
                   label: "View Application",
-                  url: `https://gsrp-dashboard.vercel.app/applications/${result.insertedId}`
+                  url: `https://georgia-state-rp-dashboard.vercel.app/applications/${result.insertedId}`
                 }
               ]
             }
