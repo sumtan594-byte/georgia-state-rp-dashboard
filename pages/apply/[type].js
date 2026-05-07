@@ -152,7 +152,7 @@ export default function DynamicApplyPage() {
           const type = data.find(t => t.slug === typeSlug);
           if (type) {
             // Role Check
-            if (type.requiredRole) {
+            if (type.requiredRole && (!Array.isArray(type.requiredRole) || type.requiredRole.length > 0)) {
               const required = Array.isArray(type.requiredRole) ? type.requiredRole : [type.requiredRole];
               if (!required.some(roleId => hasRole(session, roleId))) {
                 router.push('/apply');
