@@ -20,6 +20,7 @@ export default function ApplicationList() {
       fetch('/api/applications/types')
         .then(r => r.json())
         .then(data => {
+          if (!Array.isArray(data)) return;
           // If no staff app exists, add a placeholder
           const hasStaff = data.find(t => t.slug === 'staff');
           if (!hasStaff) {

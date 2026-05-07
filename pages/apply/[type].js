@@ -92,6 +92,7 @@ export default function DynamicApplyPage() {
       fetch(`/api/applications/types`)
         .then(r => r.json())
         .then(data => {
+          if (!Array.isArray(data)) return;
           const type = data.find(t => t.slug === typeSlug);
           if (type) {
             setAppType(type);

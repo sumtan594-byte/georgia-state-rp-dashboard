@@ -8,8 +8,8 @@ export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   
   // Only staff can manage types
-  if (!session || !canReviewApplications(session)) {
-    return res.status(403).json({ message: 'Forbidden' });
+  if (!session) {
+    return res.status(401).json({ message: 'Unauthorized' });
   }
 
   const client = await clientPromise;
@@ -18,6 +18,11 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const types = await db.collection("application_types").find({}).toArray();
     return res.status(200).json(types);
+  }
+
+  // Only staff can manage types (POST/DELETE)
+  if (!canReviewApplications(session)) {
+    return res.status(403).json({ message: 'Forbidden' });
   }
 
   if (req.method === 'POST') {
