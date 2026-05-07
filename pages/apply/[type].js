@@ -95,23 +95,36 @@ const CheckboxGroup = ({ name, options = [], value = [], onChange }) => (
   </div>
 );
 
-const Slider = ({ name, min = 0, max = 10, value = min, onChange }) => (
-  <div className="mb-8 p-6 bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-2xl">
-    <div className="flex justify-between items-center mb-4">
-      <span className="text-xs font-black text-white/40 uppercase tracking-widest">{min}</span>
-      <span className="text-2xl font-black text-gsrp-orange">{value}</span>
-      <span className="text-xs font-black text-white/40 uppercase tracking-widest">{max}</span>
+const Slider = ({ name, min = 0, max = 10, value = min, onChange, cues = "" }) => {
+  const cueMap = cues.split(',').reduce((acc, curr) => {
+    const [val, label] = curr.split(':').map(s => s.trim());
+    if (val && label) acc[val] = label;
+    return acc;
+  }, {});
+
+  return (
+    <div className="mb-8 p-6 bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-2xl">
+      <div className="flex justify-between items-center mb-4">
+        <span className="text-xs font-black text-white/40 uppercase tracking-widest">{min}</span>
+        <div className="text-center">
+          <span className="text-2xl font-black text-gsrp-orange">{value}</span>
+          {cueMap[value] && (
+            <p className="text-[10px] font-black text-gsrp-orange/60 uppercase tracking-widest mt-1 animate-fade-in">{cueMap[value]}</p>
+          )}
+        </div>
+        <span className="text-xs font-black text-white/40 uppercase tracking-widest">{max}</span>
+      </div>
+      <input 
+        type="range" 
+        min={min} 
+        max={max} 
+        value={value} 
+        onChange={(e) => onChange(parseInt(e.target.value))}
+        className="w-full accent-gsrp-orange h-2 bg-gsrp-dark-border rounded-lg appearance-none cursor-pointer"
+      />
     </div>
-    <input 
-      type="range" 
-      min={min} 
-      max={max} 
-      value={value} 
-      onChange={(e) => onChange(parseInt(e.target.value))}
-      className="w-full accent-gsrp-orange h-2 bg-gsrp-dark-border rounded-lg appearance-none cursor-pointer"
-    />
-  </div>
-);
+  );
+};
 
 export default function DynamicApplyPage() {
   const { data: session, status } = useSession();
@@ -316,7 +329,8 @@ export default function DynamicApplyPage() {
                   name={field.id} 
                   min={field.min} 
                   max={field.max} 
-                  value={answers[field.id]} 
+                  cues={field.cues}
+                  value={answers[field.id] || field.min || 0} 
                   onChange={(val) => setAnswers({...answers, [field.id]: val})}
                 />
               ) : (

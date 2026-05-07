@@ -441,14 +441,14 @@ export default function ManageApplicationTypes() {
                   )}
 
                   {field.type === 'slider' && (
-                    <div className="flex gap-4">
+                    <div className="flex flex-wrap gap-4 items-end">
                       <div>
                         <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Min</label>
                         <input 
                           type="number" 
                           value={field.min || 0} 
                           onChange={e => updateField(field.id, { min: parseInt(e.target.value) })}
-                          className="w-20 bg-gsrp-dark-surface border border-white/5 rounded-lg px-3 py-2 text-white text-sm"
+                          className="w-16 bg-gsrp-dark-surface border border-white/5 rounded-lg px-3 py-2 text-white text-sm"
                         />
                       </div>
                       <div>
@@ -457,7 +457,17 @@ export default function ManageApplicationTypes() {
                           type="number" 
                           value={field.max || 10} 
                           onChange={e => updateField(field.id, { max: parseInt(e.target.value) })}
-                          className="w-20 bg-gsrp-dark-surface border border-white/5 rounded-lg px-3 py-2 text-white text-sm"
+                          className="w-16 bg-gsrp-dark-surface border border-white/5 rounded-lg px-3 py-2 text-white text-sm"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-[200px]">
+                        <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Slider Cues (e.g. 1:Poor, 10:Expert)</label>
+                        <input 
+                          type="text" 
+                          value={field.cues || ''} 
+                          onChange={e => updateField(field.id, { cues: e.target.value })}
+                          placeholder="1:Noob, 5:Mid, 10:Pro"
+                          className="w-full bg-gsrp-dark-surface border border-white/5 rounded-lg px-3 py-2 text-white text-sm"
                         />
                       </div>
                     </div>

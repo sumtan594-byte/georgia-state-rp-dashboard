@@ -1,6 +1,6 @@
 import clientPromise from '../../../lib/mongodb';
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
+import { authOptions } from "../../../lib/auth-options";
 import { sendComponentsV2 } from "../../../lib/discord-v2";
 
 export default async function handler(req, res) {

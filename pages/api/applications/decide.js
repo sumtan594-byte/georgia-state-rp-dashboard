@@ -1,7 +1,7 @@
 import clientPromise from '../../../lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
+import { authOptions } from "../../../lib/auth-options";
 import { canReviewApplications } from "../../../lib/auth";
 import { sendComponentsV2, sendDM, addMemberRole, removeMemberRole } from "../../../lib/discord-v2";
 

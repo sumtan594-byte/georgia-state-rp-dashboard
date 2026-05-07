@@ -1,7 +1,7 @@
 import clientPromise from '../../../lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { getServerSession } from "next-auth/next";
-import { authOptions } from "../auth/[...nextauth]";
+import { authOptions } from "../../../lib/auth-options";
 import { canReviewApplications } from "../../../lib/auth";
 
 export default async function handler(req, res) {
@@ -26,13 +26,26 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const { name, slug, description, requiredRole, fields } = req.body;
+    const { 
+      name, slug, description, requiredRole, 
+      roleAddAccepted, roleRemoveAccepted, 
+      roleAddDenied, roleRemoveDenied,
+      fields 
+    } = req.body;
     
     if (!name || !slug) return res.status(400).json({ message: 'Name and Slug are required' });
 
     const result = await db.collection("application_types").updateOne(
       { slug },
-      { $set: { name, slug, description, requiredRole, fields, updatedAt: new Date() } },
+      { 
+        $set: { 
+          name, slug, description, requiredRole, 
+          roleAddAccepted, roleRemoveAccepted, 
+          roleAddDenied, roleRemoveDenied,
+          fields, 
+          updatedAt: new Date() 
+        } 
+      },
       { upsert: true }
     );
     

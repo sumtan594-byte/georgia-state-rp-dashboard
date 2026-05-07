@@ -292,7 +292,22 @@ export default function ApplicationDetail() {
                     </div>
                     <div className="bg-gsrp-dark-surface/30 rounded-xl p-4 border border-gsrp-dark-border/30 hover:border-gsrp-dark-border transition-colors">
                       <p className="text-white font-medium text-sm leading-relaxed whitespace-pre-wrap">
-                        {Array.isArray(val) ? val.join(', ') : (val || "N/A")}
+                        {(() => {
+                          if (Array.isArray(val)) return val.join(', ');
+                          if (!val) return "N/A";
+                          
+                          // Handle slider cues
+                          if (field.type === 'slider' && field.cues) {
+                            const cueMap = field.cues.split(',').reduce((acc, curr) => {
+                              const [v, l] = curr.split(':').map(s => s.trim());
+                              if (v && l) acc[v] = l;
+                              return acc;
+                            }, {});
+                            if (cueMap[val]) return `${val} (${cueMap[val]})`;
+                          }
+                          
+                          return val;
+                        })()}
                       </p>
                     </div>
                     
