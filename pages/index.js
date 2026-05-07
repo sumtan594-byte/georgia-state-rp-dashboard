@@ -62,21 +62,11 @@ export default function Dashboard() {
           <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="animate-fade-in-up stagger-1">
-            <FeatureCard href="/departments" icon={Building2} title="Departments" description="View and join GSRP's official departments" />
-          </div>
-          <div className="animate-fade-in-up stagger-2">
-            <FeatureCard href="/transcripts" icon={FileText} title="Transcripts" description="View and manage Discord ticket transcripts" badge={stats.transcripts > 0 ? `${stats.transcripts} records` : null} />
-          </div>
-          <div className="animate-fade-in-up stagger-3">
-            <FeatureCard href="/panel" icon={Map} title="Live Panel" description="ERLC server map, player management, and commands" badge={stats.online ? `${stats.players} online` : null} locked={!hasPanel} />
-          </div>
-          <div className="animate-fade-in-up stagger-4">
-            <FeatureCard href="/verify" icon={ShieldCheck} title="Verification" description="Link your Roblox account to Discord" />
-          </div>
-          <div className="animate-fade-in-up stagger-5">
-            <FeatureCard href="/shop" icon={ShoppingCart} title="Store" description="Purchase premium roles, pings, and donations" />
-          </div>
+          <FeatureCard className="animate-fade-in-up stagger-1" href="/departments" icon={Building2} title="Departments" description="View and join GSRP's official departments" />
+          <FeatureCard className="animate-fade-in-up stagger-2" href="/transcripts" icon={FileText} title="Transcripts" description="View and manage Discord ticket transcripts" badge={stats.transcripts > 0 ? `${stats.transcripts} records` : null} />
+          <FeatureCard className="animate-fade-in-up stagger-3" href="/panel" icon={Map} title="Live Panel" description="ERLC server map, player management, and commands" badge={stats.online ? `${stats.players} online` : null} locked={!hasPanel} />
+          <FeatureCard className="animate-fade-in-up stagger-4" href="/verify" icon={ShieldCheck} title="Verification" description="Link your Roblox account to Discord" />
+          <FeatureCard className="animate-fade-in-up stagger-5" href="/shop" icon={ShoppingCart} title="Store" description="Purchase premium roles, pings, and donations" />
         </div>
       </div>
 
@@ -88,13 +78,9 @@ export default function Dashboard() {
             <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <div className="animate-fade-in-up stagger-1">
-              <FeatureCard href="/training" icon={BookOpen} title="Staff Training" description="SSD training quiz and staff handbook" locked={!hasTraining} />
-            </div>
+            <FeatureCard className="animate-fade-in-up stagger-1" href="/training" icon={BookOpen} title="Staff Training" description="SSD training quiz and staff handbook" locked={!hasTraining} />
             {hasAttempts && (
-              <div className="animate-fade-in-up stagger-2">
-                <FeatureCard href="/training/attempts" icon={Users} title="Quiz Attempts" description="View all staff training quiz attempts" />
-              </div>
+              <FeatureCard className="animate-fade-in-up stagger-2" href="/training/attempts" icon={Users} title="Quiz Attempts" description="View all staff training quiz attempts" />
             )}
           </div>
         </div>
@@ -107,17 +93,11 @@ export default function Dashboard() {
           <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <div className="animate-fade-in-up stagger-1">
-            <FeatureCard href="/apply" icon={UserPlus} title="Applications" description="Apply for staff, departments, or special roles" />
-          </div>
+          <FeatureCard className="animate-fade-in-up stagger-1" href="/apply" icon={UserPlus} title="Applications" description="Apply for staff, departments, or special roles" />
           {canReviewApps && (
             <>
-              <div className="animate-fade-in-up stagger-2">
-                <FeatureCard href="/applications" icon={Users} title="Review Apps" description="Manage and review incoming staff applications" />
-              </div>
-              <div className="animate-fade-in-up stagger-3">
-                <FeatureCard href="/applications/manage" icon={Settings} title="Manage Forms" description="Create and edit application types and questions" />
-              </div>
+              <FeatureCard className="animate-fade-in-up stagger-2" href="/applications" icon={Users} title="Review Apps" description="Manage and review incoming staff applications" />
+              <FeatureCard className="animate-fade-in-up stagger-3" href="/applications/manage" icon={Settings} title="Manage Forms" description="Create and edit application types and questions" />
             </>
           )}
         </div>
