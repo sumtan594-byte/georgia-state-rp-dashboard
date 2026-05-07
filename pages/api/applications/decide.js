@@ -3,7 +3,7 @@ import { ObjectId } from 'mongodb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../auth/[...nextauth]";
 import { canReviewApplications } from "../../../lib/auth";
-import { sendComponentsV2, sendDM } from "../../../lib/discord-v2";
+import { sendComponentsV2, sendDM, addMemberRole, removeMemberRole } from "../../../lib/discord-v2";
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
@@ -22,6 +22,9 @@ export default async function handler(req, res) {
     const application = await db.collection("applications").findOne({ _id: new ObjectId(id) });
     if (!application) return res.status(404).json({ message: 'Application not found' });
 
+    // Fetch type config for role automation
+    const appType = await db.collection("application_types").findOne({ slug: application.type || 'staff' });
+
     // Update DB
     await db.collection("applications").updateOne(
       { _id: new ObjectId(id) },
@@ -32,13 +35,26 @@ export default async function handler(req, res) {
     const color = isAccepted ? 0x22C55E : 0xEF4444; // Green vs Red
     const outcomeText = isAccepted ? 'accepted' : 'denied';
     const informingText = isAccepted ? 'are pleased' : 'regret';
+    const guildId = "1251347648351506485"; // GSRP Guild ID
 
-    // Automatic Role Assignment if Accepted
-    if (isAccepted) {
-      const rolesToAdd = ["1372480733234593812", "1372476380096237609"];
-      const guildId = "1251347648351506485"; // GSRP Guild ID
-      for (const roleId of rolesToAdd) {
-        await addMemberRole(guildId, application.userId, roleId);
+    // Role Automation Logic
+    if (appType) {
+      if (isAccepted) {
+        // Add roles on approval
+        if (appType.roleAddAccepted) await addMemberRole(guildId, application.userId, appType.roleAddAccepted);
+        // Remove roles on approval
+        if (appType.roleRemoveAccepted) await removeMemberRole(guildId, application.userId, appType.roleRemoveAccepted);
+        
+        // Legacy fallback for main staff app
+        if (appType.slug === 'staff') {
+          const legacyRoles = ["1372480733234593812", "1372476380096237609"];
+          for (const roleId of legacyRoles) await addMemberRole(guildId, application.userId, roleId);
+        }
+      } else {
+        // Add roles on denial
+        if (appType.roleAddDenied) await addMemberRole(guildId, application.userId, appType.roleAddDenied);
+        // Remove roles on denial
+        if (appType.roleRemoveDenied) await removeMemberRole(guildId, application.userId, appType.roleRemoveDenied);
       }
     }
 

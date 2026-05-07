@@ -180,15 +180,60 @@ export default function ManageApplicationTypes() {
             </div>
           </div>
 
-          <div className="mb-8">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Required Role ID (Optional)</label>
-            <input 
-              type="text" 
-              value={form.requiredRole} 
-              onChange={e => setForm({...form, requiredRole: e.target.value})}
-              placeholder="e.g. 1372491512709124106"
-              className="w-full bg-gsrp-dark-surface border border-white/10 rounded-xl px-4 py-3 text-white focus:border-gsrp-orange focus:outline-none"
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-2">Required Role ID to Apply (Optional)</label>
+              <input 
+                type="text" 
+                value={form.requiredRole || ''} 
+                onChange={e => setForm({...form, requiredRole: e.target.value})}
+                className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl px-4 py-3 text-white text-sm focus:border-gsrp-orange/50 outline-none"
+                placeholder="e.g. 1372491512709124106"
+              />
+            </div>
+            <div />
+
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-2">Role to GIVE on Approval</label>
+              <input 
+                type="text" 
+                value={form.roleAddAccepted || ''} 
+                onChange={e => setForm({...form, roleAddAccepted: e.target.value})}
+                className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl px-4 py-3 text-white text-sm focus:border-gsrp-orange/50 outline-none"
+                placeholder="Role ID"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-2">Role to REMOVE on Approval</label>
+              <input 
+                type="text" 
+                value={form.roleRemoveAccepted || ''} 
+                onChange={e => setForm({...form, roleRemoveAccepted: e.target.value})}
+                className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl px-4 py-3 text-white text-sm focus:border-gsrp-orange/50 outline-none"
+                placeholder="Role ID"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-2">Role to GIVE on Denial</label>
+              <input 
+                type="text" 
+                value={form.roleAddDenied || ''} 
+                onChange={e => setForm({...form, roleAddDenied: e.target.value})}
+                className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl px-4 py-3 text-white text-sm focus:border-gsrp-orange/50 outline-none"
+                placeholder="Role ID"
+              />
+            </div>
+            <div>
+              <label className="block text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-2">Role to REMOVE on Denial</label>
+              <input 
+                type="text" 
+                value={form.roleRemoveDenied || ''} 
+                onChange={e => setForm({...form, roleRemoveDenied: e.target.value})}
+                className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl px-4 py-3 text-white text-sm focus:border-gsrp-orange/50 outline-none"
+                placeholder="Role ID"
+              />
+            </div>
           </div>
 
           <div className="space-y-6">
