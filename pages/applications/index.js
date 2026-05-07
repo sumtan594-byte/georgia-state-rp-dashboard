@@ -9,25 +9,33 @@ import LoginScreen from '../../components/auth/LoginScreen';
 export default function ApplicationsList() {
   const { data: session, status } = useSession();
   const [applications, setApplications] = useState([]);
+  const [types, setTypes] = useState([]);
+  const [activeTab, setActiveTab] = useState('staff');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
 
   useEffect(() => {
     if (session && canReviewApplications(session)) {
-      fetch('/api/applications/list')
-        .then(r => {
-          if (!r.ok) throw new Error('Failed to fetch applications');
-          return r.json();
-        })
-        .then(data => {
-          setApplications(data);
-          setLoading(false);
-        })
-        .catch(err => {
-          setError(err.message);
-          setLoading(false);
-        });
+      Promise.all([
+        fetch('/api/applications/list').then(r => r.ok ? r.json() : []),
+        fetch('/api/applications/types').then(r => r.ok ? r.json() : [])
+      ])
+      .then(([apps, appTypes]) => {
+        setApplications(apps);
+        
+        // Ensure staff exists in types
+        const hasStaff = appTypes.find(t => t.slug === 'staff');
+        if (!hasStaff) {
+          appTypes.unshift({ name: 'Staff Application', slug: 'staff' });
+        }
+        setTypes(appTypes);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
     }
   }, [session]);
 
@@ -43,10 +51,11 @@ export default function ApplicationsList() {
     );
   }
 
-  const filtered = applications.filter(app => 
-    app.username.toLowerCase().includes(search.toLowerCase()) ||
-    app.userId.includes(search)
-  );
+  const filtered = applications.filter(app => {
+    const matchesSearch = app.username.toLowerCase().includes(search.toLowerCase()) || app.userId.includes(search);
+    const matchesTab = app.type === activeTab || (!app.type && activeTab === 'staff');
+    return matchesSearch && matchesTab;
+  });
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in-up">
@@ -79,6 +88,27 @@ export default function ApplicationsList() {
         </div>
       </div>
 
+      {/* Tabs */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {types.map(type => {
+          const count = applications.filter(app => (app.type === type.slug) || (!app.type && type.slug === 'staff')).length;
+          return (
+            <button
+              key={type.slug}
+              onClick={() => setActiveTab(type.slug)}
+              className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border
+                ${activeTab === type.slug 
+                  ? 'bg-gsrp-orange text-white border-gsrp-orange shadow-lg shadow-gsrp-orange/20 scale-105' 
+                  : 'bg-gsrp-dark-card text-gsrp-teal-light/40 border-gsrp-dark-border/50 hover:text-white hover:border-gsrp-orange/30'}
+              `}
+            >
+              {type.name}
+              {count > 0 && <span className="ml-2 opacity-50">({count})</span>}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 overflow-hidden">
         {loading ? (
           <div className="p-20 flex flex-col items-center justify-center">
@@ -91,7 +121,7 @@ export default function ApplicationsList() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-20 text-center">
-            <p className="text-gsrp-teal-light/40 font-medium">No applications found.</p>
+            <p className="text-gsrp-teal-light/40 font-medium">No {activeTab} applications found.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -144,7 +174,7 @@ export default function ApplicationsList() {
                         href={`/applications/${app._id}`}
                         className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-xs font-bold text-gsrp-teal-light hover:text-white hover:border-gsrp-orange/50 transition-all group-hover:bg-gsrp-dark-surface/80"
                       >
-                        View Profile
+                        Review
                         <ChevronRight size={14} />
                       </Link>
                     </td>
