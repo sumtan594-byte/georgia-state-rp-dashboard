@@ -9,6 +9,7 @@ import { canAccessPanel, canAccessTraining, canViewAttempts, canReviewApplicatio
 export default function Dashboard() {
   const { data: session, status } = useSession();
   const [stats, setStats] = useState({ transcripts: 0, players: 0, online: false });
+  const [appTypes, setAppTypes] = useState([]);
 
   useEffect(() => {
     if (!session) return;
@@ -25,6 +26,13 @@ export default function Dashboard() {
     });
   }, [session]);
 
+  useEffect(() => {
+    if (!session) return;
+    fetch('/api/applications/types')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setAppTypes(data));
+  }, [session]);
+
   if (status === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -39,15 +47,6 @@ export default function Dashboard() {
   if (!session) {
     return <LoginScreen />;
   }
-
-  const [appTypes, setAppTypes] = useState([]);
-
-  useEffect(() => {
-    if (!session) return;
-    fetch('/api/applications/types')
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setAppTypes(data));
-  }, [session]);
 
   const hasPanel = canAccessPanel(session);
   const hasTraining = canAccessTraining(session);
