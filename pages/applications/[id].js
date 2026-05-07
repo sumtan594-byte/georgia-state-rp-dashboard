@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
@@ -16,11 +16,96 @@ import {
   User,
   Shield,
   Zap,
-  Info
+  Info,
+  Play,
+  RotateCcw
 } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
 import LoginScreen from '../../components/auth/LoginScreen';
+
+const KeystrokePlayer = ({ keystrokes, originalText }) => {
+  const [playing, setPlaying] = useState(false);
+  const [displayText, setDisplayText] = useState('');
+  const [progress, setProgress] = useState(0);
+  const timerRef = useRef(null);
+
+  const stop = () => {
+    setPlaying(false);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    setDisplayText('');
+    setProgress(0);
+  };
+
+  const play = async () => {
+    if (playing) return stop();
+    
+    setPlaying(true);
+    setDisplayText('');
+    setProgress(0);
+    
+    const sorted = [...keystrokes].sort((a, b) => a.timestamp - b.timestamp);
+    if (sorted.length === 0) {
+      setPlaying(false);
+      return;
+    }
+
+    const playSequence = async (index) => {
+      if (index >= sorted.length) {
+        setPlaying(false);
+        return;
+      }
+
+      const current = sorted[index];
+      const nextDelay = index === 0 ? 0 : Math.min(current.timestamp - sorted[index - 1].timestamp, 300);
+
+      timerRef.current = setTimeout(() => {
+        setDisplayText(prev => {
+          if (current.key === 'Backspace') return prev.slice(0, -1);
+          if (current.key.length === 1) return prev + current.key;
+          return prev;
+        });
+        setProgress(Math.round(((index + 1) / sorted.length) * 100));
+        playSequence(index + 1);
+      }, nextDelay);
+    };
+
+    playSequence(0);
+  };
+
+  useEffect(() => {
+    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+  }, []);
+
+  return (
+    <div className="mt-4 p-4 bg-black/40 rounded-2xl border border-white/5 overflow-hidden">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={play} 
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all
+              ${playing ? 'bg-gsrp-orange text-white' : 'bg-gsrp-dark-surface text-gsrp-teal-light/40 hover:text-white'}
+            `}
+          >
+            {playing ? <RotateCcw size={12} /> : <Play size={12} />}
+            {playing ? 'Stop Replay' : 'Replay Typing'}
+          </button>
+          {playing && (
+            <span className="text-[10px] font-bold text-gsrp-orange animate-pulse">Playing Sequence...</span>
+          )}
+        </div>
+        <span className="text-[10px] font-mono text-white/20">{progress}%</span>
+      </div>
+      
+      <div className="relative min-h-[60px] bg-gsrp-dark-surface/50 rounded-xl p-4 border border-white/5">
+        <p className="text-sm font-medium text-gsrp-teal-light leading-relaxed whitespace-pre-wrap">
+          {playing ? displayText : <span className="opacity-20 italic">Click replay to see typing behavior...</span>}
+          {playing && <span className="inline-block w-1.5 h-4 bg-gsrp-orange ml-1 animate-pulse align-middle" />}
+        </p>
+      </div>
+    </div>
+  );
+};
 
 export default function ApplicationDetail() {
   const { data: session, status } = useSession();
@@ -220,11 +305,15 @@ export default function ApplicationDetail() {
                           {val || "N/A"}
                         </p>
                       </div>
+                      
                       {stats.count > 0 && (
-                        <div className="mt-2 flex gap-4 text-[9px] font-bold text-gsrp-teal-light/20 uppercase tracking-widest">
-                          <span>{stats.count} Keystrokes</span>
-                          <span>{stats.wpm} WPM</span>
-                        </div>
+                        <>
+                          <div className="mt-2 flex gap-4 text-[9px] font-bold text-gsrp-teal-light/20 uppercase tracking-widest">
+                            <span>{stats.count} Keystrokes</span>
+                            <span>{stats.wpm} WPM</span>
+                          </div>
+                          <KeystrokePlayer keystrokes={application.keystrokeData?.[field.key] || []} originalText={val} />
+                        </>
                       )}
                     </div>
                   );

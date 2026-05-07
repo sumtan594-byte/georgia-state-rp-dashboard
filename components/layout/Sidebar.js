@@ -64,7 +64,10 @@ export default function Sidebar({ open, onToggle }) {
     { href: '/verify', icon: ShieldCheck, label: 'Verification' },
     { href: '/shop', icon: ShoppingCart, label: 'Store' },
     { href: '/apply', icon: UserPlus, label: 'Staff Application' },
-    ...(canReviewApps ? [{ href: '/applications', icon: Users, label: 'Review Apps' }] : []),
+    ...(canReviewApps ? [
+      { href: '/applications', icon: Users, label: 'Review Apps' },
+      { href: '/applications/manage', icon: Settings, label: 'Manage Apps' }
+    ] : []),
   ];
 
   return (

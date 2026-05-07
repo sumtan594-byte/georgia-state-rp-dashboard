@@ -1,0 +1,272 @@
+import { useState, useEffect, useRef } from 'react';
+import Head from 'next/head';
+import { useRouter } from 'next/router';
+import { useSession } from 'next-auth/react';
+import { 
+  FileText, 
+  Send, 
+  AlertCircle, 
+  CheckCircle2, 
+  Loader2, 
+  Keyboard, 
+  ShieldCheck, 
+  HelpCircle,
+  ArrowRight,
+  ArrowLeft
+} from 'lucide-react';
+import LoginScreen from '../../components/auth/LoginScreen';
+
+const QuestionLabel = ({ children, required = true, subtitle, sentences = 0 }) => (
+  <label className="block mb-3">
+    <div className="flex justify-between items-center">
+      <span className="text-sm font-black uppercase tracking-widest text-white/90 ml-1">
+        {children} {required && <span className="text-gsrp-orange">*</span>}
+      </span>
+      <span className="flex items-center gap-1 opacity-60 text-[10px] font-bold uppercase tracking-widest text-gsrp-teal-light">
+        <Keyboard size={10} /> Monitoring Active
+      </span>
+    </div>
+    {subtitle && <p className="text-xs text-gsrp-teal-light/70 ml-1 mt-1 font-medium">{subtitle}</p>}
+    {sentences > 0 && <p className="text-[10px] text-gsrp-orange ml-1 mt-0.5 font-black uppercase tracking-widest">({sentences} Sentences Required)</p>}
+  </label>
+);
+
+const TextArea = ({ name, placeholder, trackEvent, value, onChange }) => (
+  <textarea 
+    name={name}
+    required 
+    rows={5}
+    value={value}
+    onChange={onChange}
+    onKeyDown={(e) => trackEvent(name, 'keystroke', e.key)}
+    onPaste={(e) => trackEvent(name, 'paste', e.clipboardData.getData('text'))}
+    placeholder={placeholder}
+    className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border rounded-2xl px-5 py-4 text-white focus:border-gsrp-orange focus:outline-none transition-all font-medium resize-none mb-8 text-base placeholder:text-white/10 shadow-inner"
+  />
+);
+
+const Input = ({ name, type = "text", placeholder, trackEvent, required = true, value, onChange }) => (
+  <input 
+    name={name}
+    type={type}
+    required={required}
+    value={value}
+    onChange={onChange}
+    onKeyDown={(e) => trackEvent(name, 'keystroke', e.key)}
+    onPaste={(e) => trackEvent(name, 'paste', e.clipboardData.getData('text'))}
+    placeholder={placeholder}
+    className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border rounded-2xl px-5 py-4 text-white focus:border-gsrp-orange focus:outline-none transition-all font-medium mb-8 text-base placeholder:text-white/10 shadow-inner"
+  />
+);
+
+const RadioGroup = ({ name, options, value, onChange }) => (
+  <div className="space-y-3 mb-8">
+    {options.map((opt, i) => (
+      <label key={i} className={`flex items-center gap-4 p-5 rounded-2xl cursor-pointer transition-all border-2 ${value === opt ? 'bg-gsrp-orange/10 border-gsrp-orange shadow-lg shadow-gsrp-orange/5' : 'bg-gsrp-dark-surface/50 border-gsrp-dark-border/50 hover:bg-gsrp-dark-surface hover:border-gsrp-dark-border'} group`}>
+        <input type="radio" name={name} value={opt} checked={value === opt} onChange={() => onChange(opt)} required className="accent-gsrp-orange w-5 h-5" />
+        <span className={`text-base font-bold ${value === opt ? 'text-white' : 'text-gsrp-teal-light/70 group-hover:text-white'} transition-colors`}>{opt}</span>
+      </label>
+    ))}
+  </div>
+);
+
+export default function DynamicApplyPage() {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const { type: typeSlug } = router.query;
+  
+  const [appType, setAppType] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(false);
+  
+  // Form Logic
+  const [step, setStep] = useState(1);
+  const [answers, setAnswers] = useState({});
+  const [keystrokes, setKeystrokes] = useState({});
+  const [pastes, setPastes] = useState({});
+
+  useEffect(() => {
+    if (typeSlug) {
+      fetch(`/api/applications/types`)
+        .then(r => r.json())
+        .then(data => {
+          const type = data.find(t => t.slug === typeSlug);
+          if (type) {
+            setAppType(type);
+          } else if (typeSlug === 'staff') {
+            // Default legacy Staff Application if not in DB yet
+            setAppType({
+              name: 'Staff Application',
+              slug: 'staff',
+              fields: [
+                { id: '1', label: 'Roblox username', type: 'text', subtitle: 'Username, not display name.', required: true },
+                { id: '2', label: 'In game PD rank?', type: 'text', subtitle: 'e.g. Commander', required: true },
+                { id: '3', label: 'What is your Time zone?', type: 'textarea', placeholder: 'e.g. EST', required: true },
+                { id: '4', label: 'Explain RDM', type: 'textarea', sentences: 2, required: true },
+                { id: '5', label: 'Explain VDM', type: 'textarea', sentences: 2, required: true },
+                { id: '6', label: 'Scenario 1: Safezone Shooting', type: 'textarea', sentences: 2, required: true },
+                { id: '7', label: 'Final Questions?', type: 'text', required: false },
+                { id: '8', label: 'Ready to submit?', type: 'radio', options: ['Yes!'], required: true },
+              ]
+            });
+          }
+          setLoading(false);
+        });
+    }
+  }, [typeSlug]);
+
+  const trackEvent = (fieldName, type, data) => {
+    if (type === 'keystroke') {
+      setKeystrokes(prev => {
+        const field = prev[fieldName] || [];
+        return { ...prev, [fieldName]: [...field, { timestamp: Date.now(), key: data }] };
+      });
+    } else if (type === 'paste') {
+      setPastes(prev => {
+        const field = prev[fieldName] || [];
+        return { ...prev, [fieldName]: [...field, { timestamp: Date.now(), content: data }] };
+      });
+    }
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    setError(null);
+
+    const data = {
+      type: appType.slug,
+      typeName: appType.name,
+      username: session.user.name,
+      userId: session.user.id,
+      answers: answers,
+      keystrokeData: keystrokes,
+      pasteData: pastes,
+      submittedAt: new Date(),
+    };
+
+    try {
+      const res = await fetch('/api/applications/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.message || 'Failed to submit');
+      }
+
+      setSuccess(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  if (status === 'loading' || loading) return null;
+  if (!session) return <LoginScreen />;
+  if (!appType) return <div className="text-center py-20 text-white">Application type not found.</div>;
+
+  if (success) {
+    return (
+      <div className="max-w-2xl mx-auto py-20 px-4 text-center animate-fade-in-up">
+        <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gsrp-teal/10 mb-8 border border-gsrp-teal/20">
+          <CheckCircle2 className="w-10 h-10 text-gsrp-teal" />
+        </div>
+        <h1 className="text-3xl font-black text-white mb-4">Application Sent!</h1>
+        <p className="text-gsrp-teal-light text-base mb-8 max-w-md mx-auto">
+          Your {appType.name} has been successfully recorded.
+        </p>
+        <button onClick={() => window.location.href = '/'} className="px-8 py-3 bg-gsrp-orange text-white font-black rounded-xl">Return Home</button>
+      </div>
+    );
+  }
+
+  // Split fields into chunks of 4 for pagination
+  const fieldChunks = [];
+  for (let i = 0; i < appType.fields.length; i += 4) {
+    fieldChunks.push(appType.fields.slice(i, i + 4));
+  }
+  const currentFields = fieldChunks[step - 1] || [];
+  const totalSteps = fieldChunks.length;
+
+  return (
+    <div className="max-w-3xl mx-auto animate-fade-in-up pb-24 px-6">
+      <Head><title>Apply: {appType.name}</title></Head>
+
+      <div className="mb-8 p-8 rounded-3xl bg-card-gradient border border-white/10 relative overflow-hidden group shadow-2xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-gsrp-orange/10 to-gsrp-teal/10 opacity-50" />
+        <div className="relative z-10">
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-white font-black text-2xl flex items-center gap-4">
+              <FileText className="text-gsrp-orange" />
+              {appType.name}
+            </h1>
+            <div className="bg-gsrp-dark-surface px-4 py-1.5 rounded-xl border border-white/10">
+              <span className="text-gsrp-orange font-black text-sm">{step} / {totalSteps}</span>
+            </div>
+          </div>
+          <div className="w-full bg-gsrp-dark-surface h-1.5 rounded-full overflow-hidden">
+            <div className="h-full bg-gsrp-orange transition-all duration-500" style={{ width: `${(step/totalSteps)*100}%` }} />
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-gsrp-dark-card rounded-[2rem] border border-white/20 p-8 shadow-2xl relative">
+        <div className="space-y-2 animate-fade-in-right">
+          {currentFields.map((field) => (
+            <div key={field.id}>
+              <QuestionLabel subtitle={field.subtitle} required={field.required} sentences={field.sentences}>
+                {field.label}
+              </QuestionLabel>
+              
+              {field.type === 'textarea' ? (
+                <TextArea 
+                  name={field.label} 
+                  value={answers[field.label] || ''} 
+                  trackEvent={trackEvent}
+                  onChange={(e) => setAnswers({...answers, [field.label]: e.target.value})}
+                />
+              ) : field.type === 'radio' ? (
+                <RadioGroup 
+                  name={field.label} 
+                  options={field.options || ['Yes', 'No']} 
+                  value={answers[field.label]} 
+                  onChange={(val) => setAnswers({...answers, [field.label]: val})}
+                />
+              ) : (
+                <Input 
+                  name={field.label} 
+                  value={answers[field.label] || ''} 
+                  trackEvent={trackEvent}
+                  onChange={(e) => setAnswers({...answers, [field.label]: e.target.value})}
+                />
+              )}
+            </div>
+          ))}
+        </div>
+
+        <div className="flex items-center justify-between mt-10">
+          {step > 1 && (
+            <button onClick={() => setStep(step - 1)} className="flex items-center gap-2 px-6 py-3 bg-gsrp-dark-surface text-white font-bold rounded-xl border border-white/5"><ArrowLeft size={18} /> Back</button>
+          )}
+          <div className="flex-1" />
+          {step < totalSteps ? (
+            <button onClick={() => setStep(step + 1)} className="flex items-center gap-2 px-8 py-3 bg-gsrp-orange text-white font-black rounded-xl">Next <ArrowRight size={18} /></button>
+          ) : (
+            <button 
+              onClick={handleSubmit} 
+              disabled={isSubmitting}
+              className="px-10 py-3 bg-gradient-to-r from-gsrp-orange to-gsrp-warm text-white font-black rounded-xl shadow-lg shadow-gsrp-orange/20"
+            >
+              {isSubmitting ? <Loader2 className="animate-spin" /> : 'Submit Application'}
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}

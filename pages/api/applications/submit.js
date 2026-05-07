@@ -27,6 +27,9 @@ export default async function handler(req, res) {
 
     // Notify Discord
     const notificationChannel = "1389202990555988071";
+    const typeName = application.typeName || "Staff Application";
+    const typeSlug = application.type || "staff";
+
     await sendComponentsV2(notificationChannel, {
       components: [
         {
@@ -35,7 +38,7 @@ export default async function handler(req, res) {
           components: [
             {
               type: 10, // TEXT_DISPLAY
-              content: `# New Staff Application\nSent by <@${session.user.id}>\n\nAn application has been submitted and is ready for review on the dashboard.`
+              content: `# New ${typeName}\nSent by <@${session.user.id}>\n\nAn application for **${typeName}** has been submitted.`
             },
             {
               type: 1, // ACTION_ROW

@@ -1,6 +1,6 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2, ShoppingCart, Building2, UserPlus } from 'lucide-react';
+import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2, ShoppingCart, Building2, UserPlus, Settings } from 'lucide-react';
 import Link from 'next/link';
 import FeatureCard from '../components/dashboard/FeatureCard';
 import LoginScreen from '../components/auth/LoginScreen';
@@ -39,6 +39,15 @@ export default function Dashboard() {
   if (!session) {
     return <LoginScreen />;
   }
+
+  const [appTypes, setAppTypes] = useState([]);
+
+  useEffect(() => {
+    if (!session) return;
+    fetch('/api/applications/types')
+      .then(r => r.ok ? r.json() : [])
+      .then(data => setAppTypes(data));
+  }, [session]);
 
   const hasPanel = canAccessPanel(session);
   const hasTraining = canAccessTraining(session);
@@ -101,12 +110,23 @@ export default function Dashboard() {
           description="Purchase premium roles, pings, and donations"
         />
 
-        <FeatureCard
-          href="/apply"
-          icon={UserPlus}
-          title="Staff Application"
-          description="Apply to join the Georgia State Roleplay staff team"
-        />
+        {/* Dynamic Applications */}
+        {appTypes.length > 0 ? appTypes.map(type => (
+          <FeatureCard
+            key={type.slug}
+            href={`/apply/${type.slug}`}
+            icon={UserPlus}
+            title={type.name}
+            description={type.description || `Apply for the ${type.name} team`}
+          />
+        )) : (
+          <FeatureCard
+            href="/apply/staff"
+            icon={UserPlus}
+            title="Staff Application"
+            description="Apply to join the Georgia State Roleplay staff team"
+          />
+        )}
 
         {canReviewApps && (
           <FeatureCard
@@ -114,6 +134,15 @@ export default function Dashboard() {
             icon={Users}
             title="Review Apps"
             description="Manage and review incoming staff applications"
+          />
+        )}
+
+        {canReviewApps && (
+          <FeatureCard
+            href="/applications/manage"
+            icon={Settings}
+            title="Manage Forms"
+            description="Create and edit application types and questions"
           />
         )}
 
