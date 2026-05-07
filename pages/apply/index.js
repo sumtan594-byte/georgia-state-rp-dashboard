@@ -36,7 +36,8 @@ export default function ApplicationList() {
           // Filter by role
           const visibleTypes = data.filter(type => {
             if (!type.requiredRole) return true;
-            return hasRole(session, type.requiredRole);
+            const required = Array.isArray(type.requiredRole) ? type.requiredRole : [type.requiredRole];
+            return required.some(roleId => hasRole(session, roleId));
           });
 
           setTypes(visibleTypes);

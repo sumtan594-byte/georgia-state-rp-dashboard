@@ -97,9 +97,12 @@ export default function DynamicApplyPage() {
           const type = data.find(t => t.slug === typeSlug);
           if (type) {
             // Role Check
-            if (type.requiredRole && !hasRole(session, type.requiredRole)) {
-              router.push('/apply');
-              return;
+            if (type.requiredRole) {
+              const required = Array.isArray(type.requiredRole) ? type.requiredRole : [type.requiredRole];
+              if (!required.some(roleId => hasRole(session, roleId))) {
+                router.push('/apply');
+                return;
+              }
             }
             setAppType(type);
           } else if (typeSlug === 'staff') {

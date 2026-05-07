@@ -39,11 +39,19 @@ export default async function handler(req, res) {
 
     // Role Automation Logic
     if (appType) {
+      const helper = async (action, roles) => {
+        if (!roles) return;
+        const roleList = Array.isArray(roles) ? roles : [roles];
+        for (const rId of roleList) {
+          if (!rId) continue;
+          if (action === 'add') await addMemberRole(guildId, application.userId, rId);
+          if (action === 'remove') await removeMemberRole(guildId, application.userId, rId);
+        }
+      };
+
       if (isAccepted) {
-        // Add roles on approval
-        if (appType.roleAddAccepted) await addMemberRole(guildId, application.userId, appType.roleAddAccepted);
-        // Remove roles on approval
-        if (appType.roleRemoveAccepted) await removeMemberRole(guildId, application.userId, appType.roleRemoveAccepted);
+        await helper('add', appType.roleAddAccepted);
+        await helper('remove', appType.roleRemoveAccepted);
         
         // Legacy fallback for main staff app
         if (appType.slug === 'staff') {
@@ -51,10 +59,8 @@ export default async function handler(req, res) {
           for (const roleId of legacyRoles) await addMemberRole(guildId, application.userId, roleId);
         }
       } else {
-        // Add roles on denial
-        if (appType.roleAddDenied) await addMemberRole(guildId, application.userId, appType.roleAddDenied);
-        // Remove roles on denial
-        if (appType.roleRemoveDenied) await removeMemberRole(guildId, application.userId, appType.roleRemoveDenied);
+        await helper('add', appType.roleAddDenied);
+        await helper('remove', appType.roleRemoveDenied);
       }
     }
 
