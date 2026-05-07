@@ -8,7 +8,7 @@ export default async function handler(req, res) {
     return res.status(403).json({ message: 'Forbidden' });
   }
 
-  const guildId = "1251347648351506485"; // GSRP Guild ID
+  const guildId = process.env.ALLOWED_GUILD_ID || "1251347648351506485";
 
   try {
     const response = await fetch(`https://discord.com/api/v10/guilds/${guildId}/roles`, {
@@ -18,7 +18,9 @@ export default async function handler(req, res) {
     });
 
     if (!response.ok) {
-      throw new Error('Failed to fetch roles from Discord');
+      const errorData = await response.json().catch(() => ({}));
+      console.error('[Discord Roles API Error] Discord responded with:', response.status, errorData);
+      return res.status(response.status).json({ message: 'Failed to fetch roles from Discord', error: errorData });
     }
 
     const roles = await response.json();
@@ -26,13 +28,12 @@ export default async function handler(req, res) {
     // Sort roles by position (descending)
     roles.sort((a, b) => b.position - a.position);
 
-    // Filter out @everyone if needed, but usually helpful to keep for reference? 
-    // Actually, @everyone can't be assigned/removed easily, so filter it.
+    // Filter out @everyone and managed roles
     const assignableRoles = roles.filter(role => role.name !== '@everyone' && !role.managed);
 
     return res.status(200).json(assignableRoles);
   } catch (error) {
-    console.error('[Discord Roles API Error]', error);
-    return res.status(500).json({ message: 'Internal server error' });
+    console.error('[Discord Roles API Error] Unexpected error:', error);
+    return res.status(500).json({ message: 'Internal server error', details: error.message });
   }
 }
