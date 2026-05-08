@@ -16,6 +16,7 @@ const sections = [
   { id: 'bans', num: 'Section 2 — Bans', title: 'Ban-Level Offences' },
   { id: 'staff-disc', num: 'Section 3', title: 'Staff Disciplinary System' },
   { id: 'escalation', num: 'Section 4', title: 'Infraction Escalation System' },
+  { id: 'custom-commands', num: 'Section 5', title: 'Custom Commands' },
 ];
 
 const handbookContent = {
@@ -128,6 +129,36 @@ Appeal Windows:
 • Suspension — Not appealable
 • Termination — Not appealable
 • Blacklist — Not appealable`
+  },
+  'custom-commands': {
+    content: `Custom commands for moderation`,
+    table: [
+      ['rdm', 'Random Death Match', ';rdm', 'Warning, Kick, Ban'],
+      ['vdm', 'Vehicle Death Match', ';vdm', 'Warning, Kick, Ban'],
+      ['frp', 'Failing to Roleplay', ';frp', 'Warning, Kick, Ban'],
+      ['nlr', 'New Life Rule', ';nlr', 'Warning, Kick, Ban'],
+      ['gta', 'GTA Driving', ';gta', 'Warning, Kick, Ban'],
+      ['cuff_rushing', 'Cuff Rushing', ';cuff, ;cuff_rushing', 'Kick, Ban'],
+      ['trolling', 'Trolling', ';trolling, ;troll', 'Kick, Ban'],
+      ['staff_disrespect', 'Staff Disrespect', ';sd, ;staff_disrespect', 'Warning, Kick, Ban'],
+      ['nitrp', 'No Intention to Roleplay', ';nitrp', 'Kick, Ban'],
+      ['abusing_mod', 'Abusing !mod System', ';abusing_mod, ;abuse_mod', 'Verbal Warning, Warning, Kick'],
+      ['staff_evasion', 'Staff Evasion', ';staff_evasion', 'Kick, Ban'],
+      ['staff_vdm', 'Staff VDM / RDM', ';staff_vdm, ;svdm', 'Kick, Ban'],
+      ['mass_vdm', 'Mass VDM / RDM', ';mass_vdm', 'Ban'],
+      ['safezone', 'Safezone RDM / VDM', ';safezone', 'Kick, Ban'],
+      ['reset_avoid', 'Reset to Avoid Punishment', ';reset_avoid, ;rtap', 'Ban'],
+      ['leave_avoid', 'Leaving to Avoid Punishment', ';leave_avoid, ;ltap', 'Ban'],
+      ['nsfw', 'Not Safe for Work', ';nsfw', 'Ban'],
+      ['tos', 'Terms of Service', ';tos', 'Ban'],
+      ['staff_impersonation', 'Staff Impersonation', ';staff_impersonation', 'Ban'],
+      ['banned_rp', 'Banned Roleplays', ';banned_rp', 'Ban'],
+      ['rtap', 'RTAP / ST-TAP', ';rtap', 'Ban'],
+      ['hacking', 'Cheating / Exploiting', ';hacking, ;cheating', 'Ban'],
+      ['mass_staff_evasion', 'Mass Staff Evasion', ';mass_staff_evasion', 'Ban'],
+      ['troll_username', 'Troll Username', ';troll_username', 'Ban'],
+      ['bypassing', 'Bypassing', ';bypassing', 'Ban'],
+    ]
   }
 };
 
@@ -234,6 +265,30 @@ export default function HandbookPage() {
                 <div className="text-[10px] font-black text-gsrp-teal-light/30 uppercase tracking-widest mb-1">{s.num}</div>
                 <h2 className="text-white font-bold text-lg mb-4 pb-3 border-b border-gsrp-dark-border/50">{s.title}</h2>
                 <div className="text-gsrp-teal-light/60 text-sm leading-relaxed whitespace-pre-line">{content.content}</div>
+                {content.table && (
+                  <div className="mt-4 overflow-x-auto">
+                    <table className="w-full text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-gsrp-dark-border/50">
+                          <th className="text-left py-2 pr-3 text-gsrp-teal-light/40 font-mono uppercase tracking-wider">Command</th>
+                          <th className="text-left py-2 pr-3 text-gsrp-teal-light/40 font-mono uppercase tracking-wider">Label</th>
+                          <th className="text-left py-2 pr-3 text-gsrp-teal-light/40 font-mono uppercase tracking-wider">Usage</th>
+                          <th className="text-left py-2 text-gsrp-teal-light/40 font-mono uppercase tracking-wider">Punishment</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {content.table.map((row, i) => (
+                          <tr key={i} className="border-b border-gsrp-dark-border/30 hover:bg-white/[0.02]">
+                            <td className="py-2 pr-3 text-gsrp-teal-light font-mono">{row[0]}</td>
+                            <td className="py-2 pr-3 text-white">{row[1]}</td>
+                            <td className="py-2 pr-3 text-gsrp-teal-light/60 font-mono text-[10px]">{row[2]}</td>
+                            <td className="py-2 text-gsrp-teal-light/60">{row[3]}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
                 {content.callout && (
                   <div className="mt-4 bg-gsrp-teal/10 border border-gsrp-teal/20 border-l-3 border-l-gsrp-teal rounded-xl p-4">
                     <p className="text-gsrp-teal-light text-sm">{content.callout}</p>
