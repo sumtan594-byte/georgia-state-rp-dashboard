@@ -1,6 +1,6 @@
 import '../styles/globals.css';
 import { SessionProvider, useSession } from "next-auth/react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from 'next/router';
 import Sidebar from "../components/layout/Sidebar";
 import TopBar from "../components/layout/TopBar";
@@ -74,40 +74,12 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
   );
 }
 
-function SessionSync() {
-  const { data: session, status, update } = useSession();
-  const hasSynced = useRef(false);
-  
-  useEffect(() => {
-    async function sync() {
-      if (status !== 'authenticated' || !session || hasSynced.current) return;
-      
-      hasSynced.current = true;
-      try {
-        const res = await fetch('/api/auth/sync', { method: 'POST' });
-        if (res.ok) {
-          const fresh = await res.json();
-          await update({
-            ...session,
-            user: {
-              ...session.user,
-              roles: fresh.roles,
-              displayRole: fresh.displayRole,
-              name: fresh.nickname
-            }
-          });
-        }
-      } catch (e) {
-        console.error('Sync failed', e);
-      }
-    }
-    sync();
-  }, [status, session, update]);
-
-  return null;
-}
-
 export default function App({ Component, pageProps: { session, ...pageProps } }) {
+  const router = useRouter();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [mounted, setMounted] = useState(false);
+  const [showWelcome, setShowWelcome] = useState(false);
+  const [animationFinished, setAnimationFinished] = useState(true);
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
@@ -138,7 +110,6 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
 
   return (
     <SessionProvider session={session}>
-      <SessionSync />
       
       {showWelcome && (
         <WelcomeScreen 
