@@ -9,9 +9,33 @@ import { motion } from 'framer-motion';
 
 function DebugSessionLogger() {
   const { status, data } = useSession();
+  const { update } = useSession(); // Use the update method from useSession
+  
   useEffect(() => {
-    // console.log('[APP] SessionProvider status:', status);
-  }, [status, data]);
+    async function syncSession() {
+      if (status !== 'authenticated' || !data) return;
+      
+      try {
+        const res = await fetch('/api/auth/sync', { method: 'POST' });
+        if (res.ok) {
+          const freshData = await res.json();
+          // Update the session with fresh data from Discord
+          await update({
+            ...data,
+            user: {
+              ...data.user,
+              roles: freshData.roles,
+              displayRole: freshData.displayRole,
+              name: freshData.nickname
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Session sync failed', e);
+      }
+    }
+    syncSession();
+  }, [status, data, update]);
   return null;
 }
 
@@ -50,6 +74,36 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
   );
 }
 
+function SessionSync() {
+  const { data: session, status, update } = useSession();
+  
+  useEffect(() => {
+    async function sync() {
+      if (status !== 'authenticated' || !session) return;
+      try {
+        const res = await fetch('/api/auth/sync', { method: 'POST' });
+        if (res.ok) {
+          const fresh = await res.json();
+          await update({
+            ...session,
+            user: {
+              ...session.user,
+              roles: fresh.roles,
+              displayRole: fresh.displayRole,
+              name: fresh.nickname
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Sync failed', e);
+      }
+    }
+    sync();
+  }, [status, session, update]);
+
+  return null;
+}
+
 export default function App({ Component, pageProps: { session, ...pageProps } }) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -81,7 +135,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
 
   return (
     <SessionProvider session={session}>
-      <DebugSessionLogger />
+      <SessionSync />
       
       {showWelcome && (
         <WelcomeScreen 
