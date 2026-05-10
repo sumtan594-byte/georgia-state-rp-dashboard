@@ -1,6 +1,6 @@
 import '../styles/globals.css';
 import { SessionProvider, useSession } from "next-auth/react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from 'next/router';
 import Sidebar from "../components/layout/Sidebar";
 import TopBar from "../components/layout/TopBar";
@@ -76,10 +76,13 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
 
 function SessionSync() {
   const { data: session, status, update } = useSession();
+  const hasSynced = useRef(false);
   
   useEffect(() => {
     async function sync() {
-      if (status !== 'authenticated' || !session) return;
+      if (status !== 'authenticated' || !session || hasSynced.current) return;
+      
+      hasSynced.current = true;
       try {
         const res = await fetch('/api/auth/sync', { method: 'POST' });
         if (res.ok) {
