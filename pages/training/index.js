@@ -6,8 +6,34 @@ import LoginScreen from '../../components/auth/LoginScreen';
 export default function TrainingPage() {
   const { data: session, status } = useSession();
   const [loaded, setLoaded] = useState(false);
+  const [progressChecked, setProgressChecked] = useState(false);
+  const [checkingProgress, setCheckingProgress] = useState(true);
   const iframeRef = useRef(null);
   const sessionSent = useRef(false);
+  const router = require('next/router').useRouter();
+
+  useEffect(() => {
+    async function checkProgress() {
+      if (!session) return;
+      try {
+        const res = await fetch('/api/training/progress');
+        const data = await res.json();
+        if (!data.handbookCompleted) {
+          router.push('/training/handbook');
+        } else {
+          setProgressChecked(true);
+        }
+      } catch (e) {
+        console.error('Progress check failed', e);
+        // Default to allow if API fails? Or block? 
+        // Let's block to be safe.
+        router.push('/training/handbook');
+      } finally {
+        setCheckingProgress(false);
+      }
+    }
+    checkProgress();
+  }, [session, router]);
 
   const sendSessionToIframe = useCallback(() => {
     if (iframeRef.current && session && !sessionSent.current) {
@@ -41,12 +67,12 @@ export default function TrainingPage() {
     }
   }, [loaded, session, sendSessionToIframe]);
 
-  if (status === 'loading') {
+  if (status === 'loading' || checkingProgress) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center">
           <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-          <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Training</span>
+          <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Verifying Handbook Completion</span>
         </div>
       </div>
     );

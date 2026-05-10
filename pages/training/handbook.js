@@ -1,7 +1,7 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/router';
-import { Loader2, BookOpen, ArrowLeft } from 'lucide-react';
+import { Loader2, BookOpen, ArrowLeft, CheckCircle2, Circle } from 'lucide-react';
 import Link from 'next/link';
 import LoginScreen from '../../components/auth/LoginScreen';
 
@@ -166,6 +166,38 @@ export default function HandbookPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState('overview');
+  const [progress, setProgress] = useState({ completedSections: [], handbookCompleted: false });
+  const [loadingProgress, setLoadingProgress] = useState(true);
+
+  useEffect(() => {
+    async function fetchProgress() {
+      try {
+        const res = await fetch('/api/training/progress');
+        const data = await res.json();
+        setProgress(data);
+      } catch (e) {
+        console.error('Failed to fetch progress', e);
+      } finally {
+        setLoadingProgress(false);
+      }
+    }
+    if (session) fetchProgress();
+  }, [session]);
+
+  const toggleSection = async (sectionId) => {
+    if (!session?.user?.roles?.includes('1372476380096237609')) return;
+    try {
+      const res = await fetch('/api/training/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sectionId })
+      });
+      const data = await res.json();
+      setProgress(data);
+    } catch (e) {
+      console.error('Failed to update progress', e);
+    }
+  };
 
   useEffect(() => {
     // Handle URL hash on page load
@@ -219,50 +251,84 @@ export default function HandbookPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        <div className="lg:col-span-1">
-          <div className="card-glass rounded-2xl p-4 sticky top-20">
-            <h3 className="text-[10px] font-black text-gsrp-teal-light/40 uppercase tracking-widest mb-3 pb-2 border-b border-gsrp-dark-border/50">Contents</h3>
-            <nav className="space-y-0.5">
-              {sections.map(s => (
-                <button
-                  key={s.id}
-                  onClick={() => {
-                    setActiveSection(s.id);
-                    router.push(router.asPath.split('#')[0] + '#' + s.id, undefined, { shallow: true });
-                    document.getElementById('hb-' + s.id)?.scrollIntoView({ behavior: 'smooth' });
-                  }}
-                  className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer ${
-                    activeSection === s.id
-                      ? 'bg-gsrp-teal/10 text-gsrp-teal-light border border-gsrp-teal/20'
-                      : 'text-gsrp-teal-light/40 hover:text-white hover:bg-gsrp-dark-surface/40'
-                  }`}
-                >
-                  <span className="text-gsrp-teal-light/30 font-mono text-[10px] mr-1.5">▸</span>
-                  {s.title}
-                </button>
-              ))}
-            </nav>
-          </div>
-        </div>
+       <div className="lg:col-span-1">
+         <div className="card-glass rounded-2xl p-4 sticky top-20">
+           <div className="mb-4">
+             <div className="flex justify-between items-center mb-2">
+               <h3 className="text-[10px] font-black text-gsrp-teal-light/40 uppercase tracking-widest">Progress</h3>
+               <span className="text-[10px] font-mono text-gsrp-orange font-bold">
+                 {Math.round((progress.completedSections.length / sections.length) * 100)}%
+               </span>
+             </div>
+             <div className="h-1 w-full bg-gsrp-dark-border rounded-full overflow-hidden">
+               <div 
+                 className="h-full bg-gsrp-orange transition-all duration-500" 
+                 style={{ width: `${(progress.completedSections.length / sections.length) * 100}%` }}
+               />
+             </div>
+           </div>
+           <h3 className="text-[10px] font-black text-gsrp-teal-light/40 uppercase tracking-widest mb-3 pb-2 border-b border-gsrp-dark-border/50">Contents</h3>
+           <nav className="space-y-0.5">
+             {sections.map(s => (
+               <button
+                 key={s.id}
+                 onClick={() => {
+                   setActiveSection(s.id);
+                   router.push(router.asPath.split('#')[0] + '#' + s.id, undefined, { shallow: true });
+                   document.getElementById('hb-' + s.id)?.scrollIntoView({ behavior: 'smooth' });
+                 }}
+                 className={`w-full text-left px-3 py-2 rounded-lg text-xs transition-all duration-200 cursor-pointer flex items-center gap-2 ${
+                   activeSection === s.id
+                     ? 'bg-gsrp-teal/10 text-gsrp-teal-light border border-gsrp-teal/20'
+                     : 'text-gsrp-teal-light/40 hover:text-white hover:bg-gsrp-dark-surface/40'
+                 }`}
+               >
+                 {progress.completedSections.includes(s.id) ? (
+                   <CheckCircle2 size={12} className="text-gsrp-orange" />
+                 ) : (
+                   <Circle size={12} className="text-gsrp-teal-light/20" />
+                 )}
+                 <span className="text-gsrp-teal-light/30 font-mono text-[10px] mr-1.5">▸</span>
+                 {s.title}
+               </button>
+             ))}
+           </nav>
+         </div>
+       </div>
+
 
         <div className="lg:col-span-3 space-y-8">
           {sections.map(s => {
             const content = handbookContent[s.id];
             if (!content) return null;
             return (
-              <div key={s.id} id={'hb-' + s.id} className="card-glass rounded-2xl p-6 scroll-mt-24 relative group">
-                <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <button
-                    onClick={() => {
-                      const url = window.location.origin + '/training/handbook#' + s.id;
-                      navigator.clipboard.writeText(url);
-                    }}
-                    className="text-xs text-gsrp-teal-light/40 hover:text-gsrp-teal-light px-2 py-1 rounded bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50"
-                  >
-                    Copy Link
-                  </button>
-                </div>
-                <div className="text-[10px] font-black text-gsrp-teal-light/30 uppercase tracking-widest mb-1">{s.num}</div>
+               <div key={s.id} id={'hb-' + s.id} className="card-glass rounded-2xl p-6 scroll-mt-24 relative group">
+                 <div className="absolute top-4 right-4 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                   {session?.user?.roles?.includes('1372476380096237609') && (
+                     <button
+                       onClick={() => toggleSection(s.id)}
+                       className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${
+                         progress.completedSections.includes(s.id) 
+                           ? 'bg-gsrp-teal/20 text-gsrp-teal-light border border-gsrp-teal/30' 
+                           : 'bg-gsrp-orange/20 text-gsrp-orange border border-gsrp-orange/30 hover:bg-gsrp-orange/30'
+                       }`}
+                     >
+                       {progress.completedSections.includes(s.id) ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+                       {progress.completedSections.includes(s.id) ? 'Completed' : 'Mark as Read'}
+                     </button>
+                   )}
+                   <button
+                     onClick={() => {
+                       const url = window.location.origin + '/training/handbook#' + s.id;
+                       navigator.clipboard.writeText(url);
+                     }}
+                     className="text-xs text-gsrp-teal-light/40 hover:text-gsrp-teal-light px-2 py-1 rounded bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50"
+                   >
+                     Copy Link
+                   </button>
+                 </div>
+                 <div className="text-[10px] font-black text-gsrp-teal-light/30 uppercase tracking-widest mb-1">{s.num}</div>
+
                 <h2 className="text-white font-bold text-lg mb-4 pb-3 border-b border-gsrp-dark-border/50">{s.title}</h2>
                 <div className="text-gsrp-teal-light/60 text-sm leading-relaxed whitespace-pre-line">{content.content}</div>
                 {content.table && (
