@@ -9,33 +9,6 @@ import { motion } from 'framer-motion';
 
 function DebugSessionLogger() {
   const { status, data } = useSession();
-  const { update } = useSession(); // Use the update method from useSession
-  
-  useEffect(() => {
-    async function syncSession() {
-      if (status !== 'authenticated' || !data) return;
-      
-      try {
-        const res = await fetch('/api/auth/sync', { method: 'POST' });
-        if (res.ok) {
-          const freshData = await res.json();
-          // Update the session with fresh data from Discord
-          await update({
-            ...data,
-            user: {
-              ...data.user,
-              roles: freshData.roles,
-              displayRole: freshData.displayRole,
-              name: freshData.nickname
-            }
-          });
-        }
-      } catch (e) {
-        console.error('Session sync failed', e);
-      }
-    }
-    syncSession();
-  }, [status, data, update]);
   return null;
 }
 
@@ -75,11 +48,6 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
 }
 
 export default function App({ Component, pageProps: { session, ...pageProps } }) {
-  const router = useRouter();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mounted, setMounted] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [animationFinished, setAnimationFinished] = useState(true);
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mounted, setMounted] = useState(false);
