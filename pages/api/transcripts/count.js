@@ -1,4 +1,4 @@
-import pool from '../../../lib/ticketdb';
+import pool, { accessibleTranscriptsQuery } from '../../../lib/ticketdb';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -12,9 +12,10 @@ export default async function handler(req, res) {
   const isAdmin = adminIds.includes(currentUserId);
 
   try {
+    const { where, params } = await accessibleTranscriptsQuery(isAdmin, currentUserId, session.user?.roles || []);
     const [rows] = await pool.query(
-      'SELECT COUNT(*) as count FROM transcripts WHERE (? = 1 OR owner_id = ?)',
-      [isAdmin ? 1 : 0, currentUserId]
+      `SELECT COUNT(*) as count FROM transcripts WHERE ${where}`,
+      params
     );
     return res.status(200).json({ count: rows[0].count });
   } catch (e) {

@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from "../../../lib/auth-options";
-import pool from '../../../lib/ticketdb';
+import pool, { accessibleTranscriptsQuery } from '../../../lib/ticketdb';
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
@@ -12,14 +12,16 @@ export default async function handler(req, res) {
   const { sort = 'latest' } = req.query;
 
   try {
+    const { where, params } = await accessibleTranscriptsQuery(isAdmin, currentUserId, session.user?.roles || []);
+
     const [rows] = await pool.query(
       `SELECT id, type, owner_id, channel_name, close_reason,
               DATE_FORMAT(closed_at, '%Y-%m-%d') as date,
               DATE_FORMAT(closed_at, '%H:%i:%s') as time
        FROM transcripts
-       WHERE (? = 1 OR owner_id = ?)
+       WHERE ${where}
        ORDER BY closed_at ${sort === 'oldest' ? 'ASC' : 'DESC'}`,
-      [isAdmin ? 1 : 0, currentUserId]
+      params
     );
 
     const transcripts = rows.map(r => ({

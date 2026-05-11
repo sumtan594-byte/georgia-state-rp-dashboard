@@ -328,16 +328,19 @@ export async function getServerSideProps(context) {
   const isAdmin = adminIds.includes(currentUserId);
 
   const pool = (await import('../../lib/ticketdb')).default;
+  const { accessibleTranscriptsQuery } = (await import('../../lib/ticketdb'));
 
   try {
+    const { where, params } = await accessibleTranscriptsQuery(isAdmin, currentUserId, session.user?.roles || []);
+
     const [rows] = await pool.query(
       `SELECT id, type, owner_id, channel_name, close_reason,
               DATE_FORMAT(closed_at, '%Y-%m-%d') as date,
               DATE_FORMAT(closed_at, '%H:%i:%s') as time
        FROM transcripts
-       WHERE (? = 1 OR owner_id = ?)
+       WHERE ${where}
        ORDER BY closed_at ${sort === 'oldest' ? 'ASC' : 'DESC'}`,
-      [isAdmin ? 1 : 0, currentUserId]
+      params
     );
 
     const files = rows.map(r => ({
