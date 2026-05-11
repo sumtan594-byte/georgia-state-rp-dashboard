@@ -400,47 +400,42 @@ export default function Viewer({ htmlContent, id, meta: serverMeta, canManage, e
   );
 
   return (
-    <div>
-      <nav className="sticky top-0 z-50 bg-gsrp-dark/80 backdrop-blur-xl border-b border-gsrp-dark-border/50 -mx-4 md:-mx-6 lg:-mx-8 px-6 lg:px-10 py-4 flex items-center justify-between animate-fade-in-down">
-        <div className="flex items-center gap-5">
-          <Link href="/" className="flex items-center gap-2 text-gsrp-teal-light/40 hover:text-gsrp-orange-light text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 cursor-pointer"><ArrowLeft size={13} /> Dashboard</Link>
-          <div className="w-px h-5 bg-gsrp-dark-border/50" />
-          <div className="flex items-center gap-3">
-            <div className="relative"><div className="absolute inset-0 bg-gradient-to-r from-gsrp-orange/20 to-gsrp-teal/20 rounded-lg blur-sm" /><img src={LOGO} className="relative w-6 h-6 rounded-lg border border-white/10" alt="GSRP" /></div>
+    <div className="max-w-5xl mx-auto py-6">
+      <div className="mb-6 animate-fade-in-down">
+        <div className="flex items-center gap-3 mb-3">
+          <Link href="/transcripts" className="flex items-center gap-1.5 text-gsrp-teal-light/40 hover:text-gsrp-orange-light text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 cursor-pointer"><ArrowLeft size={12} /> Transcripts</Link>
+          <div className="w-px h-4 bg-gsrp-dark-border/50" />
+          <div className="flex items-center gap-2">
+            <div className="relative"><div className="absolute inset-0 bg-gradient-to-r from-gsrp-orange/20 to-gsrp-teal/20 rounded-lg blur-sm" /><img src={LOGO} className="relative w-5 h-5 rounded-lg border border-white/10" alt="GSRP" /></div>
             <div>
-              <div className="flex items-center gap-1"><Sparkles size={8} className="text-gsrp-gold" /><span className="text-[8px] text-gsrp-teal-light/40 font-bold uppercase tracking-widest">Transcript</span></div>
+              <div className="flex items-center gap-1"><Sparkles size={7} className="text-gsrp-gold" /><span className="text-[7px] text-gsrp-teal-light/40 font-bold uppercase tracking-widest">Transcript</span></div>
               <div className="text-xs font-black text-white leading-none">{meta.channelName || id}</div>
             </div>
           </div>
           {meta.type && meta.type !== 'UNKNOWN' && (
-            <span className={`hidden sm:inline-flex items-center px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest border ${typeColor}`}>{meta.type}</span>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${typeColor}`}>{meta.type}</span>
           )}
         </div>
-
         <div className="flex items-center gap-2">
           {meta.date && (
-            <div className="hidden md:flex items-center gap-1.5 bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-lg px-3 py-1.5">
-              <Clock size={10} className="text-gsrp-teal-light/30" /><span className="text-[9px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider">{meta.date}</span>
+            <div className="flex items-center gap-1 bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-lg px-2.5 py-1">
+              <Clock size={9} className="text-gsrp-teal-light/30" /><span className="text-[8px] font-bold text-gsrp-teal-light/50 uppercase tracking-wider">{meta.date}</span>
             </div>
           )}
           {meta.reason && meta.reason !== 'NoReason' && (
-            <div className="hidden lg:flex items-center gap-1.5 bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-lg px-3 py-1.5 max-w-[180px]">
-              <Tag size={10} className="text-gsrp-teal-light/30 flex-shrink-0" /><span className="text-[9px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider truncate">{meta.reason}</span>
+            <div className="flex items-center gap-1 bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-lg px-2.5 py-1 max-w-[200px]">
+              <Tag size={9} className="text-gsrp-teal-light/30 flex-shrink-0" /><span className="text-[8px] font-bold text-gsrp-teal-light/50 uppercase tracking-wider truncate">{meta.reason}</span>
             </div>
           )}
+          <div className="flex-1" />
           {canManage && (
-            <button
-              onClick={() => setAccessOpen(true)}
-              className="flex items-center gap-2 bg-gsrp-dark-card/60 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 hover:border-gsrp-teal/30 px-4 py-2 rounded-lg text-gsrp-teal-light/70 hover:text-gsrp-teal-light transition-all duration-200 text-[10px] font-bold uppercase tracking-widest cursor-pointer"
-            >
-              <Users size={12} /> Access
-            </button>
+            <button onClick={() => setAccessOpen(true)} className="flex items-center gap-1.5 bg-gsrp-dark-card/60 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 hover:border-gsrp-teal/30 px-3 py-1.5 rounded-lg text-gsrp-teal-light/70 hover:text-gsrp-teal-light transition-all duration-200 text-[9px] font-bold uppercase tracking-widest cursor-pointer"><Users size={11} /> Access</button>
           )}
-          <button onClick={handlePrint} className="flex items-center gap-2 bg-gsrp-dark-card/60 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 hover:border-gsrp-orange/30 px-4 py-2 rounded-lg text-gsrp-teal-light/70 hover:text-gsrp-orange-light transition-all duration-200 text-[10px] font-bold uppercase tracking-widest cursor-pointer"><Download size={12} /> Export PDF</button>
+          <button onClick={handlePrint} className="flex items-center gap-1.5 bg-gsrp-dark-card/60 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 hover:border-gsrp-orange/30 px-3 py-1.5 rounded-lg text-gsrp-teal-light/70 hover:text-gsrp-orange-light transition-all duration-200 text-[9px] font-bold uppercase tracking-widest cursor-pointer"><Download size={11} /> Export PDF</button>
         </div>
-      </nav>
+      </div>
 
-      <div className="max-w-5xl mx-auto py-10">
+      <div className="mb-6">
         {!loaded && htmlContent && (
           <div className="flex items-center justify-center py-10">
             <div className="bg-gsrp-dark/80 backdrop-blur-sm rounded-2xl px-6 py-4 flex items-center gap-3 border border-gsrp-dark-border/50 animate-scale-in">

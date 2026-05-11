@@ -29,11 +29,17 @@ export default async function handler(req, res) {
   // ── CHECK endpoint: anyone can see if they themselves have access ──
   if (req.method === 'GET' && req.query.check === '1') {
     // Check deny first (applies to everyone, including admins)
-    const [denyRows] = await pool.query(
-      'SELECT 1 FROM transcript_deny WHERE transcript_id = ? AND user_id = ? LIMIT 1',
-      [transcriptId, currentUserId]
-    );
-    if (denyRows.length > 0) return res.status(200).json({ hasAccess: false });
+    let isDenied = false;
+    try {
+      const [denyRows] = await pool.query(
+        'SELECT 1 FROM transcript_deny WHERE transcript_id = ? AND user_id = ? LIMIT 1',
+        [transcriptId, currentUserId]
+      );
+      isDenied = denyRows.length > 0;
+    } catch (e) {
+      if (e.code !== 'ER_NO_SUCH_TABLE') console.error('[Access] check deny error:', e.message);
+    }
+    if (isDenied) return res.status(200).json({ hasAccess: false });
 
     if (isAdmin) return res.status(200).json({ hasAccess: true });
     if (isOwner) return res.status(200).json({ hasAccess: true });
@@ -61,10 +67,15 @@ export default async function handler(req, res) {
       [transcriptId]
     );
 
-    const [denyRows] = await pool.query(
-      'SELECT id, user_id, created_at FROM transcript_deny WHERE transcript_id = ? ORDER BY created_at DESC',
-      [transcriptId]
-    );
+    let denyRows = [];
+    try {
+      [denyRows] = await pool.query(
+        'SELECT id, user_id, created_at FROM transcript_deny WHERE transcript_id = ? ORDER BY created_at DESC',
+        [transcriptId]
+      );
+    } catch (e) {
+      if (e.code !== 'ER_NO_SUCH_TABLE') console.error('[Access] GET denies error:', e.message);
+    }
 
     // Enrich grantees with Discord info
     const enrichedAccesses = await Promise.all(accessRows.map(async a => {
@@ -135,6 +146,7 @@ export default async function handler(req, res) {
         );
         return res.status(200).json({ success: true });
       } catch (e) {
+        if (e.code === 'ER_NO_SUCH_TABLE') return res.status(200).json({ success: true });
         console.error('[Access] DELETE restore error:', e.message);
         return res.status(500).json({ error: 'Failed to restore admin access' });
       }
@@ -150,14 +162,21 @@ export default async function handler(req, res) {
           'INSERT IGNORE INTO transcript_deny (transcript_id, user_id) VALUES (?, ?)',
           [transcriptId, granteeId]
         );
-        // Also clean up any explicit transcript_access entry
+      } catch (e) {
+        if (e.code !== 'ER_NO_SUCH_TABLE') {
+          console.error('[Access] DELETE admin deny error:', e.message);
+          return res.status(500).json({ error: 'Failed to revoke admin access' });
+        }
+      }
+      // Also clean up any explicit transcript_access entry
+      try {
         await pool.query(
           'DELETE FROM transcript_access WHERE transcript_id = ? AND grantee_id = ?',
           [transcriptId, granteeId]
         );
         return res.status(200).json({ success: true });
       } catch (e) {
-        console.error('[Access] DELETE admin deny error:', e.message);
+        console.error('[Access] DELETE admin cleanup error:', e.message);
         return res.status(500).json({ error: 'Failed to revoke admin access' });
       }
     }
