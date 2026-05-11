@@ -85,7 +85,7 @@ const DISCORD_MD_STYLES = `
 `;
 
 function AccessModal({ transcriptId, isOpen, onClose }) {
-  const [accesses, setAccesses] = useState([]);
+  const [data, setData] = useState({ accesses: [], denies: [], admins: [], canManage: false, canRemoveAdmins: false });
   const [loading, setLoading] = useState(true);
   const [newId, setNewId] = useState('');
   const [newType, setNewType] = useState('user');
@@ -96,8 +96,8 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
     try {
       const res = await fetch(`/api/transcripts/access?transcriptId=${transcriptId}`);
       if (res.ok) {
-        const data = await res.json();
-        setAccesses(data.accesses || []);
+        const json = await res.json();
+        setData(json);
       }
     } catch {}
     setLoading(false);
@@ -120,8 +120,8 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
         setNewId('');
         await fetchAccesses();
       } else {
-        const data = await res.json();
-        setError(data.error || 'Failed to grant access');
+        const json = await res.json();
+        setError(json.error || 'Failed to grant access');
       }
     } catch {
       setError('Network error');
@@ -139,8 +139,46 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
       if (res.ok) {
         await fetchAccesses();
       } else {
-        const data = await res.json();
-        setError(data.error || 'Failed to revoke access');
+        const json = await res.json();
+        setError(json.error || 'Failed to revoke access');
+      }
+    } catch {
+      setError('Network error');
+    }
+  };
+
+  const handleDenyAdmin = async (adminId) => {
+    setError('');
+    try {
+      const res = await fetch(`/api/transcripts/access?transcriptId=${transcriptId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ granteeId: adminId }),
+      });
+      if (res.ok) {
+        await fetchAccesses();
+      } else {
+        const json = await res.json();
+        setError(json.error || 'Failed to revoke admin access');
+      }
+    } catch {
+      setError('Network error');
+    }
+  };
+
+  const handleRestoreAdmin = async (adminId) => {
+    setError('');
+    try {
+      const res = await fetch(`/api/transcripts/access?transcriptId=${transcriptId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ granteeId: adminId, restore: true }),
+      });
+      if (res.ok) {
+        await fetchAccesses();
+      } else {
+        const json = await res.json();
+        setError(json.error || 'Failed to restore admin access');
       }
     } catch {
       setError('Network error');
@@ -163,26 +201,91 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
           </button>
         </div>
 
-        <div className="px-6 py-4 space-y-3 max-h-60 overflow-y-auto">
+        <div className="px-6 py-4 space-y-4 max-h-80 overflow-y-auto">
           {loading ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 size={16} className="text-gsrp-orange animate-spin" />
             </div>
-          ) : accesses.length === 0 ? (
-            <p className="text-gsrp-teal-light/30 text-[10px] font-bold uppercase tracking-widest text-center py-6">No custom access granted</p>
-          ) : accesses.map(a => (
-            <div key={a.id} className="flex items-center justify-between bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-xl px-4 py-3">
+          ) : (
+            <>
+              {/* System Administrators */}
+              {data.admins.length > 0 && (
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gsrp-gold mb-2 flex items-center gap-2">
+                    <ShieldCheck size={11} /> System Administrators
+                  </p>
+                  <div className="space-y-1.5">
+                    {data.admins.map(admin => (
+                      <div key={admin.id} className="flex items-center justify-between bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-xl px-3 py-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {admin.avatarUrl ? (
+                            <img src={admin.avatarUrl} alt="" className="w-6 h-6 rounded-full flex-shrink-0" />
+                          ) : (
+                            <div className="w-6 h-6 rounded-full bg-gsrp-dark-border flex-shrink-0" />
+                          )}
+                          <span className="text-white text-sm font-bold truncate">{admin.name}</span>
+                          {admin.isDenied && (
+                            <span className="text-[8px] font-black uppercase tracking-widest text-gsrp-sunset bg-gsrp-sunset/10 px-1.5 py-0.5 rounded flex-shrink-0">Denied</span>
+                          )}
+                        </div>
+                        {data.canRemoveAdmins && (
+                          admin.isDenied ? (
+                            <button onClick={() => handleRestoreAdmin(admin.id)} className="flex items-center gap-1 text-gsrp-teal-light/60 hover:text-gsrp-teal-light transition-colors text-[9px] font-bold uppercase tracking-widest cursor-pointer px-2 py-1 rounded-lg hover:bg-gsrp-teal/10 flex-shrink-0">
+                              <Plus size={10} /> Restore
+                            </button>
+                          ) : (
+                            <button onClick={() => handleDenyAdmin(admin.id)} className="flex items-center gap-1 text-gsrp-sunset/60 hover:text-gsrp-sunset transition-colors text-[9px] font-bold uppercase tracking-widest cursor-pointer px-2 py-1 rounded-lg hover:bg-gsrp-sunset/10 flex-shrink-0">
+                              <Trash2 size={10} /> Revoke
+                            </button>
+                          )
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Granted Access */}
               <div>
-                <span className="text-white text-sm font-bold">{a.grantee_id}</span>
-                <span className={`ml-2 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-md ${a.grantee_type === 'role' ? 'text-gsrp-gold bg-gsrp-gold/10' : 'text-gsrp-cyan bg-gsrp-cyan/10'}`}>
-                  {a.grantee_type}
-                </span>
+                <p className="text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light mb-2">Granted Access</p>
+                {data.accesses.length === 0 ? (
+                  <p className="text-gsrp-teal-light/30 text-[10px] font-bold uppercase tracking-widest text-center py-4">No custom access granted</p>
+                ) : (
+                  <div className="space-y-1.5">
+                    {data.accesses.map(a => (
+                      <div key={a.id} className="flex items-center justify-between bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-xl px-3 py-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          {a.grantee_type === 'role' ? (
+                            <>
+                              {a.iconUrl ? (
+                                <img src={a.iconUrl} alt="" className="w-5 h-5 flex-shrink-0" />
+                              ) : a.color ? (
+                                <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: a.color }} />
+                              ) : null}
+                              <span className="text-white text-sm font-bold truncate" style={a.color ? { color: a.color } : {}}>{a.name}</span>
+                              <span className="text-[8px] font-black uppercase tracking-widest text-gsrp-gold bg-gsrp-gold/10 px-1.5 py-0.5 rounded flex-shrink-0">Role</span>
+                            </>
+                          ) : (
+                            <>
+                              {a.avatarUrl ? (
+                                <img src={a.avatarUrl} alt="" className="w-6 h-6 rounded-full flex-shrink-0" />
+                              ) : (
+                                <div className="w-6 h-6 rounded-full bg-gsrp-dark-border flex-shrink-0" />
+                              )}
+                              <span className="text-white text-sm font-bold truncate">{a.name}</span>
+                            </>
+                          )}
+                        </div>
+                        <button onClick={() => handleRemove(a.grantee_id)} className="text-gsrp-sunset/60 hover:text-gsrp-sunset transition-colors cursor-pointer p-1 flex-shrink-0">
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <button onClick={() => handleRemove(a.grantee_id)} className="text-gsrp-sunset/60 hover:text-gsrp-sunset transition-colors cursor-pointer p-1">
-                <Trash2 size={14} />
-              </button>
-            </div>
-          ))}
+            </>
+          )}
         </div>
 
         <div className="px-6 pb-6 pt-2 border-t border-gsrp-dark-border/50">
@@ -224,8 +327,23 @@ export default function Viewer({ htmlContent, id, meta: serverMeta, canManage, e
   const { status } = useSession();
   const [loaded, setLoaded] = useState(false);
   const [accessOpen, setAccessOpen] = useState(false);
+  const [accessRevoked, setAccessRevoked] = useState(false);
   const meta = serverMeta || parseMeta(id);
   const typeColor = TYPE_COLORS[meta.type] || TYPE_COLORS.GENERAL;
+
+  useEffect(() => {
+    if (!id || error) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/transcripts/access?transcriptId=${id}&check=1`);
+        if (res.ok) {
+          const data = await res.json();
+          if (!data.hasAccess) setAccessRevoked(true);
+        }
+      } catch {}
+    }, 5000);
+    return () => clearInterval(interval);
+  }, [id, error]);
 
   useEffect(() => {
     if (!htmlContent) return;
@@ -253,16 +371,15 @@ export default function Viewer({ htmlContent, id, meta: serverMeta, canManage, e
   };
 
   if (status === "loading") return (
-    <div className="h-screen bg-gsrp-dark flex flex-col items-center justify-center relative overflow-hidden">
-      <div className="absolute inset-0"><img src={BG_IMAGE} alt="" className="w-full h-full object-cover" /><div className="absolute inset-0 bg-gsrp-dark/70" /></div>
-      <div className="relative flex flex-col items-center"><Loader2 className="w-7 h-7 text-gsrp-orange animate-spin mb-4" /><span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Record</span></div>
+    <div className="flex flex-col items-center justify-center py-20">
+      <Loader2 className="w-7 h-7 text-gsrp-orange animate-spin mb-4" />
+      <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Record</span>
     </div>
   );
 
   if (error) return (
-    <div className="h-screen bg-gsrp-dark flex items-center justify-center p-6 relative overflow-hidden">
-      <div className="absolute inset-0"><img src={BG_IMAGE} alt="" className="w-full h-full object-cover" /><div className="absolute inset-0 bg-gsrp-dark/80" /></div>
-      <div className="relative card-glass rounded-[2rem] p-12 max-w-sm w-full text-center shadow-2xl animate-scale-in">
+    <div className="flex items-center justify-center py-20">
+      <div className="card-glass rounded-[2rem] p-12 max-w-sm w-full text-center shadow-2xl animate-scale-in">
         <div className="w-14 h-14 rounded-2xl bg-gsrp-sunset/10 border border-gsrp-sunset/20 flex items-center justify-center mx-auto mb-6"><Lock size={24} className="text-gsrp-sunset" /></div>
         <h1 className="text-white font-black text-lg mb-2 tracking-tight">Access Denied</h1>
         <p className="text-gsrp-teal-light/40 text-sm mb-8">You do not have permission to view this transcript or it does not exist.</p>
@@ -271,11 +388,20 @@ export default function Viewer({ htmlContent, id, meta: serverMeta, canManage, e
     </div>
   );
 
-  return (
-    <div className="min-h-screen bg-gsrp-dark relative">
-      <div className="fixed inset-0"><img src={BG_IMAGE} alt="" className="w-full h-full object-cover" /><div className="absolute inset-0 bg-gsrp-dark/80" /></div>
+  if (accessRevoked) return (
+    <div className="flex items-center justify-center py-20">
+      <div className="card-glass rounded-[2rem] p-12 max-w-sm w-full text-center shadow-2xl animate-scale-in">
+        <div className="w-14 h-14 rounded-2xl bg-gsrp-sunset/10 border border-gsrp-sunset/20 flex items-center justify-center mx-auto mb-6"><Lock size={24} className="text-gsrp-sunset" /></div>
+        <h1 className="text-white font-black text-lg mb-2 tracking-tight">Access Revoked</h1>
+        <p className="text-gsrp-teal-light/40 text-sm mb-8">Your access to this transcript has been removed.</p>
+        <Link href="/" className="inline-flex items-center gap-2 bg-gsrp-dark-card/60 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 hover:border-gsrp-orange/30 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 cursor-pointer"><ArrowLeft size={14} /> Back to Dashboard</Link>
+      </div>
+    </div>
+  );
 
-      <nav className="sticky top-0 z-50 bg-gsrp-dark/80 backdrop-blur-xl border-b border-gsrp-dark-border/50 px-6 lg:px-10 py-4 flex items-center justify-between animate-fade-in-down">
+  return (
+    <div>
+      <nav className="sticky top-0 z-50 bg-gsrp-dark/80 backdrop-blur-xl border-b border-gsrp-dark-border/50 -mx-4 md:-mx-6 lg:-mx-8 px-6 lg:px-10 py-4 flex items-center justify-between animate-fade-in-down">
         <div className="flex items-center gap-5">
           <Link href="/" className="flex items-center gap-2 text-gsrp-teal-light/40 hover:text-gsrp-orange-light text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 cursor-pointer"><ArrowLeft size={13} /> Dashboard</Link>
           <div className="w-px h-5 bg-gsrp-dark-border/50" />
@@ -314,9 +440,9 @@ export default function Viewer({ htmlContent, id, meta: serverMeta, canManage, e
         </div>
       </nav>
 
-      <div className="relative max-w-5xl mx-auto px-4 lg:px-6 py-10">
+      <div className="max-w-5xl mx-auto py-10">
         {!loaded && htmlContent && (
-          <div className="absolute inset-0 flex items-center justify-center z-10 pointer-events-none">
+          <div className="flex items-center justify-center py-10">
             <div className="bg-gsrp-dark/80 backdrop-blur-sm rounded-2xl px-6 py-4 flex items-center gap-3 border border-gsrp-dark-border/50 animate-scale-in">
               <Loader2 size={14} className="text-gsrp-orange animate-spin" /><span className="text-gsrp-teal-light/50 text-[10px] font-bold uppercase tracking-wider">Rendering messages…</span>
             </div>
