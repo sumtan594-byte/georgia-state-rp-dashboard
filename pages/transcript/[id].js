@@ -445,7 +445,7 @@ export default function Viewer({ htmlContent, id, meta: serverMeta, canManage, e
         )}
         <div className="card-glass rounded-[1.5rem] shadow-2xl shadow-black/40 overflow-hidden animate-fade-in-up">
           <style dangerouslySetInnerHTML={{ __html: DISCORD_MD_STYLES }} />
-          <div dangerouslySetInnerHTML={{ __html: applyDiscordMarkdown(htmlContent) }} />
+          <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
         </div>
       </div>
 
@@ -470,7 +470,9 @@ export async function getServerSideProps(context) {
 
   try {
     const [rows] = await pool.query(
-      'SELECT id, html_content, type, owner_id, channel_name, DATE_FORMAT(closed_at, "%Y-%m-%d") as date, close_reason FROM transcripts WHERE id = ? LIMIT 1',
+      `SELECT id, html_content, type, owner_id, channel_name, closed_at, close_reason,
+              opener_tag, open_reason, claimed_by, claimed_by_tag, staff_request_reason
+       FROM transcripts WHERE id = ? LIMIT 1`,
       [id]
     );
 
@@ -499,12 +501,41 @@ export async function getServerSideProps(context) {
       type: t.type || 'UNKNOWN',
       ownerId: t.owner_id || 'UNKNOWN',
       channelName: t.channel_name || 'Unknown',
-      date: t.date || '',
+      date: t.closed_at ? (() => { const d = new Date(t.closed_at); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : '',
       reason: t.close_reason || '',
     };
 
     const canManage = isAdmin || isOwner;
 
+    // Try rendering from transcript_messages (new format)
+    try {
+      const [msgRows] = await pool.query(
+        'SELECT message_data, author_id, created_timestamp FROM transcript_messages WHERE transcript_id = ? ORDER BY sort_order ASC',
+        [id]
+      );
+
+      if (msgRows.length > 0) {
+        const { generateTranscriptHTML } = require('../../lib/transcript-renderer');
+        const messages = msgRows.map(r => JSON.parse(r.message_data));
+        const htmlContent = generateTranscriptHTML({
+          messages,
+          channelName: t.channel_name,
+          closedAt: t.closed_at,
+          reason: t.close_reason,
+          openerTag: t.opener_tag || meta.ownerId,
+          openReason: t.open_reason || null,
+          staffRequestReason: t.staff_request_reason || null,
+          guildName: 'GSRP',
+        });
+        return { props: { htmlContent, id, meta, canManage } };
+      }
+    } catch (e) {
+      if (e.code !== 'ER_NO_SUCH_TABLE') {
+        console.error("[Viewer] transcript_messages query error:", e.message);
+      }
+    }
+
+    // Fallback to stored HTML
     return { props: { htmlContent: t.html_content, id, meta, canManage } };
   } catch (e) {
     console.error("[Viewer] DB Fetch Error:", e.message);
