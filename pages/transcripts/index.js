@@ -327,63 +327,32 @@ export async function getServerSideProps(context) {
   const adminIds = (process.env.ADMIN_USER_IDS || "").split(',').map(id => String(id).trim()).filter(Boolean);
   const isAdmin = adminIds.includes(currentUserId);
 
-  const { Octokit } = require("@octokit/rest");
-  const octokit = new Octokit({ auth: process.env.GITHUB_ACCESS_TOKEN });
+  const pool = (await import('../../../lib/ticketdb')).default;
 
   try {
-    const repoInfo = await octokit.repos.get({
-      owner: process.env.GITHUB_OWNER,
-      repo: process.env.GITHUB_REPO,
-    });
-    const { data: branchData } = await octokit.repos.getBranch({
-      owner: process.env.GITHUB_OWNER,
-      repo: process.env.GITHUB_REPO,
-      branch: repoInfo.data.default_branch,
-    });
-    const { data: treeData } = await octokit.git.getTree({
-      owner: process.env.GITHUB_OWNER,
-      repo: process.env.GITHUB_REPO,
-      tree_sha: branchData.commit.commit.tree.sha,
-      recursive: true,
-    });
-    const data = treeData.tree
-      .filter(f => f.path.startsWith('transcripts/') && f.path.endsWith('.html'))
-      .map(f => ({ name: f.path.replace('transcripts/', '') }));
+    const [rows] = await pool.query(
+      `SELECT id, type, owner_id, channel_name, close_reason,
+              DATE_FORMAT(closed_at, '%Y-%m-%d') as date,
+              DATE_FORMAT(closed_at, '%H:%i:%s') as time
+       FROM transcripts
+       WHERE (? = 1 OR owner_id = ?)
+       ORDER BY closed_at ${sort === 'oldest' ? 'ASC' : 'DESC'}`,
+      [isAdmin ? 1 : 0, currentUserId]
+    );
 
-    const files = Array.isArray(data)
-      ? data
-          .filter(f => f.name.endsWith('.html'))
-          .map(f => {
-            const rawName = f.name.replace('.html', '');
-            const p = rawName.split('__');
-            if (p.length < 2) return null;
-            return {
-              rawName,
-              type: p[0] || 'UNKNOWN',
-              ownerId: p[1] || 'UNKNOWN',
-              channelName: p[2] || 'Unknown',
-              date: p[3] || '1970-01-01',
-              reason: p[4] || 'NoReason',
-              time: p[5] || '00-00-00',
-            };
-          })
-          .filter(f => {
-            if (!f) return false;
-            if (!isAdmin && String(f.ownerId) !== currentUserId) return false;
-            return true;
-          })
-          .sort((a, b) => {
-            const safeTimeA = typeof a.time === 'string' ? a.time.replace(/-/g, ':') : '00:00:00';
-            const safeTimeB = typeof b.time === 'string' ? b.time.replace(/-/g, ':') : '00:00:00';
-            const tsA = new Date(`${a.date}T${safeTimeA}`).getTime() || 0;
-            const tsB = new Date(`${b.date}T${safeTimeB}`).getTime() || 0;
-            return sort === 'oldest' ? tsA - tsB : tsB - tsA;
-          })
-      : [];
+    const files = rows.map(r => ({
+      rawName: r.id,
+      type: r.type || 'UNKNOWN',
+      ownerId: r.owner_id || 'UNKNOWN',
+      channelName: r.channel_name || 'Unknown',
+      date: r.date || '1970-01-01',
+      reason: r.close_reason || 'NoReason',
+      time: r.time || '00:00:00',
+    }));
 
     return { props: { transcripts: JSON.parse(JSON.stringify(files)), isAdmin, currentSort: sort } };
   } catch (e) {
-    console.error('[Dashboard] GitHub fetch error:', e.message);
+    console.error('[Dashboard] DB fetch error:', e.message);
     return { props: { transcripts: [], isAdmin, currentSort: sort } };
   }
 }

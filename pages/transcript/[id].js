@@ -1,5 +1,4 @@
 import { useSession } from "next-auth/react";
-import { Octokit } from "@octokit/rest";
 import { ArrowLeft, Lock, Download, Loader2, Clock, Tag, FileText, Sparkles, Sun, Sunset } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -129,10 +128,10 @@ const DISCORD_MD_STYLES = `
   .discord-md-spoiler:hover { color: #dbdee1; }
 `;
 
-export default function Viewer({ htmlContent, id, error }) {
+export default function Viewer({ htmlContent, id, meta: serverMeta, error }) {
   const { status } = useSession();
   const [loaded, setLoaded] = useState(false);
-  const meta = parseMeta(id);
+  const meta = serverMeta || parseMeta(id);
   const typeColor = TYPE_COLORS[meta.type] || TYPE_COLORS.GENERAL;
 
   useEffect(() => {
@@ -283,31 +282,37 @@ export async function getServerSideProps(context) {
 
   if (!session) return { props: { error: true } };
 
-  const parts = (id || '').split('__');
-  if (parts.length < 2) return { props: { error: true } };
-
-  const ownerId = String(parts[1]).trim();
   const currentUserId = String(session.user?.id || "").trim();
-
   const adminIds = (process.env.ADMIN_USER_IDS || "").split(',').map(i => String(i).trim()).filter(Boolean);
   const isAdmin = adminIds.includes(currentUserId);
 
-  if (!isAdmin && currentUserId !== ownerId) {
-    return { props: { error: true } };
-  }
+  const pool = (await import('../../../lib/ticketdb')).default;
 
-  const octokit = new Octokit({ auth: process.env.GITHUB_ACCESS_TOKEN });
   try {
-    const { data } = await octokit.repos.getContent({
-      owner: process.env.GITHUB_OWNER,
-      repo: process.env.GITHUB_REPO,
-      path: `transcripts/${id}.html`
-    });
+    const [rows] = await pool.query(
+      'SELECT id, html_content, type, owner_id, channel_name, DATE_FORMAT(closed_at, "%Y-%m-%d") as date, close_reason FROM transcripts WHERE id = ? LIMIT 1',
+      [id]
+    );
 
-    const htmlContent = Buffer.from(data.content, "base64").toString("utf-8");
-    return { props: { htmlContent, id } };
+    if (rows.length === 0) return { props: { error: true } };
+
+    const t = rows[0];
+
+    if (!isAdmin && String(t.owner_id) !== currentUserId) {
+      return { props: { error: true } };
+    }
+
+    const meta = {
+      type: t.type || 'UNKNOWN',
+      ownerId: t.owner_id || 'UNKNOWN',
+      channelName: t.channel_name || 'Unknown',
+      date: t.date || '',
+      reason: t.close_reason || '',
+    };
+
+    return { props: { htmlContent: t.html_content, id, meta } };
   } catch (e) {
-    console.error("[Viewer] GitHub Fetch Error:", e.message);
+    console.error("[Viewer] DB Fetch Error:", e.message);
     return { props: { error: true } };
   }
 }

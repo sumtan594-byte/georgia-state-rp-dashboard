@@ -1,4 +1,4 @@
-import { Octokit } from "@octokit/rest";
+import pool from '../../../lib/ticketdb';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -11,39 +11,14 @@ export default async function handler(req, res) {
   const adminIds = (process.env.ADMIN_USER_IDS || "").split(',').map(id => String(id).trim()).filter(Boolean);
   const isAdmin = adminIds.includes(currentUserId);
 
-  const octokit = new Octokit({ auth: process.env.GITHUB_ACCESS_TOKEN });
-
   try {
-    const repoInfo = await octokit.repos.get({
-      owner: process.env.GITHUB_OWNER,
-      repo: process.env.GITHUB_REPO,
-    });
-    const { data: branchData } = await octokit.repos.getBranch({
-      owner: process.env.GITHUB_OWNER,
-      repo: process.env.GITHUB_REPO,
-      branch: repoInfo.data.default_branch,
-    });
-    const { data: treeData } = await octokit.git.getTree({
-      owner: process.env.GITHUB_OWNER,
-      repo: process.env.GITHUB_REPO,
-      tree_sha: branchData.commit.commit.tree.sha,
-      recursive: true,
-    });
-    const data = treeData.tree
-      .filter(f => f.path.startsWith('transcripts/') && f.path.endsWith('.html'))
-      .map(f => ({ name: f.path.replace('transcripts/', '') }));
-
-    const files = Array.isArray(data) ? data.filter(f => f.name.endsWith('.html')) : [];
-    const count = isAdmin
-      ? files.length
-      : files.filter(f => {
-          const rawName = f.name.replace('.html', '');
-          const parts = rawName.split('__');
-          return parts[1] === currentUserId;
-        }).length;
-
-    return res.status(200).json({ count });
-  } catch {
+    const [rows] = await pool.query(
+      'SELECT COUNT(*) as count FROM transcripts WHERE (? = 1 OR owner_id = ?)',
+      [isAdmin ? 1 : 0, currentUserId]
+    );
+    return res.status(200).json({ count: rows[0].count });
+  } catch (e) {
+    console.error('[Transcripts Count] DB error:', e.message);
     return res.status(200).json({ count: 0 });
   }
 }
