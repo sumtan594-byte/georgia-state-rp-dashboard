@@ -286,7 +286,7 @@ export async function getServerSideProps(context) {
   const adminIds = (process.env.ADMIN_USER_IDS || "").split(',').map(i => String(i).trim()).filter(Boolean);
   const isAdmin = adminIds.includes(currentUserId);
 
-  const pool = (await import('../../../lib/ticketdb')).default;
+  const pool = (await import('../../lib/ticketdb')).default;
 
   try {
     const [rows] = await pool.query(
