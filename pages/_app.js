@@ -1,4 +1,5 @@
 import '../styles/globals.css';
+import 'leaflet/dist/leaflet.css';
 import { SessionProvider, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/router';
