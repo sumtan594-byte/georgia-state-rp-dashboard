@@ -284,7 +284,7 @@ export default function LiveMap({ players = [], emergencyCalls = [], selectedPla
   }, [ready, isNkz]);
 
   return (
-    <div ref={container} className="w-full h-full relative" style={{ background: '#0A0E1A' }}>
+    <div ref={container} className="w-full h-full relative" style={{ background: '#000000' }}>
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center z-10 bg-gsrp-dark/80">
           <Loader2 className="w-6 h-6 text-gsrp-orange animate-spin" />

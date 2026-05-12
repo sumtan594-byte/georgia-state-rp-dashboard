@@ -17,9 +17,12 @@ import {
   Settings,
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications } from '../../lib/auth';
+import { useRefreshedUser } from '../../lib/UserRefreshContext';
 
 export default function Sidebar({ open, onToggle }) {
   const { data: session } = useSession();
+  const { session: refreshedSession } = useRefreshedUser();
+  const effectiveSession = refreshedSession || session;
   const [serverStatus, setServerStatus] = useState(null);
   const [transcriptCount, setTranscriptCount] = useState(0);
 
@@ -47,12 +50,12 @@ export default function Sidebar({ open, onToggle }) {
       .catch(() => {});
   }, [session, open]);
 
-  const hasPanel = canAccessPanel(session);
-  const hasHandbook = canAccessHandbook(session);
-  const hasTraining = canAccessTraining(session);
-  const hasAttempts = canViewAttempts(session);
-  const showAllTranscripts = canViewAllTranscripts(session);
-  const canReviewApps = canReviewApplications(session);
+  const hasPanel = canAccessPanel(effectiveSession);
+  const hasHandbook = canAccessHandbook(effectiveSession);
+  const hasTraining = canAccessTraining(effectiveSession);
+  const hasAttempts = canViewAttempts(effectiveSession);
+  const showAllTranscripts = canViewAllTranscripts(effectiveSession);
+  const canReviewApps = canReviewApplications(effectiveSession);
 
   const navItems = [
     { href: '/', icon: LayoutDashboard, label: 'Dashboard' },

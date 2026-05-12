@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
+import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import LoginScreen from '../../components/auth/LoginScreen';
 
 const KeystrokePlayer = ({ keystrokes, originalText }) => {
@@ -109,6 +110,8 @@ const KeystrokePlayer = ({ keystrokes, originalText }) => {
 
 export default function ApplicationDetail() {
   const { data: session, status } = useSession();
+  const { session: refreshedSession } = useRefreshedUser();
+  const effectiveSession = refreshedSession || session;
   const router = useRouter();
   const { id } = router.query;
   
@@ -123,7 +126,7 @@ export default function ApplicationDetail() {
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
-    if (id && session && canReviewApplications(session)) {
+    if (id && session && canReviewApplications(effectiveSession)) {
       fetch(`/api/applications/${id}`)
         .then(r => r.ok ? r.json() : null)
         .then(data => {
@@ -207,7 +210,7 @@ export default function ApplicationDetail() {
 
   if (status === 'loading') return null;
   if (!session) return <LoginScreen />;
-  if (!canReviewApplications(session)) return <div>Access Denied</div>;
+  if (!canReviewApplications(effectiveSession)) return <div>Access Denied</div>;
 
   if (loading) {
     return (

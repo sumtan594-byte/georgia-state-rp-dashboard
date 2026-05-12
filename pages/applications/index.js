@@ -5,9 +5,12 @@ import { Users, Search, Filter, Calendar, ChevronRight, Loader2, AlertCircle } f
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
 import LoginScreen from '../../components/auth/LoginScreen';
+import { useRefreshedUser } from '../../lib/UserRefreshContext';
 
 export default function ApplicationsList() {
   const { data: session, status } = useSession();
+  const { session: refreshedSession } = useRefreshedUser();
+  const effectiveSession = refreshedSession || session;
   const [applications, setApplications] = useState([]);
   const [types, setTypes] = useState([]);
   const [activeTab, setActiveTab] = useState('staff');
@@ -16,7 +19,7 @@ export default function ApplicationsList() {
   const [search, setSearch] = useState('');
 
   useEffect(() => {
-    if (session && canReviewApplications(session)) {
+    if (session && canReviewApplications(effectiveSession)) {
       Promise.all([
         fetch('/api/applications/list').then(r => r.ok ? r.json() : []),
         fetch('/api/applications/types').then(r => r.ok ? r.json() : [])
@@ -41,7 +44,7 @@ export default function ApplicationsList() {
 
   if (status === 'loading') return null;
   if (!session) return <LoginScreen />;
-  if (!canReviewApplications(session)) {
+  if (!canReviewApplications(effectiveSession)) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-fade-in-up">
         <AlertCircle className="w-16 h-16 text-red-500/20 mb-4" />

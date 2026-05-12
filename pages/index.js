@@ -5,9 +5,12 @@ import Link from 'next/link';
 import FeatureCard from '../components/dashboard/FeatureCard';
 import LoginScreen from '../components/auth/LoginScreen';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canReviewApplications } from '../lib/auth';
+import { useRefreshedUser } from '../lib/UserRefreshContext';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
+  const { session: refreshedSession } = useRefreshedUser();
+  const effectiveSession = refreshedSession || session;
   const [stats, setStats] = useState({ transcripts: 0, players: 0, online: false });
 
   useEffect(() => {
@@ -41,10 +44,10 @@ export default function Dashboard() {
     return <LoginScreen />;
   }
 
-  const hasPanel = canAccessPanel(session);
-  const hasTraining = canAccessTraining(session);
-  const hasAttempts = canViewAttempts(session);
-  const canReviewApps = canReviewApplications(session);
+  const hasPanel = canAccessPanel(effectiveSession);
+  const hasTraining = canAccessTraining(effectiveSession);
+  const hasAttempts = canViewAttempts(effectiveSession);
+  const canReviewApps = canReviewApplications(effectiveSession);
 
   return (
     <div className="max-w-5xl mx-auto animate-fade-in-up">

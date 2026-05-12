@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import Sidebar from "../components/layout/Sidebar";
 import TopBar from "../components/layout/TopBar";
 import WelcomeScreen from "../components/auth/WelcomeScreen";
+import { UserRefreshProvider } from "../lib/UserRefreshContext";
 import { motion } from 'framer-motion';
 
 function DebugSessionLogger() {
@@ -90,22 +91,23 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
 
   return (
     <SessionProvider session={session}>
-      
-      {showWelcome && (
-        <WelcomeScreen 
-          onComplete={handleWelcomeComplete} 
-        />
-      )}
+      <UserRefreshProvider>
+        {showWelcome && (
+          <WelcomeScreen 
+            onComplete={handleWelcomeComplete} 
+          />
+        )}
 
-      <AppContent 
-        Component={Component} 
-        pageProps={pageProps} 
-        sidebarOpen={sidebarOpen} 
-        setSidebarOpen={setSidebarOpen} 
-        isPublicPage={isPublicPage} 
-        animationFinished={animationFinished}
-        isPanelPage={router.pathname === '/panel'}
-      />
+        <AppContent 
+          Component={Component} 
+          pageProps={pageProps} 
+          sidebarOpen={sidebarOpen} 
+          setSidebarOpen={setSidebarOpen} 
+          isPublicPage={isPublicPage} 
+          animationFinished={animationFinished}
+          isPanelPage={router.pathname === '/panel'}
+        />
+      </UserRefreshProvider>
     </SessionProvider>
   );
 }

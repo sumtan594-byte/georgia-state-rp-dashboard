@@ -19,22 +19,24 @@ import {
   Info
 } from 'lucide-react';
 import { canAccessHandbook } from '../../lib/auth';
+import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import { HANDBOOK_CONTENT } from '../../data/handbook';
 
 export default function StaffHandbookPage() {
   const { data: session, status: sessionStatus } = useSession();
+  const { session: refreshedSession } = useRefreshedUser();
+  const effectiveSession = refreshedSession || session;
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeChapterId, setActiveChapterId] = useState(HANDBOOK_CONTENT[0].id);
 
-  // Authorization check
   useEffect(() => {
     if (sessionStatus === 'unauthenticated') {
       router.push('/login');
-    } else if (sessionStatus === 'authenticated' && !canAccessHandbook(session)) {
+    } else if (sessionStatus === 'authenticated' && !canAccessHandbook(effectiveSession)) {
       router.push('/');
     }
-  }, [session, sessionStatus, router]);
+  }, [session, sessionStatus, effectiveSession, router]);
 
   // Search logic
   const filteredContent = useMemo(() => {
@@ -54,7 +56,7 @@ export default function StaffHandbookPage() {
     }).filter(Boolean);
   }, [searchQuery]);
 
-  if (sessionStatus === 'loading' || !session || !canAccessHandbook(session)) {
+  if (sessionStatus === 'loading' || !session || !canAccessHandbook(effectiveSession)) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-gsrp-orange animate-pulse">Checking access...</div>

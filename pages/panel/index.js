@@ -1,5 +1,6 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 import {
   Loader2, Pause, Play, Users, AlertTriangle, WifiOff,
@@ -10,6 +11,7 @@ import PlayerList from '../../components/panel/PlayerList';
 import InfoPanel from '../../components/panel/InfoPanel';
 import LogPanel from '../../components/panel/LogPanel';
 import CommandBar from '../../components/panel/CommandBar';
+import { useRefreshedUser } from '../../lib/UserRefreshContext';
 
 const LiveMap = dynamic(() => import('../../components/panel/LiveMap'), { ssr: false });
 
@@ -27,6 +29,9 @@ const NKZ_ROLE_ID = '1372468936867708988';
 
 export default function PanelPage() {
   const { data: session, status } = useSession();
+  const { session: refreshedSession } = useRefreshedUser();
+  const router = useRouter();
+  const effectiveSession = refreshedSession || session;
   const [data, setData] = useState(null);
   const [live, setLive] = useState(true);
   const [loading, setLoading] = useState(true);
@@ -38,7 +43,14 @@ export default function PanelPage() {
   const [recentCommands, setRecentCommands] = useState([]);
   const intervalRef = useRef(null);
 
-  const isNkz = session?.user?.roles?.includes(NKZ_ROLE_ID);
+  const isNkz = effectiveSession?.user?.roles?.includes(NKZ_ROLE_ID);
+  const hasPanelAccess = effectiveSession?.user?.roles?.includes('1372476381115453550');
+
+  useEffect(() => {
+    if (status === 'authenticated' && effectiveSession && !hasPanelAccess) {
+      router.push('/');
+    }
+  }, [status, effectiveSession, hasPanelAccess, router]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -107,7 +119,7 @@ export default function PanelPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center">
           <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-          <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Panel</span>
+          <span className="text-gsrp-orange/60 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Panel</span>
         </div>
       </div>
     );
@@ -118,13 +130,13 @@ export default function PanelPage() {
   return (
     <div className="h-full flex flex-col">
       {/* Server status bar */}
-      <div className="flex-shrink-0 flex items-center gap-3 px-3 md:px-4 py-2 bg-gsrp-dark-card/80 border-b border-gsrp-dark-border/50">
+      <div className="flex-shrink-0 flex items-center gap-3 px-3 md:px-4 py-2 bg-black border-b border-gsrp-orange/20">
         <div className={`w-2 h-2 rounded-full ${data ? 'bg-green-500 animate-pulse-glow' : 'bg-red-500'}`} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span className="text-sm font-bold text-white truncate">{data?.Name || 'Connecting...'}</span>
             {data && (
-              <span className="text-[11px] font-mono text-gsrp-teal-light/60">
+              <span className="text-[11px] font-mono text-gsrp-orange/60">
                 {data.CurrentPlayers}/{data.MaxPlayers}
               </span>
             )}
@@ -148,10 +160,10 @@ export default function PanelPage() {
           )}
           <button
             onClick={() => setLive(!live)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-colors border ${
+            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${
               live
-                ? 'bg-green-500/10 text-green-400 border-green-500/30'
-                : 'bg-gsrp-dark-surface/40 text-gsrp-teal-light/40 border-gsrp-dark-border/50'
+                ? 'bg-gradient-to-r from-gsrp-orange/20 to-gsrp-gold/10 text-gsrp-orange border-gsrp-orange/40 shadow-sm shadow-orange-900/20'
+                : 'bg-black/60 text-white/40 border-gsrp-orange/15 hover:text-white hover:border-gsrp-orange/40'
             }`}
           >
             {live ? <Play size={12} /> : <Pause size={12} />}
@@ -165,8 +177,8 @@ export default function PanelPage() {
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
             <WifiOff size={32} className="text-gsrp-sunset/40 mx-auto mb-3" />
-            <p className="text-gsrp-sunset/60 text-sm">{error}</p>
-            <button onClick={fetchData} className="mt-3 px-4 py-2 rounded-lg bg-gsrp-orange/20 text-gsrp-orange text-xs font-bold hover:bg-gsrp-orange/30 transition-colors">
+            <p className="text-white/60 text-sm">{error}</p>
+            <button onClick={fetchData} className="mt-3 px-4 py-2 rounded-lg bg-gradient-to-r from-gsrp-orange to-gsrp-gold text-black text-xs font-bold hover:opacity-90 transition-all shadow-lg shadow-orange-900/30">
               Retry
             </button>
           </div>

@@ -1,86 +1,51 @@
 import { useState, useRef } from 'react';
 import { Terminal, Send, Clock } from 'lucide-react';
 
-const COMMAND_CATEGORIES = [
-  {
-    label: 'Moderation',
-    commands: [':kill', ':down', ':tp', ':bring', ':to', ':jail', ':kick', ':refresh', ':respawn', ':heal', ':view', ':wanted', ':unwanted'],
-  },
-  {
-    label: 'Admin',
-    commands: [':weather', ':time', ':startfire', ':startnearfire', ':stopfire', ':prty', ':pt', ':tocar', ':toatv', ':h', ':m'],
-  },
-  {
-    label: 'Info',
-    commands: [':logs', ':killlogs', ':bans', ':admins', ':mods', ':commands'],
-  },
+const CATS = [
+  { label: 'Moderation', cmds: [':kill', ':down', ':tp', ':bring', ':to', ':jail', ':kick', ':refresh', ':respawn', ':heal', ':view', ':wanted', ':unwanted'] },
+  { label: 'Admin', cmds: [':weather', ':time', ':startfire', ':startnearfire', ':stopfire', ':prty', ':pt', ':tocar', ':toatv', ':h', ':m'] },
+  { label: 'Info', cmds: [':logs', ':killlogs', ':bans', ':admins', ':mods', ':commands'] },
 ];
 
 export default function CommandBar({ onSendCommand, recentCommands = [] }) {
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
-  const [feedback, setFeedback] = useState(null);
-  const [showDropdown, setShowDropdown] = useState(false);
-  const inputRef = useRef(null);
+  const [fb, setFb] = useState(null);
+  const [open, setOpen] = useState(false);
+  const ref = useRef(null);
 
-  const handleSend = async () => {
+  const send = async () => {
     if (!input.trim() || sending) return;
-    setSending(true);
-    setFeedback(null);
+    setSending(true); setFb(null);
     try {
       const res = await onSendCommand(input.trim());
-      if (res.ok) {
-        setFeedback({ type: 'success', message: 'Command sent' });
-        setInput('');
-      } else {
-        const body = await res.json().catch(() => ({}));
-        setFeedback({ type: 'error', message: body.error || `Error ${res.status}` });
-      }
-    } catch {
-      setFeedback({ type: 'error', message: 'Network error' });
-    } finally {
-      setSending(false);
-      setTimeout(() => setFeedback(null), 3000);
-    }
-  };
-
-  const pickCommand = (cmd) => {
-    setInput(prev => {
-      const parts = prev.split(/\s+/);
-      parts[0] = cmd;
-      return parts.join(' ') + ' ';
-    });
-    setShowDropdown(false);
-    inputRef.current?.focus();
+      if (res.ok) { setFb({ ok: true, msg: 'Command sent' }); setInput(''); }
+      else { const b = await res.json().catch(() => ({})); setFb({ ok: false, msg: b.error || `Error ${res.status}` }); }
+    } catch { setFb({ ok: false, msg: 'Network error' }); }
+    finally { setSending(false); setTimeout(() => setFb(null), 3000); }
   };
 
   return (
     <div className="p-2">
-      <div className="flex items-center gap-1.5 mb-1.5">
-        <Terminal size={12} className="text-gsrp-teal-light/30" />
-        <span className="text-[10px] font-bold uppercase tracking-wider text-gsrp-teal-light/30">Command Console</span>
+      <div className="flex items-center gap-1.5 mb-2">
+        <Terminal size={12} className="text-gsrp-orange/50" />
+        <span className="text-[10px] font-bold uppercase tracking-wider text-gsrp-orange/60">Command Console</span>
       </div>
 
-      {/* Command dropdown */}
       <div className="relative mb-1.5">
-        <button
-          onClick={() => setShowDropdown(!showDropdown)}
-          className="text-[10px] text-gsrp-teal-light/40 hover:text-white transition-colors"
-        >
-          {showDropdown ? '▼' : '▶'} Quick Commands
+        <button onClick={() => setOpen(!open)}
+          className="text-[10px] text-white/40 hover:text-gsrp-orange transition-colors font-medium">
+          {open ? '▼' : '▶'} Quick Commands
         </button>
-        {showDropdown && (
-          <div className="absolute top-full left-0 z-50 mt-1 w-56 bg-gsrp-dark-card border border-gsrp-dark-border/50 rounded-xl shadow-2xl p-2 max-h-60 overflow-y-auto">
-            {COMMAND_CATEGORIES.map(cat => (
-              <div key={cat.label} className="mb-2">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-gsrp-teal-light/30 px-1.5 mb-1">{cat.label}</p>
+        {open && (
+          <div className="absolute top-full left-0 z-50 mt-1 w-56 bg-black border border-gsrp-orange/30 rounded-xl shadow-2xl shadow-orange-900/30 p-2 max-h-60 overflow-y-auto">
+            {CATS.map(c => (
+              <div key={c.label} className="mb-2 last:mb-0">
+                <p className="text-[9px] font-bold uppercase tracking-wider text-gsrp-orange/50 px-1.5 mb-1">{c.label}</p>
                 <div className="flex flex-wrap gap-1">
-                  {cat.commands.map(cmd => (
-                    <button
-                      key={cmd}
-                      onClick={() => pickCommand(cmd)}
-                      className="px-2 py-0.5 text-[10px] font-mono bg-gsrp-dark-surface/40 rounded text-gsrp-teal-light/60 hover:text-white hover:bg-gsrp-orange/20 transition-colors"
-                    >
+                  {c.cmds.map(cmd => (
+                    <button key={cmd} onClick={() => { setInput(cmd + ' '); setOpen(false); ref.current?.focus(); }}
+                      className="px-2 py-0.5 text-[10px] font-mono bg-black/60 border border-gsrp-orange/15 rounded text-white/50 hover:text-white hover:bg-gradient-to-r hover:from-gsrp-orange/40 hover:to-gsrp-gold/20 hover:border-gsrp-orange/40 transition-all">
                       {cmd}
                     </button>
                   ))}
@@ -91,43 +56,29 @@ export default function CommandBar({ onSendCommand, recentCommands = [] }) {
         )}
       </div>
 
-      {/* Input row */}
       <div className="flex gap-1.5">
-        <input
-          ref={inputRef}
-          type="text"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => e.key === 'Enter' && handleSend()}
+        <input ref={ref} type="text" value={input} onChange={e => setInput(e.target.value)}
+          onKeyDown={e => e.key === 'Enter' && send()}
           placeholder=":h Hello world"
-          className="flex-1 bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white placeholder-gsrp-teal-light/20 outline-none focus:border-gsrp-orange/50 transition-colors"
-        />
-        <button
-          onClick={handleSend}
-          disabled={sending || !input.trim()}
-          className="px-2.5 py-1.5 rounded-lg bg-gsrp-orange/20 text-gsrp-orange border border-gsrp-orange/30 hover:bg-gsrp-orange/30 transition-colors disabled:opacity-30"
-        >
+          className="flex-1 bg-black border border-gsrp-orange/30 rounded-lg px-2.5 py-1.5 text-xs font-mono text-white placeholder-white/30 outline-none focus:border-gsrp-orange/60 transition-colors" />
+        <button onClick={send} disabled={sending || !input.trim()}
+          className="px-2.5 py-1.5 rounded-lg bg-gradient-to-r from-gsrp-orange to-gsrp-gold text-black font-bold text-xs hover:opacity-90 transition-all disabled:opacity-20 shadow-lg shadow-orange-900/30">
           <Send size={14} />
         </button>
       </div>
 
-      {/* Feedback */}
-      {feedback && (
-        <div className={`mt-1 text-[10px] ${feedback.type === 'success' ? 'text-green-400' : 'text-red-400'}`}>
-          {feedback.message}
+      {fb && (
+        <div className={`mt-1 text-[10px] font-medium ${fb.ok ? 'text-green-400/90' : 'text-red-400/90'}`}>
+          {fb.msg}
         </div>
       )}
 
-      {/* Recent */}
       {recentCommands.length > 0 && (
         <div className="mt-1.5 flex items-center gap-1 overflow-x-auto">
-          <Clock size={10} className="text-gsrp-teal-light/20 flex-shrink-0" />
+          <Clock size={10} className="text-gsrp-orange/30 flex-shrink-0" />
           {recentCommands.slice(-5).reverse().map((cmd, i) => (
-            <button
-              key={i}
-              onClick={() => { setInput(cmd); inputRef.current?.focus(); }}
-              className="text-[9px] font-mono text-gsrp-teal-light/30 hover:text-white bg-gsrp-dark-surface/20 px-1.5 py-0.5 rounded whitespace-nowrap transition-colors"
-            >
+            <button key={i} onClick={() => { setInput(cmd); ref.current?.focus(); }}
+              className="text-[9px] font-mono text-white/30 hover:text-gsrp-orange bg-black/40 border border-gsrp-orange/10 px-1.5 py-0.5 rounded whitespace-nowrap transition-colors">
               {cmd}
             </button>
           ))}

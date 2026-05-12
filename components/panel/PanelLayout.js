@@ -10,24 +10,24 @@ const TABS = [
 export default function PanelLayout({ playerList, liveMap, infoPanel, logPanel, commandBar, mobileView, setMobileView }) {
   return (
     <>
-      <div className="hidden md:grid md:grid-cols-[280px_1fr_300px] md:grid-rows-[1fr_auto] gap-2 flex-1 p-2 min-h-0">
-        <div className="overflow-hidden rounded-xl bg-gsrp-dark-card/90 border border-gsrp-dark-border/50 flex flex-col min-h-0">
+      <div className="hidden md:grid md:grid-cols-[280px_1fr_300px] md:grid-rows-[1fr_auto] gap-1.5 flex-1 p-1.5 min-h-0">
+        <div className="overflow-hidden rounded-lg bg-black border border-gsrp-orange/20 flex flex-col min-h-0 shadow-lg shadow-orange-900/20">
           {playerList}
         </div>
-        <div className="overflow-hidden rounded-xl border border-gsrp-dark-border/50 relative min-h-0">
+        <div className="overflow-hidden rounded-lg bg-black border border-gsrp-orange/20 relative min-h-0 shadow-lg shadow-orange-900/20">
           {liveMap}
         </div>
-        <div className="flex flex-col gap-2 min-h-0">
-          <div className="flex-1 overflow-hidden rounded-xl bg-gsrp-dark-card/90 border border-gsrp-dark-border/50 flex flex-col min-h-0">
+        <div className="flex flex-col gap-1.5 min-h-0">
+          <div className="flex-1 overflow-hidden rounded-lg bg-black border border-gsrp-orange/20 flex flex-col min-h-0 shadow-lg shadow-orange-900/20">
             {infoPanel}
           </div>
           {commandBar && (
-            <div className="flex-shrink-0 rounded-xl bg-gsrp-dark-card/90 border border-gsrp-dark-border/50">
+            <div className="flex-shrink-0 rounded-lg bg-black border border-gsrp-orange/20 shadow-lg shadow-orange-900/20">
               {commandBar}
             </div>
           )}
         </div>
-        <div className="col-span-3 overflow-hidden rounded-xl bg-gsrp-dark-card/90 border border-gsrp-dark-border/50 flex flex-col max-h-[220px] min-h-[150px]">
+        <div className="col-span-3 overflow-hidden rounded-lg bg-black border border-gsrp-orange/20 flex flex-col max-h-[200px] min-h-[120px] shadow-lg shadow-orange-900/20">
           {logPanel}
         </div>
       </div>
@@ -45,15 +45,15 @@ export default function PanelLayout({ playerList, liveMap, infoPanel, logPanel, 
           </div>
         </div>
 
-        <nav className="flex-shrink-0 flex bg-gsrp-dark-card border-t border-gsrp-dark-border/50">
+        <nav className="flex-shrink-0 flex bg-black border-t border-gsrp-orange/20">
           {TABS.map(tab => (
             <button
               key={tab.key}
               onClick={() => setMobileView(tab.key)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-bold uppercase tracking-wider transition-colors ${
+              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${
                 mobileView === tab.key
-                  ? 'text-gsrp-orange bg-gsrp-orange/5'
-                  : 'text-gsrp-teal-light/40 hover:text-white'
+                  ? 'text-white bg-gradient-to-t from-gsrp-orange/30 to-transparent'
+                  : 'text-white/30 hover:text-white/70'
               }`}
             >
               <tab.icon size={16} />

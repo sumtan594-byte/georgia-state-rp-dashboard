@@ -17,10 +17,13 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
+import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import LoginScreen from '../../components/auth/LoginScreen';
 
 export default function ManageApplicationTypes() {
   const { data: session, status } = useSession();
+  const { session: refreshedSession } = useRefreshedUser();
+  const effectiveSession = refreshedSession || session;
   const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingType, setEditingType] = useState(null);
@@ -43,7 +46,7 @@ export default function ManageApplicationTypes() {
   });
 
   useEffect(() => {
-    if (session && canReviewApplications(session)) {
+    if (session && canReviewApplications(effectiveSession)) {
       fetch('/api/applications/types')
         .then(r => r.json())
         .then(data => {
@@ -248,7 +251,7 @@ export default function ManageApplicationTypes() {
 
   if (status === 'loading') return null;
   if (!session) return <LoginScreen />;
-  if (!canReviewApplications(session)) return <div>Access Denied</div>;
+  if (!canReviewApplications(effectiveSession)) return <div>Access Denied</div>;
 
   return (
     <div className={`max-w-6xl mx-auto py-12 px-6 transition-transform duration-500 ${isShaking ? 'animate-shake' : ''}`}>
