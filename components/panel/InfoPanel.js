@@ -33,15 +33,15 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-semibold tracking-wider transition-all flex-shrink-0 cursor-pointer ${
+              className={`flex items-center gap-1.5 px-3 py-2 text-xs font-semibold tracking-wider transition-all flex-shrink-0 cursor-pointer ${
                 tab === t.key
                   ? 'text-gsrp-orange border-b-2 border-gsrp-orange'
                   : 'text-white/30 hover:text-white/60'
               }`}
             >
-              <t.icon size={11} />
+              <t.icon size={13} />
               {t.label}
-              {count > 0 && <span className="text-[9px] text-white/20">({count})</span>}
+              {count > 0 && <span className="text-[10px] text-white/20">({count})</span>}
             </button>
           );
         })}
@@ -51,12 +51,12 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
         {tab === 'joinleave' && (joinLogs.length === 0 ? <EmptyState /> : joinLogs.slice(-100).reverse().map((log, i) => {
           const { name } = parseName(log.Player);
           return (
-            <div key={i} className="flex items-center gap-2 px-2.5 py-1 text-[11px] hover:bg-white/[0.03] transition-colors">
+            <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-white/[0.03] transition-colors">
               {log.Join
-                ? <LogIn size={10} className="text-green-400/60 flex-shrink-0" />
-                : <LogOutIcon size={10} className="text-red-400/60 flex-shrink-0" />}
+                ? <LogIn size={12} className="text-green-400/60 flex-shrink-0" />
+                : <LogOutIcon size={12} className="text-red-400/60 flex-shrink-0" />}
               <span className="text-white/70 flex-1 truncate font-medium">{name}</span>
-              <span className="text-white/20 flex-shrink-0 text-[9px]">{fmt(log.Timestamp)}</span>
+              <span className="text-white/20 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
             </div>
           );
         }))}
@@ -65,12 +65,12 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
           const { name: k } = parseName(log.Killer);
           const { name: d } = parseName(log.Killed);
           return (
-            <div key={i} className="flex items-center gap-2 px-2.5 py-1 text-[11px] hover:bg-white/[0.03] transition-colors">
-              <Swords size={10} className="text-gsrp-sunset/60 flex-shrink-0" />
-              <span className="text-white/70 truncate font-medium max-w-[80px] truncate">{k}</span>
-              <span className="text-white/20 text-[9px]">→</span>
+            <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-white/[0.03] transition-colors">
+              <Swords size={12} className="text-gsrp-sunset/60 flex-shrink-0" />
+              <span className="text-white/70 truncate font-medium max-w-[90px] truncate">{k}</span>
+              <span className="text-white/20 text-[10px]">→</span>
               <span className="text-white/50 truncate flex-1">{d}</span>
-              <span className="text-white/20 flex-shrink-0 text-[9px]">{fmt(log.Timestamp)}</span>
+              <span className="text-white/20 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
             </div>
           );
         }))}
@@ -78,10 +78,10 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
         {tab === 'commands' && (commandLogs.length === 0 ? <EmptyState /> : commandLogs.slice(-100).reverse().map((log, i) => {
           const { name } = parseName(log.Player);
           return (
-            <div key={i} className="flex items-center gap-2 px-2.5 py-1 text-[11px] hover:bg-white/[0.03] transition-colors">
-              <Terminal size={10} className="text-cyan-400/50 flex-shrink-0" />
-              <span className="text-white/60 font-mono text-[10px] truncate flex-1">{log.Command}</span>
-              <span className="text-white/20 flex-shrink-0 text-[9px]">{fmt(log.Timestamp)}</span>
+            <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-white/[0.03] transition-colors">
+              <Terminal size={12} className="text-cyan-400/50 flex-shrink-0" />
+              <span className="text-white/60 font-mono text-[11px] truncate flex-1">{log.Command}</span>
+              <span className="text-white/20 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
             </div>
           );
         }))}
@@ -90,11 +90,11 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
           const { name: c } = parseName(log.Caller);
           const { name: m } = parseName(log.Moderator);
           return (
-            <div key={i} className="flex items-center gap-2 px-2.5 py-1 text-[11px] hover:bg-white/[0.03] transition-colors">
-              <MessageSquare size={10} className="text-gsrp-orange/60 flex-shrink-0" />
+            <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-white/[0.03] transition-colors">
+              <MessageSquare size={12} className="text-gsrp-orange/60 flex-shrink-0" />
               <span className="text-white/70 truncate font-medium">{c}</span>
-              {m && <span className="text-white/30 text-[9px]">→ {m}</span>}
-              <span className="text-white/20 flex-shrink-0 text-[9px] ml-auto">{fmt(log.Timestamp)}</span>
+              {m && <span className="text-white/30 text-[10px]">→ {m}</span>}
+              <span className="text-white/20 flex-shrink-0 text-[10px] ml-auto">{fmt(log.Timestamp)}</span>
             </div>
           );
         }))}

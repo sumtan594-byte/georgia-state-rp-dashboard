@@ -9,7 +9,7 @@ const TABS = [
 export default function PanelLayout({ playerList, liveMap, infoPanel, commandBar, mobileView, setMobileView }) {
   return (
     <>
-      <div className="hidden md:grid md:grid-cols-[280px_1fr_300px] gap-2 flex-1 p-2 min-h-0">
+      <div className="hidden md:grid md:grid-cols-[320px_1fr_340px] gap-2 flex-1 p-2 min-h-0">
         <div className="overflow-hidden rounded-lg card-glass flex flex-col min-h-0">
           {playerList}
         </div>

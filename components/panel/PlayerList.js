@@ -29,7 +29,7 @@ export default function PlayerList({ players = [], searchQuery, onSearchChange, 
             type="text" placeholder="Search..."
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
-            className="w-full bg-black/40 border border-gsrp-dark-border/50 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-white placeholder-white/20 outline-none focus:border-gsrp-orange/40 transition-colors"
+            className="w-full bg-black/40 border border-gsrp-dark-border/50 rounded-lg pl-8 pr-2.5 py-2 text-sm text-white placeholder-white/30 outline-none focus:border-gsrp-orange/40 transition-colors"
           />
         </div>
       </div>
@@ -37,7 +37,7 @@ export default function PlayerList({ players = [], searchQuery, onSearchChange, 
       <div className="flex-shrink-0 flex items-center gap-1 p-2 pb-1.5 overflow-x-auto">
         {TEAMS.map(t => (
           <button key={t} onClick={() => onTeamChange(t)}
-            className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all cursor-pointer ${
+            className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               teamFilter === t
                 ? 'bg-gsrp-orange/20 text-gsrp-orange border border-gsrp-orange/30'
                 : 'text-white/40 bg-white/5 border border-transparent hover:text-white/70 hover:bg-white/10'
@@ -64,10 +64,10 @@ export default function PlayerList({ players = [], searchQuery, onSearchChange, 
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${TEAM_DOT[p.Team] || TEAM_DOT.Civilian}`} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className={`text-xs font-semibold truncate ${sel ? 'text-white' : 'text-white/80'}`}>{name}</span>
-                    {p.Callsign && <span className="text-[9px] text-gsrp-gold/50 font-mono">[{p.Callsign}]</span>}
+                    <span className={`text-sm font-semibold truncate ${sel ? 'text-white' : 'text-white/80'}`}>{name}</span>
+                    {p.Callsign && <span className="text-[11px] text-gsrp-gold/50 font-mono">[{p.Callsign}]</span>}
                   </div>
-                  <div className="flex items-center gap-2 text-[10px] text-white/35">
+                  <div className="flex items-center gap-2 text-xs text-white/35">
                     {p.Team && <span>{p.Team}</span>}
                     {p.Location?.PostalCode && <span>#{p.Location.PostalCode}</span>}
                     {p.WantedStars > 0 && <span className="text-gsrp-sunset">★{p.WantedStars}</span>}
@@ -101,9 +101,9 @@ export default function PlayerList({ players = [], searchQuery, onSearchChange, 
 
 function DetailRow({ label, value, className = '' }) {
   return (
-    <div className="flex items-center justify-between text-[10px]">
+    <div className="flex items-center justify-between text-xs">
       <span className="text-white/30">{label}</span>
-      <span className={`text-white/70 font-medium ${className}`}>{value}</span>
+      <span className={`text-white/80 font-medium ${className}`}>{value}</span>
     </div>
   );
 }

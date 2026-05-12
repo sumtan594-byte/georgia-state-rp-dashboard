@@ -28,8 +28,8 @@ export default function CommandBar({ onSendCommand, recentCommands = [] }) {
   return (
     <div className="p-3">
       <div className="flex items-center gap-1.5 mb-2.5">
-        <Terminal size={12} className="text-gsrp-orange/40" />
-        <span className="text-[10px] font-semibold tracking-wider text-white/40">Console</span>
+        <Terminal size={14} className="text-gsrp-orange/40" />
+        <span className="text-xs font-semibold tracking-wider text-white/40">Console</span>
       </div>
 
       <div className="flex gap-2">
@@ -37,7 +37,7 @@ export default function CommandBar({ onSendCommand, recentCommands = [] }) {
           <input ref={ref} type="text" value={input} onChange={e => setInput(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && send()}
             placeholder=":h Hello world"
-            className="w-full bg-black/40 border border-gsrp-dark-border/50 rounded-lg px-3 py-2 text-xs font-mono text-white placeholder-white/20 outline-none focus:border-gsrp-orange/40 transition-colors" />
+            className="w-full bg-black/40 border border-gsrp-dark-border/50 rounded-lg px-3 py-2 text-sm font-mono text-white placeholder-white/30 outline-none focus:border-gsrp-orange/40 transition-colors" />
         </div>
         <button onClick={send} disabled={sending || !input.trim()}
           className="px-3 py-2 rounded-lg bg-gsrp-orange/20 text-gsrp-orange border border-gsrp-orange/30 hover:bg-gsrp-orange/30 transition-all disabled:opacity-20 cursor-pointer">
@@ -79,7 +79,7 @@ export default function CommandBar({ onSendCommand, recentCommands = [] }) {
           <Clock size={10} className="text-white/20 flex-shrink-0" />
           {recentCommands.slice(-5).reverse().map((cmd, i) => (
             <button key={i} onClick={() => { setInput(cmd); ref.current?.focus(); }}
-              className="text-[9px] font-mono text-white/25 hover:text-white/60 bg-black/30 border border-gsrp-dark-border/40 px-1.5 py-0.5 rounded whitespace-nowrap transition-colors cursor-pointer">
+              className="text-[11px] font-mono text-white/25 hover:text-white/60 bg-black/30 border border-gsrp-dark-border/40 px-2 py-1 rounded whitespace-nowrap transition-colors cursor-pointer">
               {cmd}
             </button>
           ))}

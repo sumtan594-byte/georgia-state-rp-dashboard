@@ -111,7 +111,7 @@ export default function PanelPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center">
           <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-          <span className="text-white/30 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Panel</span>
+          <span className="text-white/40 font-mono text-xs uppercase tracking-[0.3em]">Loading Panel</span>
         </div>
       </div>
     );
@@ -121,24 +121,24 @@ export default function PanelPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 card-glass rounded-none border-b border-gsrp-dark-border/50">
-        <div className={`w-2 h-2 rounded-full ${data ? 'bg-green-500 animate-glow-pulse' : 'bg-red-500'}`} />
-        <div className="flex items-center gap-2 min-w-0">
-          <span className="text-sm font-semibold text-white/80 truncate">{data?.Name || 'Connecting...'}</span>
+      <div className="flex-shrink-0 flex items-center gap-3 px-4 py-2.5 card-glass rounded-none border-b border-gsrp-dark-border/50">
+        <div className={`w-2.5 h-2.5 rounded-full ${data ? 'bg-green-500 animate-glow-pulse' : 'bg-red-500'}`} />
+        <div className="flex items-center gap-3 min-w-0">
+          <span className="text-base font-semibold text-white/80 truncate">{data?.Name || 'Connecting...'}</span>
           {data && (
-            <span className="text-[11px] font-mono text-white/30">
+            <span className="text-xs font-mono text-white/30">
               <span className="text-gsrp-orange/70">{data.CurrentPlayers}</span>/{data.MaxPlayers}
             </span>
           )}
         </div>
 
         {alerts.length > 0 && (
-          <div className="hidden sm:flex items-center gap-2 ml-2">
+          <div className="hidden sm:flex items-center gap-3 ml-2">
             {alerts.map((a, i) => (
-              <span key={i} className={`flex items-center gap-1 text-[10px] font-medium ${
+              <span key={i} className={`flex items-center gap-1 text-xs font-medium ${
                 a.type === 'critical' ? 'text-gsrp-sunset' : a.type === 'danger' ? 'text-red-400' : 'text-gsrp-orange'
               }`}>
-                <a.icon size={10} />
+                <a.icon size={12} />
                 {a.message}
               </span>
             ))}
@@ -147,25 +147,25 @@ export default function PanelPage() {
 
         <div className="flex items-center gap-2 ml-auto">
           <Link href="/"
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold text-white/30 border border-gsrp-dark-border/50 hover:text-white/60 hover:border-white/20 transition-all cursor-pointer">
-            <ArrowLeft size={12} />
+            className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white/30 border border-gsrp-dark-border/50 hover:text-white/60 hover:border-white/20 transition-all cursor-pointer">
+            <ArrowLeft size={14} />
             Dashboard
           </Link>
           {error && (
-            <div className="flex items-center gap-1 text-[10px] text-gsrp-sunset/50">
-              <WifiOff size={10} />
+            <div className="flex items-center gap-1 text-xs text-gsrp-sunset/50">
+              <WifiOff size={12} />
               <span className="hidden sm:inline">Disconnected</span>
             </div>
           )}
           <button
             onClick={() => setLive(!live)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold tracking-wider transition-all border cursor-pointer ${
+            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold tracking-wider transition-all border cursor-pointer ${
               live
                 ? 'bg-gsrp-orange/15 text-gsrp-orange border-gsrp-orange/30'
                 : 'bg-white/5 text-white/30 border-gsrp-dark-border/50 hover:text-white/60 hover:border-white/20'
             }`}
           >
-            {live ? <Play size={12} /> : <Pause size={12} />}
+            {live ? <Play size={14} /> : <Pause size={14} />}
             <span className="hidden sm:inline">{live ? 'Live' : 'Paused'}</span>
           </button>
         </div>
