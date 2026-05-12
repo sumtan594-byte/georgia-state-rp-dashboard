@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>GSRP Live Panel</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" />
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="panel.css" />
 </head>
@@ -14,7 +15,7 @@
   <!-- ─── Auth Screen ─────────────────────────────────────────────── -->
   <div id="auth-screen" class="auth-screen">
     <div class="auth-card">
-      <div class="auth-badge">◈</div>
+      <div class="auth-badge"><i class="fas fa-map"></i></div>
       <h2>GSRP Live Panel</h2>
       <p>Sign in with Discord to access the panel. Access is limited to approved members with the required role.</p>
       <button class="btn btn-discord" onclick="location.href='/api/auth/login'">Continue with Discord</button>
@@ -37,12 +38,12 @@
 
   <!-- ─── Mobile Top Bar ──────────────────────────────────────────── -->
   <div class="mobile-top-mini" id="mobile-top-mini">
-    <button class="mobile-icon-btn" onclick="openMobileSheet()">☰</button>
+    <button class="mobile-icon-btn" onclick="openMobileSheet()"><i class="fas fa-bars"></i></button>
     <div class="mini-title">
       <h3>GSRP Live Panel</h3>
       <p><span id="m-players">--</span> players · <span id="m-server">--</span></p>
     </div>
-    <button class="mobile-icon-btn" onclick="toggleTheme()">◐</button>
+    <button class="mobile-icon-btn" onclick="toggleTheme()" id="mobile-theme-btn"><i class="fas fa-sun"></i></button>
   </div>
 
   <!-- ─── Mobile Sheet ─────────────────────────────────────────────── -->
@@ -50,7 +51,7 @@
     <div class="mobile-sheet-panel" onclick="event.stopPropagation()">
       <div class="mobile-sheet-head">
         <div class="mobile-sheet-title">Quick Menu</div>
-        <button class="mobile-icon-btn" onclick="closeMobileSheet()">✕</button>
+        <button class="mobile-icon-btn" onclick="closeMobileSheet()"><i class="fas fa-times"></i></button>
       </div>
       <div style="display:grid;gap:8px;">
         <div id="mobile-userbox"></div>
@@ -73,7 +74,7 @@
       <div class="brand">
         <img class="brand-logo" src="https://i.imgur.com/70GfmYd.gif" alt="GSRP"
           onerror="this.style.display='none'; document.getElementById('brand-fallback').style.display='grid';" />
-        <div class="brand-mark" id="brand-fallback" style="display:none;">◈</div>
+        <div class="brand-mark" id="brand-fallback" style="display:none;"><i class="fas fa-map"></i></div>
         <div class="brand-copy">
           <h1>GSRP Live Panel</h1>
           <p>Live server overview, map, units and activity</p>
@@ -114,9 +115,9 @@
 
       <!-- TP select banner -->
       <div class="tp-banner" id="tp-banner">
-        <span>⇄</span>
+        <i class="fas fa-arrows-alt-h"></i>
         <span id="tp-banner-text">Select target player to teleport to</span>
-        <span class="tp-banner-close" onclick="cancelTpMode()">✕</span>
+        <span class="tp-banner-close" onclick="cancelTpMode()"><i class="fas fa-times"></i></span>
       </div>
 
       <div class="search">
@@ -223,7 +224,7 @@
     <div class="zone-modal-card" onclick="event.stopPropagation()">
       <div class="zone-modal-head">
         <span id="zone-modal-title">Configure Zone</span>
-        <button class="mobile-icon-btn" onclick="closeZoneModal()">✕</button>
+        <button class="mobile-icon-btn" onclick="closeZoneModal()"><i class="fas fa-times"></i></button>
       </div>
 
       <div class="zone-modal-body">
@@ -407,6 +408,7 @@
     document.body.setAttribute('data-theme', theme);
     localStorage.setItem('gsrp-theme', theme);
     document.getElementById('theme-btn').textContent = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+    document.getElementById('mobile-theme-btn').innerHTML = theme === 'dark' ? '<i class="fas fa-sun"></i>' : '<i class="fas fa-moon"></i>';
   }
   function toggleTheme() {
     applyTheme((document.body.getAttribute('data-theme') || 'dark') === 'dark' ? 'light' : 'dark');
@@ -1760,8 +1762,8 @@
           </div>
           ${userIsNkzAdmin ? `
           <div class="zone-card-actions">
-            <button class="zone-act-btn" onclick="editZone('${z.id}')" title="Edit">✎</button>
-            <button class="zone-act-btn zone-act-del" onclick="confirmDeleteZone('${z.id}')" title="Delete">✕</button>
+            <button class="zone-act-btn" onclick="editZone('${z.id}')" title="Edit"><i class="fas fa-pen"></i></button>
+            <button class="zone-act-btn zone-act-del" onclick="confirmDeleteZone('${z.id}')" title="Delete"><i class="fas fa-trash"></i></button>
           </div>` : ''}
         </div>`;
     }).join('');
