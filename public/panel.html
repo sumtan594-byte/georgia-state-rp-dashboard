@@ -1968,6 +1968,7 @@
       if (e.data?.type === 'GSRP_AUTH' && e.data.payload) {
         authUser = e.data.payload;
         authUser.roles = authUser.roles || [];
+        document.body.classList.add('embedded');
         userIsNkzAdmin = authUser.roles.includes('1367115886547779684');
         console.log('[GSRP] Auth from parent, NKZ admin:', userIsNkzAdmin);
 

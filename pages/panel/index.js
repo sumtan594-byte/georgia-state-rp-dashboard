@@ -55,9 +55,9 @@ export default function PanelPage() {
   if (!session) return <LoginScreen />;
 
   return (
-    <div className="w-full h-[calc(100vh-60px)] rounded-2xl overflow-hidden border border-gsrp-dark-border/50 animate-scale-in">
+    <div className="w-full h-full relative">
       {!loaded && (
-        <div className="absolute inset-0 flex items-center justify-center bg-gsrp-dark/90 z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-gsrp-dark z-10">
           <div className="flex flex-col items-center">
             <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
             <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Live Panel</span>
