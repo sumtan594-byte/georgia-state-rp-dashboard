@@ -16,7 +16,7 @@ import {
   UserPlus,
   Settings,
 } from 'lucide-react';
-import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications } from '../../lib/auth';
+import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications, canManageAdmins } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 
 export default function Sidebar({ open, onToggle }) {
@@ -56,6 +56,7 @@ export default function Sidebar({ open, onToggle }) {
   const hasAttempts = canViewAttempts(effectiveSession);
   const showAllTranscripts = canViewAllTranscripts(effectiveSession);
   const canReviewApps = canReviewApplications(effectiveSession);
+  const canManageAdminList = canManageAdmins(effectiveSession);
 
   const navItems = [
     { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -72,6 +73,7 @@ export default function Sidebar({ open, onToggle }) {
       { href: '/applications', icon: Users, label: 'Review Apps' },
       { href: '/applications/manage', icon: Settings, label: 'Manage Apps' }
     ] : []),
+    ...(canManageAdminList ? [{ href: '/admins', icon: ShieldCheck, label: 'Edit Admins' }] : []),
   ];
 
   return (
@@ -164,6 +166,7 @@ export default function Sidebar({ open, onToggle }) {
                 { href: '/applications', icon: Users, label: 'Review Hub' },
                 { href: '/applications/manage', icon: Settings, label: 'Manage Forms' }
               ] : []),
+              ...(canManageAdminList ? [{ href: '/admins', icon: ShieldCheck, label: 'Edit Admins' }] : []),
             ].map((item, idx) => (
               <Link
                 key={item.href}

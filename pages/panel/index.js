@@ -44,13 +44,6 @@ export default function PanelPage() {
   const intervalRef = useRef(null);
 
   const isNkz = effectiveSession?.user?.roles?.includes(NKZ_ROLE_ID);
-  const hasPanelAccess = effectiveSession?.user?.roles?.includes('1372476381115453550');
-
-  useEffect(() => {
-    if (status === 'authenticated' && effectiveSession && !hasPanelAccess) {
-      router.push('/');
-    }
-  }, [status, effectiveSession, hasPanelAccess, router]);
 
   const fetchData = useCallback(async () => {
     try {

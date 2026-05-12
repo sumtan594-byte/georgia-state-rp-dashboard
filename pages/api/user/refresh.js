@@ -1,5 +1,17 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth-options';
+import clientPromise from '../../../lib/mongodb';
+
+async function getDbAdminIds() {
+  try {
+    const client = await clientPromise;
+    const db = client.db();
+    const docs = await db.collection('admins').find({}).project({ userId: 1, _id: 0 }).toArray();
+    return docs.map(d => d.userId).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -46,7 +58,10 @@ export default async function handler(req, res) {
 
     res.setHeader('Cache-Control', 'no-store, max-age=0');
 
-    const adminIds = (process.env.ADMIN_USER_IDS || '').split(',').map(i => i.trim()).filter(Boolean);
+    const envAdminIds = (process.env.ADMIN_USER_IDS || '').split(',').map(i => i.trim()).filter(Boolean);
+    const dbAdminIds = await getDbAdminIds();
+    const allAdminIds = [...new Set([...envAdminIds, ...dbAdminIds])];
+    const isAdminUser = allAdminIds.includes(member.user?.id || userId);
 
     return res.status(200).json({
       id: member.user?.id || userId,
@@ -57,7 +72,7 @@ export default async function handler(req, res) {
         : session.user.image,
       roles,
       displayRole,
-      isAdmin: adminIds.includes(member.user?.id || userId),
+      isAdmin: isAdminUser,
     });
   } catch (err) {
     console.error('[user/refresh] Error:', err.message);
