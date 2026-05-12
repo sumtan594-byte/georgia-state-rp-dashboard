@@ -22,8 +22,8 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
         <div className="absolute inset-0 bg-gsrp-dark/80" />
       </div>
 
-      {isPublicPage ? (
-        <div className="relative z-10">
+      {isPublicPage || isPanelPage ? (
+        <div className="relative z-10 min-h-screen">
           <Component {...pageProps} />
         </div>
       ) : (
@@ -50,7 +50,7 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
 
           <div className="flex-1 flex flex-col min-w-0">
             <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-            <main className={`flex-1 ${isPanelPage ? 'p-0' : 'p-4 md:p-6 lg:p-8'}`}>
+            <main className="flex-1 p-4 md:p-6 lg:p-8">
               <Component {...pageProps} />
             </main>
           </div>

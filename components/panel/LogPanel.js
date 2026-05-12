@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LogIn, LogOut, Swords, Terminal, MessageSquare } from 'lucide-react';
+import { LogIn, Swords, Terminal, MessageSquare } from 'lucide-react';
 
 const TABS = [
   { key: 'joinleave', icon: LogIn, label: 'Join/Leave' },
@@ -26,37 +26,42 @@ export default function LogPanel({ joinLogs = [], killLogs = [], commandLogs = [
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-shrink-0 flex border-b border-gsrp-orange/20 overflow-x-auto">
+      <div className="flex-shrink-0 flex border-b border-gsrp-dark-border/50 overflow-x-auto">
         {TABS.map(t => {
           const count = logs[t.key].length;
           return (
             <button
               key={t.key}
               onClick={() => setTab(t.key)}
-              className={`flex items-center gap-1.5 px-3 py-2 text-[10px] font-bold uppercase tracking-wider transition-all flex-shrink-0 ${
+              className={`flex items-center gap-1.5 px-3 py-2 text-[10px] font-semibold tracking-wider transition-all flex-shrink-0 cursor-pointer ${
                 tab === t.key
-                  ? 'text-white bg-gradient-to-b from-gsrp-orange/20 to-transparent border-b-2 border-gsrp-orange'
-                  : 'text-white/30 hover:text-white/70'
+                  ? 'text-gsrp-orange border-b-2 border-gsrp-orange'
+                  : 'text-white/30 hover:text-white/60'
               }`}
             >
               <t.icon size={12} />
               {t.label}
-              <span className="text-[9px] text-white/30">({count})</span>
+              {count > 0 && <span className="text-[9px] text-white/20">({count})</span>}
             </button>
           );
         })}
       </div>
 
-      <div className="flex-1 overflow-y-auto px-1">
+      <div className="flex-1 overflow-y-auto px-1 py-0.5">
+        {tab === 'joinleave' && joinLogs.length === 0 && <EmptyState />}
+        {tab === 'kills' && killLogs.length === 0 && <EmptyState />}
+        {tab === 'commands' && commandLogs.length === 0 && <EmptyState />}
+        {tab === 'modcalls' && modCalls.length === 0 && <EmptyState />}
+
         {tab === 'joinleave' && joinLogs.slice(-150).reverse().map((log, i) => {
           const { name } = parseName(log.Player);
           return (
-            <div key={i} className="flex items-center gap-2 px-2 py-1 text-[11px] hover:bg-gradient-to-r hover:from-gsrp-orange/10 hover:to-transparent rounded">
+            <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-[11px] hover:bg-white/[0.03] rounded-lg transition-colors">
               {log.Join
-                ? <LogIn size={11} className="text-green-400/80 flex-shrink-0" />
-                : <LogOut size={11} className="text-red-400/80 flex-shrink-0" />}
-              <span className="text-white/90 flex-1 truncate font-medium">{name}</span>
-              <span className="text-white/30 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
+                ? <LogIn size={11} className="text-green-400/60 flex-shrink-0" />
+                : <LogOutIcon size={11} className="text-red-400/60 flex-shrink-0" />}
+              <span className="text-white/70 flex-1 truncate font-medium">{name}</span>
+              <span className="text-white/20 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
             </div>
           );
         })}
@@ -65,12 +70,12 @@ export default function LogPanel({ joinLogs = [], killLogs = [], commandLogs = [
           const { name: k } = parseName(log.Killer);
           const { name: d } = parseName(log.Killed);
           return (
-            <div key={i} className="flex items-center gap-2 px-2 py-1 text-[11px] hover:bg-gradient-to-r hover:from-gsrp-orange/10 hover:to-transparent rounded">
-              <Swords size={11} className="text-gsrp-sunset/80 flex-shrink-0" />
-              <span className="text-white/90 truncate font-medium">{k}</span>
-              <span className="text-white/30 text-[10px]">→</span>
-              <span className="text-white/70 truncate flex-1">{d}</span>
-              <span className="text-white/30 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
+            <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-[11px] hover:bg-white/[0.03] rounded-lg transition-colors">
+              <Swords size={11} className="text-gsrp-sunset/60 flex-shrink-0" />
+              <span className="text-white/70 truncate font-medium">{k}</span>
+              <span className="text-white/20 text-[10px]">→</span>
+              <span className="text-white/50 truncate flex-1">{d}</span>
+              <span className="text-white/20 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
             </div>
           );
         })}
@@ -78,11 +83,11 @@ export default function LogPanel({ joinLogs = [], killLogs = [], commandLogs = [
         {tab === 'commands' && commandLogs.slice(-150).reverse().map((log, i) => {
           const { name } = parseName(log.Player);
           return (
-            <div key={i} className="flex items-center gap-2 px-2 py-1 text-[11px] hover:bg-gradient-to-r hover:from-gsrp-orange/10 hover:to-transparent rounded">
-              <Terminal size={11} className="text-cyan-400/70 flex-shrink-0" />
-              <span className="text-white/80 font-mono text-[10px] truncate flex-1">{log.Command}</span>
-              <span className="text-white/40 flex-shrink-0 text-[10px]">{name}</span>
-              <span className="text-white/30 flex-shrink-0 text-[10px] ml-0.5">{fmt(log.Timestamp)}</span>
+            <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-[11px] hover:bg-white/[0.03] rounded-lg transition-colors">
+              <Terminal size={11} className="text-cyan-400/50 flex-shrink-0" />
+              <span className="text-white/60 font-mono text-[10px] truncate flex-1">{log.Command}</span>
+              <span className="text-white/30 flex-shrink-0 text-[10px]">{name}</span>
+              <span className="text-white/20 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
             </div>
           );
         })}
@@ -91,19 +96,31 @@ export default function LogPanel({ joinLogs = [], killLogs = [], commandLogs = [
           const { name: c } = parseName(log.Caller);
           const { name: m } = parseName(log.Moderator);
           return (
-            <div key={i} className="flex items-center gap-2 px-2 py-1 text-[11px] hover:bg-gradient-to-r hover:from-gsrp-orange/10 hover:to-transparent rounded">
-              <MessageSquare size={11} className="text-gsrp-orange/80 flex-shrink-0" />
-              <span className="text-white/90 truncate font-medium">{c}</span>
-              {m && <span className="text-white/40 text-[10px]">→ {m}</span>}
-              <span className="text-white/30 flex-shrink-0 text-[10px] ml-auto">{fmt(log.Timestamp)}</span>
+            <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-[11px] hover:bg-white/[0.03] rounded-lg transition-colors">
+              <MessageSquare size={11} className="text-gsrp-orange/60 flex-shrink-0" />
+              <span className="text-white/70 truncate font-medium">{c}</span>
+              {m && <span className="text-white/30 text-[10px]">→ {m}</span>}
+              <span className="text-white/20 flex-shrink-0 text-[10px] ml-auto">{fmt(log.Timestamp)}</span>
             </div>
           );
         })}
-
-        {logs[tab].length === 0 && (
-          <div className="flex items-center justify-center h-20 text-white/25 text-[11px]">No entries</div>
-        )}
       </div>
     </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="flex items-center justify-center h-16 text-white/15 text-[11px]">No entries</div>
+  );
+}
+
+function LogOutIcon({ size, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
   );
 }

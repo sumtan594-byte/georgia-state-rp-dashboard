@@ -2,8 +2,9 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
+import Link from 'next/link';
 import {
-  Loader2, Pause, Play, Users, AlertTriangle, WifiOff,
+  Loader2, Pause, Play, Users, AlertTriangle, WifiOff, ArrowLeft,
 } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
 import PanelLayout from '../../components/panel/PanelLayout';
@@ -53,7 +54,6 @@ export default function PanelPage() {
         setData(d);
         setError(null);
       } else if (res.status === 429) {
-        /* rate limited, keep stale data */
       } else {
         setError(`Server error: ${res.status}`);
       }
@@ -112,7 +112,7 @@ export default function PanelPage() {
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center">
           <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-          <span className="text-gsrp-orange/60 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Panel</span>
+          <span className="text-white/30 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Panel</span>
         </div>
       </div>
     );
@@ -122,41 +122,48 @@ export default function PanelPage() {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Server status bar */}
-      <div className="flex-shrink-0 flex items-center gap-3 px-3 md:px-4 py-2 bg-black border-b border-gsrp-orange/20">
-        <div className={`w-2 h-2 rounded-full ${data ? 'bg-green-500 animate-pulse-glow' : 'bg-red-500'}`} />
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-bold text-white truncate">{data?.Name || 'Connecting...'}</span>
-            {data && (
-              <span className="text-[11px] font-mono text-gsrp-orange/60">
-                {data.CurrentPlayers}/{data.MaxPlayers}
-              </span>
-            )}
-          </div>
-          {alerts.map((a, i) => (
-            <div key={i} className={`flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider mt-0.5 ${
-              a.type === 'critical' ? 'text-gsrp-sunset' : a.type === 'danger' ? 'text-red-400' : 'text-gsrp-orange'
-            }`}>
-              <a.icon size={10} />
-              {a.message}
-            </div>
-          ))}
+      <div className="flex-shrink-0 flex items-center gap-3 px-4 py-2.5 card-glass rounded-none border-b border-gsrp-dark-border/50">
+        <div className={`w-2 h-2 rounded-full ${data ? 'bg-green-500 animate-glow-pulse' : 'bg-red-500'}`} />
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-semibold text-white/80 truncate">{data?.Name || 'Connecting...'}</span>
+          {data && (
+            <span className="text-[11px] font-mono text-white/30">
+              <span className="text-gsrp-orange/70">{data.CurrentPlayers}</span>/{data.MaxPlayers}
+            </span>
+          )}
         </div>
 
-        <div className="flex items-center gap-2">
+        {alerts.length > 0 && (
+          <div className="hidden sm:flex items-center gap-2 ml-2">
+            {alerts.map((a, i) => (
+              <span key={i} className={`flex items-center gap-1 text-[10px] font-medium ${
+                a.type === 'critical' ? 'text-gsrp-sunset' : a.type === 'danger' ? 'text-red-400' : 'text-gsrp-orange'
+              }`}>
+                <a.icon size={10} />
+                {a.message}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 ml-auto">
+          <Link href="/"
+            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold text-white/30 border border-gsrp-dark-border/50 hover:text-white/60 hover:border-white/20 transition-all cursor-pointer">
+            <ArrowLeft size={12} />
+            Dashboard
+          </Link>
           {error && (
-            <div className="flex items-center gap-1 text-[10px] text-gsrp-sunset/60">
+            <div className="flex items-center gap-1 text-[10px] text-gsrp-sunset/50">
               <WifiOff size={10} />
               <span className="hidden sm:inline">Disconnected</span>
             </div>
           )}
           <button
             onClick={() => setLive(!live)}
-            className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[10px] font-bold uppercase tracking-wider transition-all border ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[10px] font-semibold tracking-wider transition-all border cursor-pointer ${
               live
-                ? 'bg-gradient-to-r from-gsrp-orange/20 to-gsrp-gold/10 text-gsrp-orange border-gsrp-orange/40 shadow-sm shadow-orange-900/20'
-                : 'bg-black/60 text-white/40 border-gsrp-orange/15 hover:text-white hover:border-gsrp-orange/40'
+                ? 'bg-gsrp-orange/15 text-gsrp-orange border-gsrp-orange/30'
+                : 'bg-white/5 text-white/30 border-gsrp-dark-border/50 hover:text-white/60 hover:border-white/20'
             }`}
           >
             {live ? <Play size={12} /> : <Pause size={12} />}
@@ -165,27 +172,24 @@ export default function PanelPage() {
         </div>
       </div>
 
-      {/* Error overlay */}
       {error && !data && (
         <div className="flex-1 flex items-center justify-center">
           <div className="text-center">
-            <WifiOff size={32} className="text-gsrp-sunset/40 mx-auto mb-3" />
-            <p className="text-white/60 text-sm">{error}</p>
-            <button onClick={fetchData} className="mt-3 px-4 py-2 rounded-lg bg-gradient-to-r from-gsrp-orange to-gsrp-gold text-black text-xs font-bold hover:opacity-90 transition-all shadow-lg shadow-orange-900/30">
+            <WifiOff size={32} className="text-gsrp-sunset/30 mx-auto mb-3" />
+            <p className="text-white/50 text-sm mb-3">{error}</p>
+            <button onClick={fetchData} className="px-4 py-2 rounded-lg bg-gsrp-orange/20 text-gsrp-orange border border-gsrp-orange/30 text-xs font-semibold hover:bg-gsrp-orange/30 transition-all cursor-pointer">
               Retry
             </button>
           </div>
         </div>
       )}
 
-      {/* Loading state */}
       {loading && !data && (
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
         </div>
       )}
 
-      {/* Panel grid */}
       {data && (
         <PanelLayout
           mobileView={mobileView}

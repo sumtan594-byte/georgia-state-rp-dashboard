@@ -104,13 +104,15 @@ export default function Sidebar({ open, onToggle }) {
               { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
               { href: '/departments', icon: Building2, label: 'Departments' },
               { href: '/transcripts', icon: FileText, label: 'Transcripts', badge: transcriptCount > 0 ? transcriptCount : null },
-              ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null }] : []),
+              ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null, external: true }] : []),
               { href: '/verify', icon: ShieldCheck, label: 'Verification' },
               { href: '/shop', icon: ShoppingCart, label: 'Store' },
             ].map((item, idx) => (
               <Link
                 key={item.href}
                 href={item.href}
+                target={item.external ? '_blank' : undefined}
+                rel={item.external ? 'noopener noreferrer' : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/60 hover:text-white hover:bg-gsrp-dark-surface/60 transition-all duration-200 group animate-slide-left stagger-${idx+1}`}
               >
                 <item.icon size={18} className="flex-shrink-0 group-hover:text-gsrp-orange transition-colors" />

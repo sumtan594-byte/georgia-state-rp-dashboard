@@ -3,31 +3,31 @@ import { Map, Users2, Info, ScrollText } from 'lucide-react';
 const TABS = [
   { key: 'map', icon: Map, label: 'Map' },
   { key: 'players', icon: Users2, label: 'Players' },
-  { key: 'info', icon: Info, label: 'Info' },
+  { key: 'info', icon: Info, label: 'Details' },
   { key: 'logs', icon: ScrollText, label: 'Logs' },
 ];
 
 export default function PanelLayout({ playerList, liveMap, infoPanel, logPanel, commandBar, mobileView, setMobileView }) {
   return (
     <>
-      <div className="hidden md:grid md:grid-cols-[280px_1fr_300px] md:grid-rows-[1fr_auto] gap-1.5 flex-1 p-1.5 min-h-0">
-        <div className="overflow-hidden rounded-lg bg-black border border-gsrp-orange/20 flex flex-col min-h-0 shadow-lg shadow-orange-900/20">
+      <div className="hidden md:grid md:grid-cols-[300px_1fr_320px] md:grid-rows-[1fr_auto] gap-3 flex-1 p-3 min-h-0">
+        <div className="overflow-hidden rounded-xl card-glass flex flex-col min-h-0">
           {playerList}
         </div>
-        <div className="overflow-hidden rounded-lg bg-black border border-gsrp-orange/20 relative min-h-0 shadow-lg shadow-orange-900/20">
+        <div className="overflow-hidden rounded-xl card-glass relative min-h-0">
           {liveMap}
         </div>
-        <div className="flex flex-col gap-1.5 min-h-0">
-          <div className="flex-1 overflow-hidden rounded-lg bg-black border border-gsrp-orange/20 flex flex-col min-h-0 shadow-lg shadow-orange-900/20">
+        <div className="flex flex-col gap-3 min-h-0">
+          <div className="flex-1 overflow-hidden rounded-xl card-glass flex flex-col min-h-0">
             {infoPanel}
           </div>
           {commandBar && (
-            <div className="flex-shrink-0 rounded-lg bg-black border border-gsrp-orange/20 shadow-lg shadow-orange-900/20">
+            <div className="flex-shrink-0 rounded-xl card-glass">
               {commandBar}
             </div>
           )}
         </div>
-        <div className="col-span-3 overflow-hidden rounded-lg bg-black border border-gsrp-orange/20 flex flex-col max-h-[200px] min-h-[120px] shadow-lg shadow-orange-900/20">
+        <div className="col-span-3 overflow-hidden rounded-xl card-glass flex flex-col max-h-[180px] min-h-[100px]">
           {logPanel}
         </div>
       </div>
@@ -45,15 +45,15 @@ export default function PanelLayout({ playerList, liveMap, infoPanel, logPanel, 
           </div>
         </div>
 
-        <nav className="flex-shrink-0 flex bg-black border-t border-gsrp-orange/20">
+        <nav className="flex-shrink-0 flex bg-gsrp-dark-card/90 backdrop-blur-xl border-t border-gsrp-dark-border/50">
           {TABS.map(tab => (
             <button
               key={tab.key}
               onClick={() => setMobileView(tab.key)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-2 text-[10px] font-bold uppercase tracking-wider transition-all ${
+              className={`flex-1 flex flex-col items-center gap-0.5 py-3 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
                 mobileView === tab.key
-                  ? 'text-white bg-gradient-to-t from-gsrp-orange/30 to-transparent'
-                  : 'text-white/30 hover:text-white/70'
+                  ? 'text-gsrp-orange'
+                  : 'text-white/30 hover:text-white/60'
               }`}
             >
               <tab.icon size={16} />

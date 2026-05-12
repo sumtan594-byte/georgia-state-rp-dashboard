@@ -1,11 +1,6 @@
-import { useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, X } from 'lucide-react';
 
 const TEAMS = ['All', 'Police', 'Fire', 'EMS', 'DOT', 'Civilian'];
-const TEAM_COLORS = {
-  Police: 'text-blue-400', Fire: 'text-red-400', EMS: 'text-green-400',
-  DOT: 'text-orange-400', Civilian: 'text-gray-400',
-};
 const TEAM_DOT = {
   Police: 'bg-blue-400', Fire: 'bg-red-400', EMS: 'bg-green-400',
   DOT: 'bg-orange-400', Civilian: 'bg-gray-500',
@@ -27,36 +22,30 @@ export default function PlayerList({ players = [], searchQuery, onSearchChange, 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-shrink-0 p-2 border-b border-gsrp-orange/20">
+      <div className="flex-shrink-0 p-3 pb-2 border-b border-gsrp-dark-border/50">
         <div className="relative">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gsrp-orange/50" />
+          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
           <input
             type="text" placeholder="Search players..."
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
-            className="w-full bg-black border border-gsrp-orange/30 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-white/30 outline-none focus:border-gsrp-orange/60 transition-colors"
+            className="w-full bg-black/40 border border-gsrp-dark-border/50 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-gsrp-orange/40 transition-colors"
           />
         </div>
       </div>
 
-      <div className="flex-shrink-0 flex gap-1 p-2 pb-1 overflow-x-auto">
+      <div className="flex-shrink-0 flex items-center gap-1.5 p-3 pb-2 overflow-x-auto">
         {TEAMS.map(t => (
           <button key={t} onClick={() => onTeamChange(t)}
-            className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${
+            className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all cursor-pointer ${
               teamFilter === t
-                ? 'bg-gradient-to-r from-gsrp-orange to-gsrp-gold text-white shadow-lg shadow-orange-900/30'
-                : 'bg-black/60 text-white/40 border border-gsrp-orange/15 hover:text-white hover:border-gsrp-orange/40'
+                ? 'bg-gsrp-orange/20 text-gsrp-orange border border-gsrp-orange/30'
+                : 'text-white/40 bg-white/5 border border-transparent hover:text-white/70 hover:bg-white/10'
             }`}
           >
-            {t}{t === 'All' ? ` (${players.length})` : ''}
+            {t}{t === 'All' ? ` ${players.length}` : ''}
           </button>
         ))}
-      </div>
-
-      <div className="flex-shrink-0 px-3 py-1">
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-white/40">
-          {filtered.length} / {players.length} players
-        </span>
       </div>
 
       <div className="flex-1 overflow-y-auto px-2 pb-2 space-y-0.5">
@@ -65,52 +54,56 @@ export default function PlayerList({ players = [], searchQuery, onSearchChange, 
           const sel = selectedPlayer?.Player === p.Player;
           return (
             <button key={p.Player + i} onClick={() => onSelectPlayer(sel ? null : p)}
-              className={`w-full text-left px-2.5 py-2 rounded-lg transition-all border ${
+              className={`w-full text-left px-3 py-2.5 rounded-lg transition-all cursor-pointer ${
                 sel
-                  ? 'bg-gradient-to-r from-gsrp-orange/25 to-gsrp-gold/10 border-gsrp-orange/40 text-white shadow-inner shadow-orange-900/20'
-                  : 'border-transparent hover:bg-gradient-to-r hover:from-gsrp-orange/10 hover:to-transparent text-white/50 hover:text-white'
+                  ? 'bg-gsrp-orange/15 border border-gsrp-orange/25'
+                  : 'border border-transparent hover:bg-white/5'
               }`}
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center gap-3">
                 <div className={`w-2 h-2 rounded-full flex-shrink-0 ${TEAM_DOT[p.Team] || TEAM_DOT.Civilian}`} />
                 <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`text-xs font-semibold truncate ${sel ? 'text-white' : 'text-white/90'}`}>{name}</span>
-                    {p.Callsign && <span className="text-[9px] text-gsrp-gold/60 font-mono">[{p.Callsign}]</span>}
+                  <div className="flex items-center gap-2">
+                    <span className={`text-xs font-semibold truncate ${sel ? 'text-white' : 'text-white/80'}`}>{name}</span>
+                    {p.Callsign && <span className="text-[9px] text-gsrp-gold/50 font-mono">[{p.Callsign}]</span>}
                   </div>
-                  <div className="flex items-center gap-2 text-[9px] text-white/40">
+                  <div className="flex items-center gap-2 text-[10px] text-white/35">
                     {p.Team && <span>{p.Team}</span>}
                     {p.Location?.PostalCode && <span>#{p.Location.PostalCode}</span>}
                     {p.WantedStars > 0 && <span className="text-gsrp-sunset">★{p.WantedStars}</span>}
                   </div>
                 </div>
               </div>
+
+              {sel && (
+                <div className="mt-2.5 pt-2.5 border-t border-gsrp-dark-border/50 space-y-1">
+                  {selectedPlayer.Callsign && <DetailRow label="Callsign" value={selectedPlayer.Callsign} />}
+                  {selectedPlayer.Location?.StreetName && (
+                    <DetailRow label="Location" value={`${selectedPlayer.Location.StreetName} #${selectedPlayer.Location.BuildingNumber || ''}`} />
+                  )}
+                  {selectedPlayer.Location?.PostalCode && <DetailRow label="Postal" value={`#${selectedPlayer.Location.PostalCode}`} />}
+                  {selectedPlayer.Permission && <DetailRow label="Permission" value={selectedPlayer.Permission} />}
+                  {selectedPlayer.WantedStars > 0 && (
+                    <DetailRow label="Status" value={`${'★'.repeat(selectedPlayer.WantedStars)} Wanted`} className="text-gsrp-sunset" />
+                  )}
+                </div>
+              )}
             </button>
           );
         })}
         {filtered.length === 0 && (
-          <div className="flex items-center justify-center h-32 text-white/25 text-xs">No players found</div>
+          <div className="flex items-center justify-center h-24 text-white/20 text-xs">No players found</div>
         )}
       </div>
+    </div>
+  );
+}
 
-      {selectedPlayer && (
-        <div className="flex-shrink-0 border-t border-gsrp-orange/20 p-2 bg-gradient-to-r from-black to-black/95">
-          <div className="flex items-start gap-2">
-            <div className={`w-2 h-2 rounded-full mt-1 flex-shrink-0 ${TEAM_DOT[selectedPlayer.Team] || TEAM_DOT.Civilian}`} />
-            <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-white">{parseName(selectedPlayer.Player).name}</p>
-              <div className="text-[10px] text-white/50 space-y-0.5 mt-0.5">
-                {selectedPlayer.Callsign && <p>Callsign: {selectedPlayer.Callsign}</p>}
-                {selectedPlayer.Location?.StreetName && <p>{selectedPlayer.Location.StreetName} #{selectedPlayer.Location.BuildingNumber || ''}</p>}
-                {selectedPlayer.Location?.PostalCode && <p>Postal #{selectedPlayer.Location.PostalCode}</p>}
-                {selectedPlayer.Permission && <p>{selectedPlayer.Permission}</p>}
-                {selectedPlayer.WantedStars > 0 && <p className="text-gsrp-sunset">{'★'.repeat(selectedPlayer.WantedStars)} Wanted</p>}
-              </div>
-            </div>
-            <button onClick={() => onSelectPlayer(null)} className="text-white/30 hover:text-white/90 text-xs px-1">&times;</button>
-          </div>
-        </div>
-      )}
+function DetailRow({ label, value, className = '' }) {
+  return (
+    <div className="flex items-center justify-between text-[10px]">
+      <span className="text-white/30">{label}</span>
+      <span className={`text-white/70 font-medium ${className}`}>{value}</span>
     </div>
   );
 }
