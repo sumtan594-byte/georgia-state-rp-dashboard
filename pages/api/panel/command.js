@@ -2,8 +2,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from "../../../lib/auth-options";
 import { ROLES, hasRole, isAdmin } from '../../../lib/auth';
 
+const NKZ_ROLE_ID = '1372468936867708988';
+
 // ─── Blocked commands ─────────────────────────────────────────────────────────
 const BLOCKED_COMMANDS = [':shutdown', ':ban', ':admin', ':mod', ':unadmin', ':unmod'];
+
+// Commands restricted to NKZ role only
+const NKZ_COMMANDS = [':tp', ':bring', ':kick', ':ban', ':unban', ':admin', ':unadmin', ':mod', ':unmod', ':jail', ':kill', ':down', ':refresh', ':respawn', ':load', ':weather']; 
 
 function isBlocked(command) {
   if (!command || typeof command !== 'string') return true;
@@ -115,6 +120,14 @@ export default async function handler(req, res) {
   if (isBlocked(cmd)) {
     return res.status(403).json({
       error: 'This command is restricted and cannot be executed via the panel.',
+      code: 4002,
+    });
+  }
+
+  const cmdPrefix = cmd.split(/\s+/)[0].toLowerCase();
+  if (NKZ_COMMANDS.includes(cmdPrefix) && !hasRole(session, NKZ_ROLE_ID) && !isAdmin(session)) {
+    return res.status(403).json({
+      error: 'This command requires NKZ administrator privileges.',
       code: 4002,
     });
   }

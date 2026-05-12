@@ -12,7 +12,7 @@ function DebugSessionLogger() {
   return null;
 }
 
-function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPublicPage, animationFinished }) {
+function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPublicPage, animationFinished, isPanelPage }) {
   return (
     <div className="min-h-screen relative">
       <div className="fixed inset-0 z-0">
@@ -31,13 +31,24 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="relative z-10 flex min-h-screen"
         >
+          {/* Desktop sidebar */}
           <div className={`hidden md:block flex-shrink-0 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-[72px]'}`}>
             <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
           </div>
 
+          {/* Mobile sidebar overlay */}
+          {sidebarOpen && (
+            <div className="md:hidden fixed inset-0 z-50">
+              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+              <div className="fixed left-0 top-0 h-screen w-64 shadow-2xl">
+                <Sidebar open={true} onToggle={() => setSidebarOpen(false)} />
+              </div>
+            </div>
+          )}
+
           <div className="flex-1 flex flex-col min-w-0">
             <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
+            <main className={`flex-1 ${isPanelPage ? 'p-0' : 'p-4 md:p-6 lg:p-8'}`}>
               <Component {...pageProps} />
             </main>
           </div>
@@ -92,6 +103,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
         setSidebarOpen={setSidebarOpen} 
         isPublicPage={isPublicPage} 
         animationFinished={animationFinished}
+        isPanelPage={router.pathname === '/panel'}
       />
     </SessionProvider>
   );
