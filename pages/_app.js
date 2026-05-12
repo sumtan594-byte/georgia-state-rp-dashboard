@@ -23,7 +23,7 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
       </div>
 
       {isPublicPage || isPanelPage ? (
-        <div className="relative z-10 min-h-screen">
+        <div className={`relative z-10 ${isPanelPage ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
           <Component {...pageProps} />
         </div>
       ) : (

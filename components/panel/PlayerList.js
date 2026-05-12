@@ -22,19 +22,19 @@ export default function PlayerList({ players = [], searchQuery, onSearchChange, 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-shrink-0 p-3 pb-2 border-b border-gsrp-dark-border/50">
+      <div className="flex-shrink-0 p-2 pb-1.5 border-b border-gsrp-dark-border/50">
         <div className="relative">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-white/30" />
+          <Search size={13} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-white/30" />
           <input
-            type="text" placeholder="Search players..."
+            type="text" placeholder="Search..."
             value={searchQuery}
             onChange={e => onSearchChange(e.target.value)}
-            className="w-full bg-black/40 border border-gsrp-dark-border/50 rounded-lg pl-9 pr-3 py-2 text-xs text-white placeholder-white/20 outline-none focus:border-gsrp-orange/40 transition-colors"
+            className="w-full bg-black/40 border border-gsrp-dark-border/50 rounded-lg pl-8 pr-2.5 py-1.5 text-xs text-white placeholder-white/20 outline-none focus:border-gsrp-orange/40 transition-colors"
           />
         </div>
       </div>
 
-      <div className="flex-shrink-0 flex items-center gap-1.5 p-3 pb-2 overflow-x-auto">
+      <div className="flex-shrink-0 flex items-center gap-1 p-2 pb-1.5 overflow-x-auto">
         {TEAMS.map(t => (
           <button key={t} onClick={() => onTeamChange(t)}
             className={`flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all cursor-pointer ${

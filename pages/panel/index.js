@@ -122,7 +122,7 @@ export default function PanelPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-shrink-0 flex items-center gap-3 px-4 py-2.5 card-glass rounded-none border-b border-gsrp-dark-border/50">
+      <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 card-glass rounded-none border-b border-gsrp-dark-border/50">
         <div className={`w-2 h-2 rounded-full ${data ? 'bg-green-500 animate-glow-pulse' : 'bg-red-500'}`} />
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-sm font-semibold text-white/80 truncate">{data?.Name || 'Connecting...'}</span>

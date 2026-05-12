@@ -10,24 +10,24 @@ const TABS = [
 export default function PanelLayout({ playerList, liveMap, infoPanel, logPanel, commandBar, mobileView, setMobileView }) {
   return (
     <>
-      <div className="hidden md:grid md:grid-cols-[300px_1fr_320px] md:grid-rows-[1fr_auto] gap-3 flex-1 p-3 min-h-0">
-        <div className="overflow-hidden rounded-xl card-glass flex flex-col min-h-0">
+      <div className="hidden md:grid md:grid-cols-[280px_1fr_300px] md:grid-rows-[1fr_auto] gap-2 flex-1 p-2 min-h-0">
+        <div className="overflow-hidden rounded-lg card-glass flex flex-col min-h-0">
           {playerList}
         </div>
-        <div className="overflow-hidden rounded-xl card-glass relative min-h-0">
+        <div className="overflow-hidden rounded-lg card-glass relative min-h-0">
           {liveMap}
         </div>
-        <div className="flex flex-col gap-3 min-h-0">
-          <div className="flex-1 overflow-hidden rounded-xl card-glass flex flex-col min-h-0">
+        <div className="flex flex-col gap-2 min-h-0">
+          <div className="flex-1 overflow-hidden rounded-lg card-glass flex flex-col min-h-0">
             {infoPanel}
           </div>
           {commandBar && (
-            <div className="flex-shrink-0 rounded-xl card-glass">
+            <div className="flex-shrink-0 rounded-lg card-glass">
               {commandBar}
             </div>
           )}
         </div>
-        <div className="col-span-3 overflow-hidden rounded-xl card-glass flex flex-col max-h-[180px] min-h-[100px]">
+        <div className="col-span-3 overflow-hidden rounded-lg card-glass flex flex-col max-h-[130px] min-h-[80px]">
           {logPanel}
         </div>
       </div>

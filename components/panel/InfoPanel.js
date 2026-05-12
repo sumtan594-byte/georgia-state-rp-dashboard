@@ -7,11 +7,11 @@ export default function InfoPanel({ vehicles = [], staff = {}, emergencyCalls = 
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-shrink-0 px-3 py-2.5 border-b border-gsrp-dark-border/50">
+      <div className="flex-shrink-0 px-3 py-2 border-b border-gsrp-dark-border/50">
         <h3 className="text-[10px] font-bold uppercase tracking-wider text-white/40">Server Info</h3>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
+      <div className="flex-1 overflow-y-auto p-2 space-y-3">
         {emergencyCalls.length > 0 && (
           <Section icon={PhoneCall} label="Active Calls" count={emergencyCalls.length} color="text-gsrp-orange">
             {emergencyCalls.map((c, i) => (
