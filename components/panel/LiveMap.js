@@ -82,7 +82,6 @@ export default function LiveMap({ players = [], emergencyCalls = [], selectedPla
         s.currentX = s.startX + (s.targetX - s.startX) * eased;
         s.currentY = s.startY + (s.targetY - s.startY) * eased;
         mkr.setLatLng([s.currentY, s.currentX]);
-        if (raw >= 1) delete anim.current[id];
       }
       raf.current = requestAnimationFrame(tick);
     }
