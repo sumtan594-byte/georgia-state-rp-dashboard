@@ -14,69 +14,82 @@ function studToPixel(studX, studZ) {
   return { x: px, y: py };
 }
 
-const TEAM_COLORS = {
-  Police: '#60A5FA',
-  Fire: '#F87171',
-  EMS: '#34D399',
-  DOT: '#FB923C',
-  Civilian: '#9CA3AF',
+const TEAM_BORDER = {
+  Police: '#60A5FA', Fire: '#F87171', EMS: '#34D399',
+  DOT: '#FB923C', Civilian: '#9CA3AF',
 };
 
 function parsePlayerName(raw) {
   if (!raw) return { name: 'Unknown', id: '' };
-  const colonIdx = raw.lastIndexOf(':');
-  if (colonIdx === -1) return { name: raw, id: raw };
-  return { name: raw.slice(0, colonIdx), id: raw.slice(colonIdx + 1) };
+  const ci = raw.lastIndexOf(':');
+  if (ci === -1) return { name: raw, id: raw };
+  return { name: raw.slice(0, ci), id: raw.slice(ci + 1) };
+}
+
+/* ── Avatar divIcon factory ─────────────────────────────────────────────── */
+function avatarIcon(rbxId, team, selected) {
+  const border = TEAM_BORDER[team] || TEAM_BORDER.Civilian;
+  const size = selected ? 48 : 40;
+  return L.divIcon({
+    html: `<img src="/api/panel/avatar?id=${rbxId}"
+      style="width:${size}px;height:${size}px;border-radius:50%;border:3px solid ${border};
+      box-shadow:${selected ? `0 0 14px ${border}` : '0 2px 8px rgba(0,0,0,0.6)'};
+      object-fit:cover;transition:width .2s,height .2s,box-shadow .2s;"
+      alt="" loading="lazy" crossorigin="anonymous" />`,
+    className: '',
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+  });
 }
 
 export default function LiveMap({ players = [], emergencyCalls = [], selectedPlayer, onSelectPlayer, isNkz, onTeleport }) {
-  const containerRef = useRef(null);
+  const container = useRef(null);
   const mapRef = useRef(null);
-  const markersRef = useRef({});
-  const animRef = useRef({});
-  const rafRef = useRef(null);
-  const callMarkersRef = useRef([]);
+  const markers = useRef({});
+  const anim = useRef({});
+  const raf = useRef(null);
+  const calls = useRef([]);
+  const drag = useRef({});
   const [ready, setReady] = useState(false);
 
+  /* ── Init map ──────────────────────────────────────────────────────────── */
   useEffect(() => {
-    if (mapRef.current || !containerRef.current) return;
-    const map = L.map(containerRef.current, {
-      crs: L.CRS.Simple,
-      minZoom: -2,
-      maxZoom: 3,
-      zoomControl: true,
-      attributionControl: false,
+    if (mapRef.current || !container.current) return;
+    const map = L.map(container.current, {
+      crs: L.CRS.Simple, minZoom: -2, maxZoom: 3,
+      zoomControl: true, attributionControl: false,
     });
-    const bounds = [[0, 0], [MAP_PX, MAP_PX]];
-    L.imageOverlay('/api/panel/map', bounds).addTo(map);
-    map.fitBounds(bounds);
+    L.imageOverlay('/api/panel/map', [[0, 0], [MAP_PX, MAP_PX]]).addTo(map);
+    map.fitBounds([[0, 0], [MAP_PX, MAP_PX]]);
     mapRef.current = map;
     setReady(true);
     return () => { map.remove(); mapRef.current = null; };
   }, []);
 
+  /* ── RAF animation loop ────────────────────────────────────────────────── */
   useEffect(() => {
     if (!ready) return;
     function ease(t) { return t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t; }
     function lerp(a, b, t) { return a + (b - a) * t; }
-    function frame() {
+    function tick() {
       const now = performance.now();
-      for (const [id, a] of Object.entries(animRef.current)) {
+      for (const [id, a] of Object.entries(anim.current)) {
         const raw = Math.min(1, (now - a.startedAt) / a.duration);
         const e = ease(raw);
         a.cx = lerp(a.sx, a.tx, e);
         a.cy = lerp(a.sy, a.ty, e);
-        markersRef.current[id]?.setLatLng([a.cy, a.cx]);
-        if (raw >= 1) delete animRef.current[id];
+        markers.current[id]?.setLatLng([a.cy, a.cx]);
+        if (raw >= 1) delete anim.current[id];
       }
-      rafRef.current = requestAnimationFrame(frame);
+      raf.current = requestAnimationFrame(tick);
     }
-    rafRef.current = requestAnimationFrame(frame);
-    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+    raf.current = requestAnimationFrame(tick);
+    return () => { if (raf.current) cancelAnimationFrame(raf.current); };
   }, [ready]);
 
+  /* ── Update markers + drag logic ───────────────────────────────────────── */
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || !mapRef.current) return;
     const map = mapRef.current;
     const now = performance.now();
     const seen = new Set();
@@ -86,115 +99,178 @@ export default function LiveMap({ players = [], emergencyCalls = [], selectedPla
       seen.add(id);
       if (!p.Location) continue;
       const pix = studToPixel(p.Location.LocationX || 0, p.Location.LocationZ || 0);
+      const sel = selectedPlayer?.Player === p.Player;
 
-      if (!markersRef.current[id]) {
-        const color = TEAM_COLORS[p.Team] || TEAM_COLORS.Civilian;
-        const m = L.circleMarker([pix.y, pix.x], {
-          radius: 6, color, fillColor: color, fillOpacity: 0.8, weight: 2, opacity: 1,
-        }).addTo(map);
-        m.bindTooltip(name, { direction: 'top', offset: [0, -8], className: '!bg-gsrp-dark-card !border !border-gsrp-dark-border/50 !text-white !text-[11px] !font-nunito !px-2 !py-1 !rounded-lg' });
-        m.on('click', () => onSelectPlayer(p));
-        markersRef.current[id] = m;
-        animRef.current[id] = { sx: pix.x, sy: pix.y, tx: pix.x, ty: pix.y, cx: pix.x, cy: pix.y, startedAt: now, duration: 900 };
+      const m = markers.current[id];
+      if (!m) {
+        /* ── new marker ── */
+        const icon = avatarIcon(id, p.Team, sel);
+        const marker = L.marker([pix.y, pix.x], { icon }).addTo(map);
+        marker.bindTooltip(name, {
+          direction: 'top', offset: [0, -26],
+          className: '!bg-gsrp-dark-card !border !border-gsrp-dark-border/50 !text-white !text-[11px] !px-2 !py-1 !rounded-lg',
+        });
+        if (isNkz) {
+          marker.on('mousedown', (e) => startDrag(e, id));
+        } else {
+          marker.on('click', () => onSelectPlayer(p));
+        }
+        markers.current[id] = marker;
+        anim.current[id] = {
+          sx: pix.x, sy: pix.y, tx: pix.x, ty: pix.y,
+          cx: pix.x, cy: pix.y, startedAt: now, duration: 900,
+        };
       } else {
-        const a = animRef.current[id];
-        if (a && (Math.abs(a.tx - pix.x) > 0.5 || Math.abs(a.ty - pix.y) > 0.5)) {
-          animRef.current[id] = { sx: a.cx, sy: a.cy, tx: pix.x, ty: pix.y, cx: a.cx, cy: a.cy, startedAt: now, duration: 900 };
+        /* ── existing marker ── */
+        const a = anim.current[id];
+        if (a && (Math.abs(a.tx - pix.x) > 0.1 || Math.abs(a.ty - pix.y) > 0.1)) {
+          anim.current[id] = {
+            sx: a.cx, sy: a.cy, tx: pix.x, ty: pix.y,
+            cx: a.cx, cy: a.cy, startedAt: now, duration: 900,
+          };
         } else if (!a) {
-          markersRef.current[id].setLatLng([pix.y, pix.x]);
+          m.setLatLng([pix.y, pix.x]);
         }
-        const color = TEAM_COLORS[p.Team] || TEAM_COLORS.Civilian;
-        markersRef.current[id].setStyle({ color, fillColor: color });
-        markersRef.current[id].setTooltipContent(name);
+        m.setIcon(avatarIcon(id, p.Team, sel));
+        m.setTooltipContent(name);
+        /* rebind click + drag on every pass (handlers close over latest props) */
+        m.off('click');
+        m.off('mousedown');
+        if (isNkz) {
+          m.on('mousedown', (e) => startDrag(e, id));
+        } else {
+          m.on('click', () => onSelectPlayer(p));
+        }
       }
     }
 
-    for (const id of Object.keys(markersRef.current)) {
+    /* remove stale */
+    for (const id of Object.keys(markers.current)) {
       if (!seen.has(id)) {
-        map.removeLayer(markersRef.current[id]);
-        delete markersRef.current[id];
-        delete animRef.current[id];
+        map.removeLayer(markers.current[id]);
+        delete markers.current[id];
+        delete anim.current[id];
       }
     }
 
-    for (const id of Object.keys(markersRef.current)) {
-      const p = players.find(pp => parsePlayerName(pp.Player).id === id);
-      const sel = selectedPlayer && parsePlayerName(selectedPlayer.Player).id === id;
-      markersRef.current[id].setStyle({ radius: sel ? 9 : 6, weight: sel ? 3 : 2, opacity: sel ? 1 : 0.7 });
-      if (sel && p?.Location) {
-        const pix = studToPixel(p.Location.LocationX, p.Location.LocationZ);
-        map.panTo([pix.y, pix.x], { animate: true, duration: 0.5 });
-      }
+    /* pan to selected */
+    if (selectedPlayer?.Location) {
+      const c = studToPixel(selectedPlayer.Location.LocationX, selectedPlayer.Location.LocationZ);
+      map.panTo([c.y, c.x], { animate: true, duration: 0.5 });
     }
 
-    callMarkersRef.current.forEach(m => map.removeLayer(m));
-    callMarkersRef.current = [];
-    for (const call of emergencyCalls) {
-      if (call.Position?.length >= 2) {
-        const pix = studToPixel(call.Position[0], call.Position[1]);
-        const m = L.circleMarker([pix.y, pix.x], {
-          radius: 10, color: '#F97316', fillColor: '#F97316', fillOpacity: 0.2, weight: 2, dashArray: '4,4',
+    /* emergency call rings */
+    calls.current.forEach(m => map.removeLayer(m));
+    calls.current = [];
+    for (const c of emergencyCalls) {
+      if (c.Position?.length >= 2) {
+        const pix = studToPixel(c.Position[0], c.Position[1]);
+        const r = L.circleMarker([pix.y, pix.x], {
+          radius: 10, color: '#F97316', fillColor: '#F97316',
+          fillOpacity: 0.15, weight: 2, dashArray: '4,4',
         }).addTo(map);
-        m.bindTooltip(`#${call.CallNumber} ${call.Team}: ${call.Description || ''}`, { className: '!bg-gsrp-dark-card !border !border-gsrp-orange/30 !text-white !text-[11px]' });
-        callMarkersRef.current.push(m);
+        r.bindTooltip(`#${c.CallNumber} ${c.Team}: ${c.Description || ''}`, {
+          className: '!bg-gsrp-dark-card !border !border-gsrp-orange/30 !text-white !text-[11px]',
+        });
+        calls.current.push(r);
       }
     }
-  }, [players, emergencyCalls, selectedPlayer, ready, onSelectPlayer]);
 
-  // Drag teleport (NKZ only)
-  useEffect(() => {
-    if (!ready || !isNkz) return;
-    const map = mapRef.current;
-    let source = null, ghost = null, line = null, target = null, hl = null;
+    /* ── drag helpers ───────────────────────────────────────────────────── */
+    function startDrag(e, playerId) {
+      const d = drag.current;
+      d.source = playerId;
+      d.startLatLng = e.latlng ? e.latlng.clone() : null;
+      d.moved = false;
+      d.ghost = null;
+      d.line = null;
+      d.target = null;
+      d.hl = null;
+      document.addEventListener('mousemove', onDocMove);
+      document.addEventListener('mouseup', onDocUp);
+    }
 
-    function mousedown(e) {
-      for (const [id, marker] of Object.entries(markersRef.current)) {
-        if (e.latlng.distanceTo(marker.getLatLng()) < 15) {
-          source = id; map.dragging.disable();
-          const ll = marker.getLatLng();
-          ghost = L.circleMarker([ll.lat, ll.lng], { radius: 8, color: '#F97316', fillColor: '#F97316', fillOpacity: 0.5, weight: 3 }).addTo(map);
-          line = L.polyline([[ll.lat, ll.lng], [ll.lat, ll.lng]], { color: '#F97316', weight: 2, dashArray: '5,5', opacity: 0.6 }).addTo(map);
-          map.on('mousemove', mousemove); map.on('mouseup', mouseup);
-          break;
+    function onDocMove(domE) {
+      const d = drag.current;
+      if (!d.source) return;
+      const ll = map.mouseEventToLatLng(domE);
+
+      if (!d.moved && d.startLatLng) {
+        const dist = ll.distanceTo(d.startLatLng);
+        if (dist < 8) return;
+        d.moved = true;
+        map.dragging.disable();
+        d.ghost = L.circleMarker([ll.lat, ll.lng], {
+          radius: 24, color: '#F97316', fillColor: '#F97316',
+          fillOpacity: 0.2, weight: 3,
+        }).addTo(map);
+        d.line = L.polyline([[d.startLatLng.lat, d.startLatLng.lng], [ll.lat, ll.lng]], {
+          color: '#F97316', weight: 2, dashArray: '6,6', opacity: 0.5,
+        }).addTo(map);
+        return;
+      }
+
+      if (d.ghost) d.ghost.setLatLng(ll);
+      if (d.line) {
+        const latlngs = d.line.getLatLngs();
+        latlngs[1] = ll;
+        d.line.setLatLngs(latlngs);
+      }
+
+      /* nearest player */
+      d.target = null;
+      let min = 50;
+      for (const [pid, mkr] of Object.entries(markers.current)) {
+        if (pid === d.source) continue;
+        const dist = ll.distanceTo(mkr.getLatLng());
+        if (dist < min) { min = dist; d.target = pid; }
+      }
+      if (d.hl) map.removeLayer(d.hl);
+      d.hl = null;
+      if (d.target && markers.current[d.target]) {
+        const p = markers.current[d.target].getLatLng();
+        d.hl = L.circleMarker(p, {
+          radius: 28, color: '#F97316', fillColor: '#F97316',
+          fillOpacity: 0.12, weight: 3,
+        }).addTo(map);
+      }
+    }
+
+    function onDocUp() {
+      document.removeEventListener('mousemove', onDocMove);
+      document.removeEventListener('mouseup', onDocUp);
+      const d = drag.current;
+
+      if (!d.moved && d.source) {
+        /* was a click — select the player */
+        map.dragging.enable();
+        const pp = players.find(p2 => parsePlayerName(p2.Player).id === d.source);
+        if (pp) onSelectPlayer(pp);
+        d.source = null;
+        return;
+      }
+
+      map.dragging.enable();
+      if (d.ghost) { map.removeLayer(d.ghost); d.ghost = null; }
+      if (d.line) { map.removeLayer(d.line); d.line = null; }
+      if (d.hl) { map.removeLayer(d.hl); d.hl = null; }
+
+      if (d.source && d.target) {
+        const sp = players.find(p2 => parsePlayerName(p2.Player).id === d.source);
+        const tp = players.find(p2 => parsePlayerName(p2.Player).id === d.target);
+        if (sp && tp) {
+          onTeleport(parsePlayerName(sp.Player).name, parsePlayerName(tp.Player).name);
         }
       }
+      d.source = null;
+      d.target = null;
     }
-    function mousemove(e) {
-      if (!ghost || !line) return;
-      ghost.setLatLng(e.latlng);
-      const ll = line.getLatLngs(); ll[1] = e.latlng; line.setLatLngs(ll);
-      target = null; let min = Infinity;
-      for (const [id, m] of Object.entries(markersRef.current)) {
-        if (id === source) continue;
-        const d = e.latlng.distanceTo(m.getLatLng());
-        if (d < 30 && d < min) { min = d; target = id; }
-      }
-      if (hl) map.removeLayer(hl); hl = null;
-      if (target && markersRef.current[target]) {
-        const p = markersRef.current[target].getLatLng();
-        hl = L.circleMarker(p, { radius: 14, color: '#F97316', fillColor: '#F97316', fillOpacity: 0.2, weight: 3 }).addTo(map);
-      }
-    }
-    function mouseup() {
-      map.dragging.enable(); map.off('mousemove', mousemove); map.off('mouseup', mouseup);
-      if (ghost) { map.removeLayer(ghost); ghost = null; }
-      if (line) { map.removeLayer(line); line = null; }
-      if (hl) { map.removeLayer(hl); hl = null; }
-      if (target && source) {
-        const sp = players.find(p => parsePlayerName(p.Player).id === source);
-        const tp = players.find(p => parsePlayerName(p.Player).id === target);
-        if (sp && tp) onTeleport(parsePlayerName(sp.Player).name, parsePlayerName(tp.Player).name);
-      }
-      source = null; target = null;
-    }
-    map.on('mousedown', mousedown);
-    return () => { map.off('mousedown', mousedown); map.off('mousemove', mousemove); map.off('mouseup', mouseup); map.dragging.enable(); };
-  }, [ready, isNkz, players, onTeleport]);
+  }, [players, emergencyCalls, selectedPlayer, ready, onSelectPlayer, onTeleport, isNkz]);
 
   return (
-    <div ref={containerRef} className="w-full h-full" style={{ background: '#0A0E1A' }}>
+    <div ref={container} className="w-full h-full relative" style={{ background: '#0A0E1A' }}>
       {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center">
+        <div className="absolute inset-0 flex items-center justify-center z-10 bg-gsrp-dark/80">
           <Loader2 className="w-6 h-6 text-gsrp-orange animate-spin" />
         </div>
       )}
