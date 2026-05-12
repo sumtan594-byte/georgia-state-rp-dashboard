@@ -2,6 +2,12 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from "../../../lib/auth-options";
 import { ROLES, hasRole, isAdmin } from '../../../lib/auth';
 
+export const config = {
+  api: {
+    responseLimit: false,
+  },
+};
+
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Not logged in' });
