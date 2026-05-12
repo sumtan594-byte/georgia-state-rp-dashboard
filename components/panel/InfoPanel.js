@@ -1,16 +1,8 @@
-import { Car, Shield, PhoneCall, Activity } from 'lucide-react';
+import { Car, PhoneCall, Activity } from 'lucide-react';
 
-export default function InfoPanel({ vehicles = [], staff = {}, emergencyCalls = [] }) {
-  const staffCount = (staff.Admins ? Object.keys(staff.Admins).length : 0)
-    + (staff.Mods ? Object.keys(staff.Mods).length : 0)
-    + (staff.Helpers ? Object.keys(staff.Helpers).length : 0);
-
+export default function InfoPanel({ vehicles = [], emergencyCalls = [] }) {
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-shrink-0 px-3 py-2 border-b border-gsrp-dark-border/50">
-        <h3 className="text-[10px] font-bold uppercase tracking-wider text-white/40">Server Info</h3>
-      </div>
-
       <div className="flex-1 overflow-y-auto p-2 space-y-3">
         {emergencyCalls.length > 0 && (
           <Section icon={PhoneCall} label="Active Calls" count={emergencyCalls.length} color="text-gsrp-orange">
@@ -44,36 +36,7 @@ export default function InfoPanel({ vehicles = [], staff = {}, emergencyCalls = 
           </Section>
         )}
 
-        {staffCount > 0 && (
-          <Section icon={Shield} label="Staff Online" count={staffCount} color="text-gsrp-gold">
-            {staff.Admins && Object.keys(staff.Admins).length > 0 && (
-              <div className="mb-2">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-gsrp-sunset/60 mb-1 px-1">Admins</p>
-                {Object.entries(staff.Admins).map(([id, name]) => (
-                  <div key={id} className="px-2.5 py-1.5 text-xs text-white/70 rounded-lg mb-0.5 bg-gsrp-sunset/5 border border-gsrp-sunset/10">{name}</div>
-                ))}
-              </div>
-            )}
-            {staff.Mods && Object.keys(staff.Mods).length > 0 && (
-              <div className="mb-2">
-                <p className="text-[9px] font-bold uppercase tracking-wider text-gsrp-orange/60 mb-1 px-1">Mods</p>
-                {Object.entries(staff.Mods).map(([id, name]) => (
-                  <div key={id} className="px-2.5 py-1.5 text-xs text-white/70 rounded-lg mb-0.5 bg-gsrp-orange/5 border border-gsrp-orange/10">{name}</div>
-                ))}
-              </div>
-            )}
-            {staff.Helpers && Object.keys(staff.Helpers).length > 0 && (
-              <div>
-                <p className="text-[9px] font-bold uppercase tracking-wider text-white/40 mb-1 px-1">Helpers</p>
-                {Object.entries(staff.Helpers).map(([id, name]) => (
-                  <div key={id} className="px-2.5 py-1.5 text-xs text-white/70 rounded-lg mb-0.5 bg-white/5 border border-white/10">{name}</div>
-                ))}
-              </div>
-            )}
-          </Section>
-        )}
-
-        {emergencyCalls.length === 0 && vehicles.length === 0 && staffCount === 0 && (
+        {emergencyCalls.length === 0 && vehicles.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-white/20">
             <Activity size={24} className="mb-2 opacity-50" />
             <p className="text-xs">No server data available</p>
