@@ -60,7 +60,7 @@ export default function LiveMap({ players = [], emergencyCalls = [], selectedPla
     const map = L.map(container.current, {
       crs: L.CRS.Simple, minZoom: -2, maxZoom: 3,
       zoomControl: true, attributionControl: false,
-      zoomSnap: 0, zoomDelta: 0.5, wheelPxPerZoomLevel: 120,
+      zoomSnap: 0, zoomDelta: 1,
     });
     L.imageOverlay('/api/panel/map', [[0, 0], [MAP_PX, MAP_PX]]).addTo(map);
     map.fitBounds([[0, 0], [MAP_PX, MAP_PX]]);
