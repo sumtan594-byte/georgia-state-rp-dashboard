@@ -1,63 +1,120 @@
-import { Car, PhoneCall, Activity } from 'lucide-react';
+import { useState } from 'react';
+import { LogIn, Swords, Terminal, MessageSquare } from 'lucide-react';
 
-export default function InfoPanel({ vehicles = [], emergencyCalls = [] }) {
+const TABS = [
+  { key: 'joinleave', icon: LogIn, label: 'Join' },
+  { key: 'kills', icon: Swords, label: 'Kills' },
+  { key: 'commands', icon: Terminal, label: 'Cmds' },
+  { key: 'modcalls', icon: MessageSquare, label: 'Calls' },
+];
+
+function parseName(raw) {
+  if (!raw) return { name: 'Unknown', id: '' };
+  const ci = raw.lastIndexOf(':');
+  if (ci === -1) return { name: raw, id: raw };
+  return { name: raw.slice(0, ci), id: raw.slice(ci + 1) };
+}
+
+function fmt(ts) {
+  return new Date(ts * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = [], modCalls = [] }) {
+  const [tab, setTab] = useState('joinleave');
+
+  const logs = { joinleave: joinLogs, kills: killLogs, commands: commandLogs, modcalls: modCalls };
+
   return (
     <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto p-2 space-y-3">
-        {emergencyCalls.length > 0 && (
-          <Section icon={PhoneCall} label="Active Calls" count={emergencyCalls.length} color="text-gsrp-orange">
-            {emergencyCalls.map((c, i) => (
-              <div key={i} className="px-2.5 py-2 rounded-lg bg-white/[0.03] border border-gsrp-dark-border/40">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-bold text-gsrp-orange">#{c.CallNumber}</span>
-                  <span className="text-xs font-semibold text-white/80">{c.Team}</span>
-                </div>
-                {c.Description && <p className="text-[10px] text-white/50 mt-0.5 line-clamp-1">{c.Description}</p>}
-                {c.PositionDescriptor && <p className="text-[9px] text-white/25">{c.PositionDescriptor}</p>}
-              </div>
-            ))}
-          </Section>
-        )}
+      <div className="flex-shrink-0 flex border-b border-gsrp-dark-border/50 overflow-x-auto">
+        {TABS.map(t => {
+          const count = logs[t.key].length;
+          return (
+            <button
+              key={t.key}
+              onClick={() => setTab(t.key)}
+              className={`flex items-center gap-1 px-2.5 py-1.5 text-[10px] font-semibold tracking-wider transition-all flex-shrink-0 cursor-pointer ${
+                tab === t.key
+                  ? 'text-gsrp-orange border-b-2 border-gsrp-orange'
+                  : 'text-white/30 hover:text-white/60'
+              }`}
+            >
+              <t.icon size={11} />
+              {t.label}
+              {count > 0 && <span className="text-[9px] text-white/20">({count})</span>}
+            </button>
+          );
+        })}
+      </div>
 
-        {vehicles.length > 0 && (
-          <Section icon={Car} label="Vehicles" count={vehicles.length} color="text-gsrp-teal-light">
-            {vehicles.slice(0, 15).map((v, i) => (
-              <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg hover:bg-white/[0.03] transition-colors">
-                <div className="w-2 h-2 rounded-full flex-shrink-0 ring-1 ring-white/20" style={{ backgroundColor: v.ColorHex || '#555' }} />
-                <div className="flex-1 min-w-0">
-                  <p className="text-xs text-white/70 truncate font-medium">{v.Name}</p>
-                  <p className="text-[10px] text-white/30 truncate">{v.Owner} · {v.Plate}</p>
-                </div>
-              </div>
-            ))}
-            {vehicles.length > 15 && (
-              <p className="text-[10px] text-white/25 text-center py-1">+{vehicles.length - 15} more</p>
-            )}
-          </Section>
-        )}
+      <div className="flex-1 overflow-y-auto">
+        {tab === 'joinleave' && (joinLogs.length === 0 ? <EmptyState /> : joinLogs.slice(-100).reverse().map((log, i) => {
+          const { name } = parseName(log.Player);
+          return (
+            <div key={i} className="flex items-center gap-2 px-2.5 py-1 text-[11px] hover:bg-white/[0.03] transition-colors">
+              {log.Join
+                ? <LogIn size={10} className="text-green-400/60 flex-shrink-0" />
+                : <LogOutIcon size={10} className="text-red-400/60 flex-shrink-0" />}
+              <span className="text-white/70 flex-1 truncate font-medium">{name}</span>
+              <span className="text-white/20 flex-shrink-0 text-[9px]">{fmt(log.Timestamp)}</span>
+            </div>
+          );
+        }))}
 
-        {emergencyCalls.length === 0 && vehicles.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-white/20">
-            <Activity size={24} className="mb-2 opacity-50" />
-            <p className="text-xs">No server data available</p>
-          </div>
-        )}
+        {tab === 'kills' && (killLogs.length === 0 ? <EmptyState /> : killLogs.slice(-100).reverse().map((log, i) => {
+          const { name: k } = parseName(log.Killer);
+          const { name: d } = parseName(log.Killed);
+          return (
+            <div key={i} className="flex items-center gap-2 px-2.5 py-1 text-[11px] hover:bg-white/[0.03] transition-colors">
+              <Swords size={10} className="text-gsrp-sunset/60 flex-shrink-0" />
+              <span className="text-white/70 truncate font-medium max-w-[80px] truncate">{k}</span>
+              <span className="text-white/20 text-[9px]">→</span>
+              <span className="text-white/50 truncate flex-1">{d}</span>
+              <span className="text-white/20 flex-shrink-0 text-[9px]">{fmt(log.Timestamp)}</span>
+            </div>
+          );
+        }))}
+
+        {tab === 'commands' && (commandLogs.length === 0 ? <EmptyState /> : commandLogs.slice(-100).reverse().map((log, i) => {
+          const { name } = parseName(log.Player);
+          return (
+            <div key={i} className="flex items-center gap-2 px-2.5 py-1 text-[11px] hover:bg-white/[0.03] transition-colors">
+              <Terminal size={10} className="text-cyan-400/50 flex-shrink-0" />
+              <span className="text-white/60 font-mono text-[10px] truncate flex-1">{log.Command}</span>
+              <span className="text-white/20 flex-shrink-0 text-[9px]">{fmt(log.Timestamp)}</span>
+            </div>
+          );
+        }))}
+
+        {tab === 'modcalls' && (modCalls.length === 0 ? <EmptyState /> : modCalls.slice(-100).reverse().map((log, i) => {
+          const { name: c } = parseName(log.Caller);
+          const { name: m } = parseName(log.Moderator);
+          return (
+            <div key={i} className="flex items-center gap-2 px-2.5 py-1 text-[11px] hover:bg-white/[0.03] transition-colors">
+              <MessageSquare size={10} className="text-gsrp-orange/60 flex-shrink-0" />
+              <span className="text-white/70 truncate font-medium">{c}</span>
+              {m && <span className="text-white/30 text-[9px]">→ {m}</span>}
+              <span className="text-white/20 flex-shrink-0 text-[9px] ml-auto">{fmt(log.Timestamp)}</span>
+            </div>
+          );
+        }))}
       </div>
     </div>
   );
 }
 
-function Section({ icon: Icon, label, count, color, children }) {
+function EmptyState() {
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-2">
-        <Icon size={12} className={color} />
-        <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">{label}</span>
-        <span className="text-[9px] text-white/30 ml-auto">{count}</span>
-      </div>
-      <div className="space-y-1">
-        {children}
-      </div>
-    </div>
+    <div className="flex items-center justify-center h-16 text-white/15 text-[11px]">No entries</div>
+  );
+}
+
+function LogOutIcon({ size, className }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
+    </svg>
   );
 }

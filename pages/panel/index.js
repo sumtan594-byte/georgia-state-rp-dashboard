@@ -10,7 +10,6 @@ import LoginScreen from '../../components/auth/LoginScreen';
 import PanelLayout from '../../components/panel/PanelLayout';
 import PlayerList from '../../components/panel/PlayerList';
 import InfoPanel from '../../components/panel/InfoPanel';
-import LogPanel from '../../components/panel/LogPanel';
 import CommandBar from '../../components/panel/CommandBar';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 
@@ -217,19 +216,13 @@ export default function PanelPage() {
           }
           infoPanel={
             <InfoPanel
-              vehicles={data.Vehicles || []}
-              staff={data.Staff || {}}
-              emergencyCalls={data.EmergencyCalls || []}
-            />
-          }
-          logPanel={
-            <LogPanel
               joinLogs={data.JoinLogs || []}
               killLogs={data.KillLogs || []}
               commandLogs={data.CommandLogs || []}
               modCalls={data.ModCalls || []}
             />
           }
+          logPanel={null}
           commandBar={isNkz ? <CommandBar onSendCommand={handleSendCommand} recentCommands={recentCommands} /> : null}
         />
       )}

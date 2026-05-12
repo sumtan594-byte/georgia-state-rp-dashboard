@@ -1,16 +1,15 @@
-import { Map, Users2, Info, ScrollText } from 'lucide-react';
+import { Map, Users2, Info } from 'lucide-react';
 
 const TABS = [
   { key: 'map', icon: Map, label: 'Map' },
   { key: 'players', icon: Users2, label: 'Players' },
   { key: 'info', icon: Info, label: 'Details' },
-  { key: 'logs', icon: ScrollText, label: 'Logs' },
 ];
 
-export default function PanelLayout({ playerList, liveMap, infoPanel, logPanel, commandBar, mobileView, setMobileView }) {
+export default function PanelLayout({ playerList, liveMap, infoPanel, commandBar, mobileView, setMobileView }) {
   return (
     <>
-      <div className="hidden md:grid md:grid-cols-[280px_1fr_300px] md:grid-rows-[1fr_auto] gap-2 flex-1 p-2 min-h-0">
+      <div className="hidden md:grid md:grid-cols-[280px_1fr_300px] gap-2 flex-1 p-2 min-h-0">
         <div className="overflow-hidden rounded-lg card-glass flex flex-col min-h-0">
           {playerList}
         </div>
@@ -27,9 +26,6 @@ export default function PanelLayout({ playerList, liveMap, infoPanel, logPanel, 
             </div>
           )}
         </div>
-        <div className="col-span-3 overflow-hidden rounded-lg card-glass flex flex-col max-h-[130px] min-h-[80px]">
-          {logPanel}
-        </div>
       </div>
 
       <div className="md:hidden flex flex-col h-full">
@@ -39,9 +35,6 @@ export default function PanelLayout({ playerList, liveMap, infoPanel, logPanel, 
           <div className={`absolute inset-0 overflow-y-auto ${mobileView === 'info' ? 'z-10' : 'z-0 pointer-events-none opacity-0'}`}>
             <div className="p-3 h-full">{infoPanel}</div>
             {commandBar && <div className="p-3 pt-0">{commandBar}</div>}
-          </div>
-          <div className={`absolute inset-0 overflow-y-auto ${mobileView === 'logs' ? 'z-10' : 'z-0 pointer-events-none opacity-0'}`}>
-            <div className="p-3 h-full">{logPanel}</div>
           </div>
         </div>
 
