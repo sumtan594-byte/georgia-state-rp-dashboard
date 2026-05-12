@@ -33,10 +33,10 @@ export default function StaffHandbookPage() {
   useEffect(() => {
     if (sessionStatus === 'unauthenticated') {
       router.push('/login');
-    } else if (sessionStatus === 'authenticated' && !canAccessHandbook(effectiveSession)) {
+    } else if (sessionStatus === 'authenticated' && session && !canAccessHandbook(effectiveSession)) {
       router.push('/');
     }
-  }, [session, sessionStatus, effectiveSession, router]);
+  }, [sessionStatus]);
 
   // Search logic
   const filteredContent = useMemo(() => {

@@ -42,14 +42,13 @@ export default function AdminsPage() {
   };
 
   useEffect(() => {
-    if (status === 'authenticated' && effectiveSession) {
-      if (!canManageAdmins(effectiveSession)) {
-        router.push('/');
-        return;
-      }
-      fetchAdmins();
+    if (status !== 'authenticated') return;
+    if (!canManageAdmins(effectiveSession)) {
+      router.push('/');
+      return;
     }
-  }, [status, effectiveSession]);
+    fetchAdmins();
+  }, [status]);
 
   const handleAdd = async () => {
     if (!newUserId.trim()) return;
