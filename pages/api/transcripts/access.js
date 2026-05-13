@@ -159,8 +159,8 @@ export default async function handler(req, res) {
       }
       try {
         await pool.query(
-          'INSERT IGNORE INTO transcript_deny (transcript_id, user_id) VALUES (?, ?)',
-          [transcriptId, granteeId]
+          'INSERT IGNORE INTO transcript_deny (transcript_id, user_id, denied_by) VALUES (?, ?, ?)',
+          [transcriptId, granteeId, currentUserId]
         );
       } catch (e) {
         if (e.code !== 'ER_NO_SUCH_TABLE') {

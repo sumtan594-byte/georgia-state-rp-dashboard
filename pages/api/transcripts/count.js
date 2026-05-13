@@ -1,10 +1,11 @@
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../../lib/auth-options';
 import pool, { accessibleTranscriptsQuery } from '../../../lib/ticketdb';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { getSession } = require("next-auth/react");
-  const session = await getSession({ req });
+  const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Not authenticated' });
 
   const currentUserId = String(session.user?.id || "");

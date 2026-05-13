@@ -317,8 +317,9 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
 }
 
 export async function getServerSideProps(context) {
-  const { getSession } = require("next-auth/react");
-  const session = await getSession(context);
+  const { getServerSession } = require('next-auth');
+  const { authOptions } = require('../../lib/auth-options');
+  const session = await getServerSession(context.req, context.res, authOptions);
   const { sort = 'latest' } = context.query;
 
   if (!session) return { props: { transcripts: [], isAdmin: false, currentSort: sort } };
