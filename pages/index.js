@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2, ShoppingCart, Building2, UserPlus, Settings } from 'lucide-react';
 import Link from 'next/link';
 import FeatureCard from '../components/dashboard/FeatureCard';
+import PresenceBar from '../components/dashboard/PresenceBar';
 import LoginScreen from '../components/auth/LoginScreen';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canReviewApplications } from '../lib/auth';
 import { useRefreshedUser } from '../lib/UserRefreshContext';
@@ -57,6 +58,8 @@ export default function Dashboard() {
         </h1>
         <p className="text-gsrp-teal-light/40 text-sm">Georgia State Roleplay Dashboard</p>
       </div>
+
+      <PresenceBar page="/" />
 
       {/* Community Resources Section */}
       <div className="mb-12">
