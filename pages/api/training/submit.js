@@ -1,9 +1,9 @@
+import clientPromise from '../../../lib/mongodb';
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const GITHUB_TOKEN = process.env.GITHUB_ACCESS_TOKEN;
-  const GITHUB_REPO  = process.env.GITHUB_OWNER + '/' + process.env.GITHUB_REPO;
-  const WEBHOOK_URL  = process.env.TRAINING_WEBHOOK_URL;
+  const WEBHOOK_URL = process.env.TRAINING_WEBHOOK_URL;
   const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
   const DISCORD_GUILD_ID = process.env.ALLOWED_GUILD_ID;
   const DISCORD_ROLE_ID = process.env.DISCORD_ROLE_ID;
@@ -20,125 +20,84 @@ export default async function handler(req, res) {
 
   if (!userId || score === undefined) return res.status(400).json({ error: 'Missing fields' });
 
+  let db;
+  try {
+    const client = await clientPromise;
+    db = client.db();
+  } catch (err) {
+    console.error('[MongoDB] Connection error:', err.message);
+    return res.status(500).json({ error: 'Database connection failed' });
+  }
+
+  const attemptsCollection = db.collection('quiz_attempts');
+
   // ── Check cooldown before accepting attempt ───────────────────────────────
   try {
-    const filePath = `attempts/${userId}.json`;
-    const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`;
-    const fetchExisting = await fetch(apiUrl, {
-      headers: {
-        Authorization: `Bearer ${GITHUB_TOKEN}`,
-        Accept: 'application/vnd.github+json',
-      },
-    });
-    if (fetchExisting.ok) {
-      const existing = await fetchExisting.json();
-      try {
-        const rawData = JSON.parse(Buffer.from(existing.content, 'base64').toString('utf8'));
-        let existingData;
-        if (Array.isArray(rawData)) {
-          existingData = { attempts: rawData, cooldownUntil: null, hasPassed: false };
-        } else {
-          existingData = rawData;
-        }
-        const cooldown = existingData.cooldownUntil ? new Date(existingData.cooldownUntil) : null;
-        const now = new Date();
-        if (cooldown && cooldown > now) {
-          const remainingMs = cooldown - now;
-          const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60 * 1000));
-          return res.status(429).json({ 
-            error: 'Cooldown active', 
-            cooldownUntil: existingData.cooldownUntil,
-            retryAfter: remainingHours 
-          });
-        }
-        if (existingData.hasPassed) {
-          return res.status(400).json({ error: 'Already passed' });
-        }
-      } catch {}
+    const existingData = await attemptsCollection.findOne({ userId });
+    
+    if (existingData) {
+      const cooldown = existingData.cooldownUntil ? new Date(existingData.cooldownUntil) : null;
+      const now = new Date();
+      if (cooldown && cooldown > now) {
+        const remainingMs = cooldown - now;
+        const remainingHours = Math.ceil(remainingMs / (1000 * 60 * 60 * 1000));
+        return res.status(429).json({ 
+          error: 'Cooldown active', 
+          cooldownUntil: existingData.cooldownUntil,
+          retryAfter: remainingHours 
+        });
+      }
+      if (existingData.hasPassed) {
+        return res.status(400).json({ error: 'Already passed' });
+      }
     }
   } catch (err) {
     console.error('[Cooldown check] Error:', err.message);
   }
 
-  // ── Save to GitHub ───────────────────────────────────────────────────────
-  if (GITHUB_TOKEN && GITHUB_REPO) {
-    try {
-      const filePath = `attempts/${userId}.json`;
-      const apiUrl   = `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`;
+  // ── Save to MongoDB ───────────────────────────────────────────────────────
+  try {
+    const newAttempt = {
+      attemptId: `${userId}_${Date.now()}`,
+      userId, username, globalName, avatar,
+      score, total, pct, pass,
+      timestamp: timestamp || new Date().toISOString(),
+      answers,
+    };
 
-      let userData = { attempts: [], cooldownUntil: null, hasPassed: false, hasPassedAt: null };
-      let sha = null;
-      const fetchExisting = await fetch(apiUrl, {
-        headers: {
-          Authorization: `Bearer ${GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github+json',
-        },
-      });
-      if (fetchExisting.ok) {
-        const existing = await fetchExisting.json();
-        sha = existing.sha;
-        try {
-          const rawData = JSON.parse(Buffer.from(existing.content, 'base64').toString('utf8'));
-          // Handle both old format (direct array) and new format (object)
-          if (Array.isArray(rawData)) {
-            userData = {
-              attempts: rawData,
-              cooldownUntil: null,
-              hasPassed: rawData.some(a => a.pass === true),
-              hasPassedAt: null,
-            };
-          } else {
-            userData = rawData;
-            if (!userData.attempts) userData.attempts = [];
-            if (userData.hasPassed === undefined) userData.hasPassed = false;
-            if (!userData.cooldownUntil) userData.cooldownUntil = null;
-          }
-        } catch { userData = { attempts: [], cooldownUntil: null, hasPassed: false, hasPassedAt: null }; }
-      }
+    let cooldownUntil = null;
+    let hasPassed = false;
+    let hasPassedAt = null;
 
-      // Add new attempt
-      const newAttempt = {
-        attemptId: `${userId}_${Date.now()}`,
-        userId, username, globalName, avatar,
-        score, total, pct, pass,
-        timestamp: timestamp || new Date().toISOString(),
-        answers,
-      };
-      userData.attempts.push(newAttempt);
-
-      // Update cooldown and pass status
-      if (!pass) {
-        // Failed - set 6-hour cooldown from now
-        const cooldownMs = COOLDOWN_HOURS * 60 * 60 * 1000;
-        userData.cooldownUntil = new Date(Date.now() + cooldownMs).toISOString();
-      } else {
-        // Passed - set hasPassed, clear cooldown
-        userData.hasPassed = true;
-        userData.hasPassedAt = timestamp || new Date().toISOString();
-        userData.cooldownUntil = null;
-      }
-
-      const content = Buffer.from(JSON.stringify(userData, null, 2)).toString('base64');
-      const putBody = {
-        message: pass 
-          ? `Quiz PASSED by ${username} (${userId})`
-          : `Quiz attempt failed by ${username} (${userId})`,
-        content,
-        ...(sha ? { sha } : {}),
-      };
-
-      await fetch(apiUrl, {
-        method: 'PUT',
-        headers: {
-          Authorization: `Bearer ${GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github+json',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(putBody),
-      });
-    } catch (err) {
-      console.error('[GitHub] Failed to save attempt:', err.message);
+    if (!pass) {
+      // Failed - set 6-hour cooldown from now
+      const cooldownMs = COOLDOWN_HOURS * 60 * 60 * 1000;
+      cooldownUntil = new Date(Date.now() + cooldownMs).toISOString();
+    } else {
+      // Passed - set hasPassed, clear cooldown
+      hasPassed = true;
+      hasPassedAt = timestamp || new Date().toISOString();
     }
+
+    const updateDoc = {
+      $push: { attempts: newAttempt }
+    };
+    
+    if (pass) {
+      updateDoc.$set = { hasPassed, hasPassedAt, cooldownUntil: null };
+    } else {
+      updateDoc.$set = { cooldownUntil };
+      // Preserve existing hasPassed status if any (though checked above)
+      updateDoc.$setOnInsert = { hasPassed: false, hasPassedAt: null };
+    }
+
+    await attemptsCollection.updateOne(
+      { userId },
+      updateDoc,
+      { upsert: true }
+    );
+  } catch (err) {
+    console.error('[MongoDB] Failed to save attempt:', err.message);
   }
 
   // ── Discord Webhook ─────────────────────────────────────────────────────
@@ -166,11 +125,18 @@ export default async function handler(req, res) {
       ]
     };
 
-    await fetch(WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(webhookPayload),
-    });
+    if (WEBHOOK_URL) {
+      const webhookRes = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(webhookPayload),
+      });
+      if (!webhookRes.ok) {
+        console.error('[Webhook] Error sending:', webhookRes.status, await webhookRes.text());
+      }
+    } else {
+      console.warn('[Webhook] No TRAINING_WEBHOOK_URL configured.');
+    }
   } catch (err) {
     console.error('[Webhook] Failed:', err.message);
   }

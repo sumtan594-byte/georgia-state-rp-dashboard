@@ -1,8 +1,6 @@
-export default async function handler(req, res) {
-  const GITHUB_TOKEN = process.env.GITHUB_ACCESS_TOKEN;
-  const GITHUB_REPO  = process.env.GITHUB_OWNER + '/' + process.env.GITHUB_REPO;
+import clientPromise from '../../../lib/mongodb';
 
-  // GET - Check cooldown status for a user
+export default async function handler(req, res) {
   if (req.method === 'GET') {
     const userId = req.query.userId || req.headers['x-user-id'];
 
@@ -10,22 +8,12 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'User ID required' });
     }
 
-    if (!GITHUB_TOKEN || !GITHUB_REPO) {
-      return res.status(500).json({ error: 'GitHub not configured' });
-    }
-
     try {
-      const filePath = `attempts/${userId}.json`;
-      const apiUrl = `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`;
+      const client = await clientPromise;
+      const db = client.db();
+      const existing = await db.collection('quiz_attempts').findOne({ userId });
 
-      const fetchExisting = await fetch(apiUrl, {
-        headers: {
-          Authorization: `Bearer ${GITHUB_TOKEN}`,
-          Accept: 'application/vnd.github+json',
-        },
-      });
-
-      if (!fetchExisting.ok) {
+      if (!existing) {
         // User has no data - no cooldown, hasn't passed
         return res.status(200).json({
           userId,
@@ -37,41 +25,22 @@ export default async function handler(req, res) {
         });
       }
 
-      const existing = await fetchExisting.json();
-      let userData = { attempts: [], cooldownUntil: null, hasPassed: false, hasPassedAt: null };
-      try {
-        const rawData = JSON.parse(Buffer.from(existing.content, 'base64').toString('utf8'));
-        // Handle both old format (direct array) and new format (object)
-        if (Array.isArray(rawData)) {
-          userData = {
-            attempts: rawData,
-            cooldownUntil: null,
-            hasPassed: rawData.some(a => a.pass === true),
-            hasPassedAt: null,
-          };
-        } else {
-          userData = rawData;
-          if (!userData.attempts) userData.attempts = [];
-        }
-      } catch { userData = { attempts: [], cooldownUntil: null, hasPassed: false, hasPassedAt: null }; }
-
       const now = new Date();
-      const cooldown = userData.cooldownUntil ? new Date(userData.cooldownUntil) : null;
+      const cooldown = existing.cooldownUntil ? new Date(existing.cooldownUntil) : null;
       const isOnCooldown = cooldown && cooldown > now;
 
-      res.status(200).json({
+      return res.status(200).json({
         userId,
-        cooldownUntil: userData.cooldownUntil,
+        cooldownUntil: existing.cooldownUntil,
         isOnCooldown,
-        hasPassed: userData.hasPassed || false,
-        hasPassedAt: userData.hasPassedAt,
-        lastAttempt: userData.attempts?.[userData.attempts.length - 1] || null,
+        hasPassed: existing.hasPassed || false,
+        hasPassedAt: existing.hasPassedAt,
+        lastAttempt: existing.attempts?.[existing.attempts.length - 1] || null,
       });
     } catch (err) {
       console.error('[cooldown/get] Error:', err.message);
-      res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: err.message });
     }
-    return;
   }
 
   res.status(405).json({ error: 'Method not allowed' });
