@@ -73,6 +73,7 @@ export default async function handler(req, res) {
 }
 
 function errorPage(title, message) {
+  const isNotInServer = title === 'Not in Server';
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${title} — GSRP Quiz</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
@@ -83,8 +84,23 @@ body{background:#06101a;color:#e0eaf4;font-family:'DM Sans',sans-serif;min-heigh
 .icon{font-size:2.5rem;margin-bottom:1.5rem;color:#3b8fd4}
 h1{font-family:'Syne',sans-serif;font-size:1.7rem;font-weight:800;color:#fff;margin-bottom:1rem}
 p{color:#7a9bb5;line-height:1.7}
-a{display:inline-block;margin-top:2rem;padding:.75rem 2rem;background:#1a6aad;color:#fff;border-radius:8px;text-decoration:none;font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem}
+.actions{margin-top:2rem;display:flex;flex-direction:column;gap:1rem}
+.btn{display:inline-block;padding:.75rem 2rem;border-radius:8px;text-decoration:none;font-family:'Syne',sans-serif;font-weight:700;font-size:.9rem;transition:all 0.2s}
+.btn-primary{background:#1a6aad;color:#fff}
+.btn-primary:hover{background:#2579bd}
+.btn-secondary{background:rgba(255,255,255,0.05);color:#7a9bb5;border:1px solid rgba(255,255,255,0.1)}
+.btn-secondary:hover{background:rgba(255,255,255,0.08);color:#fff}
+.btn-invite{background:#5865F2;color:#fff}
+.btn-invite:hover{background:#4752c4}
 </style></head><body>
-<div class="card"><div class="icon">&#9888;</div><h1>${title}</h1><p>${message}</p><a href="/">&#8592; Return Home</a></div>
+<div class="card">
+  <div class="icon">&#9888;</div>
+  <h1>${title}</h1>
+  <p>${message}</p>
+  <div class="actions">
+    ${isNotInServer ? `<a href="https://discord.gg/gsrp7" class="btn btn-invite">Join Discord Server</a>` : ''}
+    <a href="/" class="btn btn-secondary">&#8592; Return Home</a>
+  </div>
+</div>
 </body></html>`;
 }
