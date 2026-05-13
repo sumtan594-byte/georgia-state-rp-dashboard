@@ -239,12 +239,16 @@ export default function AttemptsPage() {
 }
 
 export async function getServerSideProps(context) {
-  const { getSession } = require("next-auth/react");
-  const session = await getSession(context);
+  const { getServerSession } = require('next-auth');
+  const { authOptions } = require('../../lib/auth-options');
+  const session = await getServerSession(context.req, context.res, authOptions);
+
   if (!session) return { props: {} };
 
   const hasRole = session.user?.roles?.includes('1372482495035211908');
-  const isAdmin = (process.env.ADMIN_USER_IDS || '').split(',').includes(session.user?.id);
+  const { isFullAdmin } = require('../../lib/admin-helper');
+  const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || []);
+  
   if (!hasRole && !isAdmin) return { redirect: { destination: '/', permanent: false } };
 
   return { props: {} };
