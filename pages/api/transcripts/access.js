@@ -11,8 +11,9 @@ export default async function handler(req, res) {
   if (!session) return res.status(401).json({ error: 'Not logged in' });
 
   const currentUserId = String(session.user?.id || '');
-  const adminIds = (process.env.ADMIN_USER_IDS || '').split(',').map(id => String(id).trim()).filter(Boolean);
-  const isAdmin = adminIds.includes(currentUserId);
+  const { isFullAdmin, getAllAdminIds } = require('../../../lib/admin-helper');
+  const isAdmin = await isFullAdmin(currentUserId, session.user?.roles || []);
+  const adminIds = await getAllAdminIds();
   const userRoles = session.user?.roles || [];
   const canRemoveAdmins = userRoles.includes(ADMIN_REMOVER_ROLE);
 

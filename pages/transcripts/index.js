@@ -325,8 +325,8 @@ export async function getServerSideProps(context) {
   if (!session) return { props: { transcripts: [], isAdmin: false, currentSort: sort } };
 
   const currentUserId = String(session.user?.id || "");
-  const adminIds = (process.env.ADMIN_USER_IDS || "").split(',').map(id => String(id).trim()).filter(Boolean);
-  const isAdmin = adminIds.includes(currentUserId);
+  const { isFullAdmin } = require('../../lib/admin-helper');
+  const isAdmin = await isFullAdmin(currentUserId, session.user?.roles || []);
 
   const pool = (await import('../../lib/ticketdb')).default;
   const { accessibleTranscriptsQuery } = (await import('../../lib/ticketdb'));

@@ -9,8 +9,8 @@ export default async function handler(req, res) {
   if (!session) return res.status(401).json({ error: 'Not authenticated' });
 
   const currentUserId = String(session.user?.id || "");
-  const adminIds = (process.env.ADMIN_USER_IDS || "").split(',').map(id => String(id).trim()).filter(Boolean);
-  const isAdmin = adminIds.includes(currentUserId);
+  const { isFullAdmin } = require('../../../lib/admin-helper');
+  const isAdmin = await isFullAdmin(currentUserId, session.user?.roles || []);
 
   try {
     const { where, params } = await accessibleTranscriptsQuery(isAdmin, currentUserId, session.user?.roles || []);
