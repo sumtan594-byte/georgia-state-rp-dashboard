@@ -455,8 +455,9 @@ export default function Viewer({ htmlContent, id, meta: serverMeta, canManage, e
 }
 
 export async function getServerSideProps(context) {
-  const { getSession } = require("next-auth/react");
-  const session = await getSession(context);
+  const { getServerSession } = require("next-auth");
+  const { authOptions } = require("../../lib/auth-options");
+  const session = await getServerSession(context.req, context.res, authOptions);
   const { id } = context.params;
 
   if (!session) return { props: { error: true } };
