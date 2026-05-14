@@ -12,12 +12,39 @@ export default function RemindersPage() {
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
   const [newReminder, setNewReminder] = useState({ type: 'h', message: '', delayMinutes: 5 });
+  const [workerState, setWorkerState] = useState(null);
+  const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
     if (session && session.user.roles.includes(REMINDERS_ROLE_ID)) {
       fetchReminders();
+      fetchStatus();
+      const statusInterval = setInterval(fetchStatus, 5000);
+      return () => clearInterval(statusInterval);
     }
   }, [session]);
+
+  useEffect(() => {
+    if (!workerState?.nextRunAt) return;
+    const timer = setInterval(() => {
+      const diff = workerState.nextRunAt - Date.now();
+      if (diff <= 0) {
+        setTimeLeft('Processing...');
+      } else {
+        const mins = Math.floor(diff / 60000);
+        const secs = Math.floor((diff % 60000) / 1000);
+        setTimeLeft(`${mins}m ${secs}s`);
+      }
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [workerState]);
+
+  const fetchStatus = async () => {
+    try {
+      const res = await fetch('/api/panel/reminders/status');
+      if (res.ok) setWorkerState(await res.json());
+    } catch (e) {}
+  };
 
   const fetchReminders = async () => {
     try {
@@ -96,7 +123,51 @@ export default function RemindersPage() {
           <h1 className="text-white font-black text-2xl md:text-3xl">In-Game <span className="text-gsrp-orange">Reminders</span></h1>
           <p className="text-gsrp-teal-light/40 text-sm mt-1">Configure sequential automated messages for the ERLC server.</p>
         </div>
+
+        {workerState && (
+          <div className="hidden md:flex items-center gap-6 card-glass px-6 py-3 rounded-2xl border border-gsrp-orange/20 glow-orange">
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/30">Next Reminder</span>
+              <span className="text-xs font-bold text-gsrp-orange flex items-center gap-1.5">
+                <Clock size={12} /> {timeLeft}
+              </span>
+            </div>
+            <div className="w-[1px] h-8 bg-gsrp-dark-border/50" />
+            <div className="flex flex-col">
+              <span className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/30">Server Status</span>
+              <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                <Users size={12} className="text-gsrp-teal-light/40" /> {workerState.playerCount} active
+              </span>
+            </div>
+          </div>
+        )}
       </div>
+
+      {workerState && (
+        <div className="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4 animate-fade-in-up">
+           <div className="md:col-span-1 card-glass rounded-2xl p-4 border border-gsrp-dark-border/50 flex items-center gap-4">
+              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${
+                workerState.status === 'sending' ? 'bg-gsrp-orange/10 text-gsrp-orange animate-pulse' : 'bg-green-500/10 text-green-400'
+              }`}>
+                {workerState.status === 'sending' ? <Loader2 size={20} className="animate-spin" /> : <ShieldCheck size={20} />}
+              </div>
+              <div>
+                <span className="block text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/30">Worker Status</span>
+                <span className="text-sm font-bold text-white capitalize">{workerState.status}</span>
+              </div>
+           </div>
+
+           <div className="md:col-span-3 card-glass rounded-2xl p-4 border border-gsrp-dark-border/50 flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-gsrp-orange/10 flex items-center justify-center text-gsrp-orange">
+                <MessageSquare size={20} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="block text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/30">Queueing Next</span>
+                <span className="text-sm font-bold text-white truncate block">{workerState.nextReminder || 'No reminders queued'}</span>
+              </div>
+           </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Form Column */}
