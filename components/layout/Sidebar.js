@@ -12,6 +12,7 @@ import {
   Users,
   ClipboardList,
   ShoppingCart,
+  Building2,
   UserPlus,
   Settings,
   Megaphone,
