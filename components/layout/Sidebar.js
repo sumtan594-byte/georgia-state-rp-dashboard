@@ -12,9 +12,9 @@ import {
   Users,
   ClipboardList,
   ShoppingCart,
-  Building2,
   UserPlus,
   Settings,
+  Megaphone,
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications, canManageAdmins } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
