@@ -1,6 +1,6 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { Loader2, Plus, Trash2, Clock, MessageSquare, Megaphone, ArrowLeft, Save } from 'lucide-react';
+import { Loader2, Plus, Trash2, Clock, MessageSquare, Megaphone, ArrowLeft, Save, Users, ShieldCheck } from 'lucide-react';
 import Link from 'next/link';
 import LoginScreen from '../../components/auth/LoginScreen';
 
