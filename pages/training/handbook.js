@@ -162,12 +162,13 @@ Appeal Windows:
   }
 };
 
-export default function HandbookPage() {
+  export default function HandbookPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [activeSection, setActiveSection] = useState('overview');
   const [progress, setProgress] = useState({ completedSections: [], handbookCompleted: false });
   const [loadingProgress, setLoadingProgress] = useState(true);
+  const [showCompletion, setShowCompletion] = useState(false);
 
   useEffect(() => {
     async function fetchProgress() {
@@ -198,6 +199,12 @@ export default function HandbookPage() {
       console.error('Failed to update progress', e);
     }
   };
+
+  useEffect(() => {
+    if (progress.handbookCompleted && !loadingProgress) {
+      setShowCompletion(true);
+    }
+  }, [progress.handbookCompleted, loadingProgress]);
 
   useEffect(() => {
     // Handle URL hash on page load
@@ -249,6 +256,24 @@ export default function HandbookPage() {
           <p className="text-gsrp-teal-light/40 text-[10px] uppercase tracking-widest">GSRP Staff Standards & Development</p>
         </div>
       </div>
+
+      {showCompletion && (
+        <div className="mb-6 p-4 bg-gsrp-teal/10 border border-gsrp-teal/30 rounded-2xl flex items-center justify-between animate-fade-in-up">
+          <div className="flex items-center gap-3">
+            <CheckCircle2 size={20} className="text-gsrp-teal-light" />
+            <div>
+              <p className="text-white font-bold text-sm">All sections completed!</p>
+              <p className="text-gsrp-teal-light/60 text-xs">You can now do the SSD quiz</p>
+            </div>
+          </div>
+          <button
+            onClick={() => router.push('/training')}
+            className="px-5 py-2 bg-gsrp-orange text-white text-sm font-bold rounded-lg hover:bg-gsrp-orange/90 transition-all"
+          >
+            Go to Quiz →
+          </button>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
        <div className="lg:col-span-1">
