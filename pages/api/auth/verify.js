@@ -1,5 +1,5 @@
 import { getServerSession } from 'next-auth';
-import { authOptions } from './[...nextauth]';
+import { authOptions } from '../../../lib/auth-options';
 import { ROLES, hasRole, isAdmin } from '../../../lib/auth';
 
 export async function verifyPanelSession(req, res) {
