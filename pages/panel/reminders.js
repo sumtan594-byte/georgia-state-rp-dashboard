@@ -1,6 +1,6 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { Loader2, Plus, Trash2, Clock, MessageSquare, Megaphone, ArrowLeft, Save, Users, ShieldCheck, Terminal } from 'lucide-react';
+import { Loader2, Plus, Trash2, Clock, MessageSquare, Megaphone, ArrowLeft, Save, Users, ShieldCheck, Terminal, Edit2, Check, X } from 'lucide-react';
 import Link from 'next/link';
 import LoginScreen from '../../components/auth/LoginScreen';
 
@@ -16,6 +16,9 @@ export default function RemindersPage() {
   const [timeLeft, setTimeLeft] = useState('');
   const [debugLogs, setDebugLogs] = useState(null);
   const [debugging, setDebugging] = useState(false);
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({ type: '', message: '', delayMinutes: 0 });
+  const [updating, setUpdating] = useState(false);
 
   useEffect(() => {
     if (session && session.user.roles.includes(REMINDERS_ROLE_ID)) {
@@ -121,6 +124,46 @@ export default function RemindersPage() {
       }
     } catch (e) {
       alert('Error sending test command');
+    }
+  };
+
+  const startEditing = (reminder) => {
+    setEditingId(reminder._id);
+    setEditForm({
+      type: reminder.type,
+      message: reminder.message,
+      delayMinutes: reminder.delayMinutes
+    });
+  };
+
+  const cancelEditing = () => {
+    setEditingId(null);
+    setUpdating(false);
+  };
+
+  const handleUpdate = async (e) => {
+    e.preventDefault();
+    setUpdating(true);
+    try {
+      const res = await fetch('/api/panel/reminders', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: editingId,
+          ...editForm
+        }),
+      });
+      if (res.ok) {
+        setEditingId(null);
+        await fetchReminders();
+      } else {
+        const data = await res.json();
+        alert(`Failed to update: ${data.error || 'Unknown error'}`);
+      }
+    } catch (e) {
+      alert('Error updating reminder');
+    } finally {
+      setUpdating(false);
     }
   };
 
@@ -319,40 +362,136 @@ export default function RemindersPage() {
               </div>
             ) : (
               reminders.map((reminder, idx) => (
-                <div key={reminder._id} className="card-glass rounded-2xl p-5 border border-gsrp-dark-border/50 hover:border-gsrp-orange/30 transition-all group relative animate-fade-in-up" style={{ animationDelay: `${idx * 0.1}s` }}>
-                  <div className="flex items-start gap-4">
-                    <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                      reminder.type === 'h' ? 'bg-gsrp-orange/10 text-gsrp-orange' : 'bg-gsrp-teal/10 text-gsrp-teal'
-                    }`}>
-                      {reminder.type === 'h' ? <Megaphone size={18} /> : <MessageSquare size={18} />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/30">
-                          {reminder.type === 'h' ? 'Hint Command' : 'Message Command'}
-                        </span>
-                        <div className="flex items-center gap-2 text-gsrp-orange font-bold text-xs">
-                          <Clock size={12} />
-                          {reminder.delayMinutes}m delay
+                <div key={reminder._id} className={`card-glass rounded-2xl p-5 border transition-all group relative animate-fade-in-up ${
+                  editingId === reminder._id ? 'border-gsrp-orange ring-1 ring-gsrp-orange/20 shadow-lg shadow-gsrp-orange/5 bg-gsrp-orange/5' : 'border-gsrp-dark-border/50 hover:border-gsrp-orange/30'
+                }`} style={{ animationDelay: `${idx * 0.1}s` }}>
+                  
+                  {editingId === reminder._id ? (
+                    <form onSubmit={handleUpdate} className="space-y-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <span className="text-[10px] font-black uppercase tracking-widest text-gsrp-orange">Editing Reminder</span>
+                        <div className="flex items-center gap-2">
+                          <button 
+                            type="button" 
+                            onClick={cancelEditing}
+                            className="p-1.5 rounded-lg text-white/40 hover:text-white hover:bg-white/5 transition-all"
+                          >
+                            <X size={16} />
+                          </button>
                         </div>
                       </div>
-                      <p className="text-white text-sm leading-relaxed pr-8">{reminder.message}</p>
-                      <div className="mt-3 flex items-center gap-2">
-                        <button 
-                          onClick={() => handleTest(reminder._id)}
-                          className="px-3 py-1 rounded-lg bg-gsrp-orange/10 border border-gsrp-orange/20 text-[10px] font-bold text-gsrp-orange hover:bg-gsrp-orange hover:text-white transition-all"
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/30 mb-2">Type</label>
+                          <div className="flex gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setEditForm({ ...editForm, type: 'h' })}
+                              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border transition-all text-[10px] font-bold ${
+                                editForm.type === 'h' 
+                                  ? 'bg-gsrp-orange/20 border-gsrp-orange text-gsrp-orange' 
+                                  : 'bg-gsrp-dark-surface/40 border-gsrp-dark-border/50 text-gsrp-teal-light/40'
+                              }`}
+                            >
+                              <Megaphone size={12} /> :H
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setEditForm({ ...editForm, type: 'm' })}
+                              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg border transition-all text-[10px] font-bold ${
+                                editForm.type === 'm' 
+                                  ? 'bg-gsrp-orange/20 border-gsrp-orange text-gsrp-orange' 
+                                  : 'bg-gsrp-dark-surface/40 border-gsrp-dark-border/50 text-gsrp-teal-light/40'
+                              }`}
+                            >
+                              <MessageSquare size={12} /> :M
+                            </button>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/30 mb-2">Delay (Min)</label>
+                          <input
+                            type="number"
+                            required
+                            min="1"
+                            value={editForm.delayMinutes}
+                            onChange={(e) => setEditForm({ ...editForm, delayMinutes: e.target.value })}
+                            className="w-full bg-gsrp-dark-surface/40 border border-gsrp-dark-border/50 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gsrp-orange/50 transition-all"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/30 mb-2">Message</label>
+                        <textarea
+                          required
+                          value={editForm.message}
+                          onChange={(e) => setEditForm({ ...editForm, message: e.target.value })}
+                          className="w-full bg-gsrp-dark-surface/40 border border-gsrp-dark-border/50 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-gsrp-orange/50 transition-all min-h-[60px]"
+                        />
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-2">
+                        <button
+                          type="button"
+                          onClick={cancelEditing}
+                          className="px-4 py-2 rounded-lg text-xs font-bold text-white/40 hover:text-white transition-all"
                         >
-                          Test
+                          Cancel
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={updating}
+                          className="px-4 py-2 rounded-lg bg-gsrp-orange text-white text-xs font-bold hover:bg-gsrp-orange-light transition-all flex items-center gap-2 disabled:opacity-50"
+                        >
+                          {updating ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
+                          Save Changes
                         </button>
                       </div>
+                    </form>
+                  ) : (
+                    <div className="flex items-start gap-4">
+                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                        reminder.type === 'h' ? 'bg-gsrp-orange/10 text-gsrp-orange' : 'bg-gsrp-teal/10 text-gsrp-teal'
+                      }`}>
+                        {reminder.type === 'h' ? <Megaphone size={18} /> : <MessageSquare size={18} />}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/30">
+                            {reminder.type === 'h' ? 'Hint Command' : 'Message Command'}
+                          </span>
+                          <div className="flex items-center gap-2 text-gsrp-orange font-bold text-xs">
+                            <Clock size={12} />
+                            {reminder.delayMinutes}m delay
+                          </div>
+                        </div>
+                        <p className="text-white text-sm leading-relaxed pr-8">{reminder.message}</p>
+                        <div className="mt-3 flex items-center gap-2">
+                          <button 
+                            onClick={() => handleTest(reminder._id)}
+                            className="px-3 py-1 rounded-lg bg-gsrp-orange/10 border border-gsrp-orange/20 text-[10px] font-bold text-gsrp-orange hover:bg-gsrp-orange hover:text-white transition-all"
+                          >
+                            Test
+                          </button>
+                          <button 
+                            onClick={() => startEditing(reminder)}
+                            className="px-3 py-1 rounded-lg bg-white/5 border border-gsrp-dark-border/50 text-[10px] font-bold text-white/40 hover:text-white hover:bg-white/10 transition-all flex items-center gap-1.5"
+                          >
+                            <Edit2 size={10} /> Edit
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <button
+                        onClick={() => handleDelete(reminder._id)}
+                        className="absolute top-4 right-4 p-2 rounded-lg text-gsrp-teal-light/20 hover:text-red-400 hover:bg-red-400/10 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(reminder._id)}
-                    className="absolute top-4 right-4 p-2 rounded-lg text-gsrp-teal-light/20 hover:text-red-400 hover:bg-red-400/10 transition-all opacity-0 group-hover:opacity-100 cursor-pointer"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  )}
                 </div>
               ))
             )}

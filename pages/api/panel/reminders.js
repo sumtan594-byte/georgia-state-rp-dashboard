@@ -49,5 +49,26 @@ export default async function handler(req, res) {
     return res.status(200).json({ success: true });
   }
 
+  if (req.method === 'PUT') {
+    const { id, type, message, delayMinutes } = req.body;
+    if (!id || !type || !message || delayMinutes === undefined) {
+      return res.status(400).json({ error: 'Missing fields' });
+    }
+
+    const { ObjectId } = require('mongodb');
+    await collection.updateOne(
+      { _id: new ObjectId(id) },
+      {
+        $set: {
+          type,
+          message,
+          delayMinutes: parseInt(delayMinutes),
+          updatedAt: new Date(),
+        }
+      }
+    );
+    return res.status(200).json({ success: true });
+  }
+
   return res.status(405).json({ error: 'Method not allowed' });
 }
