@@ -14,6 +14,8 @@ export default function RemindersPage() {
   const [newReminder, setNewReminder] = useState({ type: 'h', message: '', delayMinutes: 5 });
   const [workerState, setWorkerState] = useState(null);
   const [timeLeft, setTimeLeft] = useState('');
+  const [debugLogs, setDebugLogs] = useState(null);
+  const [debugging, setDebugging] = useState(false);
 
   useEffect(() => {
     if (session && session.user.roles.includes(REMINDERS_ROLE_ID)) {
@@ -44,6 +46,19 @@ export default function RemindersPage() {
       const res = await fetch('/api/panel/reminders/status');
       if (res.ok) setWorkerState(await res.json());
     } catch (e) {}
+  };
+
+  const runDebug = async () => {
+    setDebugging(true);
+    try {
+      const res = await fetch('/api/panel/reminders/debug');
+      const data = await res.json();
+      setDebugLogs(data.logs);
+    } catch (e) {
+      setDebugLogs(['Failed to run debug']);
+    } finally {
+      setDebugging(false);
+    }
   };
 
   const fetchReminders = async () => {
@@ -125,23 +140,49 @@ export default function RemindersPage() {
         </div>
 
         {workerState && (
-          <div className="hidden md:flex items-center gap-6 card-glass px-6 py-3 rounded-2xl border border-gsrp-orange/20 glow-orange">
-            <div className="flex flex-col">
-              <span className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/30">Next Reminder</span>
-              <span className="text-xs font-bold text-gsrp-orange flex items-center gap-1.5">
-                <Clock size={12} /> {timeLeft}
-              </span>
-            </div>
-            <div className="w-[1px] h-8 bg-gsrp-dark-border/50" />
-            <div className="flex flex-col">
-              <span className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/30">Server Status</span>
-              <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                <Users size={12} className="text-gsrp-teal-light/40" /> {workerState.playerCount} active
-              </span>
+          <div className="hidden md:flex items-center gap-4">
+            <button 
+              onClick={runDebug} 
+              disabled={debugging}
+              className="px-4 py-3 rounded-2xl bg-white/5 border border-gsrp-dark-border/50 text-white/40 hover:text-white hover:bg-white/10 transition-all flex items-center gap-2 text-xs font-bold disabled:opacity-50"
+            >
+              {debugging ? <Loader2 size={14} className="animate-spin" /> : <Terminal size={14} />}
+              Diagnostics
+            </button>
+            <div className="flex items-center gap-6 card-glass px-6 py-3 rounded-2xl border border-gsrp-orange/20 glow-orange">
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/30">Next Reminder</span>
+                <span className="text-xs font-bold text-gsrp-orange flex items-center gap-1.5">
+                  <Clock size={12} /> {timeLeft}
+                </span>
+              </div>
+              <div className="w-[1px] h-8 bg-gsrp-dark-border/50" />
+              <div className="flex flex-col">
+                <span className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/30">Server Status</span>
+                <span className="text-xs font-bold text-white flex items-center gap-1.5">
+                  <Users size={12} className="text-gsrp-teal-light/40" /> {workerState.playerCount} active
+                </span>
+              </div>
             </div>
           </div>
         )}
       </div>
+
+      {debugLogs && (
+        <div className="mb-8 card-glass rounded-2xl p-6 border border-gsrp-orange/30 animate-fade-in-up bg-black/40">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-gsrp-orange font-bold text-sm flex items-center gap-2">
+              <Terminal size={16} /> Debug Diagnostics
+            </h3>
+            <button onClick={() => setDebugLogs(null)} className="text-[10px] text-white/20 hover:text-white transition-colors">Clear Logs</button>
+          </div>
+          <div className="font-mono text-[11px] space-y-1.5 max-h-60 overflow-y-auto">
+            {debugLogs.map((log, i) => (
+              <div key={i} className="text-white/60 py-1 border-b border-white/5 last:border-0">{log}</div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {workerState && (
         <div className="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4 animate-fade-in-up">
