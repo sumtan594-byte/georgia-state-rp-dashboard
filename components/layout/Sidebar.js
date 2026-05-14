@@ -107,6 +107,7 @@ export default function Sidebar({ open, onToggle }) {
               ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null, external: true }] : []),
               { href: '/verify', icon: ShieldCheck, label: 'Verification' },
               { href: '/shop', icon: ShoppingCart, label: 'Store' },
+              ...(effectiveSession?.user?.roles?.includes('1394297547597680670') ? [{ href: '/panel/reminders', icon: Megaphone, label: 'Reminders' }] : []),
             ].map((item, idx) => (
               <Link
                 key={item.href}
