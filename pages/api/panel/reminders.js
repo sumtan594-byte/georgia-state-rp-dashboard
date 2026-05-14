@@ -39,6 +39,12 @@ export default async function handler(req, res) {
     };
 
     await collection.insertOne(reminder);
+    
+    // Trigger worker restart
+    if (globalThis.__gsrpReminderState) {
+      globalThis.__gsrpReminderState.needsRestart = true;
+    }
+
     return res.status(201).json(reminder);
   }
 
@@ -46,6 +52,12 @@ export default async function handler(req, res) {
     const { id } = req.query;
     const { ObjectId } = require('mongodb');
     await collection.deleteOne({ _id: new ObjectId(id) });
+
+    // Trigger worker restart
+    if (globalThis.__gsrpReminderState) {
+      globalThis.__gsrpReminderState.needsRestart = true;
+    }
+
     return res.status(200).json({ success: true });
   }
 
@@ -67,6 +79,12 @@ export default async function handler(req, res) {
         }
       }
     );
+
+    // Trigger worker restart
+    if (globalThis.__gsrpReminderState) {
+      globalThis.__gsrpReminderState.needsRestart = true;
+    }
+
     return res.status(200).json({ success: true });
   }
 
