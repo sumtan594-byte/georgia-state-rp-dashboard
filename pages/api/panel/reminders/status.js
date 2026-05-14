@@ -1,5 +1,5 @@
 import { getServerSession } from 'next-auth';
-import { authOptions } from "../../../lib/auth-options";
+import { authOptions } from "../../../../lib/auth-options";
 
 const REMINDERS_ROLE_ID = '1394297547597680670';
 
