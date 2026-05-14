@@ -1,5 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from "../../../../lib/auth-options";
+import { startReminderWorker } from "../../../../lib/reminder-worker";
 
 const REMINDERS_ROLE_ID = '1394297547597680670';
 
@@ -9,6 +10,9 @@ export default async function handler(req, res) {
   if (!session.user.roles.includes(REMINDERS_ROLE_ID)) {
     return res.status(403).json({ error: 'Unauthorized' });
   }
+
+  // Ensure worker is running
+  await startReminderWorker();
 
   // Get state from the global worker instance
   const state = globalThis.__gsrpReminderState || {

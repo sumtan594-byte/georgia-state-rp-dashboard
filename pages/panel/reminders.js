@@ -106,6 +106,24 @@ export default function RemindersPage() {
     }
   };
 
+  const handleTest = async (id) => {
+    try {
+      const res = await fetch('/api/panel/reminders/test', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        alert('Test command sent!');
+      } else {
+        const data = await res.json();
+        alert(`Failed to send test: ${data.error || 'Unknown error'}`);
+      }
+    } catch (e) {
+      alert('Error sending test command');
+    }
+  };
+
   if (status === 'loading' || loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -319,6 +337,14 @@ export default function RemindersPage() {
                         </div>
                       </div>
                       <p className="text-white text-sm leading-relaxed pr-8">{reminder.message}</p>
+                      <div className="mt-3 flex items-center gap-2">
+                        <button 
+                          onClick={() => handleTest(reminder._id)}
+                          className="px-3 py-1 rounded-lg bg-gsrp-orange/10 border border-gsrp-orange/20 text-[10px] font-bold text-gsrp-orange hover:bg-gsrp-orange hover:text-white transition-all"
+                        >
+                          Test
+                        </button>
+                      </div>
                     </div>
                   </div>
                   <button
