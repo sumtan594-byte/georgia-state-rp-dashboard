@@ -1,11 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { getAuditLogs } from '../../lib/audit-log';
-import { isFullAdmin } from '../../lib/admin-helper';
-import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import { getAuditLogs } from '../lib/audit-log';
+import { isFullAdmin } from '../lib/admin-helper';
+import { useRefreshedUser } from '../lib/UserRefreshContext';
 import { Shield, UserPlus, UserMinus, FileCheck, FileX, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getServerSession } from 'next-auth';
-import { authOptions } from '../../lib/auth-options';
+import { authOptions } from '../lib/auth-options';
 
 const ACTION_LABELS = {
   admin_add: { label: 'Admin Added', icon: UserPlus, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
