@@ -30,6 +30,20 @@ export default function Sidebar({ open, onToggle }) {
   const { refreshedUser, session: refreshedSession } = useRefreshedUser();
   const effectiveSession = refreshedSession || session;
   const userRoles = refreshedUser?.roles || effectiveSession?.user?.roles || [];
+
+  // DEBUG: Log role detection
+  useEffect(() => {
+    console.log('[Sidebar DEBUG] === Role Detection ===');
+    console.log('[Sidebar DEBUG] session:', session ? 'present' : 'null');
+    console.log('[Sidebar DEBUG] session.user?.roles:', session?.user?.roles);
+    console.log('[Sidebar DEBUG] refreshedUser:', refreshedUser ? 'present' : 'null');
+    console.log('[Sidebar DEBUG] refreshedUser?.roles:', refreshedUser?.roles);
+    console.log('[Sidebar DEBUG] effectiveSession?.user?.roles:', effectiveSession?.user?.roles);
+    console.log('[Sidebar DEBUG] resolved userRoles (length):', userRoles.length);
+    console.log('[Sidebar DEBUG] resolved userRoles:', userRoles);
+    console.log('[Sidebar DEBUG] has search role (1372491512709124106):', userRoles.includes('1372491512709124106'));
+    console.log('[Sidebar DEBUG] ========================');
+  }, [refreshedUser, effectiveSession, session, userRoles]);
   const [serverStatus, setServerStatus] = useState(null);
   const [transcriptCount, setTranscriptCount] = useState(0);
 

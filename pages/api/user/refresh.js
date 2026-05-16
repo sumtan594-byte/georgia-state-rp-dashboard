@@ -34,6 +34,11 @@ export default async function handler(req, res) {
     const member = await memberRes.json();
     const roles = member.roles || [];
 
+    console.log('[user/refresh DEBUG] userId:', userId);
+    console.log('[user/refresh DEBUG] member.user?.id:', member.user?.id);
+    console.log('[user/refresh DEBUG] roles from Discord:', roles);
+    console.log('[user/refresh DEBUG] has search role:', roles.includes('1372491512709124106'));
+
     let displayRole = 'User';
     const rolesRes = await fetch(
       `https://discord.com/api/guilds/${process.env.ALLOWED_GUILD_ID}/roles`,
