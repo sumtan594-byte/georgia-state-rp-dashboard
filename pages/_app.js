@@ -7,6 +7,7 @@ import Sidebar from "../components/layout/Sidebar";
 import TopBar from "../components/layout/TopBar";
 import WelcomeScreen from "../components/auth/WelcomeScreen";
 import { UserRefreshProvider } from "../lib/UserRefreshContext";
+import { ToastProvider } from "../lib/ToastContext";
 import { motion } from 'framer-motion';
 
 function DebugSessionLogger() {
@@ -27,18 +28,16 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
           <Component {...pageProps} />
         </div>
       ) : (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={animationFinished ? { opacity: 1, y: 0 } : {}}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="relative z-10 flex min-h-screen"
         >
-          {/* Desktop sidebar */}
           <div className={`hidden md:block flex-shrink-0 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-[72px]'}`}>
             <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
           </div>
 
-          {/* Mobile sidebar overlay */}
           {sidebarOpen && (
             <div className="md:hidden fixed inset-0 z-50">
               <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
@@ -71,7 +70,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
     setMounted(true);
     const publicRoutes = ['/verify', '/privacy-policy', '/terms-of-service', '/login'];
     const isPublicPage = publicRoutes.includes(router.pathname);
-    
+
     if (!isPublicPage && !sessionStorage.getItem('hasSeenWelcome')) {
       setShowWelcome(true);
       setAnimationFinished(false);
@@ -92,21 +91,23 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
   return (
     <SessionProvider session={session}>
       <UserRefreshProvider>
-        {showWelcome && (
-          <WelcomeScreen 
-            onComplete={handleWelcomeComplete} 
-          />
-        )}
+        <ToastProvider>
+          {showWelcome && (
+            <WelcomeScreen
+              onComplete={handleWelcomeComplete}
+            />
+          )}
 
-        <AppContent 
-          Component={Component} 
-          pageProps={pageProps} 
-          sidebarOpen={sidebarOpen} 
-          setSidebarOpen={setSidebarOpen} 
-          isPublicPage={isPublicPage} 
-          animationFinished={animationFinished}
-          isPanelPage={router.pathname === '/panel'}
-        />
+          <AppContent
+            Component={Component}
+            pageProps={pageProps}
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
+            isPublicPage={isPublicPage}
+            animationFinished={animationFinished}
+            isPanelPage={router.pathname === '/panel'}
+          />
+        </ToastProvider>
       </UserRefreshProvider>
     </SessionProvider>
   );

@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth-options';
 import clientPromise from '../../../lib/mongodb';
+import { logAuditEvent } from '../../../lib/audit-log';
 
 const ADMIN_MANAGER_ROLE = '1486826723210428496';
 
@@ -114,6 +115,16 @@ export default async function handler(req, res) {
         addedAt: new Date().toISOString(),
       });
 
+      await logAuditEvent({
+        action: 'admin_add',
+        actorId: session.user.id,
+        actorName: session.user.name,
+        targetType: 'admin',
+        targetId: cleanId,
+        details: { addedUserId: cleanId },
+        ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress,
+      });
+
       return res.status(200).json({ success: true });
     } catch (err) {
       console.error('[admins] POST error:', err.message);
@@ -142,6 +153,16 @@ export default async function handler(req, res) {
       if (result.deletedCount === 0) {
         return res.status(404).json({ error: 'Admin not found' });
       }
+
+      await logAuditEvent({
+        action: 'admin_remove',
+        actorId: session.user.id,
+        actorName: session.user.name,
+        targetType: 'admin',
+        targetId: cleanId,
+        details: { removedUserId: cleanId },
+        ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress,
+      });
 
       return res.status(200).json({ success: true });
     } catch (err) {

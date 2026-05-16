@@ -7,7 +7,7 @@ export const config = {
 };
 
 const PRC_PUBLIC_KEY_BASE64 = 'MCowBQYDK2VwAyEAjSICb9pp0kHizGQtdG8ySWsDChfGqi+gyFCttigBNOA=';
-const TARGET_WEBHOOK_URL = 'https://discord.com/api/webhooks/1491210873023238284/qtrc7WAitcu5IXTSe57L3mwsv16N35QJ2HsyX8gZeDnbEhIo7stp_7J5FAFuuoZ7ge-A';
+const TARGET_WEBHOOK_URL = process.env.ERLC_WEBHOOK_URL;
 
 const PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----\n${PRC_PUBLIC_KEY_BASE64}\n-----END PUBLIC KEY-----`;
 const DEV_MODE = process.env.NODE_ENV === 'development' || process.env.ERLC_WEBHOOK_DEV === 'true';
@@ -31,6 +31,11 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
+  }
+
+  if (!TARGET_WEBHOOK_URL) {
+    console.error('[ERLC Webhook] Missing ERLC_WEBHOOK_URL env var');
+    return res.status(500).json({ error: 'Webhook not configured' });
   }
 
   const signatureHex = req.headers['x-signature-ed25519'] || req.headers['X-Signature-Ed25519'];

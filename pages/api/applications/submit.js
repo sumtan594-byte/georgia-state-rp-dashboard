@@ -2,6 +2,7 @@ import clientPromise from '../../../lib/mongodb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
 import { sendComponentsV2 } from "../../../lib/discord-v2";
+import { rateLimit } from '../../../lib/rate-limiter';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -11,6 +12,11 @@ export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) {
     return res.status(401).json({ message: 'Unauthorized' });
+  }
+
+  const rl = rateLimit(req, res, 'submit');
+  if (rl.limited) {
+    return res.status(429).json({ message: 'Rate limited', retryAfter: rl.retryAfter });
   }
 
   try {

@@ -1,7 +1,12 @@
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../../lib/auth-options';
 import clientPromise from '../../../lib/mongodb';
 import { isFullAdmin } from '../../../lib/admin-helper';
 
 export default async function handler(req, res) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) return res.status(401).json({ error: 'Not authenticated' });
+
   const TRAINER_ROLE = '1372482495035211908';
 
   let db;
@@ -15,7 +20,6 @@ export default async function handler(req, res) {
 
   const attemptsCollection = db.collection('quiz_attempts');
 
-  // GET - List all attempts (with user data for trainers)
   if (req.method === 'GET') {
     const includeUserData = req.query.userData === 'true';
 
@@ -25,10 +29,10 @@ export default async function handler(req, res) {
       const userDataMap = {};
 
       for (const doc of docs) {
-        const userId = doc.userId;
+        const uid = doc.userId;
         const attemptsArray = doc.attempts || [];
-        
-        userDataMap[userId] = {
+
+        userDataMap[uid] = {
           cooldownUntil: doc.cooldownUntil || null,
           hasPassed: doc.hasPassed || false,
           hasPassedAt: doc.hasPassedAt || null,
@@ -52,15 +56,12 @@ export default async function handler(req, res) {
     }
   }
 
-  // POST - Check cooldown status or revoke cooldown
   if (req.method === 'POST') {
-    const { action, userId, userId: targetUserId } = req.body || {};
+    const { action, userId: targetUserId } = req.body || {};
 
-    // Check if requester is a trainer or admin
-    const sessionUserId = req.headers['x-user-id'];
-    const userRoles = req.headers['x-user-roles'] ? JSON.parse(req.headers['x-user-roles']) : [];
+    const userRoles = session.user?.roles || [];
     const isTrainer = userRoles.includes(TRAINER_ROLE);
-    const isAdmin = await isFullAdmin(sessionUserId, userRoles);
+    const isAdmin = await isFullAdmin(session.user?.id, userRoles);
 
     if (!isTrainer && !isAdmin) {
       return res.status(403).json({ error: 'Trainer role required' });
@@ -68,7 +69,7 @@ export default async function handler(req, res) {
 
     try {
       const existing = await attemptsCollection.findOne({ userId: targetUserId });
-      
+
       let userData = { attempts: [], cooldownUntil: null, hasPassed: false, hasPassedAt: null };
       if (existing) {
         userData = {
@@ -79,13 +80,11 @@ export default async function handler(req, res) {
         };
       }
 
-      // Handle different actions
       if (action === 'check') {
-        // Return cooldown status for a user
         const now = new Date();
         const cooldown = userData.cooldownUntil ? new Date(userData.cooldownUntil) : null;
         const isOnCooldown = cooldown && cooldown > now;
-        
+
         return res.status(200).json({
           userId: targetUserId,
           cooldownUntil: userData.cooldownUntil,
@@ -97,7 +96,6 @@ export default async function handler(req, res) {
       }
 
       if (action === 'revoke') {
-        // Revoke cooldown - set to null so they can retake immediately
         await attemptsCollection.updateOne(
           { userId: targetUserId },
           { $set: { cooldownUntil: null } }

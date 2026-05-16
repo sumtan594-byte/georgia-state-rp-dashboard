@@ -17,6 +17,15 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     const types = await db.collection("application_types").find({}).toArray();
+    if (!canReviewApplications(session)) {
+      return res.status(200).json(types.map(t => ({
+        name: t.name,
+        slug: t.slug,
+        description: t.description,
+        requiredRole: t.requiredRole,
+        fields: t.fields,
+      })));
+    }
     return res.status(200).json(types);
   }
 

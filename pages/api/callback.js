@@ -63,7 +63,7 @@ export default async function handler(req, res) {
     };
 
     const encoded = encodeURIComponent(JSON.stringify(userData));
-    res.setHeader('Set-Cookie', `gsrp_user=${encoded}; Path=/; Max-Age=86400; SameSite=Lax`);
+    res.setHeader('Set-Cookie', `gsrp_user=${encoded}; Path=/; Max-Age=86400; HttpOnly; Secure; SameSite=Lax`);
     res.redirect(302, '/training');
 
   } catch (err) {

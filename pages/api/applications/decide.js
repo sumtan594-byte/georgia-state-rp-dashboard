@@ -4,6 +4,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
 import { canReviewApplications } from "../../../lib/auth";
 import { sendComponentsV2, sendDM, addMemberRole, removeMemberRole } from "../../../lib/discord-v2";
+import { logAuditEvent } from '../../../lib/audit-log';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
@@ -118,9 +119,24 @@ export default async function handler(req, res) {
       ]
     });
 
+    await logAuditEvent({
+      action: isAccepted ? 'application_accept' : 'application_deny',
+      actorId: session.user.id,
+      actorName: session.user.name,
+      targetType: 'application',
+      targetId: id,
+      details: {
+        applicantUserId: application.userId,
+        applicationType: application.type,
+        reason,
+      },
+      ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress,
+    });
+
     return res.status(200).json({ success: true });
   } catch (error) {
     console.error('[Application Decision Error]', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
+

@@ -18,11 +18,14 @@ import {
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import { useToast } from '../../lib/ToastContext';
 import LoginScreen from '../../components/auth/LoginScreen';
+import { useRouter } from 'next/router';
 
 export default function ManageApplicationTypes() {
   const { data: session, status } = useSession();
   const { session: refreshedSession } = useRefreshedUser();
+  const { addToast } = useToast();
   const effectiveSession = refreshedSession || session;
   const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,7 +33,7 @@ export default function ManageApplicationTypes() {
   const [serverRoles, setServerRoles] = useState([]);
   const [originalForm, setOriginalForm] = useState(null);
   const [isShaking, setIsShaking] = useState(false);
-  const router = require('next/router').useRouter();
+  const router = useRouter();
   
   // Form State for New/Edit
   const [form, setForm] = useState({
@@ -212,7 +215,9 @@ export default function ManageApplicationTypes() {
     
     if (res.ok) {
       setOriginalForm(JSON.parse(JSON.stringify(form)));
-      alert('Changes saved successfully!');
+      addToast('Changes saved successfully!', 'success');
+    } else {
+      addToast('Failed to save changes', 'error');
     }
   };
 

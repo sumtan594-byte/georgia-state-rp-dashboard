@@ -2,12 +2,14 @@ import { useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
 import { Loader2, Plus, Trash2, Clock, MessageSquare, Megaphone, ArrowLeft, Save, Users, ShieldCheck, Terminal, Edit2, Check, X } from 'lucide-react';
 import Link from 'next/link';
+import { useToast } from '../../lib/ToastContext';
 import LoginScreen from '../../components/auth/LoginScreen';
 
 const REMINDERS_ROLE_ID = '1394297547597680670';
 
 export default function RemindersPage() {
   const { data: session, status } = useSession();
+  const { addToast } = useToast();
   const [reminders, setReminders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [adding, setAdding] = useState(false);
@@ -117,13 +119,13 @@ export default function RemindersPage() {
         body: JSON.stringify({ id }),
       });
       if (res.ok) {
-        alert('Test command sent!');
+        addToast('Test command sent!', 'success');
       } else {
         const data = await res.json();
-        alert(`Failed to send test: ${data.error || 'Unknown error'}`);
+        addToast(`Failed to send test: ${data.error || 'Unknown error'}`, 'error');
       }
     } catch (e) {
-      alert('Error sending test command');
+      addToast('Error sending test command', 'error');
     }
   };
 

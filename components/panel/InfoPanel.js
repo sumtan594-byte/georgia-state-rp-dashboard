@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { LogIn, Swords, Terminal, MessageSquare } from 'lucide-react';
+import { LogIn, Swords, Terminal, MessageSquare, FileText } from 'lucide-react';
 
 const TABS = [
   { key: 'joinleave', icon: LogIn, label: 'Join' },
@@ -48,7 +48,7 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        {tab === 'joinleave' && (joinLogs.length === 0 ? <EmptyState /> : joinLogs.slice(-100).reverse().map((log, i) => {
+        {tab === 'joinleave' && (joinLogs.length === 0 ? <EmptyState activeTab={tab} /> : joinLogs.slice(-100).reverse().map((log, i) => {
           const { name } = parseName(log.Player);
           return (
             <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-white/[0.03] transition-colors">
@@ -61,7 +61,7 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
           );
         }))}
 
-        {tab === 'kills' && (killLogs.length === 0 ? <EmptyState /> : killLogs.slice(-100).reverse().map((log, i) => {
+        {tab === 'kills' && (killLogs.length === 0 ? <EmptyState activeTab={tab} /> : killLogs.slice(-100).reverse().map((log, i) => {
           const { name: k } = parseName(log.Killer);
           const { name: d } = parseName(log.Killed);
           return (
@@ -75,7 +75,7 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
           );
         }))}
 
-        {tab === 'commands' && (commandLogs.length === 0 ? <EmptyState /> : commandLogs.slice(-100).reverse().map((log, i) => {
+        {tab === 'commands' && (commandLogs.length === 0 ? <EmptyState activeTab={tab} /> : commandLogs.slice(-100).reverse().map((log, i) => {
           const { name } = parseName(log.Player);
           return (
             <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-white/[0.03] transition-colors">
@@ -86,7 +86,7 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
           );
         }))}
 
-        {tab === 'modcalls' && (modCalls.length === 0 ? <EmptyState /> : modCalls.slice(-100).reverse().map((log, i) => {
+        {tab === 'modcalls' && (modCalls.length === 0 ? <EmptyState activeTab={tab} /> : modCalls.slice(-100).reverse().map((log, i) => {
           const { name: c } = parseName(log.Caller);
           const { name: m } = parseName(log.Moderator);
           return (
@@ -103,9 +103,18 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
   );
 }
 
-function EmptyState() {
+function EmptyState({ activeTab }) {
+  const messages = {
+    joinleave: 'No join/leave activity yet',
+    kills: 'No kills recorded yet',
+    commands: 'No commands executed yet',
+    modcalls: 'No mod calls received yet',
+  };
   return (
-    <div className="flex items-center justify-center h-16 text-white/15 text-[11px]">No entries</div>
+    <div className="flex flex-col items-center justify-center h-20 text-center">
+      <FileText className="w-5 h-5 text-white/10 mb-1.5" />
+      <span className="text-white/20 text-[11px]">{messages[activeTab] || 'No entries'}</span>
+    </div>
   );
 }
 

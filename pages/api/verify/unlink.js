@@ -13,7 +13,7 @@ export default async function handler(req, res) {
 
   const discordId = session.user.id;
   const githubToken = process.env.GITHUB_ACCESS_TOKEN;
-  const webhookUrl = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1426165224200732683/xV1wiTsLw43gr4MIUuzbOQhHPEfgAUWLyclPgt3gqXQCebzUn0qNkFIvqTQ6DDVJHMm_';
+  const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 
   const githubApiRequest = async (path, method = 'GET', body = null) => {
     const url = `https://api.github.com/repos/sumtan594-byte/gsrp-management/contents/${path}`;

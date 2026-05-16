@@ -1,4 +1,14 @@
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../../lib/auth-options';
+import { ROLES, hasRole, isAdmin } from '../../../lib/auth';
+
 export default async function handler(req, res) {
+  const session = await getServerSession(req, res, authOptions);
+  if (!session) return res.status(401).json({ error: 'Not authenticated' });
+  if (!hasRole(session, ROLES.PANEL) && !isAdmin(session)) {
+    return res.status(403).json({ error: 'Panel access required' });
+  }
+
   const ERLC_KEY = process.env.ERLC_API_KEY;
   if (!ERLC_KEY) {
     return res.status(500).json({ error: 'Missing ERLC_API_KEY' });
@@ -6,7 +16,6 @@ export default async function handler(req, res) {
 
   const results = {};
 
-  // Test 1: Players endpoint
   try {
     const playersRes = await fetch('https://api.erlc.gg/v2/server?Players=true&Staff=true&JoinLogs=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true', {
       headers: { 'server-key': ERLC_KEY },
@@ -25,7 +34,6 @@ export default async function handler(req, res) {
     results.players_error = e.message;
   }
 
-  // Test 2: Map image
   try {
     const mapRes = await fetch('https://api.erlc.gg/maps/fall_postals.png');
     results.map_image_status = mapRes.status;

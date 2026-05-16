@@ -13,6 +13,7 @@ export default function Dashboard() {
   const { session: refreshedSession } = useRefreshedUser();
   const effectiveSession = refreshedSession || session;
   const [stats, setStats] = useState({ transcripts: 0, players: 0, online: false });
+  const [statsLoading, setStatsLoading] = useState(true);
 
   useEffect(() => {
     if (!session) return;
@@ -26,6 +27,7 @@ export default function Dashboard() {
         players: panelResult.status === 'fulfilled' && panelResult.value ? panelResult.value.Players?.length || 0 : 0,
         online: panelResult.status === 'fulfilled' && panelResult.value !== null,
       });
+      setStatsLoading(false);
     });
   }, [session]);
 

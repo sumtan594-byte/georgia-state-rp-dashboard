@@ -1,7 +1,11 @@
 import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import { Loader2, ExternalLink } from 'lucide-react';
+import { useRouter } from 'next/router';
 import LoginScreen from '../../components/auth/LoginScreen';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../lib/auth-options';
+import { isFullAdmin } from '../../lib/admin-helper';
 
 export default function TrainingPage() {
   const { data: session, status } = useSession();
@@ -10,7 +14,7 @@ export default function TrainingPage() {
   const [checkingProgress, setCheckingProgress] = useState(true);
   const iframeRef = useRef(null);
   const sessionSent = useRef(false);
-  const router = require('next/router').useRouter();
+  const router = useRouter();
 
   useEffect(() => {
     async function checkProgress() {
@@ -46,7 +50,7 @@ export default function TrainingPage() {
           avatar: session.user.avatar,
           isTrainer: session.user.roles?.includes('1372482495035211908'),
         },
-      }, '*');
+      }, window.location.origin);
       sessionSent.current = true;
     }
   }, [session]);
@@ -105,17 +109,14 @@ export default function TrainingPage() {
 }
 
 export async function getServerSideProps(context) {
-  const { getServerSession } = require('next-auth');
-  const { authOptions } = require('../../lib/auth-options');
   const session = await getServerSession(context.req, context.res, authOptions);
-  
+
   if (!session) return { props: {} };
 
   const hasRole = session.user?.roles?.includes('1372476380096237609');
-  
-  const { isFullAdmin } = require('../../lib/admin-helper');
+
   const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || []);
-  
+
   if (!hasRole && !isAdmin) return { redirect: { destination: '/', permanent: false } };
 
   return { props: {} };

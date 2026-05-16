@@ -16,6 +16,10 @@ import {
   UserPlus,
   Settings,
   Megaphone,
+  BarChart3,
+  Search,
+  Server,
+  ScrollText,
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications, canManageAdmins } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
@@ -58,6 +62,7 @@ export default function Sidebar({ open, onToggle }) {
   const showAllTranscripts = canViewAllTranscripts(effectiveSession);
   const canReviewApps = canReviewApplications(effectiveSession);
   const canManageAdminList = canManageAdmins(effectiveSession);
+  const isFullAdminUser = effectiveSession?.user?.isAdmin;
 
   const navItems = [
     { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -105,7 +110,9 @@ export default function Sidebar({ open, onToggle }) {
               { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
               { href: '/departments', icon: Building2, label: 'Departments' },
               { href: '/transcripts', icon: FileText, label: 'Transcripts', badge: transcriptCount > 0 ? transcriptCount : null },
-              ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null, external: true }] : []),
+               ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null, external: true }] : []),
+               ...(hasPanel ? [{ href: '/panel/stats', icon: Server, label: 'Server Stats' }] : []),
+               { href: '/transcripts/search', icon: Search, label: 'Search Transcripts' },
               { href: '/verify', icon: ShieldCheck, label: 'Verification' },
               { href: '/shop', icon: ShoppingCart, label: 'Store' },
               ...(effectiveSession?.user?.roles?.includes('1394297547597680670') ? [{ href: '/panel/reminders', icon: Megaphone, label: 'Reminders' }] : []),
@@ -143,7 +150,8 @@ export default function Sidebar({ open, onToggle }) {
               {[
                 ...(hasHandbook ? [{ href: '/staff-handbook', icon: BookOpen, label: 'Handbook' }] : []),
                 ...(hasTraining ? [{ href: '/training', icon: BookOpen, label: 'ssd quiz' }] : []),
-                ...(hasAttempts ? [{ href: '/training/attempts', icon: ClipboardList, label: 'Attempts' }] : []),
+                 ...(hasAttempts ? [{ href: '/training/attempts', icon: ClipboardList, label: 'Attempts' }] : []),
+                 ...(hasAttempts ? [{ href: '/training/analytics', icon: BarChart3, label: 'Quiz Analytics' }] : []),
               ].map((item, idx) => (
                 <Link
                   key={item.href}
@@ -170,7 +178,8 @@ export default function Sidebar({ open, onToggle }) {
                 { href: '/applications', icon: Users, label: 'Review Hub' },
                 { href: '/applications/manage', icon: Settings, label: 'Manage Forms' }
               ] : []),
-              ...(canManageAdminList ? [{ href: '/admins', icon: ShieldCheck, label: 'Edit Admins' }] : []),
+               ...(canManageAdminList ? [{ href: '/admins', icon: ShieldCheck, label: 'Edit Admins' }] : []),
+               ...(isFullAdminUser ? [{ href: '/audit-logs', icon: ScrollText, label: 'Audit Logs' }] : []),
             ].map((item, idx) => (
               <Link
                 key={item.href}

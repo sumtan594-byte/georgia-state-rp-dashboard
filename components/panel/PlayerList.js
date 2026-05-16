@@ -1,4 +1,4 @@
-import { Search, X } from 'lucide-react';
+import { Search, X, Users } from 'lucide-react';
 
 const TEAMS = ['All', 'Police', 'Fire', 'EMS', 'DOT', 'Civilian'];
 const TEAM_DOT = {
@@ -92,7 +92,20 @@ export default function PlayerList({ players = [], searchQuery, onSearchChange, 
           );
         })}
         {filtered.length === 0 && (
-          <div className="flex items-center justify-center h-24 text-white/20 text-xs">No players found</div>
+          <div className="flex flex-col items-center justify-center h-32 text-center">
+            <Users className="w-8 h-8 text-gray-600 mb-2" />
+            <p className="text-white/30 text-xs">
+              {searchQuery ? 'No players match your search' : 'No players online'}
+            </p>
+            {searchQuery && (
+              <button
+                onClick={() => onSearchChange('')}
+                className="mt-2 text-[10px] text-gsrp-orange hover:underline cursor-pointer"
+              >
+                Clear search
+              </button>
+            )}
+          </div>
         )}
       </div>
     </div>

@@ -1,6 +1,8 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from "../../../lib/auth-options";
 import { ROLES, hasRole, isAdmin } from '../../../lib/auth';
+import { rateLimit } from '../../../lib/rate-limiter';
+import { logCommand } from '../../../lib/command-history';
 
 const NKZ_ROLE_ID = '1372468936867708988';
 
@@ -92,6 +94,11 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  const rl = rateLimit(req, res, 'command');
+  if (rl.limited) {
+    return res.status(429).json({ error: 'Rate limited', retryAfter: rl.retryAfter });
+  }
+
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Not logged in' });
   if (!hasRole(session, ROLES.PANEL) && !isAdmin(session)) {
@@ -168,10 +175,28 @@ export default async function handler(req, res) {
     const text = await erlcRes.text().catch(() => '');
     let body = {};
     try { body = JSON.parse(text); } catch {}
+
+    logCommand({
+      command: cmd,
+      userId: session.user.id,
+      username: session.user.name,
+      success: erlcRes.ok,
+      response: body?.message || text || null,
+    });
+
     return res.status(erlcRes.status).json({ error: body?.message || `ERLC error ${erlcRes.status}`, ...body });
 
   } catch (err) {
     console.error('[GSRP] command proxy error:', err);
+
+    logCommand({
+      command: cmd,
+      userId: session.user.id,
+      username: session.user.name,
+      success: false,
+      response: err.message,
+    });
+
     return res.status(500).json({ error: 'Failed to reach ERLC API', detail: err.message });
   }
 }

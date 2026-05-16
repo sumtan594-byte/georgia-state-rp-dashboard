@@ -2,6 +2,7 @@ import { useSession } from "next-auth/react";
 import { ArrowLeft, Lock, Download, Loader2, Clock, Tag, FileText, Sparkles, Sun, Sunset, Users, X, Plus, Trash2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
+import { sanitizeHtml } from '../../lib/sanitize';
 
 const LOGO = "https://i.imgur.com/70GfmYd.gif";
 const BG_IMAGE = "https://i.imgur.com/QVVQSK2.png";
@@ -445,7 +446,7 @@ export default function Viewer({ htmlContent, id, meta: serverMeta, canManage, e
         )}
         <div className="card-glass rounded-[1.5rem] shadow-2xl shadow-black/40 overflow-hidden animate-fade-in-up">
           <style dangerouslySetInnerHTML={{ __html: DISCORD_MD_STYLES }} />
-          <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+          <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }} />
         </div>
       </div>
 

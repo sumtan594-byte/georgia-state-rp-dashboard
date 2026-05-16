@@ -82,10 +82,17 @@ export default async function handler(req, res) {
         });
     }
 
-    const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL || 'https://discord.com/api/webhooks/1426165224200732683/xV1wiTsLw43gr4MIUuzbOQhHPEfgAUWLyclPgt3gqXQCebzUn0qNkFIvqTQ6DDVJHMm_';
-    const DISCORD_LOG_WEBHOOK_URL = process.env.DISCORD_LOG_WEBHOOK_URL || 'https://discord.com/api/webhooks/1482616996666282045/L6S-v1hmALOicgeqWGgLJ3EyBLj_Tq5k844KjmvachrRvfs7wRf_icyJDEyn73BzSxGw';
+    const DISCORD_WEBHOOK_URL = process.env.DISCORD_WEBHOOK_URL;
+    const DISCORD_LOG_WEBHOOK_URL = process.env.DISCORD_LOG_WEBHOOK_URL;
 
-    // Validate webhook URL format (basic security check)
+    if (!DISCORD_WEBHOOK_URL) {
+      console.error('[forward] Missing DISCORD_WEBHOOK_URL env var');
+      return res.status(500).json({
+        success: false,
+        error: 'Server configuration error. Please contact server staff.',
+      });
+    }
+
     if (!DISCORD_WEBHOOK_URL.startsWith('https://discord.com/api/webhooks/')) {
         console.error('[forward] Invalid webhook URL format');
         return res.status(500).json({
@@ -365,4 +372,4 @@ export default async function handler(req, res) {
             error: 'Internal server error. Please try again.'
         });
     }
-};
+}
