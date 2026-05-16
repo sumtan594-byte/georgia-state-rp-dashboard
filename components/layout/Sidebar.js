@@ -27,8 +27,9 @@ import { useRefreshedUser } from '../../lib/UserRefreshContext';
 
 export default function Sidebar({ open, onToggle }) {
   const { data: session } = useSession();
-  const { session: refreshedSession } = useRefreshedUser();
+  const { refreshedUser, session: refreshedSession } = useRefreshedUser();
   const effectiveSession = refreshedSession || session;
+  const userRoles = refreshedUser?.roles || effectiveSession?.user?.roles || [];
   const [serverStatus, setServerStatus] = useState(null);
   const [transcriptCount, setTranscriptCount] = useState(0);
 
@@ -113,10 +114,10 @@ export default function Sidebar({ open, onToggle }) {
               { href: '/transcripts', icon: FileText, label: 'Transcripts', badge: transcriptCount > 0 ? transcriptCount : null },
                ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null, external: true }] : []),
                ...(hasPanel ? [{ href: '/panel/stats', icon: Server, label: 'Server Stats' }] : []),
-               ...(effectiveSession?.user?.roles?.includes('1372491512709124106') ? [{ href: '/transcripts/search', icon: Search, label: 'Search Transcripts' }] : []),
+               ...(userRoles.includes('1372491512709124106') ? [{ href: '/transcripts/search', icon: Search, label: 'Search Transcripts' }] : []),
                { href: '/verify', icon: ShieldCheck, label: 'Verification' },
               { href: '/shop', icon: ShoppingCart, label: 'Store' },
-              ...(effectiveSession?.user?.roles?.includes('1394297547597680670') ? [{ href: '/panel/reminders', icon: Megaphone, label: 'Reminders' }] : []),
+              ...(userRoles.includes('1394297547597680670') ? [{ href: '/panel/reminders', icon: Megaphone, label: 'Reminders' }] : []),
             ].map((item, idx) => (
               <Link
                 key={item.href}
