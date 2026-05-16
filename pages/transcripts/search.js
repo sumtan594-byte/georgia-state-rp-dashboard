@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/router';
 import { Search, FileText, Loader2, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
@@ -8,7 +9,16 @@ import { authOptions } from '../../lib/auth-options';
 
 export default function TranscriptSearchPage() {
   const { status } = useSession();
+  const router = useRouter();
   const { refreshedUser } = useRefreshedUser();
+  const hasAccess = refreshedUser?.user?.roles?.includes('1372491512709124106');
+
+  useEffect(() => {
+    if (status === 'authenticated' && !hasAccess) {
+      router.replace('/transcripts');
+    }
+  }, [status, hasAccess, router]);
+
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [total, setTotal] = useState(0);
@@ -42,6 +52,18 @@ export default function TranscriptSearchPage() {
   };
 
   const totalPages = Math.ceil(total / pageSize);
+
+  if (status === 'loading') {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
+      </div>
+    );
+  }
+
+  if (!hasAccess) {
+    return null;
+  }
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -151,6 +173,11 @@ export async function getServerSideProps(context) {
 
   if (!session) {
     return { redirect: { destination: '/login', permanent: false } };
+  }
+
+  const userRoles = session.user?.roles || [];
+  if (!userRoles.includes('1372491512709124106')) {
+    return { redirect: { destination: '/transcripts', permanent: false } };
   }
 
   return { props: {} };

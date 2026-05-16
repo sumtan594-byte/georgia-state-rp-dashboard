@@ -6,6 +6,11 @@ export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Not logged in' });
 
+  const userRoles = session.user?.roles || [];
+  if (!userRoles.includes('1372491512709124106')) {
+    return res.status(403).json({ error: 'Access denied' });
+  }
+
   if (!pool) {
     return res.status(500).json({ error: 'Database not configured' });
   }
