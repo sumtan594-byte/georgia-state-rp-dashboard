@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import clientPromise from '../../lib/mongodb';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import { BarChart3, Users, CheckCircle, XCircle, Clock, TrendingUp, Loader2, Award } from 'lucide-react';
 import { getServerSession } from 'next-auth';
