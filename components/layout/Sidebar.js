@@ -30,20 +30,17 @@ export default function Sidebar({ open, onToggle }) {
   const { refreshedUser, session: refreshedSession } = useRefreshedUser();
   const effectiveSession = refreshedSession || session;
   const userRoles = refreshedUser?.roles || effectiveSession?.user?.roles || [];
+  const SEARCH_ROLE = '1372491512709124106';
+  const hasSearchRole = userRoles.includes(SEARCH_ROLE);
 
-  // DEBUG: Log role detection
+  // DEBUG: Browser console log
   useEffect(() => {
-    console.log('[Sidebar DEBUG] === Role Detection ===');
-    console.log('[Sidebar DEBUG] session:', session ? 'present' : 'null');
-    console.log('[Sidebar DEBUG] session.user?.roles:', session?.user?.roles);
-    console.log('[Sidebar DEBUG] refreshedUser:', refreshedUser ? 'present' : 'null');
-    console.log('[Sidebar DEBUG] refreshedUser?.roles:', refreshedUser?.roles);
-    console.log('[Sidebar DEBUG] effectiveSession?.user?.roles:', effectiveSession?.user?.roles);
-    console.log('[Sidebar DEBUG] resolved userRoles (length):', userRoles.length);
-    console.log('[Sidebar DEBUG] resolved userRoles:', userRoles);
-    console.log('[Sidebar DEBUG] has search role (1372491512709124106):', userRoles.includes('1372491512709124106'));
-    console.log('[Sidebar DEBUG] ========================');
-  }, [refreshedUser, effectiveSession, session, userRoles]);
+    console.log('[Sidebar] refreshedUser.roles:', refreshedUser?.roles);
+    console.log('[Sidebar] session.user.roles:', session?.user?.roles);
+    console.log('[Sidebar] effectiveSession.user.roles:', effectiveSession?.user?.roles);
+    console.log('[Sidebar] resolved userRoles:', userRoles);
+    console.log('[Sidebar] hasSearchRole:', hasSearchRole);
+  }, [refreshedUser, effectiveSession, session, userRoles, hasSearchRole]);
   const [serverStatus, setServerStatus] = useState(null);
   const [transcriptCount, setTranscriptCount] = useState(0);
 
@@ -128,7 +125,7 @@ export default function Sidebar({ open, onToggle }) {
               { href: '/transcripts', icon: FileText, label: 'Transcripts', badge: transcriptCount > 0 ? transcriptCount : null },
                ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null, external: true }] : []),
                ...(hasPanel ? [{ href: '/panel/stats', icon: Server, label: 'Server Stats' }] : []),
-               ...(userRoles.includes('1372491512709124106') ? [{ href: '/transcripts/search', icon: Search, label: 'Search Transcripts' }] : []),
+               ...(hasSearchRole ? [{ href: '/transcripts/search', icon: Search, label: 'Search Transcripts' }] : []),
                { href: '/verify', icon: ShieldCheck, label: 'Verification' },
               { href: '/shop', icon: ShoppingCart, label: 'Store' },
               ...(userRoles.includes('1394297547597680670') ? [{ href: '/panel/reminders', icon: Megaphone, label: 'Reminders' }] : []),
