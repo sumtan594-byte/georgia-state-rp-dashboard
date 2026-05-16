@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import { ROLES, hasRole } from '../../lib/auth';
-import { isFullAdmin } from '../../lib/admin-helper';
 import { Server, Users, Activity, Clock, Loader2, RefreshCw, TrendingUp, TrendingDown } from 'lucide-react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../lib/auth-options';
@@ -153,6 +152,7 @@ function StatCard({ icon: Icon, label, value, color, bg, truncate }) {
 }
 
 export async function getServerSideProps(context) {
+  const { isFullAdmin } = await import('../../lib/admin-helper');
   const session = await getServerSession(context.req, context.res, authOptions);
 
   if (!session) {

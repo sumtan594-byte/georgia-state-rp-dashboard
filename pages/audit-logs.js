@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { isFullAdmin } from '../lib/admin-helper';
 import { useRefreshedUser } from '../lib/UserRefreshContext';
 import { Shield, UserPlus, UserMinus, FileCheck, FileX, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getServerSession } from 'next-auth';
@@ -159,6 +158,7 @@ export default function AuditLogsPage() {
 }
 
 export async function getServerSideProps(context) {
+  const { isFullAdmin } = await import('../lib/admin-helper');
   const session = await getServerSession(context.req, context.res, authOptions);
 
   if (!session) {

@@ -4,7 +4,6 @@ import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import { BarChart3, Users, CheckCircle, XCircle, Clock, TrendingUp, Loader2, Award } from 'lucide-react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../lib/auth-options';
-import { isFullAdmin } from '../../lib/admin-helper';
 
 export default function QuizAnalyticsPage() {
   const { status } = useSession();
@@ -178,6 +177,7 @@ function StatCard({ icon: Icon, label, value, color, bg }) {
 }
 
 export async function getServerSideProps(context) {
+  const { isFullAdmin } = await import('../../lib/admin-helper');
   const session = await getServerSession(context.req, context.res, authOptions);
 
   if (!session) {
