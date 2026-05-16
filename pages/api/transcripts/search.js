@@ -6,6 +6,10 @@ export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Not logged in' });
 
+  if (!pool) {
+    return res.status(500).json({ error: 'Database not configured' });
+  }
+
   const { q, limit = '20', offset = '0' } = req.query;
 
   if (!q || typeof q !== 'string' || q.trim().length < 2) {

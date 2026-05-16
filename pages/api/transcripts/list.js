@@ -17,6 +17,10 @@ export default async function handler(req, res) {
   const isAdmin = await isFullAdmin(currentUserId, session.user?.roles || []);
   const { sort = 'latest' } = req.query;
 
+  if (!pool) {
+    return res.status(200).json({ transcripts: [], total: 0 });
+  }
+
   try {
     const { where, params } = await accessibleTranscriptsQuery(isAdmin, currentUserId, session.user?.roles || []);
 

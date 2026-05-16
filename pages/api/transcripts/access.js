@@ -18,50 +18,11 @@ export default async function handler(req, res) {
   const canRemoveAdmins = userRoles.includes(ADMIN_REMOVER_ROLE);
 
   const { transcriptId } = req.query;
-  if (!transcriptId) return res.status(400).json({ error: 'Missing transcriptId' });
 
-  // Verify transcript exists
-  const [ownerRows] = await pool.query('SELECT owner_id FROM transcripts WHERE id = ? LIMIT 1', [transcriptId]);
-  if (ownerRows.length === 0) return res.status(404).json({ error: 'Transcript not found' });
-
-  const isOwner = String(ownerRows[0].owner_id) === currentUserId;
-  const canManage = isAdmin || isOwner;
-
-  // ── CHECK endpoint: anyone can see if they themselves have access ──
-  if (req.method === 'GET' && req.query.check === '1') {
-    // Check deny first (applies to everyone, including admins)
-    let isDenied = false;
-    try {
-      const [denyRows] = await pool.query(
-        'SELECT 1 FROM transcript_deny WHERE transcript_id = ? AND user_id = ? LIMIT 1',
-        [transcriptId, currentUserId]
-      );
-      isDenied = denyRows.length > 0;
-    } catch (e) {
-      if (e.code !== 'ER_NO_SUCH_TABLE') console.error('[Access] check deny error:', e.message);
-    }
-    if (isDenied) return res.status(200).json({ hasAccess: false });
-
-    if (isAdmin) return res.status(200).json({ hasAccess: true });
-    if (isOwner) return res.status(200).json({ hasAccess: true });
-
-    const rolePlaceholders = userRoles.map(() => '?').join(',');
-    let accessSql, accessParams;
-    if (rolePlaceholders) {
-      accessSql = `SELECT 1 FROM transcript_access WHERE transcript_id = ? AND ((grantee_type = 'user' AND grantee_id = ?) OR (grantee_type = 'role' AND grantee_id IN (${rolePlaceholders}))) LIMIT 1`;
-      accessParams = [transcriptId, currentUserId, ...userRoles];
-    } else {
-      accessSql = `SELECT 1 FROM transcript_access WHERE transcript_id = ? AND grantee_type = 'user' AND grantee_id = ? LIMIT 1`;
-      accessParams = [transcriptId, currentUserId];
-    }
-    const [accessRows] = await pool.query(accessSql, accessParams);
-    return res.status(200).json({ hasAccess: accessRows.length > 0 });
+  if (!pool) {
+    return res.status(500).json({ error: 'Database not configured' });
   }
 
-  // All other methods require manage permission
-  if (!canManage) return res.status(403).json({ error: 'Not authorized' });
-
-  // ── GET: list grants + admins + denies ──
   if (req.method === 'GET') {
     const [accessRows] = await pool.query(
       'SELECT id, grantee_id, grantee_type, created_at FROM transcript_access WHERE transcript_id = ? ORDER BY created_at DESC',
