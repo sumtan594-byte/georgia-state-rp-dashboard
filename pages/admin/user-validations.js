@@ -69,7 +69,10 @@ export default function UserValidationsPage() {
   }, [toast]);
 
   const filtered = users.filter(u => {
-    const matchesSearch = !search || u.userId.toLowerCase().includes(search.toLowerCase());
+    const q = search.toLowerCase();
+    const matchesSearch = !search ||
+      u.userId.toLowerCase().includes(q) ||
+      (u.username || '').toLowerCase().includes(q);
     if (filter === 'all') return matchesSearch;
     if (filter === 'passed') return matchesSearch && u.hasPassed;
     if (filter === 'failed') return matchesSearch && !u.hasPassed && u.totalAttempts > 0;
@@ -183,12 +186,15 @@ function UserCard({ user, isExpanded, onToggle, onAction, actionLoading }) {
         onClick={onToggle}
         className="w-full flex items-center gap-4 p-4 text-left hover:border-gsrp-orange/30 transition-colors cursor-pointer"
       >
-        <div className="w-10 h-10 rounded-lg bg-gsrp-orange/10 flex items-center justify-center flex-shrink-0">
-          <Users className="w-5 h-5 text-gsrp-orange" />
-        </div>
+        <img
+          src={user.avatar || `https://cdn.discordapp.com/embed/avatars/0.png`}
+          alt=""
+          className="w-10 h-10 rounded-full flex-shrink-0 object-cover"
+          onError={e => { e.target.src = `https://cdn.discordapp.com/embed/avatars/0.png`; }}
+        />
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
-            <p className="text-sm font-mono text-white truncate">{user.userId}</p>
+            <p className="text-sm font-semibold text-white truncate">{user.username || 'Unknown User'}</p>
             <button
               onClick={e => { e.stopPropagation(); navigator.clipboard.writeText(user.userId); }}
               className="p-1 hover:bg-gsrp-dark-surface rounded transition-colors cursor-pointer"
@@ -197,6 +203,7 @@ function UserCard({ user, isExpanded, onToggle, onAction, actionLoading }) {
               <Copy className="w-3 h-3 text-gray-500" />
             </button>
           </div>
+          <p className="text-xs font-mono text-gray-500 mt-0.5">{user.userId}</p>
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <StatusBadge icon={BookOpen} label={user.handbookCompleted ? 'Handbook Complete' : 'Handbook Pending'} active={user.handbookCompleted} />
             <StatusBadge icon={FileText} label={user.hasPassed ? 'Quiz Passed' : 'Quiz Not Passed'} active={user.hasPassed} />
@@ -224,6 +231,19 @@ function UserCard({ user, isExpanded, onToggle, onAction, actionLoading }) {
 
       {isExpanded && (
         <div className="border-t border-gsrp-dark-border/50 p-4 bg-gsrp-dark-surface/30">
+          <div className="flex items-center gap-3 mb-4">
+            <img
+              src={user.avatar || `https://cdn.discordapp.com/embed/avatars/0.png`}
+              alt=""
+              className="w-12 h-12 rounded-full object-cover"
+              onError={e => { e.target.src = `https://cdn.discordapp.com/embed/avatars/0.png`; }}
+            />
+            <div>
+              <p className="text-base font-semibold text-white">{user.username || 'Unknown User'}</p>
+              <p className="text-xs font-mono text-gray-500">{user.userId}</p>
+            </div>
+          </div>
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div className="bg-gsrp-dark-card/50 rounded-lg p-3">
               <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
