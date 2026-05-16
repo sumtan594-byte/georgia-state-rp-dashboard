@@ -109,8 +109,8 @@ export default async function handler(req, res) {
 
     console.log('[User Validations API] Built userMap, sorting...');
     const users = Object.values(userMap).sort((a, b) => {
-      const aTime = a.lastHandbookUpdate || a.lastAttempt?.timestamp || '';
-      const bTime = b.lastHandbookUpdate || b.lastAttempt?.timestamp || '';
+      const aTime = String(a.lastHandbookUpdate || a.lastAttempt?.timestamp || '');
+      const bTime = String(b.lastHandbookUpdate || b.lastAttempt?.timestamp || '');
       return bTime.localeCompare(aTime);
     });
 
