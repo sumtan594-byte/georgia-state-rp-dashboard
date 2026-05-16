@@ -20,6 +20,7 @@ import {
   Search,
   Server,
   ScrollText,
+  UserCheck,
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications, canManageAdmins } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
@@ -180,6 +181,7 @@ export default function Sidebar({ open, onToggle }) {
               ] : []),
                ...(canManageAdminList ? [{ href: '/admins', icon: ShieldCheck, label: 'Edit Admins' }] : []),
                ...(isFullAdminUser ? [{ href: '/audit-logs', icon: ScrollText, label: 'Audit Logs' }] : []),
+               ...(isFullAdminUser ? [{ href: '/admin/user-validations', icon: UserCheck, label: 'User Validations' }] : []),
             ].map((item, idx) => (
               <Link
                 key={item.href}
