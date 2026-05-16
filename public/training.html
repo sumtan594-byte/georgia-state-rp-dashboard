@@ -1008,12 +1008,24 @@ function updateCooldownCountdown() {
     userCooldown.isOnCooldown = false;
     userCooldown.cooldownUntil = null;
     updateCooldownUI();
+    const retryBtn = document.querySelector('#results-card .btn-retry');
+    if (retryBtn) {
+      retryBtn.disabled = false;
+      retryBtn.style.opacity = '';
+      retryBtn.style.cursor = '';
+      retryBtn.innerHTML = '&#8635; Retry Quiz';
+    }
     return;
   }
 
   const hours = Math.floor(remaining / (1000 * 60 * 60));
   const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
   el.textContent = `${hours}h ${mins}m`;
+
+  const retryBtn = document.querySelector('#results-card .btn-retry');
+  if (retryBtn && retryBtn.disabled) {
+    retryBtn.innerHTML = `&#8635; Retry in ${hours}h ${mins}m`;
+  }
 }
 
 setInterval(updateCooldownCountdown, 30000);
@@ -1593,6 +1605,16 @@ function showResults() {
   const pct   = Math.round((score / total) * 100);
   const pass  = score >= PASS_SCORE;
 
+  if (!pass && currentUser) {
+    const cooldownMs = COOLDOWN_HOURS * 60 * 60 * 1000;
+    userCooldown = {
+      isOnCooldown: true,
+      cooldownUntil: new Date(Date.now() + cooldownMs).toISOString(),
+      hasPassed: false,
+    };
+    cooldownCheckDone = true;
+  }
+
   // Show splash first, then summary
   showResultSplash(pass, pct, total, () => {
     buildResultsSummary(total, pct, pass);
@@ -1620,6 +1642,22 @@ function buildResultsSummary(total, pct, pass) {
   document.getElementById('stat-total').textContent   = total;
 
   applyUser(currentUser);
+
+  const retryBtn = document.querySelector('#results-card .btn-retry');
+  if (retryBtn) {
+    if (userCooldown.isOnCooldown && userCooldown.cooldownUntil) {
+      const until = new Date(userCooldown.cooldownUntil);
+      const remaining = until - new Date();
+      if (remaining > 0) {
+        const hours = Math.floor(remaining / (1000 * 60 * 60));
+        const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+        retryBtn.disabled = true;
+        retryBtn.style.opacity = '0.4';
+        retryBtn.style.cursor = 'not-allowed';
+        retryBtn.innerHTML = `&#8635; Retry in ${hours}h ${mins}m`;
+      }
+    }
+  }
 
   const wrongOnes = userAnswers
     .map((a, i) => ({ ...a, q: shuffledQs[i] }))
@@ -1659,6 +1697,15 @@ async function submitResult(pct, pass, total) {
       }),
     });
     const data = await res.json();
+    if (res.ok && !pass && data.cooldownUntil) {
+      userCooldown = {
+        isOnCooldown: true,
+        cooldownUntil: data.cooldownUntil,
+        hasPassed: false,
+      };
+      cooldownCheckDone = true;
+      updateCooldownUI();
+    }
     if (!res.ok) {
       if (data.error === 'Cooldown active' || data.error === 'Already passed') {
         alert(data.error === 'Cooldown active' 
@@ -1742,7 +1789,38 @@ function dismissSplash() {
   }, 500);
 }
 
-function retryQuiz() {
+async function retryQuiz() {
+  if (!currentUser) { showScreen('login'); return; }
+
+  try {
+    const res = await fetch(`/api/training/cooldown?userId=${currentUser.id}`);
+    const data = await res.json();
+    userCooldown = {
+      isOnCooldown: data.isOnCooldown || false,
+      cooldownUntil: data.cooldownUntil,
+      hasPassed: data.hasPassed || false,
+    };
+    cooldownCheckDone = true;
+  } catch (e) { console.warn('Cooldown check failed:', e); }
+
+  if (userCooldown.hasPassed) {
+    showPassCongrats();
+    return;
+  }
+
+  if (userCooldown.isOnCooldown && userCooldown.cooldownUntil) {
+    const until = new Date(userCooldown.cooldownUntil);
+    const now = new Date();
+    const remaining = until - now;
+    if (remaining > 0) {
+      const hours = Math.floor(remaining / (1000 * 60 * 60));
+      const mins = Math.floor((remaining % (1000 * 60 * 60)) / (1000 * 60));
+      alert(`You are on cooldown. Please wait ${hours}h ${mins}m before retrying.`);
+      updateCooldownUI();
+      return;
+    }
+  }
+
   showScreen('quiz');
   launchFresh();
 }
