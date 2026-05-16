@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { getAuditLogs } from '../lib/audit-log';
 import { isFullAdmin } from '../lib/admin-helper';
 import { useRefreshedUser } from '../lib/UserRefreshContext';
 import { Shield, UserPlus, UserMinus, FileCheck, FileX, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -33,15 +32,19 @@ export default function AuditLogsPage() {
       return;
     }
     setLoading(true);
-    getAuditLogs({
-      limit: pageSize,
-      skip: page * pageSize,
-      action: filter === 'all' ? undefined : filter,
-    }).then(result => {
-      setLogs(result.logs);
-      setTotal(result.total);
-      setLoading(false);
+    const params = new URLSearchParams({
+      limit: String(pageSize),
+      skip: String(page * pageSize),
     });
+    if (filter !== 'all') params.set('action', filter);
+    fetch(`/api/audit-logs?${params}`)
+      .then(res => res.json())
+      .then(data => {
+        setLogs(data.logs || []);
+        setTotal(data.total || 0);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
   }, [status, isAdmin, page, filter]);
 
   if (status === 'loading') {
