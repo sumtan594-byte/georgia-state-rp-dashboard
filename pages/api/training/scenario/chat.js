@@ -3,6 +3,17 @@ import { authOptions } from '../../../../lib/auth-options';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
+const PUNISHMENT_GUIDELINES = {
+  'RDM': { 1: 'Warning', 2: 'Kick', 3: 'Ban', explanation: 'Random Deathmatch starts with a Warning for first offense.' },
+  'VDM': { 1: 'Warning', 2: 'Kick', 3: 'Ban', explanation: 'Vehicle Deathmatch starts with a Warning for first offense.' },
+  'FRP': { 1: 'Warning', 2: 'Kick', 3: 'Ban', explanation: 'Fail Roleplay starts with a Warning for first offense.' },
+  'NLR': { 1: 'Warning', 2: 'Kick', 3: 'Ban', explanation: 'New Life Rule starts with a Warning for first offense.' },
+  'NITRP': { 1: 'Kick', 2: 'Ban', 3: '—', explanation: 'No Intent to Roleplay starts with a Kick for first offense.' },
+  'LTAP': { 1: 'Ban', 2: '—', 3: '—', explanation: 'Leave To Avoid Punishment is a Ban on first offense. No clip needed, server logs are enough proof.' },
+  'TROLLING': { 1: 'Kick', 2: 'Ban', 3: '—', explanation: 'Trolling starts with a Kick for first offense.' },
+  'VOL': { 1: 'Warning', 2: 'Kick', 3: 'Ban', explanation: 'Value of Life starts with a Warning for first offense.' },
+};
+
 const SYSTEM_PROMPT = `You are a player on a private ER:LC (Emergency Response Liberty County) roleplay server called GSRP (Georgia State Roleplay). You are reporting a rule violation to a staff member. You must stay completely in character as a regular frustrated player seeking help.
 
 RULES YOU MUST KNOW ABOUT:
@@ -21,10 +32,17 @@ RULES YOU MUST KNOW ABOUT:
 GSRP STAFF RULES YOU SHOULD KNOW:
 - Staff must always ask for video proof before taking any moderation action
 - Kill logs are NOT valid proof only video clips count
+- EXCEPT for LTAP where server logs are enough proof and no clip is needed
 - Staff should be professional and polite
 - Moderation should only occur when there are at least 20 players in the server
 - Staff use 4 letter commands while on duty
 - The Discord comms code is GSRP7
+- If a staff member types a command like :jail :kick :ban :warn or :load the player should react accordingly
+- If the staff types :ban you should say something like "finally" or "good" if you were the victim or "thats not fair" if you were the one being reported
+- If the staff types :kick you should react with confusion or acceptance
+- If the staff types :warn you should say thanks or whatever
+- If the staff types :jail you should comment on it
+- If the staff types :load you should wait for them to finish loading
 
 PUNISHMENT GUIDELINES:
 - RDM: 1st offense Warning 2nd offense Kick 3rd offense Ban
@@ -32,7 +50,7 @@ PUNISHMENT GUIDELINES:
 - FRP: 1st offense Warning 2nd offense Kick 3rd offense Ban
 - NLR: 1st offense Warning 2nd offense Kick 3rd offense Ban
 - NITRP: 1st offense Kick 2nd offense Ban
-- LTAP: 1st offense Ban
+- LTAP: 1st offense Ban (no clip needed server logs are proof enough)
 - Trolling: 1st offense Kick 2nd offense Ban
 - VOL: 1st offense Warning 2nd offense Kick 3rd offense Ban
 
@@ -41,6 +59,7 @@ HOW TO RESPOND:
 - Use casual gamer language but do not be overly rude unless the staff member does something very wrong
 - If the staff asks for video proof and you have it say yes and that you will send it
 - If the staff asks for video proof and you do not have it say no but suggest they check kill logs which is NOT valid proof
+- For LTAP reports if asked for proof say you dont have a clip but the server logs should show it since they left during a mod call
 - If the staff asks for your Discord comms status say you are not in comms and ask for the code
 - If the staff gives you the code GSRP7 say thanks and that you will join
 - If the staff asks for the suspect username give a random Roblox style username
@@ -56,6 +75,41 @@ HOW TO RESPOND:
 - Do not be overly formal or robotic
 - Use lowercase sometimes like a real gamer would
 - You are the one reporting an offense so act like someone who wants justice done
+
+PLAYER BEHAVIOR VARIETY:
+- Sometimes players are polite and say thanks officer
+- Sometimes players are rude and call the staff names like doofus idiot or noob
+- Sometimes players get impatient and say hurry up or this is taking forever
+- Sometimes players argue with each other in the chat like the suspect saying the reporter is lying
+- Sometimes multiple people report the same person at once
+- Sometimes the suspect joins the chat and denies everything
+- Sometimes the reporter and suspect start arguing and the staff needs to calm them down
+- Sometimes players use mild bad words like stupid dumb or idiot
+- Sometimes players are very chill and just want a warning given
+- Sometimes players are very angry and demand a ban right away
+- React naturally to whatever the staff member does
+
+COMMAND RESPONSES:
+- If the staff types :ban followed by a username react as the person affected. If you were the victim say something like good or finally. If you were the suspect say thats unfair or whatever
+- If the staff types :kick react with confusion or acceptance
+- If the staff types :warn say thanks or acknowledge it
+- If the staff types :jail comment on it
+- If the staff types :load wait for them
+- If the staff types any other command react naturally
+
+MULTI PLAYER SCENARIOS:
+- Sometimes there will be two or more people in the chat reporting the same person
+- Sometimes the suspect will also be in chat defending themselves
+- The reporter might say things like hes lying or check his logs
+- The suspect might say things like i didnt do anything or hes the one trolling
+- As the reporter you should stand your ground and tell the staff to check the evidence
+- If the staff asks both sides listen and respond accordingly
+
+DE ESCALATION SCENARIOS:
+- Sometimes the reporter and suspect will start arguing
+- The staff might need to tell them to calm down
+- If the staff tells you to calm down you should comply but still want the issue resolved
+- Say things like fine but please still look into it or okay sorry but can you still help
 
 CURRENT SCENARIO TYPE: {scenarioType}
 CURRENT SCENARIO LABEL: {scenarioLabel}
@@ -124,16 +178,37 @@ function evaluateStaffResponse(staffMessage, scenarioType) {
   let score = 0;
   let maxScore = 3;
 
+  const isCommand = staffMessage.startsWith(':');
   const asksForProof = lower.includes('proof') || lower.includes('clip') || lower.includes('video') || lower.includes('recording') || lower.includes('evidence');
   const asksForUsername = lower.includes('username') || lower.includes('name') || lower.includes('who') || lower.includes('suspect');
   const asksForComms = lower.includes('comms') || lower.includes('discord');
   const mentionsReportsChannel = lower.includes('report') || lower.includes('channel');
   const asksToSubmit = lower.includes('submit') || lower.includes('send') || lower.includes('dm');
   const mentionsKillLogs = lower.includes('kill log') || lower.includes('killlog');
-  const immediateBan = (lower.includes('ban') || lower.includes('banning')) && !lower.includes('proof') && !lower.includes('check') && !lower.includes('investigate');
+  const immediateBan = (lower.includes('ban') || lower.includes('banning')) && !lower.includes('proof') && !lower.includes('check') && !lower.includes('investigate') && !lower.includes('log');
   const immediateKick = (lower.includes('kick') || lower.includes('kicking')) && !lower.includes('proof') && !lower.includes('check') && !lower.includes('investigate');
   const professional = lower.includes('sir') || lower.includes('please') || lower.includes('thank') || lower.includes('help you') || lower.includes('assist');
   const asksWhatHappened = lower.includes('what happened') || lower.includes('tell me') || lower.includes('explain') || lower.includes('details');
+  const deEscalates = lower.includes('calm') || lower.includes('stop arguing') || lower.includes('chill') || lower.includes('relax');
+
+  if (isCommand) {
+    const guidelines = PUNISHMENT_GUIDELINES[scenarioType];
+    if (guidelines) {
+      const correctAction = guidelines[1].toLowerCase();
+      if (staffMessage.toLowerCase().includes(':ban') && correctAction === 'ban') {
+        score = 3;
+      } else if (staffMessage.toLowerCase().includes(':kick') && correctAction === 'kick') {
+        score = 3;
+      } else if (staffMessage.toLowerCase().includes(':warn') && correctAction === 'warning') {
+        score = 3;
+      } else if (staffMessage.toLowerCase().includes(':jail')) {
+        score = 2;
+      } else {
+        score = 1;
+      }
+    }
+    return { score, maxScore, shouldShowDecision: false, isCommand: true };
+  }
 
   if (asksForProof) score += 1;
   if (asksForUsername) score += 0.5;
@@ -142,10 +217,15 @@ function evaluateStaffResponse(staffMessage, scenarioType) {
   if (asksToSubmit) score += 0.5;
   if (professional) score += 0.25;
   if (asksWhatHappened) score += 0.25;
+  if (deEscalates) score += 0.5;
 
   if (mentionsKillLogs && lower.includes('valid')) score -= 1;
-  if (immediateBan) score -= 1.5;
-  if (immediateKick) score -= 1;
+  if (scenarioType !== 'LTAP' && immediateBan) score -= 1.5;
+  if (scenarioType !== 'LTAP' && immediateKick) score -= 1;
+
+  if (scenarioType === 'LTAP' && (lower.includes('log') || lower.includes('check server'))) {
+    score = Math.max(score, 2);
+  }
 
   score = Math.max(0, Math.min(maxScore, Math.round(score * 10) / 10));
 
@@ -170,19 +250,9 @@ export default async function handler(req, res) {
   }
 
   if (decisionAction) {
-    const guidelines = {
-      'RDM': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
-      'VDM': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
-      'FRP': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
-      'NLR': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
-      'NITRP': { 1: 'Kick', 2: 'Ban', 3: '—' },
-      'LTAP': { 1: 'Ban', 2: '—', 3: '—' },
-      'TROLLING': { 1: 'Kick', 2: 'Ban', 3: '—' },
-      'VOL': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
-    };
-
+    const guidelines = PUNISHMENT_GUIDELINES[scenario.type];
     const type = scenario.type;
-    const correctFirstOffense = guidelines[type]?.[1]?.toLowerCase() || 'warning';
+    const correctFirstOffense = guidelines?.[1]?.toLowerCase() || 'warning';
 
     let score = 0;
     let maxScore = 3;
@@ -196,7 +266,7 @@ export default async function handler(req, res) {
           feedback = `Correct! Per GSRP guidelines a first offense ${type} results in a Warning.`;
         } else {
           score = 1;
-          feedback = `Incorrect. Per guidelines first offense ${type} should be ${guidelines[type][1]} not a Warning.`;
+          feedback = `Incorrect. Per guidelines first offense ${type} should be ${guidelines[1]} not a Warning.`;
         }
         break;
       case 'kick':
@@ -208,7 +278,7 @@ export default async function handler(req, res) {
           feedback = `Too harsh. Per guidelines first offense ${type} should be a Warning not a Kick.`;
         } else {
           score = 2;
-          feedback = `Close but per guidelines ${type} first offense is ${guidelines[type][1]}.`;
+          feedback = `Close but per guidelines ${type} first offense is ${guidelines[1]}.`;
         }
         break;
       case 'ban':
@@ -217,7 +287,7 @@ export default async function handler(req, res) {
           feedback = `Correct! Per GSRP guidelines a first offense ${type} results in a Ban.`;
         } else {
           score = 0;
-          feedback = `Too harsh! Per guidelines first offense ${type} should be ${guidelines[type][1]} not a Ban. Never ban on first offense unless guidelines say so.`;
+          feedback = `Too harsh! Per guidelines first offense ${type} should be ${guidelines[1]} not a Ban. Never ban on first offense unless guidelines say so.`;
         }
         break;
       case 'ban_jail':
@@ -273,6 +343,16 @@ export default async function handler(req, res) {
       message
     );
 
+    if (evaluation.isCommand) {
+      return res.status(200).json({
+        response: aiResponse,
+        score: evaluation.score,
+        maxScore: evaluation.maxScore,
+        feedback: evaluation.score >= 2 ? 'Good command usage for this offense.' : 'Consider if this command matches the punishment guidelines.',
+        ended: true,
+      });
+    }
+
     if (evaluation.shouldShowDecision) {
       return res.status(200).json({
         response: aiResponse,
@@ -289,12 +369,12 @@ export default async function handler(req, res) {
       });
     }
 
-    if (evaluation.score === 0 && (message.toLowerCase().includes('ban') || message.toLowerCase().includes('kick')) && !message.toLowerCase().includes('proof')) {
+    if (evaluation.score === 0 && (message.toLowerCase().includes('ban') || message.toLowerCase().includes('kick')) && !message.toLowerCase().includes('proof') && !message.toLowerCase().includes('log')) {
       return res.status(200).json({
         response: aiResponse,
         score: 0,
         maxScore: 3,
-        feedback: 'You took action without proper proof or investigation. Always ask for video evidence first.',
+        feedback: 'You took action without proper proof or investigation. Always ask for video evidence first unless it is an LTAP case where server logs are enough.',
         ended: true,
       });
     }

@@ -491,9 +491,6 @@ export default function ScenarioTrainingPage() {
               <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
                 <MessageSquare className="w-4 h-4 text-gsrp-orange" />
                 Trainer Feedback
-                {results.aiGenerated && (
-                  <span className="text-[10px] font-medium text-gsrp-teal bg-gsrp-teal/10 px-2 py-0.5 rounded-full">AI Generated</span>
-                )}
               </h3>
               <p className="text-sm text-gray-300 leading-relaxed">{results.overallComment}</p>
             </div>

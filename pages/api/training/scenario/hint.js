@@ -107,21 +107,22 @@ export default async function handler(req, res) {
     hintContext = `Remember: for ${type}, the first offense punishment is ${guidelines[1]}. ${guidelines.explanation}`;
   }
 
-  const systemPrompt = `You are a helpful training hint system for GSRP (Georgia State Roleplay) staff training. You give short contextual hints to help trainees handle moderation scenarios correctly.
+  const systemPrompt = `You are a helpful training hint system for GSRP (Georgia State Roleplay) staff training. You give short hints to help new young trainees (13 to 17 years old) handle moderation situations.
 
 Current scenario: ${scenario.label} (${type})
 ${hintContext}
 
-Rules to reference:
-- Staff must always ask for video proof before taking action
-- Kill logs are NOT valid proof
+Rules to remember:
+- Always ask for video proof before doing anything
+- Kill logs do NOT count as proof
+- EXCEPT for LTAP where server logs are enough proof
 - Punishment for first offense ${type}: ${guidelines[1]}
-- Be professional and follow chain of command
+- Be nice and follow the chain of command
 - Discord comms code is GSRP7
 
-Give a short helpful hint (1-2 sentences max) that guides the trainee toward the right action without giving away the answer completely. Sound like a senior trainer giving advice. Do not use em dashes. Be direct and practical.`;
+Give a short hint (1 to 2 sentences) that helps the trainee figure out what to do next. Do not give away the full answer. Sound like a senior staff member giving advice to a new young trainee. No big words. No em dashes. Keep it simple and direct.`;
 
-  const userMessage = `What hint should I give the trainee right now? They are handling a ${type} report. ${hintContext} Give a specific actionable hint.`;
+  const userMessage = `What hint should I give the trainee right now? They are handling a ${type} report. ${hintContext} Give a specific hint that helps them figure out the next step.`;
 
   try {
     const hint = await callOpenRouter(systemPrompt, userMessage);

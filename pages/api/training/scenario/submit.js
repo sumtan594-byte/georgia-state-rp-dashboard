@@ -74,27 +74,29 @@ export default async function handler(req, res) {
   ).join('\n');
 
   try {
-    const aiPrompt = `You are evaluating a staff trainee's performance in a GSRP (Georgia State Roleplay) ER:LC scenario training module. They went through 5 moderation scenarios where they had to handle player reports of rule violations.
+    const aiPrompt = `You are giving feedback to a young staff trainee (around 13 to 17 years old) who just finished a GSRP (Georgia State Roleplay) ER:LC scenario training. They handled 5 situations where players reported rule breaking.
 
-Here is their performance breakdown:
+Here is how they did in each one:
 ${scenarioSummary}
 
 Total score: ${totalScore}/${maxScore} (${percentage}%)
-Passed: ${passed ? 'Yes' : 'No'} (passing threshold is 60%)
+Passed: ${passed ? 'Yes' : 'No'} (they need 60% to pass)
 
-Please provide:
-1. A list of 2-3 specific strengths based on what they did well across scenarios
-2. A list of 2-3 specific areas for improvement based on where they lost points
-3. An overall comment (2-3 sentences) summarizing their performance
+Write your feedback like a friendly senior staff member talking to a new young trainee. Keep it simple and easy to understand. No big fancy words. No em dashes. Just talk normal like you would in Discord.
 
-Format your response as JSON like this:
+Give me:
+1. 2 to 3 things they did well (specific to the scenarios they handled)
+2. 2 to 3 things they should work on (specific to where they lost points)
+3. A short overall comment (2 to 3 sentences) about how they did overall
+
+Return ONLY valid JSON like this:
 {
-  "strengths": ["strength 1", "strength 2", "strength 3"],
-  "improvements": ["improvement 1", "improvement 2", "improvement 3"],
-  "overallComment": "overall comment here"
+  "strengths": ["thing 1", "thing 2", "thing 3"],
+  "improvements": ["thing 1", "thing 2", "thing 3"],
+  "overallComment": "your comment here"
 }
 
-Be specific and reference actual scenario types where possible. Sound encouraging but honest. Do not use em dashes. Sound like a human trainer giving feedback.`;
+Keep it encouraging but honest. Reference the actual scenario types like RDM or VDM. Sound like a real person not a robot. Use simple words a teenager would understand.`;
 
     const aiResult = await callOpenRouter(aiPrompt);
 
@@ -110,12 +112,12 @@ Be specific and reference actual scenario types where possible. Sound encouragin
 
     if (!parsed || !parsed.strengths || !parsed.improvements) {
       parsed = {
-        strengths: scores.filter(s => s.score >= s.maxScore * 0.7).map(s => `Handled ${s.label || s.scenario} scenario well (${s.score}/${s.maxScore})`),
-        improvements: scores.filter(s => s.score < s.maxScore * 0.5).map(s => `Needs improvement on ${s.label || s.scenario} - ${s.feedback || 'review guidelines'}`),
-        overallComment: `Completed ${scores.length} scenarios with a score of ${totalScore}/${maxScore}.`,
+        strengths: scores.filter(s => s.score >= s.maxScore * 0.7).map(s => `You handled ${s.label || s.scenario} pretty well (${s.score}/${s.maxScore})`),
+        improvements: scores.filter(s => s.score < s.maxScore * 0.5).map(s => `Work on ${s.label || s.scenario} - ${s.feedback || 'check the guidelines'}`),
+        overallComment: `You finished ${scores.length} scenarios and scored ${totalScore}/${maxScore}.`,
       };
-      if (parsed.strengths.length === 0) parsed.strengths = ['Completed all training scenarios'];
-      if (parsed.improvements.length === 0) parsed.improvements = ['Review the staff handbook for punishment guidelines'];
+      if (parsed.strengths.length === 0) parsed.strengths = ['You finished all the scenarios'];
+      if (parsed.improvements.length === 0) parsed.improvements = ['Read the staff handbook for punishment rules'];
     }
 
     const strengths = parsed.strengths.slice(0, 3);
@@ -159,7 +161,6 @@ Be specific and reference actual scenario types where possible. Sound encouragin
       scenarioDetails,
       bestScenario: bestScenario?.label || bestScenario?.scenario || null,
       worstScenario: worstScenario?.label || worstScenario?.scenario || null,
-      aiGenerated: true,
     };
 
     await db.collection('scenario_training').updateOne(
@@ -187,14 +188,13 @@ Be specific and reference actual scenario types where possible. Sound encouragin
         scenarioDetails: result.scenarioDetails,
         bestScenario: result.bestScenario,
         worstScenario: result.worstScenario,
-        aiGenerated: true,
       },
     });
   } catch (err) {
     console.error('[AI Results Error]', err.message);
 
-    const fallbackStrengths = scores.filter(s => s.score >= s.maxScore * 0.7).map(s => `Handled ${s.label || s.scenario} scenario well (${s.score}/${s.maxScore})`);
-    const fallbackImprovements = scores.filter(s => s.score < s.maxScore * 0.5).map(s => `Needs improvement on ${s.label || s.scenario}`);
+    const fallbackStrengths = scores.filter(s => s.score >= s.maxScore * 0.7).map(s => `You handled ${s.label || s.scenario} well (${s.score}/${s.maxScore})`);
+    const fallbackImprovements = scores.filter(s => s.score < s.maxScore * 0.5).map(s => `Work on ${s.label || s.scenario}`);
 
     const result = {
       userId,
@@ -207,9 +207,9 @@ Be specific and reference actual scenario types where possible. Sound encouragin
       passed,
       scenariosCompleted: scores.length,
       scores,
-      strengths: fallbackStrengths.length > 0 ? fallbackStrengths : ['Completed all training scenarios'],
-      improvements: fallbackImprovements.length > 0 ? fallbackImprovements : ['Review the staff handbook for punishment guidelines'],
-      overallComment: `Completed ${scores.length} scenarios with a score of ${totalScore}/${maxScore}.`,
+      strengths: fallbackStrengths.length > 0 ? fallbackStrengths : ['You finished all the scenarios'],
+      improvements: fallbackImprovements.length > 0 ? fallbackImprovements : ['Read the staff handbook for punishment rules'],
+      overallComment: `You finished ${scores.length} scenarios and scored ${totalScore}/${maxScore}.`,
       scenarioDetails: scores.map(s => ({
         type: s.scenario,
         label: s.label || s.scenario,
@@ -219,7 +219,6 @@ Be specific and reference actual scenario types where possible. Sound encouragin
       })),
       bestScenario: scores.length > 0 ? scores.reduce((b, s) => s.score > b.score ? s : b, scores[0]).label : null,
       worstScenario: scores.length > 0 ? scores.reduce((w, s) => s.score < w.score ? s : w, scores[0]).label : null,
-      aiGenerated: false,
     };
 
     await db.collection('scenario_training').updateOne(
@@ -242,7 +241,6 @@ Be specific and reference actual scenario types where possible. Sound encouragin
         scenarioDetails: result.scenarioDetails,
         bestScenario: result.bestScenario,
         worstScenario: result.worstScenario,
-        aiGenerated: false,
       },
     });
   }
