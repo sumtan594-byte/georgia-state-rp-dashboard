@@ -6,7 +6,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../lib/auth-options';
 import {
   Server, Users, Activity, Clock, Loader2, RefreshCw,
-  TrendingUp, TrendingDown, Minus, UserCheck, QueueList,
+  TrendingUp, TrendingDown, Minus, UserCheck, ListOrdered,
 } from 'lucide-react';
 
 const HISTORY_KEY = 'gsrp_stats_history';
@@ -159,7 +159,7 @@ export default function ServerStatsPage() {
               bg="bg-emerald-500/10"
             />
             <StatCard
-              icon={QueueList}
+              icon={ListOrdered}
               label="In Queue"
               value={queueCount}
               subtitle={queueCount > 0 ? 'Waiting to join' : 'No queue'}
