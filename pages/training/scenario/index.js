@@ -25,6 +25,7 @@ export default function ScenarioTrainingPage() {
   const [scores, setScores] = useState([]);
   const [currentHint, setCurrentHint] = useState('');
   const [decisionHint, setDecisionHint] = useState('');
+  const [scenarioResolved, setScenarioResolved] = useState(false);
   const [results, setResults] = useState(null);
   const [resultsLoading, setResultsLoading] = useState(false);
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
@@ -86,6 +87,7 @@ export default function ScenarioTrainingPage() {
         setCurrentScenario(data.scenario);
         setCurrentHint('');
         setDecisionHint('');
+        setScenarioResolved(false);
         const openerHistory = [{ role: 'user', content: data.scenario.opener }];
         setMessages([{ role: 'ai', content: data.scenario.opener, timestamp: Date.now() }]);
         setPhase('chat');
@@ -128,6 +130,9 @@ export default function ScenarioTrainingPage() {
         setDecisionHint(data.decisionHint);
       }
 
+      const aiLeft = data.response.toLowerCase().includes('i\'m out') || data.response.toLowerCase().includes('peace') || data.response.toLowerCase().includes('useless') || data.response.toLowerCase().includes('whatever');
+      const noProofEnd = data.response.toLowerCase().includes('no clip') && (data.response.toLowerCase().includes('no justice') || data.response.toLowerCase().includes('messed up'));
+
       if (data.score !== undefined) {
         setScores(prev => [...prev, {
           scenario: currentScenario.type,
@@ -136,7 +141,34 @@ export default function ScenarioTrainingPage() {
           maxScore: data.maxScore,
           feedback: data.feedback,
         }]);
-        setTimeout(() => loadNextScenario(), 2500);
+        setScenarioResolved(true);
+        setTimeout(() => loadNextScenario(), 3000);
+      } else if (aiLeft || noProofEnd) {
+        const hasProof = messages.some(m => m.role === 'user' && (m.content.toLowerCase().includes('proof') || m.content.toLowerCase().includes('clip') || m.content.toLowerCase().includes('video')));
+        const usedWrongProof = messages.some(m => m.role === 'user' && m.content.toLowerCase().includes('kill log') && m.content.toLowerCase().includes('valid'));
+
+        let naturalScore = 0;
+        let naturalFeedback = '';
+        if (hasProof && !usedWrongProof) {
+          naturalScore = 2;
+          naturalFeedback = 'You asked for proof correctly. The player did not have a clip so no action could be taken. This is the right outcome.';
+        } else if (!hasProof) {
+          naturalScore = 1;
+          naturalFeedback = 'The conversation ended without you asking for video proof. Always ask for a clip first.';
+        } else if (usedWrongProof) {
+          naturalScore = 0;
+          naturalFeedback = 'You accepted kill logs as proof. Kill logs are NOT valid proof. Only video clips count.';
+        }
+
+        setScores(prev => [...prev, {
+          scenario: currentScenario.type,
+          label: currentScenario.label,
+          score: naturalScore,
+          maxScore: 3,
+          feedback: naturalFeedback,
+        }]);
+        setScenarioResolved(true);
+        setTimeout(() => loadNextScenario(), 3000);
       }
 
       if (data.score !== undefined || data.ended) {
@@ -566,6 +598,22 @@ export default function ScenarioTrainingPage() {
               >
                 Ask something else
               </button>
+              {scenarioResolved && scenarioIndex + 1 < totalScenarios && (
+                <button
+                  onClick={loadNextScenario}
+                  className="px-3 py-1.5 bg-gsrp-orange/20 text-gsrp-orange rounded-lg text-xs font-medium hover:bg-gsrp-orange/30 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <ArrowLeft className="w-3 h-3 rotate-180" /> Next Scenario
+                </button>
+              )}
+              {scenarioResolved && scenarioIndex + 1 >= totalScenarios && (
+                <button
+                  onClick={submitResults}
+                  className="px-3 py-1.5 bg-green-400/20 text-green-400 rounded-lg text-xs font-medium hover:bg-green-400/30 transition-colors flex items-center gap-1 cursor-pointer"
+                >
+                  <Award className="w-3 h-3" /> Finish Training
+                </button>
+              )}
             </div>
             <form onSubmit={(e) => { e.preventDefault(); sendMessage(input); }} className="flex items-center gap-2">
               <input

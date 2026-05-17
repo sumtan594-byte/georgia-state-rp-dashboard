@@ -3,54 +3,57 @@ import { authOptions } from '../../../../lib/auth-options';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
+const PUNISHMENT_GUIDELINES = {
+  'RDM': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
+  'VDM': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
+  'FRP': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
+  'NLR': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
+  'NITRP': { 1: 'Kick', 2: 'Ban', 3: '—' },
+  'LTAP': { 1: 'Ban', 2: '—', 3: '—' },
+  'TROLLING': { 1: 'Kick', 2: 'Ban', 3: '—' },
+  'VOL': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
+};
+
 const VIEW_RESPONSES = {
   'RDM': [
-    "The player is currently walking around the gas station. They have a pistol holstered. Nothing suspicious right now.",
-    "You see the player standing near the prison gates talking to another player. They seem to be doing normal RP.",
+    "The player is walking around the gas station with a pistol holstered. Nothing suspicious right now.",
+    "You see the player standing near the prison gates talking to someone. They seem to be doing normal RP.",
     "The player is driving around the city in a sedan. They just pulled up to a red light and are waiting.",
-    "The player is at the park sitting on a bench. They appear to be doing a roleplay scene with someone.",
   ],
   'VDM': [
-    "The player is driving a pickup truck around the prison parking lot. They just did a U-turn and are heading toward a group of players on foot.",
+    "The player is driving a pickup truck around the prison parking lot. They just did a U-turn and are heading toward players on foot.",
     "You see the player in a Chevlon Corbeta speeding down the highway. They just swerved near the edge of the road.",
-    "The player is parked at the dealership. They are sitting in their car with the engine running. Nothing happening yet.",
-    "The player is driving slowly through the city. They just stopped at the gas station and got out of their car.",
+    "The player is parked at the dealership sitting in their car with the engine running. Nothing happening yet.",
   ],
   'FRP': [
-    "The player is driving a sports car up the side of a mountain. The car is at a crazy angle that would not be possible in real life.",
+    "The player is driving a sports car up the side of a mountain at a crazy angle that would not be possible in real life.",
     "You see the player flying around on a motorcycle doing loops in the sky above the city.",
-    "The player is at the beach doing normal RP. They are sitting on a chair and talking to someone.",
-    "The player is driving a normal car on the road. They are following traffic rules and stopping at lights.",
+    "The player is at the beach doing normal RP. They are sitting on a chair talking to someone.",
   ],
   'NITRP': [
-    "The player is driving in circles around the courthouse making loud engine noises. They keep driving through a RP scene that is happening nearby.",
+    "The player is driving in circles around the courthouse making loud engine noises. They keep driving through a RP scene.",
     "You see the player running around the city spamming emotes. They are not talking to anyone or doing any RP.",
-    "The player is parked on the highway blocking traffic with their car. They are just sitting there doing nothing.",
     "The player is at the gas station pumping gas like normal. They seem to be doing proper RP right now.",
   ],
   'LTAP': [
     "The player has already left the server. Their character disappeared about 2 minutes ago during the mod call.",
     "The player disconnected. You can see their last location was near the bank. Server logs should show they left during an active report.",
-    "The player is no longer online. Their name is greyed out in the player list. Check the server logs for confirmation.",
-    "The player logged out right as you were about to respond to the report. This looks like a clear LTAP.",
+    "The player is no longer online. Their name is greyed out in the player list.",
   ],
   'NLR': [
     "The player just respawned at the hospital and is running straight back toward the bank where they died. They have a gun equipped.",
     "You see the player at the exact spot where they died earlier. They are pointing their gun at the same person who killed them.",
-    "The player is at the park doing normal RP. They are sitting on a bench talking to someone. No sign of returning to a death location.",
-    "The player just spawned at the hospital and is walking in the opposite direction from where they died. They seem to be following NLR.",
+    "The player is at the park doing normal RP. They are sitting on a bench talking to someone.",
   ],
   'VOL': [
-    "The player has a shotgun pointed at them by another player. Instead of putting their hands up they are pulling out their own AK.",
+    "The player has a shotgun pointed at them. Instead of putting their hands up they are pulling out their own AK.",
     "You see the player being robbed. They have their hands up and are acting scared. They are following value of life rules.",
     "The player was threatened with a gun but they just laughed and ran away. No fear at all.",
-    "The player is in a standoff. Both players have guns drawn. The situation is tense but both are roleplaying it properly.",
   ],
   'TROLLING': [
-    "The player has parked 5 cars across the highway blocking all traffic. They are sitting on top of one of the cars laughing.",
+    "The player has parked 5 cars across the highway blocking all traffic. They are sitting on top of one laughing.",
     "You see the player driving recklessly through the city. They just ran a red light and nearly hit another player.",
     "The player is at the dealership doing normal RP. They are looking at cars and talking to a salesperson.",
-    "The player is spamming emotes in the middle of a serious RP scene. They are making loud noises and disrupting everyone.",
   ],
 };
 
@@ -59,7 +62,7 @@ function getViewResponse(scenarioType) {
   return responses[Math.floor(Math.random() * responses.length)];
 }
 
-const SYSTEM_PROMPT = `You are a player on a private ER:LC (Emergency Response Liberty County) roleplay server called GSRP (Georgia State Roleplay). You are reporting a rule violation to a staff member. Stay completely in character as a regular player.
+const SYSTEM_PROMPT = `You are a player on a private ER:LC roleplay server called GSRP. You are reporting a rule violation to a staff member. Stay completely in character as a regular player.
 
 RULES TO KNOW:
 - RDM: Killing or shooting players without any roleplay reason
@@ -96,7 +99,6 @@ HOW TO ACT:
 - If asked for username give a Roblox style name
 - If staff bans or kicks without proof get upset
 - If staff is polite be nice back
-- If staff is rude call them out
 - If staff types :view describe what you are doing in game
 - If staff types :ban react as the person affected
 - If staff types :kick react accordingly
@@ -154,7 +156,7 @@ function evaluateResponse(message, scenarioType) {
   let score = 0;
   let maxScore = 3;
 
-  const isCommand = message.startsWith(':');
+  const isCommand = message.startsWith(':') && !lower.startsWith(':view') && !lower.startsWith(':load');
   const isViewCommand = lower.startsWith(':view');
   const asksForProof = lower.includes('proof') || lower.includes('clip') || lower.includes('video') || lower.includes('recording');
   const asksForUsername = lower.includes('username') || lower.includes('name') || lower.includes('who') || lower.includes('suspect');
@@ -164,6 +166,10 @@ function evaluateResponse(message, scenarioType) {
   const professional = lower.includes('sir') || lower.includes('please') || lower.includes('thank');
   const deEscalates = lower.includes('calm') || lower.includes('stop arguing') || lower.includes('chill');
   const immediateAction = (lower.includes(':ban') || lower.includes(':kick')) && !lower.includes('proof') && !lower.includes('log');
+
+  if (isViewCommand) {
+    return { isView: true, score: 0, maxScore: 0 };
+  }
 
   if (isCommand) {
     const guidelines = PUNISHMENT_GUIDELINES[scenarioType];
@@ -202,6 +208,15 @@ export default async function handler(req, res) {
   if (!message || !scenario) return res.status(400).json({ error: 'message and scenario required' });
 
   const lower = message.toLowerCase();
+
+  if (lower.startsWith(':view')) {
+    const viewDesc = getViewResponse(scenario.type);
+    return res.status(200).json({
+      response: `[System: View] ${viewDesc}`,
+      isView: true,
+    });
+  }
+
   const evaluation = evaluateResponse(message, scenario.type);
 
   const systemPrompt = SYSTEM_PROMPT
@@ -219,12 +234,8 @@ export default async function handler(req, res) {
       return res.status(200).json({ response: aiResponse });
     }
 
-    if (lower.startsWith(':view')) {
-      const viewDesc = getViewResponse(scenario.type);
-      return res.status(200).json({
-        response: `[System: View] ${viewDesc}`,
-        isView: true,
-      });
+    if (evaluation.isView) {
+      return res.status(200).json({ response: aiResponse });
     }
 
     if (evaluation.isCommand) {
@@ -241,7 +252,7 @@ export default async function handler(req, res) {
       return res.status(200).json({
         response: aiResponse,
         showDecisionHint: true,
-        decisionHint: `Good job asking for proof. Now you can use commands like :warn :kick :ban or :jail when you are ready to take action. For ${scenario.type} the first offense punishment is ${PUNISHMENT_GUIDELINES[scenario.type][1]}.`,
+        decisionHint: `Good job asking for proof. When you are ready to take action use commands like :warn :kick :ban or :jail. For ${scenario.type} the first offense punishment is ${PUNISHMENT_GUIDELINES[scenario.type][1]}.`,
       });
     }
 
