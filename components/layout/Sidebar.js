@@ -19,6 +19,7 @@ import {
   Server,
   ScrollText,
   UserCheck,
+  MessageSquare,
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications, canManageAdmins } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
@@ -147,6 +148,7 @@ export default function Sidebar({ open, onToggle }) {
               {[
                 ...(hasHandbook ? [{ href: '/staff-handbook', icon: BookOpen, label: 'Handbook' }] : []),
                 ...(hasTraining ? [{ href: '/training', icon: BookOpen, label: 'ssd quiz' }] : []),
+                ...(hasTraining ? [{ href: '/training/scenario', icon: MessageSquare, label: 'Scenario Training' }] : []),
                  ...(hasAttempts ? [{ href: '/training/attempts', icon: ClipboardList, label: 'Attempts' }] : []),
                  ...(hasAttempts ? [{ href: '/training/analytics', icon: BarChart3, label: 'Quiz Analytics' }] : []),
               ].map((item, idx) => (
