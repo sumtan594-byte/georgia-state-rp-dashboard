@@ -3,123 +3,112 @@ import { authOptions } from '../../../../lib/auth-options';
 
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-const PUNISHMENT_GUIDELINES = {
-  'RDM': { 1: 'Warning', 2: 'Kick', 3: 'Ban', explanation: 'Random Deathmatch starts with a Warning for first offense.' },
-  'VDM': { 1: 'Warning', 2: 'Kick', 3: 'Ban', explanation: 'Vehicle Deathmatch starts with a Warning for first offense.' },
-  'FRP': { 1: 'Warning', 2: 'Kick', 3: 'Ban', explanation: 'Fail Roleplay starts with a Warning for first offense.' },
-  'NLR': { 1: 'Warning', 2: 'Kick', 3: 'Ban', explanation: 'New Life Rule starts with a Warning for first offense.' },
-  'NITRP': { 1: 'Kick', 2: 'Ban', 3: '—', explanation: 'No Intent to Roleplay starts with a Kick for first offense.' },
-  'LTAP': { 1: 'Ban', 2: '—', 3: '—', explanation: 'Leave To Avoid Punishment is a Ban on first offense. No clip needed, server logs are enough proof.' },
-  'TROLLING': { 1: 'Kick', 2: 'Ban', 3: '—', explanation: 'Trolling starts with a Kick for first offense.' },
-  'VOL': { 1: 'Warning', 2: 'Kick', 3: 'Ban', explanation: 'Value of Life starts with a Warning for first offense.' },
+const VIEW_RESPONSES = {
+  'RDM': [
+    "The player is currently walking around the gas station. They have a pistol holstered. Nothing suspicious right now.",
+    "You see the player standing near the prison gates talking to another player. They seem to be doing normal RP.",
+    "The player is driving around the city in a sedan. They just pulled up to a red light and are waiting.",
+    "The player is at the park sitting on a bench. They appear to be doing a roleplay scene with someone.",
+  ],
+  'VDM': [
+    "The player is driving a pickup truck around the prison parking lot. They just did a U-turn and are heading toward a group of players on foot.",
+    "You see the player in a Chevlon Corbeta speeding down the highway. They just swerved near the edge of the road.",
+    "The player is parked at the dealership. They are sitting in their car with the engine running. Nothing happening yet.",
+    "The player is driving slowly through the city. They just stopped at the gas station and got out of their car.",
+  ],
+  'FRP': [
+    "The player is driving a sports car up the side of a mountain. The car is at a crazy angle that would not be possible in real life.",
+    "You see the player flying around on a motorcycle doing loops in the sky above the city.",
+    "The player is at the beach doing normal RP. They are sitting on a chair and talking to someone.",
+    "The player is driving a normal car on the road. They are following traffic rules and stopping at lights.",
+  ],
+  'NITRP': [
+    "The player is driving in circles around the courthouse making loud engine noises. They keep driving through a RP scene that is happening nearby.",
+    "You see the player running around the city spamming emotes. They are not talking to anyone or doing any RP.",
+    "The player is parked on the highway blocking traffic with their car. They are just sitting there doing nothing.",
+    "The player is at the gas station pumping gas like normal. They seem to be doing proper RP right now.",
+  ],
+  'LTAP': [
+    "The player has already left the server. Their character disappeared about 2 minutes ago during the mod call.",
+    "The player disconnected. You can see their last location was near the bank. Server logs should show they left during an active report.",
+    "The player is no longer online. Their name is greyed out in the player list. Check the server logs for confirmation.",
+    "The player logged out right as you were about to respond to the report. This looks like a clear LTAP.",
+  ],
+  'NLR': [
+    "The player just respawned at the hospital and is running straight back toward the bank where they died. They have a gun equipped.",
+    "You see the player at the exact spot where they died earlier. They are pointing their gun at the same person who killed them.",
+    "The player is at the park doing normal RP. They are sitting on a bench talking to someone. No sign of returning to a death location.",
+    "The player just spawned at the hospital and is walking in the opposite direction from where they died. They seem to be following NLR.",
+  ],
+  'VOL': [
+    "The player has a shotgun pointed at them by another player. Instead of putting their hands up they are pulling out their own AK.",
+    "You see the player being robbed. They have their hands up and are acting scared. They are following value of life rules.",
+    "The player was threatened with a gun but they just laughed and ran away. No fear at all.",
+    "The player is in a standoff. Both players have guns drawn. The situation is tense but both are roleplaying it properly.",
+  ],
+  'TROLLING': [
+    "The player has parked 5 cars across the highway blocking all traffic. They are sitting on top of one of the cars laughing.",
+    "You see the player driving recklessly through the city. They just ran a red light and nearly hit another player.",
+    "The player is at the dealership doing normal RP. They are looking at cars and talking to a salesperson.",
+    "The player is spamming emotes in the middle of a serious RP scene. They are making loud noises and disrupting everyone.",
+  ],
 };
 
-const SYSTEM_PROMPT = `You are a player on a private ER:LC (Emergency Response Liberty County) roleplay server called GSRP (Georgia State Roleplay). You are reporting a rule violation to a staff member. You must stay completely in character as a regular frustrated player seeking help.
+function getViewResponse(scenarioType) {
+  const responses = VIEW_RESPONSES[scenarioType] || VIEW_RESPONSES['RDM'];
+  return responses[Math.floor(Math.random() * responses.length)];
+}
 
-RULES YOU MUST KNOW ABOUT:
-- RDM (Random Deathmatch): Killing or shooting players without any prior roleplay context or valid reason
-- VDM (Vehicle Deathmatch): Using a vehicle as a weapon to repeatedly ram or run over players
-- FRP (Fail Roleplay): Performing actions unrealistic to real life like driving a supercar up a vertical mountain
-- NITRP (No Intent to Roleplay): Joining a dedicated roleplay server purely to troll chase or disrupt players
-- LTAP (Leave To Avoid Punishment): Combat logging or leaving the server right before a cop arrests you or a mod bans you
-- NLR (New Life Rule): Upon dying you must forget your past life and cannot return to your death location for revenge
-- VOL (Value of Life): Acting realistically when threatened like putting your hands up if someone has a gun to you
-- (N)GM (No Gun Motion): Typing out your physical actions in chat before pulling out a weapon like /me unholsters Glock
-- STS (Shoulder to Shoulder): A command for players to line up side by side for briefings
-- PTS (Permission to Speak): Used during formal lineups you cannot talk in chat until granted PTS
-- MDT (Mobile Data Terminal): The in game computer system used by Police and Sheriff and Fire teams to log warrants
+const SYSTEM_PROMPT = `You are a player on a private ER:LC (Emergency Response Liberty County) roleplay server called GSRP (Georgia State Roleplay). You are reporting a rule violation to a staff member. Stay completely in character as a regular player.
 
-GSRP STAFF RULES YOU SHOULD KNOW:
-- Staff must always ask for video proof before taking any moderation action
-- Kill logs are NOT valid proof only video clips count
-- EXCEPT for LTAP where server logs are enough proof and no clip is needed
-- Staff should be professional and polite
-- Moderation should only occur when there are at least 20 players in the server
-- Staff use 4 letter commands while on duty
+RULES TO KNOW:
+- RDM: Killing or shooting players without any roleplay reason
+- VDM: Using a vehicle to repeatedly hit players
+- FRP: Doing unrealistic things like driving up a vertical mountain
+- NITRP: Joining to troll and disrupt instead of roleplaying
+- LTAP: Leaving the server to avoid getting punished
+- NLR: Coming back to your death spot for revenge after dying
+- VOL: Not acting realistically when threatened with a gun
+
+STAFF RULES:
+- Staff must ask for video proof before punishing anyone
+- Kill logs are NOT valid proof
+- For LTAP server logs are enough proof no clip needed
 - The Discord comms code is GSRP7
-- If a staff member types a command like :jail :kick :ban :warn or :load the player should react accordingly
-- If the staff types :ban you should say something like "finally" or "good" if you were the victim or "thats not fair" if you were the one being reported
-- If the staff types :kick you should react with confusion or acceptance
-- If the staff types :warn you should say thanks or whatever
-- If the staff types :jail you should comment on it
-- If the staff types :load you should wait for them to finish loading
 
-PUNISHMENT GUIDELINES:
-- RDM: 1st offense Warning 2nd offense Kick 3rd offense Ban
-- VDM: 1st offense Warning 2nd offense Kick 3rd offense Ban
-- FRP: 1st offense Warning 2nd offense Kick 3rd offense Ban
-- NLR: 1st offense Warning 2nd offense Kick 3rd offense Ban
-- NITRP: 1st offense Kick 2nd offense Ban
-- LTAP: 1st offense Ban (no clip needed server logs are proof enough)
-- Trolling: 1st offense Kick 2nd offense Ban
-- VOL: 1st offense Warning 2nd offense Kick 3rd offense Ban
+PUNISHMENTS:
+- RDM: Warning then Kick then Ban
+- VDM: Warning then Kick then Ban
+- FRP: Warning then Kick then Ban
+- NLR: Warning then Kick then Ban
+- NITRP: Kick then Ban
+- LTAP: Ban on first offense
+- Trolling: Kick then Ban
+- VOL: Warning then Kick then Ban
 
-HOW TO RESPOND:
-- Stay in character as a regular player who is frustrated about a rule violation
-- Use casual gamer language but do not be overly rude unless the staff member does something very wrong
-- If the staff asks for video proof and you have it say yes and that you will send it
-- If the staff asks for video proof and you do not have it say no but suggest they check kill logs which is NOT valid proof
-- For LTAP reports if asked for proof say you dont have a clip but the server logs should show it since they left during a mod call
-- If the staff asks for your Discord comms status say you are not in comms and ask for the code
-- If the staff gives you the code GSRP7 say thanks and that you will join
-- If the staff asks for the suspect username give a random Roblox style username
-- If the staff immediately bans or kicks without asking for proof get upset and call them out for bad moderation
-- If the staff asks what happened describe the incident in detail
-- If the staff asks where it is happening give a location in the game
-- If the staff asks common questions like how to get mod or how to join staff tell them to apply in the Discord with code GSRP7
-- If the staff asks about RP perms say yes and ask how long and what RP
-- NEVER break character NEVER mention you are an AI NEVER mention this is a training scenario
-- Do not use em dashes in your responses
-- Sound like a real person typing in a game chat
-- Keep responses short and natural like real game chat messages
-- Do not be overly formal or robotic
-- Use lowercase sometimes like a real gamer would
-- You are the one reporting an offense so act like someone who wants justice done
+HOW TO ACT:
+- You are a frustrated player reporting someone
+- Use casual gamer language
+- Keep responses short like real game chat
+- Use lowercase sometimes
+- Never break character or mention being an AI
+- If asked for a clip say yes or no
+- If asked for username give a Roblox style name
+- If staff bans or kicks without proof get upset
+- If staff is polite be nice back
+- If staff is rude call them out
+- If staff types :view describe what you are doing in game
+- If staff types :ban react as the person affected
+- If staff types :kick react accordingly
+- If staff types :warn say thanks
+- If staff types :jail comment on it
 
-PLAYER BEHAVIOR VARIETY:
-- Sometimes players are polite and say thanks officer
-- Sometimes players are rude and call the staff names like doofus idiot or noob
-- Sometimes players get impatient and say hurry up or this is taking forever
-- Sometimes players argue with each other in the chat like the suspect saying the reporter is lying
-- Sometimes multiple people report the same person at once
-- Sometimes the suspect joins the chat and denies everything
-- Sometimes the reporter and suspect start arguing and the staff needs to calm them down
-- Sometimes players use mild bad words like stupid dumb or idiot
-- Sometimes players are very chill and just want a warning given
-- Sometimes players are very angry and demand a ban right away
-- React naturally to whatever the staff member does
+CURRENT SCENARIO: {scenarioType} - {scenarioLabel}
 
-COMMAND RESPONSES:
-- If the staff types :ban followed by a username react as the person affected. If you were the victim say something like good or finally. If you were the suspect say thats unfair or whatever
-- If the staff types :kick react with confusion or acceptance
-- If the staff types :warn say thanks or acknowledge it
-- If the staff types :jail comment on it
-- If the staff types :load wait for them
-- If the staff types any other command react naturally
-
-MULTI PLAYER SCENARIOS:
-- Sometimes there will be two or more people in the chat reporting the same person
-- Sometimes the suspect will also be in chat defending themselves
-- The reporter might say things like hes lying or check his logs
-- The suspect might say things like i didnt do anything or hes the one trolling
-- As the reporter you should stand your ground and tell the staff to check the evidence
-- If the staff asks both sides listen and respond accordingly
-
-DE ESCALATION SCENARIOS:
-- Sometimes the reporter and suspect will start arguing
-- The staff might need to tell them to calm down
-- If the staff tells you to calm down you should comply but still want the issue resolved
-- Say things like fine but please still look into it or okay sorry but can you still help
-
-CURRENT SCENARIO TYPE: {scenarioType}
-CURRENT SCENARIO LABEL: {scenarioLabel}
-
-Respond naturally based on what the staff member says to you.`;
+Respond naturally to what the staff member says.`;
 
 async function callOpenRouter(systemPrompt, chatHistory, userMessage) {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error('OPENROUTER_API_KEY not configured');
-  }
+  if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY not configured');
 
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -138,8 +127,8 @@ async function callOpenRouter(systemPrompt, chatHistory, userMessage) {
     body: JSON.stringify({
       model: 'nvidia/nemotron-3-super-120b-a12b:free',
       messages,
-      max_tokens: 300,
-      temperature: 0.9,
+      max_tokens: 200,
+      temperature: 0.85,
       reasoning: { enabled: false },
     }),
   });
@@ -150,187 +139,70 @@ async function callOpenRouter(systemPrompt, chatHistory, userMessage) {
   }
 
   const data = await res.json();
-  const text = data.choices?.[0]?.message?.content;
-
-  if (!text) {
-    throw new Error('OpenRouter returned no response text');
-  }
-
-  return text.trim();
+  return data.choices?.[0]?.message?.content?.trim() || '';
 }
 
-function buildChatHistory(scenario, messages) {
-  const history = [];
-
-  for (const msg of messages) {
-    if (msg.role === 'user') {
-      history.push({ role: 'user', content: msg.content });
-    } else if (msg.role === 'model') {
-      history.push({ role: 'assistant', content: msg.content });
-    }
-  }
-
-  return history;
+function buildHistory(messages) {
+  return messages.map(m => ({
+    role: m.role === 'user' ? 'user' : 'assistant',
+    content: m.content,
+  }));
 }
 
-function evaluateStaffResponse(staffMessage, scenarioType) {
-  const lower = staffMessage.toLowerCase();
+function evaluateResponse(message, scenarioType) {
+  const lower = message.toLowerCase();
   let score = 0;
   let maxScore = 3;
 
-  const isCommand = staffMessage.startsWith(':');
-  const asksForProof = lower.includes('proof') || lower.includes('clip') || lower.includes('video') || lower.includes('recording') || lower.includes('evidence');
+  const isCommand = message.startsWith(':');
+  const isViewCommand = lower.startsWith(':view');
+  const asksForProof = lower.includes('proof') || lower.includes('clip') || lower.includes('video') || lower.includes('recording');
   const asksForUsername = lower.includes('username') || lower.includes('name') || lower.includes('who') || lower.includes('suspect');
   const asksForComms = lower.includes('comms') || lower.includes('discord');
-  const mentionsReportsChannel = lower.includes('report') || lower.includes('channel');
+  const mentionsReports = lower.includes('report') || lower.includes('channel');
   const asksToSubmit = lower.includes('submit') || lower.includes('send') || lower.includes('dm');
-  const mentionsKillLogs = lower.includes('kill log') || lower.includes('killlog');
-  const immediateBan = (lower.includes('ban') || lower.includes('banning')) && !lower.includes('proof') && !lower.includes('check') && !lower.includes('investigate') && !lower.includes('log');
-  const immediateKick = (lower.includes('kick') || lower.includes('kicking')) && !lower.includes('proof') && !lower.includes('check') && !lower.includes('investigate');
-  const professional = lower.includes('sir') || lower.includes('please') || lower.includes('thank') || lower.includes('help you') || lower.includes('assist');
-  const asksWhatHappened = lower.includes('what happened') || lower.includes('tell me') || lower.includes('explain') || lower.includes('details');
-  const deEscalates = lower.includes('calm') || lower.includes('stop arguing') || lower.includes('chill') || lower.includes('relax');
+  const professional = lower.includes('sir') || lower.includes('please') || lower.includes('thank');
+  const deEscalates = lower.includes('calm') || lower.includes('stop arguing') || lower.includes('chill');
+  const immediateAction = (lower.includes(':ban') || lower.includes(':kick')) && !lower.includes('proof') && !lower.includes('log');
 
   if (isCommand) {
     const guidelines = PUNISHMENT_GUIDELINES[scenarioType];
     if (guidelines) {
-      const correctAction = guidelines[1].toLowerCase();
-      if (staffMessage.toLowerCase().includes(':ban') && correctAction === 'ban') {
-        score = 3;
-      } else if (staffMessage.toLowerCase().includes(':kick') && correctAction === 'kick') {
-        score = 3;
-      } else if (staffMessage.toLowerCase().includes(':warn') && correctAction === 'warning') {
-        score = 3;
-      } else if (staffMessage.toLowerCase().includes(':jail')) {
-        score = 2;
-      } else {
-        score = 1;
-      }
+      const correct = guidelines[1].toLowerCase();
+      if (lower.includes(':ban') && correct === 'ban') score = 3;
+      else if (lower.includes(':kick') && correct === 'kick') score = 3;
+      else if (lower.includes(':warn') && correct === 'warning') score = 3;
+      else if (lower.includes(':jail')) score = 2;
+      else score = 1;
     }
-    return { score, maxScore, shouldShowDecision: false, isCommand: true };
+    return { score, maxScore, isCommand: true };
   }
 
   if (asksForProof) score += 1;
   if (asksForUsername) score += 0.5;
   if (asksForComms) score += 0.5;
-  if (mentionsReportsChannel) score += 0.5;
+  if (mentionsReports) score += 0.5;
   if (asksToSubmit) score += 0.5;
   if (professional) score += 0.25;
-  if (asksWhatHappened) score += 0.25;
   if (deEscalates) score += 0.5;
 
-  if (mentionsKillLogs && lower.includes('valid')) score -= 1;
-  if (scenarioType !== 'LTAP' && immediateBan) score -= 1.5;
-  if (scenarioType !== 'LTAP' && immediateKick) score -= 1;
-
-  if (scenarioType === 'LTAP' && (lower.includes('log') || lower.includes('check server'))) {
-    score = Math.max(score, 2);
-  }
+  if (scenarioType !== 'LTAP' && immediateAction) score -= 1.5;
+  if (scenarioType === 'LTAP' && (lower.includes('log') || lower.includes('check server'))) score = Math.max(score, 2);
 
   score = Math.max(0, Math.min(maxScore, Math.round(score * 10) / 10));
-
-  let shouldShowDecision = false;
-  if (asksForProof) shouldShowDecision = true;
-  if (asksForComms) shouldShowDecision = true;
-  if (asksToSubmit) shouldShowDecision = true;
-
-  return { score, maxScore, shouldShowDecision };
+  return { score, maxScore, isCommand: false };
 }
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Not authenticated' });
-
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { message, scenario, chatHistory = [], decisionAction } = req.body;
+  const { message, scenario, chatHistory = [] } = req.body;
+  if (!message || !scenario) return res.status(400).json({ error: 'message and scenario required' });
 
-  if (!message || !scenario) {
-    return res.status(400).json({ error: 'message and scenario required' });
-  }
-
-  if (decisionAction) {
-    const guidelines = PUNISHMENT_GUIDELINES[scenario.type];
-    const type = scenario.type;
-    const correctFirstOffense = guidelines?.[1]?.toLowerCase() || 'warning';
-
-    let score = 0;
-    let maxScore = 3;
-    let feedback = '';
-    let response = '';
-
-    switch (decisionAction) {
-      case 'warn':
-        if (correctFirstOffense === 'warning') {
-          score = 3;
-          feedback = `Correct! Per GSRP guidelines a first offense ${type} results in a Warning.`;
-        } else {
-          score = 1;
-          feedback = `Incorrect. Per guidelines first offense ${type} should be ${guidelines[1]} not a Warning.`;
-        }
-        break;
-      case 'kick':
-        if (correctFirstOffense === 'kick') {
-          score = 3;
-          feedback = `Correct! Per GSRP guidelines a first offense ${type} results in a Kick.`;
-        } else if (correctFirstOffense === 'warning') {
-          score = 1;
-          feedback = `Too harsh. Per guidelines first offense ${type} should be a Warning not a Kick.`;
-        } else {
-          score = 2;
-          feedback = `Close but per guidelines ${type} first offense is ${guidelines[1]}.`;
-        }
-        break;
-      case 'ban':
-        if (correctFirstOffense === 'ban') {
-          score = 3;
-          feedback = `Correct! Per GSRP guidelines a first offense ${type} results in a Ban.`;
-        } else {
-          score = 0;
-          feedback = `Too harsh! Per guidelines first offense ${type} should be ${guidelines[1]} not a Ban. Never ban on first offense unless guidelines say so.`;
-        }
-        break;
-      case 'ban_jail':
-        score = 2;
-        feedback = 'Ban jail is an option but consider if it matches the punishment guidelines for this offense.';
-        break;
-      case 'ignore':
-        score = 0;
-        feedback = `Incorrect. You should never ignore a valid report. Take appropriate action based on the punishment guidelines.`;
-        break;
-      default:
-        score = 1;
-        feedback = 'Response noted. Consider following the punishment guidelines more closely.';
-    }
-
-    try {
-      const aiResponse = await callOpenRouter(
-        `You are a player on GSRP ER:LC roleplay server. A staff member just took this action against the person you reported: ${decisionAction}. Respond as a regular player would. Keep it short and natural. Do not use em dashes. Sound like a real person typing in game chat.`,
-        buildChatHistory(scenario, chatHistory),
-        `[Staff chose to ${decisionAction}]`
-      );
-      response = aiResponse;
-    } catch {
-      const fallbacks = {
-        warn: 'Okay officer thanks for the warning.',
-        kick: 'Alright I understand. Thanks for handling this.',
-        ban: 'Okay they deserved it.',
-        ban_jail: 'Ban jail works I guess.',
-        ignore: 'Wait you are just ignoring this? That is terrible moderation!',
-      };
-      response = fallbacks[decisionAction] || 'Okay noted.';
-    }
-
-    return res.status(200).json({
-      response,
-      score,
-      maxScore,
-      feedback,
-      ended: true,
-    });
-  }
-
-  const evaluation = evaluateStaffResponse(message, scenario.type);
+  const lower = message.toLowerCase();
+  const evaluation = evaluateResponse(message, scenario.type);
 
   const systemPrompt = SYSTEM_PROMPT
     .replace('{scenarioType}', scenario.type)
@@ -339,65 +211,62 @@ export default async function handler(req, res) {
   try {
     const aiResponse = await callOpenRouter(
       systemPrompt,
-      buildChatHistory(scenario, chatHistory),
+      buildHistory(chatHistory),
       message
     );
+
+    if (lower === 'ask something else' || lower === 'ask something') {
+      return res.status(200).json({ response: aiResponse });
+    }
+
+    if (lower.startsWith(':view')) {
+      const viewDesc = getViewResponse(scenario.type);
+      return res.status(200).json({
+        response: `[System: View] ${viewDesc}`,
+        isView: true,
+      });
+    }
 
     if (evaluation.isCommand) {
       return res.status(200).json({
         response: aiResponse,
         score: evaluation.score,
         maxScore: evaluation.maxScore,
-        feedback: evaluation.score >= 2 ? 'Good command usage for this offense.' : 'Consider if this command matches the punishment guidelines.',
+        feedback: evaluation.score >= 2 ? 'Good use of command for this situation.' : 'Make sure the command matches the punishment guidelines.',
         ended: true,
       });
     }
 
-    if (evaluation.shouldShowDecision) {
+    if (evaluation.score >= 2 && (lower.includes('proof') || lower.includes('clip') || lower.includes('video') || lower.includes('comms') || lower.includes('discord') || lower.includes('submit') || lower.includes('send'))) {
       return res.status(200).json({
         response: aiResponse,
-        decision: {
-          title: `What action would you like to take for this ${scenario.label} report?`,
-          options: [
-            { label: 'Warn', value: 'warn', variant: 'warning' },
-            { label: 'Kick', value: 'kick', variant: 'warning' },
-            { label: 'Ban', value: 'ban', variant: 'danger' },
-            { label: 'Ban Jail', value: 'ban_jail', variant: 'danger' },
-            { label: 'Ignore', value: 'ignore', variant: 'default' },
-          ],
-        },
+        showDecisionHint: true,
+        decisionHint: `Good job asking for proof. Now you can use commands like :warn :kick :ban or :jail when you are ready to take action. For ${scenario.type} the first offense punishment is ${PUNISHMENT_GUIDELINES[scenario.type][1]}.`,
       });
     }
 
-    if (evaluation.score === 0 && (message.toLowerCase().includes('ban') || message.toLowerCase().includes('kick')) && !message.toLowerCase().includes('proof') && !message.toLowerCase().includes('log')) {
+    if (evaluation.score === 0 && (lower.includes(':ban') || lower.includes(':kick')) && !lower.includes('proof') && scenario.type !== 'LTAP') {
       return res.status(200).json({
         response: aiResponse,
         score: 0,
         maxScore: 3,
-        feedback: 'You took action without proper proof or investigation. Always ask for video evidence first unless it is an LTAP case where server logs are enough.',
+        feedback: 'You used a command without asking for proof first. Always get video evidence before punishing someone.',
         ended: true,
       });
     }
 
-    return res.status(200).json({
-      response: aiResponse,
-    });
+    return res.status(200).json({ response: aiResponse });
   } catch (err) {
-    console.error('[OpenRouter API Error]', err.message);
-
-    const fallbackResponses = [
-      "Yeah I have a clip! Let me send it to you.",
-      "Uhh no I did not record it. But check the kill logs?",
-      "The guy username is xXDragonSlayer99Xx. Please do something!",
-      "I'm not in comms yet! How do I join? Do I need a code?",
-      "Okay I'll send it there! Thanks for the help officer!",
-      "They're currently near the dealership. Please hurry!",
-      "Wait what? You're taking action without even checking? That seems unfair.",
+    console.error('[Chat API Error]', err.message);
+    const fallbacks = [
+      "Yeah I have a clip let me send it.",
+      "No clip sorry but check kill logs?",
+      "His username is xXDragonSlayer99Xx please help.",
+      "I'm not in comms how do I join?",
+      "Okay I will send it there thanks.",
+      "They're near the dealership hurry.",
+      "You're banning without checking? Thats not fair.",
     ];
-
-    return res.status(200).json({
-      response: fallbackResponses[Math.floor(Math.random() * fallbackResponses.length)],
-      error: 'AI service unavailable, using fallback',
-    });
+    return res.status(200).json({ response: fallbacks[Math.floor(Math.random() * fallbacks.length)] });
   }
 }

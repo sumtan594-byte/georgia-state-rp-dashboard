@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSession } from 'next-auth/react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth-options';
 import LoginScreen from '../../../components/auth/LoginScreen';
 import {
   MessageSquare, Send, Loader2, Brain, Target, CheckCircle,
-  XCircle, AlertTriangle, ChevronRight, RotateCcw, Star,
-  Trophy, Lightbulb, Shield, ArrowLeft, Play, Award
+  XCircle, AlertTriangle, Star, Trophy, Lightbulb, Shield,
+  ArrowLeft, Play, Award, RotateCcw, Terminal
 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -24,11 +24,7 @@ export default function ScenarioTrainingPage() {
   const [totalScenarios] = useState(5);
   const [scores, setScores] = useState([]);
   const [currentHint, setCurrentHint] = useState('');
-  const [hintLoading, setHintLoading] = useState(false);
-  const [showHint, setShowHint] = useState(false);
-  const [hintIndex, setHintIndex] = useState(0);
-  const [decisionPopup, setDecisionPopup] = useState(null);
-  const [chatHistory, setChatHistory] = useState([]);
+  const [decisionHint, setDecisionHint] = useState('');
   const [results, setResults] = useState(null);
   const [resultsLoading, setResultsLoading] = useState(false);
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
@@ -37,15 +33,11 @@ export default function ScenarioTrainingPage() {
   const inputRef = useRef(null);
 
   useEffect(() => {
-    if (status === 'unauthenticated') {
-      router.push('/login');
-    }
+    if (status === 'unauthenticated') router.push('/login');
   }, [status, router]);
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      checkCompletion();
-    }
+    if (status === 'authenticated') checkCompletion();
   }, [status]);
 
   async function checkCompletion() {
@@ -66,7 +58,21 @@ export default function ScenarioTrainingPage() {
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages, decisionPopup]);
+  }, [messages]);
+
+  async function fetchHint(scenario, history) {
+    try {
+      const res = await fetch('/api/training/scenario/hint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ scenario, chatHistory: history }),
+      });
+      const data = await res.json();
+      if (data.ok) setCurrentHint(data.hint);
+    } catch (err) {
+      console.error('Hint error:', err);
+    }
+  }
 
   async function startSession() {
     setLoading(true);
@@ -79,14 +85,11 @@ export default function ScenarioTrainingPage() {
         setScores([]);
         setCurrentScenario(data.scenario);
         setCurrentHint('');
-        setHintIndex(0);
-        setShowHint(false);
-        setDecisionPopup(null);
-        setChatHistory([{ role: 'user', content: data.scenario.opener }]);
-        setMessages([
-          { role: 'ai', content: data.scenario.opener, timestamp: Date.now() },
-        ]);
+        setDecisionHint('');
+        const openerHistory = [{ role: 'user', content: data.scenario.opener }];
+        setMessages([{ role: 'ai', content: data.scenario.opener, timestamp: Date.now() }]);
         setPhase('chat');
+        fetchHint(data.scenario, openerHistory);
       }
     } catch (err) {
       console.error('Failed to start session:', err);
@@ -94,39 +97,17 @@ export default function ScenarioTrainingPage() {
     setLoading(false);
   }
 
-  async function fetchHint() {
-    if (hintLoading || !currentScenario) return;
-    setHintLoading(true);
-    try {
-      const res = await fetch('/api/training/scenario/hint', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          scenario: currentScenario,
-          chatHistory,
-          hintIndex,
-        }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        setCurrentHint(data.hint);
-        setShowHint(true);
-        setHintIndex(prev => prev + 1);
-      }
-    } catch (err) {
-      console.error('Hint error:', err);
-    }
-    setHintLoading(false);
-  }
-
   async function sendMessage(text) {
-    if (!text.trim() || loading || decisionPopup) return;
+    if (!text.trim() || loading) return;
     const userMsg = { role: 'user', content: text.trim(), timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setLoading(true);
 
-    const newHistory = [...chatHistory, { role: 'user', content: text.trim() }];
+    const newHistory = [...messages.filter(m => m.role !== 'system').map(m => ({
+      role: m.role === 'ai' ? 'model' : 'user',
+      content: m.content,
+    })), { role: 'user', content: text.trim() }];
 
     try {
       const res = await fetch('/api/training/scenario/chat', {
@@ -142,57 +123,10 @@ export default function ScenarioTrainingPage() {
       const data = await res.json();
 
       setMessages(prev => [...prev, { role: 'ai', content: data.response, timestamp: Date.now() }]);
-      setChatHistory(prev => [...prev, { role: 'ai', content: data.response }]);
 
-      if (data.decision) {
-        setDecisionPopup(data.decision);
+      if (data.decisionHint) {
+        setDecisionHint(data.decisionHint);
       }
-
-      if (data.ended && data.score !== undefined) {
-        setScores(prev => [...prev, {
-          scenario: currentScenario.type,
-          label: currentScenario.label,
-          score: data.score,
-          maxScore: data.maxScore,
-          feedback: data.feedback,
-        }]);
-        setTimeout(() => loadNextScenario(), 2000);
-      }
-    } catch (err) {
-      console.error('Chat error:', err);
-      setMessages(prev => [...prev, { role: 'system', content: 'Error sending message. Please try again.', timestamp: Date.now() }]);
-    }
-    setLoading(false);
-  }
-
-  async function handleDecision(action) {
-    if (!decisionPopup || loading) return;
-    const popupTitle = decisionPopup.title;
-    setDecisionPopup(null);
-    setLoading(true);
-
-    try {
-      const res = await fetch('/api/training/scenario/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sessionId,
-          message: `[DECISION:${action}]`,
-          chatHistory,
-          scenario: currentScenario,
-          decisionAction: action,
-        }),
-      });
-      const data = await res.json();
-
-      const actionLabels = { warn: 'Warn', kick: 'Kick', ban: 'Ban', ban_jail: 'Ban Jail', ignore: 'Ignore' };
-      setMessages(prev => [...prev, {
-        role: 'system',
-        content: `You chose: ${actionLabels[action] || action}`,
-        timestamp: Date.now(),
-      }]);
-      setMessages(prev => [...prev, { role: 'ai', content: data.response, timestamp: Date.now() }]);
-      setChatHistory(prev => [...prev, { role: 'ai', content: data.response }]);
 
       if (data.score !== undefined) {
         setScores(prev => [...prev, {
@@ -202,13 +136,19 @@ export default function ScenarioTrainingPage() {
           maxScore: data.maxScore,
           feedback: data.feedback,
         }]);
+        setTimeout(() => loadNextScenario(), 2500);
       }
 
-      if (data.ended) {
-        setTimeout(() => loadNextScenario(), 2000);
+      if (data.score !== undefined || data.ended) {
+        const updatedHistory = [...newHistory, { role: 'model', content: data.response }];
+        fetchHint(currentScenario, updatedHistory);
+      } else {
+        const updatedHistory = [...newHistory, { role: 'model', content: data.response }];
+        fetchHint(currentScenario, updatedHistory);
       }
     } catch (err) {
-      console.error('Decision error:', err);
+      console.error('Chat error:', err);
+      setMessages(prev => [...prev, { role: 'system', content: 'Error. Try again.', timestamp: Date.now() }]);
     }
     setLoading(false);
   }
@@ -227,10 +167,7 @@ export default function ScenarioTrainingPage() {
           setScenarioIndex(nextIndex);
           setCurrentScenario(data.scenario);
           setCurrentHint('');
-          setHintIndex(0);
-          setShowHint(false);
-          setDecisionPopup(null);
-          setChatHistory([{ role: 'user', content: data.scenario.opener }]);
+          setDecisionHint('');
           setMessages(prev => [...prev, {
             role: 'system',
             content: `--- Scenario ${nextIndex + 1} of ${totalScenarios}: ${data.scenario.label} ---`,
@@ -240,6 +177,7 @@ export default function ScenarioTrainingPage() {
             content: data.scenario.opener,
             timestamp: Date.now(),
           }]);
+          fetchHint(data.scenario, [{ role: 'user', content: data.scenario.opener }]);
         }
       })
       .catch(err => console.error('Failed to load next scenario:', err));
@@ -306,11 +244,11 @@ export default function ScenarioTrainingPage() {
         <div className="bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-2xl p-8 text-center">
           <Trophy className="w-16 h-16 text-gsrp-orange mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Training Complete!</h2>
-          <p className="text-gray-400 mb-6">You completed this training on {completionData?.completedAt ? new Date(completionData.completedAt).toLocaleDateString() : 'N/A'}.</p>
+          <p className="text-gray-400 mb-6">You completed this on {completionData?.completedAt ? new Date(completionData.completedAt).toLocaleDateString() : 'N/A'}.</p>
           {completionData && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
               <div className="bg-gsrp-dark-surface/50 rounded-xl p-4">
-                <p className="text-xs text-gray-500 mb-1">Total Score</p>
+                <p className="text-xs text-gray-500 mb-1">Score</p>
                 <p className="text-2xl font-bold text-white">{completionData.totalScore}/{completionData.maxScore}</p>
               </div>
               <div className="bg-gsrp-dark-surface/50 rounded-xl p-4">
@@ -322,7 +260,7 @@ export default function ScenarioTrainingPage() {
                 <p className="text-2xl font-bold text-white">{completionData.scenariosCompleted}</p>
               </div>
               <div className="bg-gsrp-dark-surface/50 rounded-xl p-4">
-                <p className="text-xs text-gray-500 mb-1">Status</p>
+                <p className="text-xs text-gray-500 mb-1">Result</p>
                 <p className={`text-2xl font-bold ${completionData.passed ? 'text-green-400' : 'text-red-400'}`}>
                   {completionData.passed ? 'PASSED' : 'FAILED'}
                 </p>
@@ -330,17 +268,10 @@ export default function ScenarioTrainingPage() {
             </div>
           )}
           <div className="flex gap-3 justify-center">
-            <button
-              onClick={handleRetry}
-              className="px-6 py-3 bg-gsrp-orange text-white rounded-xl font-semibold hover:bg-gsrp-orange/90 transition-colors flex items-center gap-2 cursor-pointer"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Retry Training
+            <button onClick={handleRetry} className="px-6 py-3 bg-gsrp-orange text-white rounded-xl font-semibold hover:bg-gsrp-orange/90 transition-colors flex items-center gap-2 cursor-pointer">
+              <RotateCcw className="w-4 h-4" /> Retry
             </button>
-            <button
-              onClick={() => router.push('/training')}
-              className="px-6 py-3 bg-gsrp-dark-surface text-white rounded-xl font-semibold hover:bg-gsrp-dark-surface/80 transition-colors cursor-pointer"
-            >
+            <button onClick={() => router.push('/training')} className="px-6 py-3 bg-gsrp-dark-surface text-white rounded-xl font-semibold hover:bg-gsrp-dark-surface/80 transition-colors cursor-pointer">
               Back to Training
             </button>
           </div>
@@ -357,9 +288,8 @@ export default function ScenarioTrainingPage() {
             <Shield className="w-7 h-7 text-gsrp-orange" />
             Scenario Training
           </h1>
-          <p className="text-gray-400 text-sm mt-1">Practice handling real in-game moderation scenarios with AI-powered roleplay.</p>
+          <p className="text-gray-400 text-sm mt-1">Practice handling real in-game moderation situations.</p>
         </div>
-
         <div className="bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-2xl p-6 md:p-8 mb-6">
           <div className="flex items-start gap-4 mb-6">
             <div className="w-12 h-12 rounded-xl bg-gsrp-orange/10 flex items-center justify-center flex-shrink-0">
@@ -368,32 +298,24 @@ export default function ScenarioTrainingPage() {
             <div>
               <h2 className="text-lg font-bold text-white mb-2">How It Works</h2>
               <p className="text-gray-400 text-sm leading-relaxed">
-                You'll interact with an AI that acts as a regular player reporting rule violations. Respond as a staff member would in real situations.
-                The AI will evaluate your responses and provide feedback at the end.
+                An AI player will report a rule violation to you. Respond like a real staff member would.
+                Use commands like :warn :kick :ban or :jail to take action. Hints will always show to help you learn.
               </p>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-            <div className="bg-gsrp-dark-surface/50 rounded-xl p-4">
-              <Target className="w-5 h-5 text-gsrp-teal mb-2" />
-              <h3 className="text-sm font-semibold text-white mb-1">{totalScenarios} Scenarios</h3>
-              <p className="text-xs text-gray-500">Covering RDM, VDM, FRP, NLR, LTAP, and more</p>
-            </div>
-            <div className="bg-gsrp-dark-surface/50 rounded-xl p-4">
-              <Lightbulb className="w-5 h-5 text-gsrp-gold mb-2" />
-              <h3 className="text-sm font-semibold text-white mb-1">Hints Available</h3>
-              <p className="text-xs text-gray-500">Use hints if you get stuck on a scenario</p>
-            </div>
-            <div className="bg-gsrp-dark-surface/50 rounded-xl p-4">
-              <AlertTriangle className="w-5 h-5 text-gsrp-sunset mb-2" />
-              <h3 className="text-sm font-semibold text-white mb-1">Decision Points</h3>
-              <p className="text-xs text-gray-500">Choose actions like Warn, Kick, or Ban</p>
-            </div>
-            <div className="bg-gsrp-dark-surface/50 rounded-xl p-4">
-              <Award className="w-5 h-5 text-gsrp-orange mb-2" />
-              <h3 className="text-sm font-semibold text-white mb-1">One Attempt</h3>
-              <p className="text-xs text-gray-500">This training can only be completed once</p>
+          <div className="bg-gsrp-dark-surface/50 rounded-xl p-4 mb-6">
+            <h3 className="text-sm font-semibold text-white mb-2 flex items-center gap-2">
+              <Terminal className="w-4 h-4 text-gsrp-teal" />
+              Commands You Can Use
+            </h3>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs text-gray-400">
+              <div className="bg-gsrp-dark-card/50 rounded-lg p-2"><span className="text-gsrp-orange font-mono">:warn</span> Warn a player</div>
+              <div className="bg-gsrp-dark-card/50 rounded-lg p-2"><span className="text-gsrp-orange font-mono">:kick</span> Kick a player</div>
+              <div className="bg-gsrp-dark-card/50 rounded-lg p-2"><span className="text-gsrp-orange font-mono">:ban</span> Ban a player</div>
+              <div className="bg-gsrp-dark-card/50 rounded-lg p-2"><span className="text-gsrp-orange font-mono">:jail</span> Put in ban jail</div>
+              <div className="bg-gsrp-dark-card/50 rounded-lg p-2"><span className="text-gsrp-orange font-mono">:view</span> See what player is doing</div>
+              <div className="bg-gsrp-dark-card/50 rounded-lg p-2"><span className="text-gsrp-orange font-mono">:load</span> Load player info</div>
             </div>
           </div>
 
@@ -403,19 +325,15 @@ export default function ScenarioTrainingPage() {
               Important Rules
             </h3>
             <ul className="text-xs text-gray-400 space-y-1.5">
-              <li>Always ask for video proof before taking action</li>
+              <li>Always ask for video proof before punishing anyone</li>
               <li>Kill logs are NOT valid proof</li>
+              <li>For LTAP server logs are enough proof</li>
               <li>Be professional and follow the chain of command</li>
-              <li>Only moderate when there are 20+ players in the server</li>
-              <li>Use 4-letter commands while on duty</li>
+              <li>Hints will guide you through each step</li>
             </ul>
           </div>
 
-          <button
-            onClick={startSession}
-            disabled={loading}
-            className="w-full py-3 bg-gsrp-orange text-white rounded-xl font-semibold hover:bg-gsrp-orange/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
-          >
+          <button onClick={startSession} disabled={loading} className="w-full py-3 bg-gsrp-orange text-white rounded-xl font-semibold hover:bg-gsrp-orange/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer">
             {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Play className="w-5 h-5" />}
             {loading ? 'Starting...' : 'Start Training'}
           </button>
@@ -432,12 +350,11 @@ export default function ScenarioTrainingPage() {
             <Award className="w-7 h-7 text-gsrp-orange" />
             Training Results
           </h1>
-          <p className="text-gray-400 text-sm mt-1">Generating your personalized feedback...</p>
+          <p className="text-gray-400 text-sm mt-1">Generating your feedback...</p>
         </div>
         <div className="bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-2xl p-12 text-center">
           <Loader2 className="w-12 h-12 text-gsrp-orange animate-spin mx-auto mb-4" />
-          <p className="text-gray-400 text-sm">AI is analyzing your performance across all scenarios</p>
-          <p className="text-gray-600 text-xs mt-2">This may take a few seconds</p>
+          <p className="text-gray-400 text-sm">AI is checking your performance</p>
         </div>
       </div>
     );
@@ -454,34 +371,33 @@ export default function ScenarioTrainingPage() {
             <Award className="w-7 h-7 text-gsrp-orange" />
             Training Results
           </h1>
-          <p className="text-gray-400 text-sm mt-1">Here's how you performed in the scenario training.</p>
+          <p className="text-gray-400 text-sm mt-1">Here is how you did.</p>
         </div>
-
         <div className="bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-2xl p-6 md:p-8 mb-6">
           <div className="text-center mb-8">
             <div className={`w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center ${passed ? 'bg-green-400/10' : 'bg-red-400/10'}`}>
               {passed ? <Trophy className="w-12 h-12 text-green-400" /> : <XCircle className="w-12 h-12 text-red-400" />}
             </div>
             <h2 className={`text-2xl font-bold mb-2 ${passed ? 'text-green-400' : 'text-red-400'}`}>
-              {passed ? 'Congratulations! You Passed!' : 'Training Not Passed'}
+              {passed ? 'You Passed!' : 'Not Passed'}
             </h2>
             <p className="text-gray-400">
-              You scored <span className="text-white font-semibold">{results.totalScore}/{results.maxScore}</span> ({percentage}%)
+              Score: <span className="text-white font-semibold">{results.totalScore}/{results.maxScore}</span> ({percentage}%)
             </p>
-            <p className="text-xs text-gray-500 mt-1">Passing score: 60%</p>
+            <p className="text-xs text-gray-500 mt-1">You need 60% to pass</p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
             <div className="bg-gsrp-dark-surface/50 rounded-xl p-4 text-center">
-              <p className="text-xs text-gray-500 mb-1">Scenarios Completed</p>
+              <p className="text-xs text-gray-500 mb-1">Scenarios</p>
               <p className="text-xl font-bold text-white">{results.scenariosCompleted}</p>
             </div>
             <div className="bg-gsrp-dark-surface/50 rounded-xl p-4 text-center">
-              <p className="text-xs text-gray-500 mb-1">Best Scenario</p>
+              <p className="text-xs text-gray-500 mb-1">Best</p>
               <p className="text-xl font-bold text-gsrp-orange">{results.bestScenario || '—'}</p>
             </div>
             <div className="bg-gsrp-dark-surface/50 rounded-xl p-4 text-center">
-              <p className="text-xs text-gray-500 mb-1">Needs Improvement</p>
+              <p className="text-xs text-gray-500 mb-1">Needs Work</p>
               <p className="text-xl font-bold text-gsrp-sunset">{results.worstScenario || '—'}</p>
             </div>
           </div>
@@ -514,7 +430,7 @@ export default function ScenarioTrainingPage() {
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
               <AlertTriangle className="w-4 h-4 text-gsrp-gold" />
-              Areas for Improvement
+              Things to Work On
             </h3>
             <div className="space-y-2">
               {results.improvements.map((s, i) => (
@@ -540,10 +456,7 @@ export default function ScenarioTrainingPage() {
                       </span>
                     </div>
                     <div className="h-2 bg-gsrp-dark rounded-full overflow-hidden">
-                      <div
-                        className={`h-full rounded-full transition-all ${pct >= 70 ? 'bg-green-400' : 'bg-red-400'}`}
-                        style={{ width: `${pct}%` }}
-                      />
+                      <div className={`h-full rounded-full transition-all ${pct >= 70 ? 'bg-green-400' : 'bg-red-400'}`} style={{ width: `${pct}%` }} />
                     </div>
                     {sd.feedback && <p className="text-xs text-gray-500 mt-2">{sd.feedback}</p>}
                   </div>
@@ -553,19 +466,11 @@ export default function ScenarioTrainingPage() {
           </div>
 
           <div className="flex gap-3">
-            <button
-              onClick={handleRetry}
-              className="flex-1 py-3 bg-gsrp-orange text-white rounded-xl font-semibold hover:bg-gsrp-orange/90 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <RotateCcw className="w-4 h-4" />
-              Retry Training
+            <button onClick={handleRetry} className="flex-1 py-3 bg-gsrp-orange text-white rounded-xl font-semibold hover:bg-gsrp-orange/90 transition-colors flex items-center justify-center gap-2 cursor-pointer">
+              <RotateCcw className="w-4 h-4" /> Retry
             </button>
-            <button
-              onClick={() => router.push('/training')}
-              className="flex-1 py-3 bg-gsrp-dark-surface text-white rounded-xl font-semibold hover:bg-gsrp-dark-surface/80 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Training Hub
+            <button onClick={() => router.push('/training')} className="flex-1 py-3 bg-gsrp-dark-surface text-white rounded-xl font-semibold hover:bg-gsrp-dark-surface/80 transition-colors flex items-center justify-center gap-2 cursor-pointer">
+              <ArrowLeft className="w-4 h-4" /> Back to Training
             </button>
           </div>
         </div>
@@ -576,7 +481,7 @@ export default function ScenarioTrainingPage() {
   if (phase === 'chat' && currentScenario) {
     return (
       <div className="max-w-4xl mx-auto h-[calc(100vh-140px)] flex flex-col">
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-center justify-between mb-3">
           <div>
             <h1 className="text-xl font-bold text-white flex items-center gap-3">
               <MessageSquare className="w-6 h-6 text-gsrp-orange" />
@@ -586,36 +491,29 @@ export default function ScenarioTrainingPage() {
               Scenario {scenarioIndex + 1} of {totalScenarios} — {currentScenario.label}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={fetchHint}
-              disabled={hintLoading}
-              className="px-3 py-1.5 bg-gsrp-gold/10 text-gsrp-gold rounded-lg text-xs font-medium hover:bg-gsrp-gold/20 transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
-            >
-              {hintLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lightbulb className="w-3.5 h-3.5" />}
-              {showHint ? 'New Hint' : 'Hint'}
-            </button>
+        </div>
+
+        <div className="mb-3 bg-gsrp-gold/5 border border-gsrp-gold/20 rounded-xl p-3">
+          <div className="flex items-start gap-2">
+            <Lightbulb className="w-4 h-4 text-gsrp-gold flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-[10px] font-semibold text-gsrp-gold mb-0.5 uppercase tracking-wider">Hint</p>
+              <p className="text-xs text-gray-300">{currentHint || 'Ask the player for video proof of what happened.'}</p>
+            </div>
           </div>
         </div>
 
-        <AnimatePresence>
-          {showHint && currentHint && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="mb-4 bg-gsrp-gold/5 border border-gsrp-gold/20 rounded-xl p-4"
-            >
-              <div className="flex items-start gap-2">
-                <Lightbulb className="w-4 h-4 text-gsrp-gold flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="text-xs font-semibold text-gsrp-gold mb-1">Training Hint</p>
-                  <p className="text-xs text-gray-300">{currentHint}</p>
-                </div>
+        {decisionHint && (
+          <div className="mb-3 bg-gsrp-teal/5 border border-gsrp-teal/20 rounded-xl p-3">
+            <div className="flex items-start gap-2">
+              <Terminal className="w-4 h-4 text-gsrp-teal flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-[10px] font-semibold text-gsrp-teal mb-0.5 uppercase tracking-wider">Ready to Act</p>
+                <p className="text-xs text-gray-300">{decisionHint}</p>
               </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            </div>
+          </div>
+        )}
 
         <div className="flex-1 bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-2xl overflow-hidden flex flex-col">
           <div className="flex-1 overflow-y-auto p-4 space-y-4 custom-scrollbar">
@@ -623,13 +521,10 @@ export default function ScenarioTrainingPage() {
               if (msg.role === 'system') {
                 return (
                   <div key={i} className="flex justify-center">
-                    <span className="text-xs text-gray-600 bg-gsrp-dark-surface/50 px-3 py-1 rounded-full">
-                      {msg.content}
-                    </span>
+                    <span className="text-xs text-gray-600 bg-gsrp-dark-surface/50 px-3 py-1 rounded-full">{msg.content}</span>
                   </div>
                 );
               }
-
               if (msg.role === 'user') {
                 return (
                   <div key={i} className="flex justify-end">
@@ -639,7 +534,6 @@ export default function ScenarioTrainingPage() {
                   </div>
                 );
               }
-
               return (
                 <div key={i} className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-full bg-gsrp-dark-surface flex items-center justify-center flex-shrink-0">
@@ -664,67 +558,30 @@ export default function ScenarioTrainingPage() {
             <div ref={chatEndRef} />
           </div>
 
-          <AnimatePresence>
-            {decisionPopup && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 20 }}
-                className="border-t border-gsrp-dark-border/50 p-4 bg-gsrp-dark-surface/30"
+          <div className="border-t border-gsrp-dark-border/50 p-3">
+            <div className="flex flex-wrap gap-2 mb-2">
+              <button
+                onClick={() => sendMessage('Ask something else')}
+                className="px-3 py-1.5 bg-gsrp-dark-surface text-gray-300 rounded-lg text-xs font-medium hover:bg-gsrp-dark-surface/80 hover:text-white transition-colors cursor-pointer"
               >
-                <p className="text-xs font-semibold text-gsrp-orange mb-3 flex items-center gap-2">
-                  <Target className="w-4 h-4" />
-                  {decisionPopup.title}
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {decisionPopup.options.map((opt, i) => (
-                    <button
-                      key={i}
-                      onClick={() => handleDecision(opt.value)}
-                      disabled={loading}
-                      className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 cursor-pointer ${
-                        opt.variant === 'danger'
-                          ? 'bg-red-400/10 text-red-400 border border-red-400/20 hover:bg-red-400/20'
-                          : opt.variant === 'warning'
-                          ? 'bg-yellow-400/10 text-yellow-400 border border-yellow-400/20 hover:bg-yellow-400/20'
-                          : opt.variant === 'success'
-                          ? 'bg-green-400/10 text-green-400 border border-green-400/20 hover:bg-green-400/20'
-                          : 'bg-gsrp-dark-card text-gray-300 border border-gsrp-dark-border hover:border-gsrp-orange/30 hover:text-white'
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          {!decisionPopup && (
-            <div className="border-t border-gsrp-dark-border/50 p-3">
-              <form
-                onSubmit={(e) => { e.preventDefault(); sendMessage(input); }}
-                className="flex items-center gap-2"
-              >
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Type your response..."
-                  disabled={loading}
-                  className="flex-1 bg-gsrp-dark-surface/50 border border-gsrp-dark-border/30 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gsrp-orange/50 disabled:opacity-50"
-                />
-                <button
-                  type="submit"
-                  disabled={loading || !input.trim()}
-                  className="p-2.5 bg-gsrp-orange/10 text-gsrp-orange rounded-xl hover:bg-gsrp-orange/20 transition-colors disabled:opacity-50 cursor-pointer"
-                >
-                  <Send className="w-4 h-4" />
-                </button>
-              </form>
+                Ask something else
+              </button>
             </div>
-          )}
+            <form onSubmit={(e) => { e.preventDefault(); sendMessage(input); }} className="flex items-center gap-2">
+              <input
+                ref={inputRef}
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type a message or use :warn :kick :ban :jail :view"
+                disabled={loading}
+                className="flex-1 bg-gsrp-dark-surface/50 border border-gsrp-dark-border/30 rounded-xl px-4 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-gsrp-orange/50 disabled:opacity-50"
+              />
+              <button type="submit" disabled={loading || !input.trim()} className="p-2.5 bg-gsrp-orange/10 text-gsrp-orange rounded-xl hover:bg-gsrp-orange/20 transition-colors disabled:opacity-50 cursor-pointer">
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     );
@@ -736,13 +593,9 @@ export default function ScenarioTrainingPage() {
 export async function getServerSideProps(context) {
   const { isFullAdmin } = require('../../../lib/admin-helper');
   const session = await getServerSession(context.req, context.res, authOptions);
-
   if (!session) return { props: {} };
-
   const hasRole = session.user?.roles?.includes('1372476380096237609');
   const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || []);
-
   if (!hasRole && !isAdmin) return { redirect: { destination: '/', permanent: false } };
-
   return { props: {} };
 }
