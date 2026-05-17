@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const playersRes = await fetch('https://api.erlc.gg/v2/server?Players=true&Staff=true', {
+    const playersRes = await fetch('https://api.erlc.gg/v2/server?Players=true&Staff=true&Queue=true', {
       headers: { 'server-key': ERLC_KEY },
     });
 
@@ -25,14 +25,24 @@ export default async function handler(req, res) {
 
     const data = await playersRes.json();
 
-    const players = data.Players || [];
-    const staff = data.Staff || [];
+    const staff = data.Staff || {};
+    const adminCount = Object.keys(staff.Admins || {}).length;
+    const modCount = Object.keys(staff.Mods || {}).length;
+    const helperCount = Object.keys(staff.Helpers || {}).length;
+    const totalStaff = adminCount + modCount + helperCount;
+
+    const queue = data.Queue || [];
 
     return res.status(200).json({
-      playerCount: players.length,
-      staffCount: staff.length,
+      playerCount: data.CurrentPlayers || 0,
+      maxPlayers: data.MaxPlayers || 0,
+      staffCount: totalStaff,
+      adminCount,
+      modCount,
+      helperCount,
+      queueCount: queue.length,
       serverName: data.Name || 'Unknown',
-      uptime: data.Uptime || null,
+      joinKey: data.JoinKey || null,
       timestamp: new Date().toISOString(),
     });
   } catch (err) {
