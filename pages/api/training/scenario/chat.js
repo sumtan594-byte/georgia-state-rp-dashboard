@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth-options';
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const CEREBRAS_API_KEY = process.env.CEREBRAS_API_KEY;
 
 const PUNISHMENT_GUIDELINES = {
   'RDM': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
@@ -109,8 +109,8 @@ CURRENT SCENARIO: {scenarioType} - {scenarioLabel}
 
 Respond naturally to what the staff member says.`;
 
-async function callOpenRouter(systemPrompt, chatHistory, userMessage) {
-  if (!OPENROUTER_API_KEY) throw new Error('OPENROUTER_API_KEY not configured');
+async function callCerebras(systemPrompt, chatHistory, userMessage) {
+  if (!CEREBRAS_API_KEY) throw new Error('CEREBRAS_API_KEY not configured');
 
   const messages = [
     { role: 'system', content: systemPrompt },
@@ -118,26 +118,23 @@ async function callOpenRouter(systemPrompt, chatHistory, userMessage) {
     { role: 'user', content: userMessage },
   ];
 
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const res = await fetch('https://api.cerebras.ai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-      'HTTP-Referer': 'https://join-gsrp.com',
-      'X-Title': 'GSRP Scenario Training',
+      'Authorization': `Bearer ${CEREBRAS_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'nvidia/nemotron-3-super-120b-a12b:free',
+      model: 'gpt-oss-120b',
       messages,
-      max_tokens: 200,
+      max_completion_tokens: 200,
       temperature: 0.85,
-      reasoning: { enabled: false },
     }),
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`OpenRouter API error: ${res.status} ${errText}`);
+    throw new Error(`Cerebras API error: ${res.status} ${errText}`);
   }
 
   const data = await res.json();
@@ -224,7 +221,7 @@ export default async function handler(req, res) {
     .replace('{scenarioLabel}', scenario.label);
 
   try {
-    const aiResponse = await callOpenRouter(
+    const aiResponse = await callCerebras(
       systemPrompt,
       buildHistory(chatHistory),
       message

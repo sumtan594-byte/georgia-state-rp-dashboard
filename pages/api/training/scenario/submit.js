@@ -2,42 +2,39 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth-options';
 import clientPromise from '../../../../lib/mongodb';
 
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
+const CEREBRAS_API_KEY = process.env.CEREBRAS_API_KEY;
 
-async function callOpenRouter(prompt) {
-  if (!OPENROUTER_API_KEY) {
-    throw new Error('OPENROUTER_API_KEY not configured');
+async function callCerebras(prompt) {
+  if (!CEREBRAS_API_KEY) {
+    throw new Error('CEREBRAS_API_KEY not configured');
   }
 
-  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+  const res = await fetch('https://api.cerebras.ai/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
-      'HTTP-Referer': 'https://join-gsrp.com',
-      'X-Title': 'GSRP Scenario Training',
+      'Authorization': `Bearer ${CEREBRAS_API_KEY}`,
     },
     body: JSON.stringify({
-      model: 'nvidia/nemotron-3-super-120b-a12b:free',
+      model: 'gpt-oss-120b',
       messages: [
         { role: 'user', content: prompt },
       ],
-      max_tokens: 1500,
+      max_completion_tokens: 1500,
       temperature: 0.7,
-      reasoning: { enabled: false },
     }),
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`OpenRouter API error: ${res.status} ${errText}`);
+    throw new Error(`Cerebras API error: ${res.status} ${errText}`);
   }
 
   const data = await res.json();
   const text = data.choices?.[0]?.message?.content;
 
   if (!text) {
-    throw new Error('OpenRouter returned no response text');
+    throw new Error('Cerebras returned no response text');
   }
 
   return text.trim();
@@ -98,7 +95,7 @@ Return ONLY valid JSON like this:
 
 Keep it encouraging but honest. Reference the actual scenario types like RDM or VDM. Sound like a real person not a robot. Use simple words a teenager would understand.`;
 
-    const aiResult = await callOpenRouter(aiPrompt);
+    const aiResult = await callCerebras(aiPrompt);
 
     let parsed;
     try {
