@@ -86,6 +86,7 @@ async function callOpenRouter(systemPrompt, chatHistory, userMessage) {
       messages,
       max_tokens: 300,
       temperature: 0.9,
+      reasoning: { enabled: false },
     }),
   });
 
