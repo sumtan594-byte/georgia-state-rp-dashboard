@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth-options';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
 const SYSTEM_PROMPT = `You are a player on a private ER:LC (Emergency Response Liberty County) roleplay server called GSRP (Georgia State Roleplay). You are reporting a rule violation to a staff member. You must stay completely in character as a regular frustrated player seeking help.
 
@@ -40,7 +40,7 @@ HOW TO RESPOND:
 - Stay in character as a regular player who is frustrated about a rule violation
 - Use casual gamer language but do not be overly rude unless the staff member does something very wrong
 - If the staff asks for video proof and you have it say yes and that you will send it
-- If the staff asks for video proof and you do not have it say no but suggest they check kill logs (which is NOT valid proof)
+- If the staff asks for video proof and you do not have it say no but suggest they check kill logs which is NOT valid proof
 - If the staff asks for your Discord comms status say you are not in comms and ask for the code
 - If the staff gives you the code GSRP7 say thanks and that you will join
 - If the staff asks for the suspect username give a random Roblox style username
@@ -62,67 +62,60 @@ CURRENT SCENARIO LABEL: {scenarioLabel}
 
 Respond naturally based on what the staff member says to you.`;
 
-function buildChatHistory(scenario, messages) {
-  const history = [];
-
-  for (const msg of messages) {
-    if (msg.role === 'user') {
-      history.push({ role: 'user', parts: [{ text: msg.content }] });
-    } else if (msg.role === 'model') {
-      history.push({ role: 'model', parts: [{ text: msg.content }] });
-    }
-  }
-
-  return history;
-}
-
-async function callGemini(systemPrompt, chatHistory, userMessage) {
-  if (!GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY not configured');
+async function callOpenRouter(systemPrompt, chatHistory, userMessage) {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error('OPENROUTER_API_KEY not configured');
   }
 
   const messages = [
-    { role: 'user', parts: [{ text: systemPrompt }] },
+    { role: 'system', content: systemPrompt },
     ...chatHistory,
-    { role: 'user', parts: [{ text: userMessage }] },
+    { role: 'user', content: userMessage },
   ];
 
-  const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemma-4-31b-it:generateContent', {
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-goog-api-key': GEMINI_API_KEY,
+      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      'HTTP-Referer': 'https://join-gsrp.com',
+      'X-Title': 'GSRP Scenario Training',
     },
     body: JSON.stringify({
-      contents: messages,
-      generationConfig: {
-        temperature: 0.9,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 300,
-      },
-      safetySettings: [
-        { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_NONE' },
-        { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_NONE' },
-      ],
+      model: 'nvidia/nemotron-3-super-120b-a12b:free',
+      messages,
+      max_tokens: 300,
+      temperature: 0.9,
     }),
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`Gemini API error: ${res.status} ${errText}`);
+    throw new Error(`OpenRouter API error: ${res.status} ${errText}`);
   }
 
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = data.choices?.[0]?.message?.content;
 
   if (!text) {
-    throw new Error('Gemini returned no response text');
+    throw new Error('OpenRouter returned no response text');
   }
 
   return text.trim();
+}
+
+function buildChatHistory(scenario, messages) {
+  const history = [];
+
+  for (const msg of messages) {
+    if (msg.role === 'user') {
+      history.push({ role: 'user', content: msg.content });
+    } else if (msg.role === 'model') {
+      history.push({ role: 'assistant', content: msg.content });
+    }
+  }
+
+  return history;
 }
 
 function evaluateStaffResponse(staffMessage, scenarioType) {
@@ -240,8 +233,8 @@ export default async function handler(req, res) {
     }
 
     try {
-      const aiResponse = await callGemini(
-        `You are a player on GSRP ER:LC roleplay server. A staff member just took this action against the person you reported: ${decisionAction}. Respond as a regular player would. Keep it short and natural. Do not use em dashes. Sound like a real person.`,
+      const aiResponse = await callOpenRouter(
+        `You are a player on GSRP ER:LC roleplay server. A staff member just took this action against the person you reported: ${decisionAction}. Respond as a regular player would. Keep it short and natural. Do not use em dashes. Sound like a real person typing in game chat.`,
         buildChatHistory(scenario, chatHistory),
         `[Staff chose to ${decisionAction}]`
       );
@@ -273,7 +266,7 @@ export default async function handler(req, res) {
     .replace('{scenarioLabel}', scenario.label);
 
   try {
-    const aiResponse = await callGemini(
+    const aiResponse = await callOpenRouter(
       systemPrompt,
       buildChatHistory(scenario, chatHistory),
       message
@@ -309,12 +302,12 @@ export default async function handler(req, res) {
       response: aiResponse,
     });
   } catch (err) {
-    console.error('[Gemini API Error]', err.message);
+    console.error('[OpenRouter API Error]', err.message);
 
     const fallbackResponses = [
       "Yeah I have a clip! Let me send it to you.",
       "Uhh no I did not record it. But check the kill logs?",
-      "The guy's username is xXDragonSlayer99Xx. Please do something!",
+      "The guy username is xXDragonSlayer99Xx. Please do something!",
       "I'm not in comms yet! How do I join? Do I need a code?",
       "Okay I'll send it there! Thanks for the help officer!",
       "They're currently near the dealership. Please hurry!",

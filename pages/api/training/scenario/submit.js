@@ -2,40 +2,41 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth-options';
 import clientPromise from '../../../../lib/mongodb';
 
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY;
 
-async function callGemini(prompt) {
-  if (!GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY not configured');
+async function callOpenRouter(prompt) {
+  if (!OPENROUTER_API_KEY) {
+    throw new Error('OPENROUTER_API_KEY not configured');
   }
 
-  const res = await fetch('https://generativelanguage.googleapis.com/v1beta/models/gemma-4-31b-it:generateContent', {
+  const res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'x-goog-api-key': GEMINI_API_KEY,
+      'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+      'HTTP-Referer': 'https://join-gsrp.com',
+      'X-Title': 'GSRP Scenario Training',
     },
     body: JSON.stringify({
-      contents: [{ role: 'user', parts: [{ text: prompt }] }],
-      generationConfig: {
-        temperature: 0.7,
-        topK: 40,
-        topP: 0.95,
-        maxOutputTokens: 1500,
-      },
+      model: 'nvidia/nemotron-3-super-120b-a12b:free',
+      messages: [
+        { role: 'user', content: prompt },
+      ],
+      max_tokens: 1500,
+      temperature: 0.7,
     }),
   });
 
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`Gemini API error: ${res.status} ${errText}`);
+    throw new Error(`OpenRouter API error: ${res.status} ${errText}`);
   }
 
   const data = await res.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const text = data.choices?.[0]?.message?.content;
 
   if (!text) {
-    throw new Error('Gemini returned no response text');
+    throw new Error('OpenRouter returned no response text');
   }
 
   return text.trim();
@@ -94,7 +95,7 @@ Format your response as JSON like this:
 
 Be specific and reference actual scenario types where possible. Sound encouraging but honest. Do not use em dashes. Sound like a human trainer giving feedback.`;
 
-    const aiResult = await callGemini(aiPrompt);
+    const aiResult = await callOpenRouter(aiPrompt);
 
     let parsed;
     try {
