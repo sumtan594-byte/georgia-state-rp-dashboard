@@ -35,10 +35,9 @@ export default async function handler(req, res) {
     const dbStaff = client.db('gsrp_staff');
     const dbDefault = client.db();
 
-    const [trainingProgress, quizAttempts, scenarioTraining] = await Promise.all([
+    const [trainingProgress, quizAttempts] = await Promise.all([
       dbStaff.collection('training_progress').find({}).toArray(),
       dbDefault.collection('quiz_attempts').find({}).toArray(),
-      dbStaff.collection('scenario_training').find({}).toArray(),
     ]);
 
     const userMap = {};
@@ -89,11 +88,6 @@ export default async function handler(req, res) {
           totalAttempts: 0,
           bestScore: 0,
           lastAttempt: null,
-          scenarioCompleted: false,
-          scenarioScore: null,
-          scenarioPercentage: null,
-          scenarioPassed: null,
-          scenarioCompletedAt: null,
         };
       }
       userMap[qa.userId].hasPassed = qa.hasPassed || false;
@@ -118,38 +112,6 @@ export default async function handler(req, res) {
         userMap[qa.userId].bestScore = Math.max(...attempts.map(a => a.score || 0));
         userMap[qa.userId].lastAttempt = attempts[attempts.length - 1];
       }
-    }
-
-    for (const st of scenarioTraining) {
-      if (!userMap[st.userId]) {
-        userMap[st.userId] = {
-          userId: st.userId,
-          username: null,
-          avatar: null,
-          handbookCompleted: false,
-          completedSections: [],
-          lastHandbookUpdate: null,
-          hasPassed: false,
-          hasPassedAt: null,
-          cooldownUntil: null,
-          isOnCooldown: false,
-          attempts: [],
-          totalAttempts: 0,
-          bestScore: 0,
-          lastAttempt: null,
-          scenarioCompleted: false,
-          scenarioScore: null,
-          scenarioPercentage: null,
-          scenarioPassed: null,
-          scenarioCompletedAt: null,
-        };
-      }
-      userMap[st.userId].scenarioCompleted = st.completed || false;
-      userMap[st.userId].scenarioScore = st.totalScore || null;
-      userMap[st.userId].scenarioMaxScore = st.maxScore || null;
-      userMap[st.userId].scenarioPercentage = st.percentage || null;
-      userMap[st.userId].scenarioPassed = st.passed || null;
-      userMap[st.userId].scenarioCompletedAt = st.completedAt || null;
     }
 
     const users = Object.values(userMap).sort((a, b) => {

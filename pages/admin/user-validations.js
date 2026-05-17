@@ -6,7 +6,7 @@ import LoginScreen from '../../components/auth/LoginScreen';
 import {
   Users, Search, Loader2, BookOpen, FileText, Clock, CheckCircle, XCircle,
   RefreshCw, Shield, ChevronDown, ChevronRight, AlertTriangle, Eye,
-  BarChart3, Ban, Undo2, Trash2, Copy, ExternalLink, MessageSquare
+  BarChart3, Ban, Undo2, Trash2, Copy, ExternalLink
 } from 'lucide-react';
 
 export default function UserValidationsPage() {
@@ -207,9 +207,6 @@ function UserCard({ user, isExpanded, onToggle, onAction, actionLoading }) {
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <StatusBadge icon={BookOpen} label={user.handbookCompleted ? 'Handbook Complete' : 'Handbook Pending'} active={user.handbookCompleted} />
             <StatusBadge icon={FileText} label={user.hasPassed ? 'Quiz Passed' : 'Quiz Not Passed'} active={user.hasPassed} />
-            {user.scenarioCompleted !== undefined && (
-              <StatusBadge icon={MessageSquare} label={user.scenarioCompleted ? 'Scenario Done' : 'Scenario Pending'} active={user.scenarioCompleted} />
-            )}
             {user.totalAttempts > 0 && (
               <span className="text-xs text-gray-500 bg-gsrp-dark-surface px-2 py-0.5 rounded flex items-center gap-1">
                 <BarChart3 className="w-3 h-3" />
@@ -317,41 +314,6 @@ function UserCard({ user, isExpanded, onToggle, onAction, actionLoading }) {
                 )}
               </div>
             </div>
-
-            <div className="bg-gsrp-dark-card/50 rounded-lg p-3 md:col-span-2">
-              <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
-                <MessageSquare className="w-3.5 h-3.5" />
-                Scenario Training
-              </h3>
-              <div className="space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Completed</span>
-                  <span className={user.scenarioCompleted ? 'text-green-400' : 'text-red-400'}>
-                    {user.scenarioCompleted ? 'Yes' : 'No'}
-                  </span>
-                </div>
-                {user.scenarioCompleted && (
-                  <>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Score</span>
-                      <span className="text-white">{user.scenarioScore}/{user.scenarioMaxScore} ({user.scenarioPercentage}%)</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-400">Result</span>
-                      <span className={user.scenarioPassed ? 'text-green-400' : 'text-red-400'}>
-                        {user.scenarioPassed ? 'PASSED' : 'FAILED'}
-                      </span>
-                    </div>
-                    {user.scenarioCompletedAt && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-gray-400">Completed At</span>
-                        <span className="text-white">{new Date(user.scenarioCompletedAt).toLocaleString()}</span>
-                      </div>
-                    )}
-                  </>
-                )}
-              </div>
-            </div>
           </div>
 
           {user.attempts.length > 0 && (
@@ -456,29 +418,6 @@ function UserCard({ user, isExpanded, onToggle, onAction, actionLoading }) {
                   loading={actionLoading[`${user.userId}_reset_all`]}
                   onClick={() => onAction(user.userId, 'reset_all', 'Reset ALL validations for this user? This cannot be undone.')}
                   variant="danger"
-                />
-                <ActionButton
-                  label="Reset Scenario"
-                  icon={RefreshCw}
-                  loading={actionLoading[`${user.userId}_reset_scenario`]}
-                  onClick={() => onAction(user.userId, 'reset_scenario', 'Reset scenario training for this user?')}
-                  variant="warning"
-                />
-                <ActionButton
-                  label="Complete Scenario"
-                  icon={CheckCircle}
-                  loading={actionLoading[`${user.userId}_complete_scenario`]}
-                  onClick={() => onAction(user.userId, 'complete_scenario', 'Mark scenario training as completed for this user?')}
-                  variant="success"
-                  disabled={user.scenarioCompleted}
-                />
-                <ActionButton
-                  label="Revoke Scenario"
-                  icon={Ban}
-                  loading={actionLoading[`${user.userId}_revoke_scenario_pass`]}
-                  onClick={() => onAction(user.userId, 'revoke_scenario_pass', 'Revoke scenario training pass for this user?')}
-                  variant="danger"
-                  disabled={!user.scenarioPassed}
                 />
               </div>
             )}

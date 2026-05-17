@@ -88,28 +88,6 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, message: 'All validations reset' });
       }
 
-      case 'reset_scenario': {
-        await dbStaff.collection('scenario_training').deleteOne({ userId });
-        return res.status(200).json({ ok: true, message: 'Scenario training reset' });
-      }
-
-      case 'complete_scenario': {
-        await dbStaff.collection('scenario_training').updateOne(
-          { userId },
-          { $set: { completed: true, completedAt: new Date(), totalScore: 15, maxScore: 15, percentage: 100, passed: true, scenariosCompleted: 5 } },
-          { upsert: true }
-        );
-        return res.status(200).json({ ok: true, message: 'Scenario training marked as completed' });
-      }
-
-      case 'revoke_scenario_pass': {
-        await dbStaff.collection('scenario_training').updateOne(
-          { userId },
-          { $set: { passed: false, percentage: 0 } }
-        );
-        return res.status(200).json({ ok: true, message: 'Scenario training pass revoked' });
-      }
-
       default:
         return res.status(400).json({ error: `Unknown action: ${action}` });
     }
