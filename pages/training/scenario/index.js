@@ -28,6 +28,7 @@ export default function ScenarioTrainingPage() {
   const [decisionPopup, setDecisionPopup] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [results, setResults] = useState(null);
+  const [resultsLoading, setResultsLoading] = useState(false);
   const [alreadyCompleted, setAlreadyCompleted] = useState(false);
   const [completionData, setCompletionData] = useState(null);
   const chatEndRef = useRef(null);
@@ -217,6 +218,7 @@ export default function ScenarioTrainingPage() {
 
   async function submitResults() {
     setLoading(true);
+    setResultsLoading(true);
     try {
       const res = await fetch('/api/training/scenario/submit', {
         method: 'POST',
@@ -232,6 +234,7 @@ export default function ScenarioTrainingPage() {
       console.error('Submit error:', err);
     }
     setLoading(false);
+    setResultsLoading(false);
   }
 
   async function handleRetry() {
@@ -392,6 +395,25 @@ export default function ScenarioTrainingPage() {
     );
   }
 
+  if (phase === 'results' && resultsLoading) {
+    return (
+      <div className="max-w-4xl mx-auto">
+        <div className="mb-6">
+          <h1 className="text-2xl font-bold text-white flex items-center gap-3">
+            <Award className="w-7 h-7 text-gsrp-orange" />
+            Training Results
+          </h1>
+          <p className="text-gray-400 text-sm mt-1">Generating your personalized feedback...</p>
+        </div>
+        <div className="bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-2xl p-12 text-center">
+          <Loader2 className="w-12 h-12 text-gsrp-orange animate-spin mx-auto mb-4" />
+          <p className="text-gray-400 text-sm">AI is analyzing your performance across all scenarios</p>
+          <p className="text-gray-600 text-xs mt-2">This may take a few seconds</p>
+        </div>
+      </div>
+    );
+  }
+
   if (phase === 'results' && results) {
     const percentage = results.maxScore > 0 ? Math.round((results.totalScore / results.maxScore) * 100) : 0;
     const passed = percentage >= 60;
@@ -434,6 +456,19 @@ export default function ScenarioTrainingPage() {
               <p className="text-xl font-bold text-gsrp-sunset">{results.worstScenario || '—'}</p>
             </div>
           </div>
+
+          {results.overallComment && (
+            <div className="mb-6 bg-gsrp-dark-surface/50 rounded-xl p-5 border border-gsrp-dark-border/30">
+              <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                <MessageSquare className="w-4 h-4 text-gsrp-orange" />
+                Trainer Feedback
+                {results.aiGenerated && (
+                  <span className="text-[10px] font-medium text-gsrp-teal bg-gsrp-teal/10 px-2 py-0.5 rounded-full">AI Generated</span>
+                )}
+              </h3>
+              <p className="text-sm text-gray-300 leading-relaxed">{results.overallComment}</p>
+            </div>
+          )}
 
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-white mb-4 flex items-center gap-2">
