@@ -11,183 +11,6 @@ import {
 import { useRouter } from 'next/router';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const RANDOM_USERNAMES = [
-  'xXDragonSlayer99Xx', 'ProGamer_2024', 'NoobMaster69', 'CoolKid_RBLX',
-  'SpeedRacer_EU', 'ShadowKnight_X', 'LunaStar_2024', 'BlazeFury',
-  'IceQueen_RP', 'ThunderBolt_77', 'NightHawk_RBLX', 'SilverWolf_99',
-  'CrimsonTide_X', 'GoldenEagle_21', 'StormBreaker_RP', 'PhantomRider',
-  'DarkViper_2024', 'CrystalMage_X', 'FireStorm_77', 'AquaMarine_RP'
-];
-
-const SCENARIO_TYPES = [
-  {
-    type: 'RDM',
-    label: 'Random Deathmatch',
-    openers: [
-      "Hey officer! This guy just shot me outta nowhere! I was literally just walking to my car and BAM he pulls out an AK and starts firing!",
-      "MOD CALL! Someone is RDMing in the city! They're just running around shooting everyone with no RP reason at all!",
-      "Officer I need help, this player killed me without any roleplay. I was doing a proper traffic stop RP and he just spawned behind me and shot me.",
-    ],
-    correctActions: ['Ask for video proof/clip', 'Ask if they are in comms', 'Tell them to submit proof in reports channel'],
-    wrongActions: ['Ban immediately without proof', 'Accept kill logs as proof', 'Ignore the report'],
-  },
-  {
-    type: 'VDM',
-    label: 'Vehicle Deathmatch',
-    openers: [
-      "Hey! This guy keeps running me over with his truck! Like 5 times already! He's just driving around the parking lot intentionally hitting people!",
-      "Can someone help? There's a player in a Chevlon Corbeta just VDMing everyone on the highway. They're not stopping at all!",
-      "Officer this person is using their vehicle as a weapon! They keep ramming into players at the dealership. Please do something!",
-    ],
-    correctActions: ['Ask for video proof', 'Teleport to observe', 'Ask for the suspect username'],
-    wrongActions: ['Ban without checking', 'Tell them to just avoid the player', 'Accept screenshots only'],
-  },
-  {
-    type: 'FRP',
-    label: 'Fail Roleplay',
-    openers: [
-      "Hey mod, this guy is driving his supercar straight up a vertical mountain. That's not even possible in real life! Total FRP.",
-      "Can someone check this player? They're flying around on a motorcycle doing tricks in the sky. That's not realistic RP at all.",
-      "Officer! Someone is roleplaying as a superhero with laser eyes and flying. This is a realistic RP server, this is FRP!",
-    ],
-    correctActions: ['Ask for proof/clip', 'Ask what specifically they are doing', 'Explain the FRP rule to the reporter'],
-    wrongActions: ['Ban immediately', 'Tell them it is fine', 'Ignore because it seems harmless'],
-  },
-  {
-    type: 'NITRP',
-    label: 'No Intent to Roleplay',
-    openers: [
-      "Hey there's this player who keeps chasing cops and trolling. They're not doing any RP at all, just running around making noise and disrupting everyone.",
-      "MOD! This guy joined and is just spamming in chat, following people around, and ruining RP scenes. No intent to RP at all.",
-      "Officer can you help? Someone is just driving around blasting music and running through RP scenes. They're clearly here to troll.",
-    ],
-    correctActions: ['Ask for proof', 'Ask suspect username', 'Tell them to submit in reports channel'],
-    wrongActions: ['Ban without evidence', 'Tell them to ignore it', 'Kick the reporter by mistake'],
-  },
-  {
-    type: 'LTAP',
-    label: 'Leave To Avoid Punishment',
-    openers: [
-      "Hey! This guy just left the server right before you were gonna arrest him! He combat logged to avoid the punishment!",
-      "Officer the suspect just disconnected! They left to avoid being banned. Can you still action them?",
-      "MOD CALL - the player I was reporting just left the server. They clearly LTAP'd to avoid getting punished.",
-    ],
-    correctActions: ['Check server logs', 'Ask for the username', 'Ban if logs confirm'],
-    wrongActions: ['Ignore because they left', 'Ask for video proof only', 'Tell them nothing can be done'],
-  },
-  {
-    type: 'NLR',
-    label: 'New Life Rule',
-    openers: [
-      "Hey this guy died and then immediately came back to the same spot for revenge! That's breaking the New Life Rule!",
-      "Officer! Someone just respawned and ran straight back to where they died to continue fighting. NLR violation!",
-      "Can you check this? Player died, respawned, and is now back at the exact same location trying to kill the same person. NLR!",
-    ],
-    correctActions: ['Ask for proof', 'Explain NLR to the reporter', 'Warn the offending player'],
-    wrongActions: ['Ban immediately', 'Say NLR is not a rule', 'Ignore the report'],
-  },
-  {
-    type: 'VOL',
-    label: 'Value of Life',
-    openers: [
-      "Hey this guy has a gun pointed at him and he's just running away laughing! No value of life at all!",
-      "Officer! Someone pulled a gun on this player and they just pulled out their own gun and started shooting. No VOL!",
-      "MOD! This person is being robbed and instead of putting their hands up they're fighting back with no fear. VOL violation!",
-    ],
-    correctActions: ['Ask for proof/clip', 'Ask for suspect username', 'Warn about VOL rules'],
-    wrongActions: ['Ignore it', 'Say VOL is not enforced', 'Ban without checking'],
-  },
-  {
-    type: 'TROLLING',
-    label: 'Trolling',
-    openers: [
-      "Hey there's a player who's just trolling in the server. They're spamming emotes, blocking roads, and ruining everyone's RP.",
-      "MOD CALL! Someone is intentionally disrupting RP scenes by making loud noises and driving recklessly. Pure trolling.",
-      "Officer this guy is just here to cause chaos. He's spawning cars in the middle of the road and blocking traffic. Please help!",
-    ],
-    correctActions: ['Ask for proof', 'Ask suspect username', 'Kick if confirmed'],
-    wrongActions: ['Ban immediately without proof', 'Tell them to deal with it', 'Ignore'],
-  },
-];
-
-const COMMON_QUESTIONS = [
-  {
-    keywords: ['can i get mod', 'how to get mod', 'become mod', 'apply mod', 'mod perms'],
-    response: "Oh I don't handle applications, but you can apply in our Discord! The code is GSRP7 to get in.",
-  },
-  {
-    keywords: ['how do i join staff', 'join staff team', 'become staff', 'staff application', 'how to apply'],
-    response: "You can apply for staff in our Discord server! Use the code GSRP7 to join the comms and look for the application channel.",
-  },
-  {
-    keywords: ['rp perms', 'roleplay perms', 'rp permissions', 'can i get rp'],
-    response: "Yes! Just tell me how long you need and what kind of RP, and I'll log it for you.",
-  },
-  {
-    keywords: ['what is rdm', 'rdm rule', 'what does rdm mean'],
-    response: "RDM is Random Deathmatch - killing or shooting players without any prior roleplay context or valid reason. It's against the rules!",
-  },
-  {
-    keywords: ['what is vdm', 'vdm rule', 'what does vdm mean'],
-    response: "VDM is Vehicle Deathmatch - using a vehicle as a weapon to repeatedly ram or run over players. Not allowed here!",
-  },
-  {
-    keywords: ['what is frp', 'frp rule', 'fail rp', 'what does frp mean'],
-    response: "FRP is Fail Roleplay - performing actions unrealistic to real life. Like driving a supercar up a vertical mountain!",
-  },
-  {
-    keywords: ['what is nlr', 'nlr rule', 'new life', 'what does nlr mean'],
-    response: "NLR is New Life Rule - when you die, you must forget your past life and cannot return to your death location for revenge.",
-  },
-  {
-    keywords: ['what is vol', 'vol rule', 'value of life', 'what does vol mean'],
-    response: "VOL is Value of Life - acting realistically when threatened. Like putting your hands up if someone has a gun pointed at you.",
-  },
-  {
-    keywords: ['what is nitrp', 'nitrp rule', 'no intent', 'what does nitrp mean'],
-    response: "NITRP is No Intent to Roleplay - joining a dedicated RP server purely to troll, chase, or disrupt players.",
-  },
-  {
-    keywords: ['what is ltap', 'ltap rule', 'leave to avoid', 'what does ltap mean'],
-    response: "LTAP is Leave To Avoid Punishment - combat logging or leaving the server right before a cop arrests you or a mod bans you.",
-  },
-  {
-    keywords: ['what is sts', 'shoulder to shoulder', 'sts meaning'],
-    response: "STS is Shoulder to Shoulder - a command for players/officers to line up side-by-side for briefings or inspections.",
-  },
-  {
-    keywords: ['what is pts', 'permission to speak', 'pts meaning'],
-    response: "PTS is Permission to Speak - used during formal lineups or trainings. You can't talk in chat until granted PTS.",
-  },
-  {
-    keywords: ['what is mdt', 'mobile data terminal', 'mdt meaning'],
-    response: "MDT is Mobile Data Terminal - the in-game computer system used by Police/Sheriff/Fire teams to log warrants and view calls.",
-  },
-  {
-    keywords: ['what is gm', 'gun motion', 'ngm', 'gm meaning'],
-    response: "(N)GM is (No) Gun Motion - typing out your physical actions in chat before pulling out a weapon. Like '/me unholsters Glock'.",
-  },
-  {
-    keywords: ['discord', 'discord link', 'discord server', 'discord invite'],
-    response: "The Discord code is GSRP7! You can use that to join our server.",
-  },
-  {
-    keywords: ['comms code', 'server code', 'join code', 'code'],
-    response: "The comms code is GSRP7!",
-  },
-];
-
-const PUNISHMENT_GUIDELINES = {
-  'RDM': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
-  'VDM': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
-  'FRP': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
-  'NLR': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
-  'NITRP': { 1: 'Kick', 2: 'Ban', 3: '—' },
-  'LTAP': { 1: 'Ban', 2: '—', 3: '—' },
-  'TROLLING': { 1: 'Kick', 2: 'Ban', 3: '—' },
-  'VOL': { 1: 'Warning', 2: 'Kick', 3: 'Ban' },
-};
-
 export default function ScenarioTrainingPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -198,7 +21,7 @@ export default function ScenarioTrainingPage() {
   const [sessionId, setSessionId] = useState(null);
   const [currentScenario, setCurrentScenario] = useState(null);
   const [scenarioIndex, setScenarioIndex] = useState(0);
-  const [totalScenarios, setTotalScenarios] = useState(5);
+  const [totalScenarios] = useState(5);
   const [scores, setScores] = useState([]);
   const [hints, setHints] = useState([]);
   const [showHint, setShowHint] = useState(false);
@@ -249,19 +72,17 @@ export default function ScenarioTrainingPage() {
       const data = await res.json();
       if (data.ok) {
         setSessionId(data.sessionId);
-        setTotalScenarios(data.totalScenarios);
         setScenarioIndex(0);
         setScores([]);
-        setMessages([]);
-        setChatHistory([]);
         setCurrentScenario(data.scenario);
-        setPhase('chat');
+        setHints(data.scenario.hints || []);
+        setShowHint(false);
+        setDecisionPopup(null);
+        setChatHistory([{ role: 'user', content: data.scenario.opener }]);
         setMessages([
           { role: 'ai', content: data.scenario.opener, timestamp: Date.now() },
         ]);
-        setChatHistory([{ role: 'user', content: data.scenario.opener }]);
-        setHints(data.scenario.hints || []);
-        setShowHint(false);
+        setPhase('chat');
       }
     } catch (err) {
       console.error('Failed to start session:', err);
@@ -270,11 +91,13 @@ export default function ScenarioTrainingPage() {
   }
 
   async function sendMessage(text) {
-    if (!text.trim() || loading) return;
+    if (!text.trim() || loading || decisionPopup) return;
     const userMsg = { role: 'user', content: text.trim(), timestamp: Date.now() };
     setMessages(prev => [...prev, userMsg]);
     setInput('');
     setLoading(true);
+
+    const newHistory = [...chatHistory, { role: 'user', content: text.trim() }];
 
     try {
       const res = await fetch('/api/training/scenario/chat', {
@@ -283,51 +106,28 @@ export default function ScenarioTrainingPage() {
         body: JSON.stringify({
           sessionId,
           message: text.trim(),
-          chatHistory: [...chatHistory, { role: 'user', content: text.trim() }],
+          chatHistory: newHistory,
           scenario: currentScenario,
         }),
       });
       const data = await res.json();
 
+      setMessages(prev => [...prev, { role: 'ai', content: data.response, timestamp: Date.now() }]);
+      setChatHistory(prev => [...prev, { role: 'ai', content: data.response }]);
+
       if (data.decision) {
         setDecisionPopup(data.decision);
-        setMessages(prev => [...prev, { role: 'ai', content: data.response, timestamp: Date.now() }]);
-      } else {
-        setMessages(prev => [...prev, { role: 'ai', content: data.response, timestamp: Date.now() }]);
       }
 
-      setChatHistory(prev => [
-        ...prev,
-        { role: 'user', content: text.trim() },
-        { role: 'ai', content: data.response },
-      ]);
-
-      if (data.score !== undefined) {
-        setScores(prev => [...prev, { scenario: currentScenario.type, score: data.score, maxScore: data.maxScore, feedback: data.feedback }]);
-      }
-
-      if (data.nextScenario) {
-        setTimeout(() => {
-          setCurrentScenario(data.nextScenario);
-          setScenarioIndex(prev => prev + 1);
-          setMessages(prev => [...prev, {
-            role: 'system',
-            content: `--- Scenario ${scenarioIndex + 2} of ${totalScenarios} ---`,
-            timestamp: Date.now(),
-          }, {
-            role: 'ai',
-            content: data.nextScenario.opener,
-            timestamp: Date.now(),
-          }]);
-          setChatHistory([{ role: 'user', content: data.nextScenario.opener }]);
-          setHints(data.nextScenario.hints || []);
-          setShowHint(false);
-          setDecisionPopup(null);
-        }, 1500);
-      }
-
-      if (data.ended) {
-        setTimeout(() => submitResults(), 2000);
+      if (data.ended && data.score !== undefined) {
+        setScores(prev => [...prev, {
+          scenario: currentScenario.type,
+          label: currentScenario.label,
+          score: data.score,
+          maxScore: data.maxScore,
+          feedback: data.feedback,
+        }]);
+        setTimeout(() => loadNextScenario(), 2000);
       }
     } catch (err) {
       console.error('Chat error:', err);
@@ -337,7 +137,8 @@ export default function ScenarioTrainingPage() {
   }
 
   async function handleDecision(action) {
-    if (!decisionPopup) return;
+    if (!decisionPopup || loading) return;
+    const popupTitle = decisionPopup.title;
     setDecisionPopup(null);
     setLoading(true);
 
@@ -355,44 +156,27 @@ export default function ScenarioTrainingPage() {
       });
       const data = await res.json();
 
+      const actionLabels = { warn: 'Warn', kick: 'Kick', ban: 'Ban', ban_jail: 'Ban Jail', ignore: 'Ignore' };
       setMessages(prev => [...prev, {
         role: 'system',
-        content: `You chose: ${action}`,
+        content: `You chose: ${actionLabels[action] || action}`,
         timestamp: Date.now(),
       }]);
       setMessages(prev => [...prev, { role: 'ai', content: data.response, timestamp: Date.now() }]);
-
-      setChatHistory(prev => [
-        ...prev,
-        { role: 'user', content: `[DECISION:${action}]` },
-        { role: 'ai', content: data.response },
-      ]);
+      setChatHistory(prev => [...prev, { role: 'ai', content: data.response }]);
 
       if (data.score !== undefined) {
-        setScores(prev => [...prev, { scenario: currentScenario.type, score: data.score, maxScore: data.maxScore, feedback: data.feedback }]);
-      }
-
-      if (data.nextScenario) {
-        setTimeout(() => {
-          setCurrentScenario(data.nextScenario);
-          setScenarioIndex(prev => prev + 1);
-          setMessages(prev => [...prev, {
-            role: 'system',
-            content: `--- Scenario ${scenarioIndex + 2} of ${totalScenarios} ---`,
-            timestamp: Date.now(),
-          }, {
-            role: 'ai',
-            content: data.nextScenario.opener,
-            timestamp: Date.now(),
-          }]);
-          setChatHistory([{ role: 'user', content: data.nextScenario.opener }]);
-          setHints(data.nextScenario.hints || []);
-          setShowHint(false);
-        }, 1500);
+        setScores(prev => [...prev, {
+          scenario: currentScenario.type,
+          label: currentScenario.label,
+          score: data.score,
+          maxScore: data.maxScore,
+          feedback: data.feedback,
+        }]);
       }
 
       if (data.ended) {
-        setTimeout(() => submitResults(), 2000);
+        setTimeout(() => loadNextScenario(), 2000);
       }
     } catch (err) {
       console.error('Decision error:', err);
@@ -400,7 +184,39 @@ export default function ScenarioTrainingPage() {
     setLoading(false);
   }
 
+  function loadNextScenario() {
+    const nextIndex = scenarioIndex + 1;
+    if (nextIndex >= totalScenarios) {
+      submitResults();
+      return;
+    }
+
+    fetch('/api/training/scenario/start', { method: 'POST' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          setScenarioIndex(nextIndex);
+          setCurrentScenario(data.scenario);
+          setHints(data.scenario.hints || []);
+          setShowHint(false);
+          setDecisionPopup(null);
+          setChatHistory([{ role: 'user', content: data.scenario.opener }]);
+          setMessages(prev => [...prev, {
+            role: 'system',
+            content: `--- Scenario ${nextIndex + 1} of ${totalScenarios}: ${data.scenario.label} ---`,
+            timestamp: Date.now(),
+          }, {
+            role: 'ai',
+            content: data.scenario.opener,
+            timestamp: Date.now(),
+          }]);
+        }
+      })
+      .catch(err => console.error('Failed to load next scenario:', err));
+  }
+
   async function submitResults() {
+    setLoading(true);
     try {
       const res = await fetch('/api/training/scenario/submit', {
         method: 'POST',
@@ -415,9 +231,24 @@ export default function ScenarioTrainingPage() {
     } catch (err) {
       console.error('Submit error:', err);
     }
+    setLoading(false);
   }
 
-  if (status === 'loading' || (phase === 'loading')) {
+  async function handleRetry() {
+    try {
+      const res = await fetch('/api/training/scenario/reset', { method: 'POST' });
+      const data = await res.json();
+      if (data.ok) {
+        setAlreadyCompleted(false);
+        setCompletionData(null);
+        setPhase('intro');
+      }
+    } catch (err) {
+      console.error('Reset error:', err);
+    }
+  }
+
+  if (status === 'loading' || phase === 'loading') {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center">
@@ -443,7 +274,7 @@ export default function ScenarioTrainingPage() {
         <div className="bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-2xl p-8 text-center">
           <Trophy className="w-16 h-16 text-gsrp-orange mx-auto mb-4" />
           <h2 className="text-xl font-bold text-white mb-2">Training Complete!</h2>
-          <p className="text-gray-400 mb-6">You completed this training on {new Date(completionData?.completedAt).toLocaleDateString()}.</p>
+          <p className="text-gray-400 mb-6">You completed this training on {completionData?.completedAt ? new Date(completionData.completedAt).toLocaleDateString() : 'N/A'}.</p>
           {completionData && (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
               <div className="bg-gsrp-dark-surface/50 rounded-xl p-4">
@@ -466,12 +297,21 @@ export default function ScenarioTrainingPage() {
               </div>
             </div>
           )}
-          <button
-            onClick={() => router.push('/training')}
-            className="px-6 py-3 bg-gsrp-orange/10 text-gsrp-orange rounded-xl font-semibold hover:bg-gsrp-orange/20 transition-colors cursor-pointer"
-          >
-            Back to Training
-          </button>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={handleRetry}
+              className="px-6 py-3 bg-gsrp-orange text-white rounded-xl font-semibold hover:bg-gsrp-orange/90 transition-colors flex items-center gap-2 cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Retry Training
+            </button>
+            <button
+              onClick={() => router.push('/training')}
+              className="px-6 py-3 bg-gsrp-dark-surface text-white rounded-xl font-semibold hover:bg-gsrp-dark-surface/80 transition-colors cursor-pointer"
+            >
+              Back to Training
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -553,7 +393,7 @@ export default function ScenarioTrainingPage() {
   }
 
   if (phase === 'results' && results) {
-    const percentage = Math.round((results.totalScore / results.maxScore) * 100);
+    const percentage = results.maxScore > 0 ? Math.round((results.totalScore / results.maxScore) * 100) : 0;
     const passed = percentage >= 60;
 
     return (
@@ -628,39 +468,51 @@ export default function ScenarioTrainingPage() {
           <div className="mb-6">
             <h3 className="text-sm font-semibold text-white mb-4">Scenario Breakdown</h3>
             <div className="space-y-3">
-              {results.scenarioDetails.map((sd, i) => (
-                <div key={i} className="bg-gsrp-dark-surface/50 rounded-xl p-4">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-sm font-semibold text-white">{sd.type}</span>
-                    <span className={`text-sm font-bold ${sd.score >= sd.maxScore * 0.7 ? 'text-green-400' : 'text-red-400'}`}>
-                      {sd.score}/{sd.maxScore}
-                    </span>
+              {results.scenarioDetails.map((sd, i) => {
+                const pct = sd.maxScore > 0 ? (sd.score / sd.maxScore) * 100 : 0;
+                return (
+                  <div key={i} className="bg-gsrp-dark-surface/50 rounded-xl p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-sm font-semibold text-white">{sd.label || sd.type}</span>
+                      <span className={`text-sm font-bold ${pct >= 70 ? 'text-green-400' : 'text-red-400'}`}>
+                        {sd.score}/{sd.maxScore}
+                      </span>
+                    </div>
+                    <div className="h-2 bg-gsrp-dark rounded-full overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all ${pct >= 70 ? 'bg-green-400' : 'bg-red-400'}`}
+                        style={{ width: `${pct}%` }}
+                      />
+                    </div>
+                    {sd.feedback && <p className="text-xs text-gray-500 mt-2">{sd.feedback}</p>}
                   </div>
-                  <div className="h-2 bg-gsrp-dark rounded-full overflow-hidden">
-                    <div
-                      className={`h-full rounded-full transition-all ${sd.score >= sd.maxScore * 0.7 ? 'bg-green-400' : 'bg-red-400'}`}
-                      style={{ width: `${(sd.score / sd.maxScore) * 100}%` }}
-                    />
-                  </div>
-                  {sd.feedback && <p className="text-xs text-gray-500 mt-2">{sd.feedback}</p>}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
 
-          <button
-            onClick={() => router.push('/training')}
-            className="w-full py-3 bg-gsrp-dark-surface text-white rounded-xl font-semibold hover:bg-gsrp-dark-surface/80 transition-colors flex items-center justify-center gap-2 cursor-pointer"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            Back to Training Hub
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={handleRetry}
+              className="flex-1 py-3 bg-gsrp-orange text-white rounded-xl font-semibold hover:bg-gsrp-orange/90 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <RotateCcw className="w-4 h-4" />
+              Retry Training
+            </button>
+            <button
+              onClick={() => router.push('/training')}
+              className="flex-1 py-3 bg-gsrp-dark-surface text-white rounded-xl font-semibold hover:bg-gsrp-dark-surface/80 transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              Back to Training Hub
+            </button>
+          </div>
         </div>
       </div>
     );
   }
 
-  if (phase === 'chat') {
+  if (phase === 'chat' && currentScenario) {
     return (
       <div className="max-w-4xl mx-auto h-[calc(100vh-140px)] flex flex-col">
         <div className="flex items-center justify-between mb-4">
@@ -670,7 +522,7 @@ export default function ScenarioTrainingPage() {
               Scenario Training
             </h1>
             <p className="text-gray-400 text-xs mt-0.5">
-              Scenario {scenarioIndex + 1} of {totalScenarios} — {currentScenario?.label}
+              Scenario {scenarioIndex + 1} of {totalScenarios} — {currentScenario.label}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -731,7 +583,7 @@ export default function ScenarioTrainingPage() {
               return (
                 <div key={i} className="flex items-start gap-3">
                   <div className="w-8 h-8 rounded-full bg-gsrp-dark-surface flex items-center justify-center flex-shrink-0">
-                    <span className="text-xs text-gsrp-teal">🎮</span>
+                    <span className="text-xs">🎮</span>
                   </div>
                   <div className="max-w-[80%] bg-gsrp-dark-surface/50 border border-gsrp-dark-border/30 rounded-2xl rounded-tl-sm px-4 py-3">
                     <p className="text-sm text-gray-200">{msg.content}</p>
@@ -742,7 +594,7 @@ export default function ScenarioTrainingPage() {
             {loading && (
               <div className="flex items-start gap-3">
                 <div className="w-8 h-8 rounded-full bg-gsrp-dark-surface flex items-center justify-center flex-shrink-0">
-                  <span className="text-xs text-gsrp-teal">🎮</span>
+                  <span className="text-xs">🎮</span>
                 </div>
                 <div className="bg-gsrp-dark-surface/50 border border-gsrp-dark-border/30 rounded-2xl px-4 py-3">
                   <Loader2 className="w-4 h-4 text-gray-500 animate-spin" />
@@ -762,7 +614,7 @@ export default function ScenarioTrainingPage() {
               >
                 <p className="text-xs font-semibold text-gsrp-orange mb-3 flex items-center gap-2">
                   <Target className="w-4 h-4" />
-                  {decisionPopup.title || 'What action would you like to take?'}
+                  {decisionPopup.title}
                 </p>
                 <div className="flex flex-wrap gap-2">
                   {decisionPopup.options.map((opt, i) => (

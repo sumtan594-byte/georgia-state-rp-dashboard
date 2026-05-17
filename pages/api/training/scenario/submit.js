@@ -33,17 +33,19 @@ export default async function handler(req, res) {
   const scenarioDetails = [];
 
   for (const s of scores) {
+    const pct = s.maxScore > 0 ? (s.score / s.maxScore) * 100 : 0;
     scenarioDetails.push({
       type: s.scenario,
+      label: s.label || s.scenario,
       score: s.score,
       maxScore: s.maxScore,
       feedback: s.feedback,
     });
 
-    if (s.score >= s.maxScore * 0.8) {
-      strengths.push(`Good handling of ${s.scenario} scenario (${s.score}/${s.maxScore})`);
-    } else if (s.score < s.maxScore * 0.5) {
-      improvements.push(`Needs improvement on ${s.scenario} - ${s.feedback}`);
+    if (pct >= 80) {
+      strengths.push(`Good handling of ${s.label || s.scenario} scenario (${s.score}/${s.maxScore})`);
+    } else if (pct < 50) {
+      improvements.push(`Needs improvement on ${s.label || s.scenario} - ${s.feedback}`);
     }
   }
 
@@ -54,8 +56,17 @@ export default async function handler(req, res) {
     improvements.push('Review the staff handbook for punishment guidelines');
   }
 
-  const bestScenario = scores.reduce((best, s) => s.score > (best?.score || 0) ? s : best, null);
-  const worstScenario = scores.reduce((worst, s) => s.score < (worst?.score || Infinity) ? s : worst, scores[0]);
+  const bestScenario = scores.length > 0 ? scores.reduce((best, s) => {
+    const bestPct = best.maxScore > 0 ? best.score / best.maxScore : 0;
+    const sPct = s.maxScore > 0 ? s.score / s.maxScore : 0;
+    return sPct > bestPct ? s : best;
+  }, scores[0]) : null;
+
+  const worstScenario = scores.length > 0 ? scores.reduce((worst, s) => {
+    const worstPct = worst.maxScore > 0 ? worst.score / worst.maxScore : 1;
+    const sPct = s.maxScore > 0 ? s.score / s.maxScore : 1;
+    return sPct < worstPct ? s : worst;
+  }, scores[0]) : null;
 
   const result = {
     userId,
@@ -71,8 +82,8 @@ export default async function handler(req, res) {
     strengths,
     improvements,
     scenarioDetails,
-    bestScenario: bestScenario?.scenario || null,
-    worstScenario: worstScenario?.scenario || null,
+    bestScenario: bestScenario?.label || bestScenario?.scenario || null,
+    worstScenario: worstScenario?.label || worstScenario?.scenario || null,
   };
 
   await db.collection('scenario_training').updateOne(
