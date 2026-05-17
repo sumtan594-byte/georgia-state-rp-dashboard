@@ -23,8 +23,10 @@ export default function ScenarioTrainingPage() {
   const [scenarioIndex, setScenarioIndex] = useState(0);
   const [totalScenarios] = useState(5);
   const [scores, setScores] = useState([]);
-  const [hints, setHints] = useState([]);
+  const [currentHint, setCurrentHint] = useState('');
+  const [hintLoading, setHintLoading] = useState(false);
   const [showHint, setShowHint] = useState(false);
+  const [hintIndex, setHintIndex] = useState(0);
   const [decisionPopup, setDecisionPopup] = useState(null);
   const [chatHistory, setChatHistory] = useState([]);
   const [results, setResults] = useState(null);
@@ -76,7 +78,8 @@ export default function ScenarioTrainingPage() {
         setScenarioIndex(0);
         setScores([]);
         setCurrentScenario(data.scenario);
-        setHints(data.scenario.hints || []);
+        setCurrentHint('');
+        setHintIndex(0);
         setShowHint(false);
         setDecisionPopup(null);
         setChatHistory([{ role: 'user', content: data.scenario.opener }]);
@@ -89,6 +92,31 @@ export default function ScenarioTrainingPage() {
       console.error('Failed to start session:', err);
     }
     setLoading(false);
+  }
+
+  async function fetchHint() {
+    if (hintLoading || !currentScenario) return;
+    setHintLoading(true);
+    try {
+      const res = await fetch('/api/training/scenario/hint', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          scenario: currentScenario,
+          chatHistory,
+          hintIndex,
+        }),
+      });
+      const data = await res.json();
+      if (data.ok) {
+        setCurrentHint(data.hint);
+        setShowHint(true);
+        setHintIndex(prev => prev + 1);
+      }
+    } catch (err) {
+      console.error('Hint error:', err);
+    }
+    setHintLoading(false);
   }
 
   async function sendMessage(text) {
@@ -198,7 +226,8 @@ export default function ScenarioTrainingPage() {
         if (data.ok) {
           setScenarioIndex(nextIndex);
           setCurrentScenario(data.scenario);
-          setHints(data.scenario.hints || []);
+          setCurrentHint('');
+          setHintIndex(0);
           setShowHint(false);
           setDecisionPopup(null);
           setChatHistory([{ role: 'user', content: data.scenario.opener }]);
@@ -561,20 +590,19 @@ export default function ScenarioTrainingPage() {
             </p>
           </div>
           <div className="flex items-center gap-2">
-            {hints.length > 0 && (
-              <button
-                onClick={() => setShowHint(!showHint)}
-                className="px-3 py-1.5 bg-gsrp-gold/10 text-gsrp-gold rounded-lg text-xs font-medium hover:bg-gsrp-gold/20 transition-colors flex items-center gap-1.5 cursor-pointer"
-              >
-                <Lightbulb className="w-3.5 h-3.5" />
-                Hint
-              </button>
-            )}
+            <button
+              onClick={fetchHint}
+              disabled={hintLoading}
+              className="px-3 py-1.5 bg-gsrp-gold/10 text-gsrp-gold rounded-lg text-xs font-medium hover:bg-gsrp-gold/20 transition-colors flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+            >
+              {hintLoading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Lightbulb className="w-3.5 h-3.5" />}
+              {showHint ? 'New Hint' : 'Hint'}
+            </button>
           </div>
         </div>
 
         <AnimatePresence>
-          {showHint && hints.length > 0 && (
+          {showHint && currentHint && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
@@ -585,7 +613,7 @@ export default function ScenarioTrainingPage() {
                 <Lightbulb className="w-4 h-4 text-gsrp-gold flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="text-xs font-semibold text-gsrp-gold mb-1">Training Hint</p>
-                  <p className="text-xs text-gray-300">{hints[0]}</p>
+                  <p className="text-xs text-gray-300">{currentHint}</p>
                 </div>
               </div>
             </motion.div>
