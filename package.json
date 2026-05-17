@@ -5,8 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "next start",
-    "worker": "node reminder-worker.js"
+    "start": "next start"
   },
   "dependencies": {
     "framer-motion": "^12.38.0",

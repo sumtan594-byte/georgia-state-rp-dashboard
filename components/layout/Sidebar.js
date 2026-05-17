@@ -15,7 +15,6 @@ import {
   Building2,
   UserPlus,
   Settings,
-  Megaphone,
   BarChart3,
   Server,
   ScrollText,
@@ -113,8 +112,7 @@ export default function Sidebar({ open, onToggle }) {
                ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null, external: true }] : []),
                ...(hasPanel ? [{ href: '/panel/stats', icon: Server, label: 'Server Stats' }] : []),
                { href: '/verify', icon: ShieldCheck, label: 'Verification' },
-              { href: '/shop', icon: ShoppingCart, label: 'Store' },
-               ...(effectiveSession?.user?.roles?.includes('1394297547597680670') ? [{ href: '/panel/reminders', icon: Megaphone, label: 'Reminders' }] : []),
+               { href: '/shop', icon: ShoppingCart, label: 'Store' },
             ].map((item, idx) => (
               <Link
                 key={item.href}
