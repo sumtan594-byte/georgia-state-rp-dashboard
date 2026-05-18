@@ -628,9 +628,16 @@ export default function ApplicationDetail() {
   useEffect(() => {
     if (id && session && canReviewApplications(effectiveSession)) {
       fetch(`/api/applications/${id}`)
-        .then(r => r.ok ? r.json() : null)
+        .then(r => {
+          if (!r.ok) {
+            setLoading(false);
+            return null;
+          }
+          return r.json();
+        })
         .then(data => {
           setApplication(data);
+          if (!data) return;
           if (data?.type) {
             fetch('/api/applications/types')
               .then(r => r.json())
@@ -728,6 +735,22 @@ export default function ApplicationDetail() {
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
         <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Fetching Application</span>
+      </div>
+    );
+  }
+
+  if (!application) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-fade-in-up">
+        <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
+          <Trash2 size={28} className="text-red-500/60" />
+        </div>
+        <h1 className="text-2xl font-black text-white mb-2">Application Deleted</h1>
+        <p className="text-gsrp-teal-light/40 mb-6">This application has been deleted and is no longer available.</p>
+        <Link href="/applications" className="inline-flex items-center gap-2 px-6 py-3 bg-gsrp-orange text-white font-black rounded-xl">
+          <ArrowLeft size={16} />
+          Back to Applications
+        </Link>
       </div>
     );
   }
