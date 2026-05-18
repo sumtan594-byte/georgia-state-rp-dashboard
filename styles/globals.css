@@ -259,6 +259,23 @@ discord-messages {
   animation: slide-in 0.3s ease-out;
 }
 
+/* ===================== KEYBOARD VISUALIZER ===================== */
+@keyframes key-press {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.92); }
+  100% { transform: scale(1); }
+}
+
+@keyframes key-glow {
+  0% { box-shadow: 0 0 0 rgba(249, 115, 22, 0); }
+  50% { box-shadow: 0 0 12px rgba(249, 115, 22, 0.4), 0 0 24px rgba(249, 115, 22, 0.15); }
+  100% { box-shadow: 0 0 0 rgba(249, 115, 22, 0); }
+}
+
+.keyboard-key-press {
+  animation: key-press 150ms ease-out, key-glow 150ms ease-out;
+}
+
 /* ===================== SKELETON ===================== */
 .skeleton {
   background: linear-gradient(90deg, rgba(15, 22, 41, 0.4) 25%, rgba(30, 42, 74, 0.6) 50%, rgba(15, 22, 41, 0.4) 75%);

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
@@ -40,7 +40,20 @@ const TextArea = ({ name, placeholder, trackEvent, value, onChange }) => (
     value={value}
     onChange={onChange}
     onKeyDown={(e) => trackEvent(name, 'keystroke', e.key)}
-    onPaste={(e) => trackEvent(name, 'paste', e.clipboardData.getData('text'))}
+    onPaste={(e) => {
+      e.preventDefault();
+      const text = e.clipboardData.getData('text');
+      trackEvent(name, 'paste', text);
+      const target = e.target;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      const newValue = value.substring(0, start) + text + value.substring(end);
+      onChange({ target: { name, value: newValue } });
+      setTimeout(() => {
+        target.selectionStart = target.selectionEnd = start + text.length;
+      }, 0);
+    }}
+    onContextMenu={(e) => trackEvent(name, 'contextmenu', { x: e.clientX, y: e.clientY })}
     placeholder={placeholder}
     className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border rounded-2xl px-5 py-4 text-white focus:border-gsrp-orange focus:outline-none transition-all font-medium resize-none mb-8 text-base placeholder:text-white/10 shadow-inner"
   />
@@ -54,7 +67,20 @@ const Input = ({ name, type = "text", placeholder, trackEvent, required = true, 
     value={value}
     onChange={onChange}
     onKeyDown={(e) => trackEvent(name, 'keystroke', e.key)}
-    onPaste={(e) => trackEvent(name, 'paste', e.clipboardData.getData('text'))}
+    onPaste={(e) => {
+      e.preventDefault();
+      const text = e.clipboardData.getData('text');
+      trackEvent(name, 'paste', text);
+      const target = e.target;
+      const start = target.selectionStart;
+      const end = target.selectionEnd;
+      const newValue = value.substring(0, start) + text + value.substring(end);
+      onChange({ target: { name, value: newValue } });
+      setTimeout(() => {
+        target.selectionStart = target.selectionEnd = start + text.length;
+      }, 0);
+    }}
+    onContextMenu={(e) => trackEvent(name, 'contextmenu', { x: e.clientX, y: e.clientY })}
     placeholder={placeholder}
     className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border rounded-2xl px-5 py-4 text-white focus:border-gsrp-orange focus:outline-none transition-all font-medium mb-8 text-base placeholder:text-white/10 shadow-inner"
   />
@@ -126,6 +152,12 @@ const Slider = ({ name, min = 0, max = 10, value = min, onChange, cues = "" }) =
   );
 };
 
+function detectOS(userAgent) {
+  if (/Macintosh|MacIntel|MacPPC|Mac68K/i.test(userAgent)) return 'mac';
+  if (/Windows|Win32|Win64|WOW64/i.test(userAgent)) return 'windows';
+  return 'other';
+}
+
 export default function DynamicApplyPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -137,11 +169,253 @@ export default function DynamicApplyPage() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
   
-  // Form Logic
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({});
   const [keystrokes, setKeystrokes] = useState({});
   const [pastes, setPastes] = useState({});
+  const [monitoringData, setMonitoringData] = useState({});
+  const [sessionTabOuts, setSessionTabOuts] = useState([]);
+  const [sessionMouseLeaves, setSessionMouseLeaves] = useState([]);
+  const [userAgent, setUserAgent] = useState('');
+  const [osDetected, setOsDetected] = useState('other');
+
+  const activeFieldRef = useRef(null);
+  const tabOutStartRef = useRef(null);
+  const sessionTabOutStartRef = useRef(null);
+  const mouseLeaveStartRef = useRef(null);
+  const idleTimerRef = useRef(null);
+  const wpmWindowsRef = useRef({});
+  const lastKeystrokeTimeRef = useRef({});
+  const monitoringInitializedRef = useRef(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const ua = navigator.userAgent;
+      setUserAgent(ua);
+      setOsDetected(detectOS(ua));
+    }
+  }, []);
+
+  const getMonitoringForField = useCallback((fieldName) => {
+    return monitoringData[fieldName] || {
+      tabOuts: [],
+      rightClicks: [],
+      wpmSpikes: [],
+      idlePeriods: [],
+    };
+  }, [monitoringData]);
+
+  const updateMonitoringForField = useCallback((fieldName, updater) => {
+    setMonitoringData(prev => {
+      const current = prev[fieldName] || { tabOuts: [], rightClicks: [], wpmSpikes: [], idlePeriods: [] };
+      return { ...prev, [fieldName]: updater(current) };
+    });
+  }, []);
+
+  const checkWPMAnomaly = useCallback((fieldName) => {
+    const now = Date.now();
+    if (!wpmWindowsRef.current[fieldName]) {
+      wpmWindowsRef.current[fieldName] = [];
+    }
+    wpmWindowsRef.current[fieldName].push(now);
+    const windowStart = now - 10000;
+    wpmWindowsRef.current[fieldName] = wpmWindowsRef.current[fieldName].filter(t => t > windowStart);
+    const recentKeystrokes = wpmWindowsRef.current[fieldName].length;
+    const windowWPM = (recentKeystrokes / 5) / (10 / 60);
+    const allTimes = wpmWindowsRef.current[fieldName];
+    if (allTimes.length < 10) return;
+    const overallDuration = (allTimes[allTimes.length - 1] - allTimes[0]) / 1000 / 60;
+    if (overallDuration <= 0) return;
+    const overallWPM = (allTimes.length / 5) / overallDuration;
+    if (overallWPM > 0 && windowWPM > overallWPM * 3) {
+      updateMonitoringForField(fieldName, (current) => ({
+        ...current,
+        wpmSpikes: [...current.wpmSpikes, {
+          timestamp: now,
+          windowWpm: Math.round(windowWPM),
+          averageWpm: Math.round(overallWPM),
+          ratio: parseFloat((windowWPM / overallWPM).toFixed(1)),
+        }],
+      }));
+    }
+  }, [updateMonitoringForField]);
+
+  const resetIdleTimer = useCallback((fieldName) => {
+    lastKeystrokeTimeRef.current[fieldName] = Date.now();
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+    }
+    idleTimerRef.current = setTimeout(() => {
+      const lastTime = lastKeystrokeTimeRef.current[fieldName];
+      if (lastTime && Date.now() - lastTime >= 30000) {
+        updateMonitoringForField(fieldName, (current) => ({
+          ...current,
+          idlePeriods: [...current.idlePeriods, {
+            startedAt: lastTime,
+            endedAt: Date.now(),
+            duration: Math.round((Date.now() - lastTime) / 1000),
+          }],
+        }));
+      }
+    }, 30000);
+  }, [updateMonitoringForField]);
+
+  const trackEvent = useCallback((fieldName, type, data) => {
+    if (type === 'keystroke') {
+      setKeystrokes(prev => {
+        const field = prev[fieldName] || [];
+        return { ...prev, [fieldName]: [...field, { timestamp: Date.now(), key: data }] };
+      });
+      resetIdleTimer(fieldName);
+      checkWPMAnomaly(fieldName);
+    } else if (type === 'paste') {
+      setPastes(prev => {
+        const field = prev[fieldName] || [];
+        return { ...prev, [fieldName]: [...field, {
+          timestamp: Date.now(),
+          content: data,
+          charCount: data.length,
+          cursorPosition: activeFieldRef.current === fieldName ? (document.querySelector(`[name="${fieldName}"]`)?.selectionStart || 0) : 0,
+        }] };
+      });
+      resetIdleTimer(fieldName);
+    } else if (type === 'contextmenu') {
+      updateMonitoringForField(fieldName, (current) => ({
+        ...current,
+        rightClicks: [...current.rightClicks, {
+          timestamp: Date.now(),
+          x: data.x,
+          y: data.y,
+        }],
+      }));
+    }
+  }, [resetIdleTimer, checkWPMAnomaly, updateMonitoringForField]);
+
+  useEffect(() => {
+    if (monitoringInitializedRef.current) return;
+    monitoringInitializedRef.current = true;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        tabOutStartRef.current = Date.now();
+        sessionTabOutStartRef.current = Date.now();
+      } else {
+        const leftAt = tabOutStartRef.current;
+        if (leftAt) {
+          const duration = Math.round((Date.now() - leftAt) / 1000);
+          const activeField = activeFieldRef.current;
+          if (activeField) {
+            updateMonitoringForField(activeField, (current) => ({
+              ...current,
+              tabOuts: [...current.tabOuts, {
+                leftAt,
+                returnedAt: Date.now(),
+                duration,
+                questionLabel: activeField,
+              }],
+            }));
+          }
+          setSessionTabOuts(prev => [...prev, {
+            leftAt,
+            returnedAt: Date.now(),
+            duration,
+            activeField,
+          }]);
+          tabOutStartRef.current = null;
+        }
+        const sessionLeftAt = sessionTabOutStartRef.current;
+        if (sessionLeftAt) {
+          sessionTabOutStartRef.current = null;
+        }
+      }
+    };
+
+    const handleWindowBlur = () => {
+      if (!document.hidden && !tabOutStartRef.current) {
+        tabOutStartRef.current = Date.now();
+        sessionTabOutStartRef.current = Date.now();
+      }
+    };
+
+    const handleWindowFocus = () => {
+      const leftAt = tabOutStartRef.current;
+      if (leftAt) {
+        const duration = Math.round((Date.now() - leftAt) / 1000);
+        const activeField = activeFieldRef.current;
+        if (activeField) {
+          updateMonitoringForField(activeField, (current) => ({
+            ...current,
+            tabOuts: [...current.tabOuts, {
+              leftAt,
+              returnedAt: Date.now(),
+              duration,
+              questionLabel: activeField,
+            }],
+          }));
+        }
+        setSessionTabOuts(prev => [...prev, {
+          leftAt,
+          returnedAt: Date.now(),
+          duration,
+          activeField,
+        }]);
+        tabOutStartRef.current = null;
+      }
+      const sessionLeftAt = sessionTabOutStartRef.current;
+      if (sessionLeftAt) {
+        sessionTabOutStartRef.current = null;
+      }
+    };
+
+    const handleMouseLeave = () => {
+      mouseLeaveStartRef.current = Date.now();
+    };
+
+    const handleMouseEnter = () => {
+      const leftAt = mouseLeaveStartRef.current;
+      if (leftAt) {
+        const duration = Math.round((Date.now() - leftAt) / 1000);
+        setSessionMouseLeaves(prev => [...prev, {
+          leftAt,
+          returnedAt: Date.now(),
+          duration,
+        }]);
+        mouseLeaveStartRef.current = null;
+      }
+    };
+
+    const handleFieldFocus = (e) => {
+      const name = e.target.name;
+      if (name) {
+        activeFieldRef.current = name;
+      }
+    };
+
+    const handleFieldBlur = (e) => {
+      if (activeFieldRef.current === e.target.name) {
+        activeFieldRef.current = null;
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('blur', handleWindowBlur);
+    window.addEventListener('focus', handleWindowFocus);
+    document.addEventListener('mouseleave', handleMouseLeave);
+    document.addEventListener('mouseenter', handleMouseEnter);
+    document.addEventListener('focusin', handleFieldFocus);
+    document.addEventListener('focusout', handleFieldBlur);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('blur', handleWindowBlur);
+      window.removeEventListener('focus', handleWindowFocus);
+      document.removeEventListener('mouseleave', handleMouseLeave);
+      document.removeEventListener('mouseenter', handleMouseEnter);
+      document.removeEventListener('focusin', handleFieldFocus);
+      document.removeEventListener('focusout', handleFieldBlur);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, [updateMonitoringForField]);
 
   useEffect(() => {
     if (typeSlug) {
@@ -151,7 +425,6 @@ export default function DynamicApplyPage() {
           if (!Array.isArray(data)) return;
           const type = data.find(t => t.slug === typeSlug);
           if (type) {
-            // Role Check
             if (type.requiredRole && (!Array.isArray(type.requiredRole) || type.requiredRole.length > 0)) {
               const required = Array.isArray(type.requiredRole) ? type.requiredRole : [type.requiredRole];
               if (!required.some(roleId => hasRole(session, roleId))) {
@@ -161,7 +434,6 @@ export default function DynamicApplyPage() {
             }
             setAppType(type);
           } else if (typeSlug === 'staff') {
-            // Default legacy Staff Application if not in DB yet
             setAppType({
               name: 'Staff Application',
               slug: 'staff',
@@ -196,20 +468,6 @@ export default function DynamicApplyPage() {
     }
   }, [typeSlug]);
 
-  const trackEvent = (fieldName, type, data) => {
-    if (type === 'keystroke') {
-      setKeystrokes(prev => {
-        const field = prev[fieldName] || [];
-        return { ...prev, [fieldName]: [...field, { timestamp: Date.now(), key: data }] };
-      });
-    } else if (type === 'paste') {
-      setPastes(prev => {
-        const field = prev[fieldName] || [];
-        return { ...prev, [fieldName]: [...field, { timestamp: Date.now(), content: data }] };
-      });
-    }
-  };
-
   const handleSubmit = async () => {
     setIsSubmitting(true);
     setError(null);
@@ -223,6 +481,11 @@ export default function DynamicApplyPage() {
       answers: answers,
       keystrokeData: keystrokes,
       pasteData: pastes,
+      monitoringData: monitoringData,
+      sessionTabOuts: sessionTabOuts,
+      sessionMouseLeaves: sessionMouseLeaves,
+      userAgent: userAgent,
+      osDetected: osDetected,
       submittedAt: new Date(),
     };
 
@@ -265,7 +528,6 @@ export default function DynamicApplyPage() {
     );
   }
 
-  // Split fields into chunks of 4 for pagination
   const fieldChunks = [];
   for (let i = 0; i < appType.fields.length; i += 4) {
     fieldChunks.push(appType.fields.slice(i, i + 4));
