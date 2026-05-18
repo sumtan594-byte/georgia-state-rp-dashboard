@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import { useSession } from 'next-auth/react';
 import { Users, Search, Filter, Calendar, ChevronRight, Loader2, AlertCircle, Trash2 } from 'lucide-react';
@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
 import LoginScreen from '../../components/auth/LoginScreen';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import { createPortal } from 'react-dom';
 
 export default function ApplicationsList() {
   const { data: session, status } = useSession();
@@ -213,8 +214,8 @@ export default function ApplicationsList() {
         )}
       </div>
 
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {deleteTarget && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ position: 'fixed' }}>
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !isDeleting && setDeleteTarget(null)} />
           <div className="relative bg-gsrp-dark-card border border-red-500/30 rounded-2xl p-8 w-full max-w-md shadow-2xl">
             <div className="flex items-center gap-3 mb-4">
@@ -244,7 +245,8 @@ export default function ApplicationsList() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
