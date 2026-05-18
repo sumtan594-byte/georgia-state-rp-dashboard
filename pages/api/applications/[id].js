@@ -15,16 +15,26 @@ export default async function handler(req, res) {
   try {
     const client = await clientPromise;
     const db = client.db("gsrp_staff");
-    
-    const application = await db.collection("applications").findOne({ _id: new ObjectId(id) });
 
-    if (!application) {
-      return res.status(404).json({ message: 'Application not found' });
+    if (req.method === 'GET') {
+      const application = await db.collection("applications").findOne({ _id: new ObjectId(id) });
+      if (!application) {
+        return res.status(404).json({ message: 'Application not found' });
+      }
+      return res.status(200).json(application);
     }
 
-    return res.status(200).json(application);
+    if (req.method === 'DELETE') {
+      const result = await db.collection("applications").deleteOne({ _id: new ObjectId(id) });
+      if (result.deletedCount === 0) {
+        return res.status(404).json({ message: 'Application not found' });
+      }
+      return res.status(200).json({ success: true });
+    }
+
+    return res.status(405).json({ message: 'Method not allowed' });
   } catch (error) {
-    console.error('[Application Fetch Error]', error);
+    console.error('[Application Error]', error);
     return res.status(500).json({ message: 'Internal server error' });
   }
 }

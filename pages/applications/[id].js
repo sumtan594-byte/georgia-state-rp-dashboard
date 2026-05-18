@@ -29,6 +29,7 @@ import {
   ShieldAlert,
   ShieldCheck,
   ShieldX,
+  Trash2,
 } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
@@ -621,6 +622,8 @@ export default function ApplicationDetail() {
   const [decisionType, setDecisionType] = useState(null); 
   const [reason, setReason] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (id && session && canReviewApplications(effectiveSession)) {
@@ -701,6 +704,18 @@ export default function ApplicationDetail() {
       alert(err.message);
     } finally {
       setIsProcessing(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/applications/${id}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete application');
+      router.push('/applications');
+    } catch (err) {
+      alert(err.message);
+      setIsDeleting(false);
     }
   };
 
@@ -983,6 +998,16 @@ export default function ApplicationDetail() {
                 </div>
               </div>
             </div>
+
+            <div className="mt-6 pt-6 border-t border-gsrp-dark-border/50">
+              <button 
+                onClick={() => setShowDeleteModal(true)}
+                className="w-full py-3 bg-red-500/5 border border-red-500/20 text-red-500/60 hover:bg-red-500 hover:text-white hover:border-red-500 font-black rounded-xl transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
+              >
+                <Trash2 size={14} />
+                Delete Application
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -1012,6 +1037,41 @@ export default function ApplicationDetail() {
                 className={`flex-1 py-3 font-black rounded-xl ${decisionType === 'accepted' ? 'bg-green-500' : 'bg-red-500'} text-white`}
               >
                 {isProcessing ? 'Processing...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)} />
+          <div className="relative bg-gsrp-dark-card border border-red-500/30 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                <Trash2 size={20} className="text-red-500" />
+              </div>
+              <h3 className="text-white font-black text-xl">Delete Application</h3>
+            </div>
+            <p className="text-gsrp-teal-light/60 text-sm mb-2">
+              This will permanently delete <span className="text-white font-bold">{application.username}</span>'s application.
+            </p>
+            <p className="text-red-400/80 text-xs mb-6 font-medium">
+              This action cannot be undone. All responses, keystroke data, and monitoring records will be erased.
+            </p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowDeleteModal(false)} 
+                className="flex-1 py-3 bg-gsrp-dark-surface border border-white/10 text-gsrp-teal-light font-bold rounded-xl hover:text-white transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDelete}
+                disabled={isDeleting}
+                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl transition-colors"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>
           </div>
