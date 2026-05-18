@@ -825,11 +825,11 @@ export default function ApplicationDetail() {
                       </p>
                     </div>
                     
-                    {stats.count > 0 && (
+                    {(stats.count > 0 || fieldPastes.length > 0) && (
                       <>
                         <div className="mt-2 flex gap-4 text-[9px] font-bold text-gsrp-teal-light/20 uppercase tracking-widest">
                           <span>{stats.count} Keystrokes</span>
-                          <span>{stats.wpm} WPM</span>
+                          {stats.wpm > 0 && <span>{stats.wpm} WPM</span>}
                           {fieldPastes.length > 0 && (
                             <span className="text-amber-500/60">{fieldPastes.length} Paste{fieldPastes.length > 1 ? 's' : ''}</span>
                           )}
