@@ -39,19 +39,13 @@ const TextArea = ({ name, placeholder, trackEvent, value, onChange }) => (
     rows={5}
     value={value}
     onChange={onChange}
-    onKeyDown={(e) => trackEvent(name, 'keystroke', e.key)}
+    onKeyDown={(e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      trackEvent(name, 'keystroke', e.key);
+    }}
     onPaste={(e) => {
-      e.preventDefault();
       const text = e.clipboardData.getData('text');
       trackEvent(name, 'paste', text);
-      const target = e.target;
-      const start = target.selectionStart;
-      const end = target.selectionEnd;
-      const newValue = value.substring(0, start) + text + value.substring(end);
-      onChange({ target: { name, value: newValue } });
-      setTimeout(() => {
-        target.selectionStart = target.selectionEnd = start + text.length;
-      }, 0);
     }}
     onContextMenu={(e) => trackEvent(name, 'contextmenu', { x: e.clientX, y: e.clientY })}
     placeholder={placeholder}
@@ -66,19 +60,13 @@ const Input = ({ name, type = "text", placeholder, trackEvent, required = true, 
     required={required}
     value={value}
     onChange={onChange}
-    onKeyDown={(e) => trackEvent(name, 'keystroke', e.key)}
+    onKeyDown={(e) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      trackEvent(name, 'keystroke', e.key);
+    }}
     onPaste={(e) => {
-      e.preventDefault();
       const text = e.clipboardData.getData('text');
       trackEvent(name, 'paste', text);
-      const target = e.target;
-      const start = target.selectionStart;
-      const end = target.selectionEnd;
-      const newValue = value.substring(0, start) + text + value.substring(end);
-      onChange({ target: { name, value: newValue } });
-      setTimeout(() => {
-        target.selectionStart = target.selectionEnd = start + text.length;
-      }, 0);
     }}
     onContextMenu={(e) => trackEvent(name, 'contextmenu', { x: e.clientX, y: e.clientY })}
     placeholder={placeholder}

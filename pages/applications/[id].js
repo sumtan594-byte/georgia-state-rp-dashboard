@@ -192,29 +192,27 @@ const KeyboardVisualizer = ({ os, activeKeys, heldModifiers }) => {
 
 const KeystrokePlayer = ({ keystrokes, pastes, originalText, os }) => {
   const [playing, setPlaying] = useState(false);
-  const [displayText, setDisplayText] = useState('');
+  const [segments, setSegments] = useState([]);
   const [progress, setProgress] = useState(0);
-  const [currentEventIndex, setCurrentEventIndex] = useState(-1);
+  const [showKeyboard, setShowKeyboard] = useState(false);
   const [activeKeys, setActiveKeys] = useState(new Set());
   const [heldModifiers, setHeldModifiers] = useState(new Set());
-  const [showKeyboard, setShowKeyboard] = useState(false);
   const timerRef = useRef(null);
-  const eventsRef = useRef([]);
+  const timelineRef = useRef([]);
 
   const buildTimeline = useCallback(() => {
     const keys = (keystrokes || []).map(k => ({ ...k, eventType: 'keystroke' }));
     const pasteEvents = (pastes || []).map(p => ({ ...p, eventType: 'paste' }));
     const merged = [...keys, ...pasteEvents].sort((a, b) => a.timestamp - b.timestamp);
-    eventsRef.current = merged;
+    timelineRef.current = merged;
     return merged;
   }, [keystrokes, pastes]);
 
   const stop = useCallback(() => {
     setPlaying(false);
     if (timerRef.current) clearTimeout(timerRef.current);
-    setDisplayText('');
+    setSegments([]);
     setProgress(0);
-    setCurrentEventIndex(-1);
     setActiveKeys(new Set());
     setHeldModifiers(new Set());
   }, []);
@@ -226,14 +224,21 @@ const KeystrokePlayer = ({ keystrokes, pastes, originalText, os }) => {
     if (sorted.length === 0) return;
     
     setPlaying(true);
-    setDisplayText('');
+    setSegments([]);
     setProgress(0);
-    setCurrentEventIndex(-1);
     setActiveKeys(new Set());
     setHeldModifiers(new Set());
 
+    let textBuffer = '';
+    let segList = [];
+
     const playSequence = (index) => {
       if (index >= sorted.length) {
+        if (textBuffer) {
+          segList.push({ type: 'text', content: textBuffer });
+          textBuffer = '';
+        }
+        setSegments([...segList]);
         setPlaying(false);
         setActiveKeys(new Set());
         setHeldModifiers(new Set());
@@ -244,22 +249,33 @@ const KeystrokePlayer = ({ keystrokes, pastes, originalText, os }) => {
       const nextDelay = index === 0 ? 0 : Math.min(current.timestamp - sorted[index - 1].timestamp, 300);
 
       timerRef.current = setTimeout(() => {
-        setCurrentEventIndex(index);
-
         if (current.eventType === 'paste') {
-          setDisplayText(prev => prev + current.content);
+          if (textBuffer) {
+            segList.push({ type: 'text', content: textBuffer });
+            textBuffer = '';
+          }
+          segList.push({ type: 'paste', content: current.content });
           setActiveKeys(new Set());
         } else {
           const key = current.key;
           const isModifier = ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].includes(key);
           if (key === 'Backspace') {
-            setDisplayText(prev => prev.slice(0, -1));
+            if (textBuffer.length > 0) {
+              textBuffer = textBuffer.slice(0, -1);
+            } else {
+              for (let i = segList.length - 1; i >= 0; i--) {
+                if (segList[i].type === 'text' && segList[i].content.length > 0) {
+                  segList[i] = { ...segList[i], content: segList[i].content.slice(0, -1) };
+                  break;
+                }
+              }
+            }
           } else if (key === 'Enter') {
-            setDisplayText(prev => prev + '\n');
+            textBuffer += '\n';
           } else if (key === 'Tab') {
-            setDisplayText(prev => prev + '    ');
+            textBuffer += '    ';
           } else if (key.length === 1) {
-            setDisplayText(prev => prev + key);
+            textBuffer += key;
           }
 
           if (isModifier) {
@@ -280,6 +296,7 @@ const KeystrokePlayer = ({ keystrokes, pastes, originalText, os }) => {
           }
         }
 
+        setSegments([...segList, textBuffer ? { type: 'text', content: textBuffer } : null].filter(Boolean));
         setProgress(Math.round(((index + 1) / sorted.length) * 100));
         playSequence(index + 1);
       }, nextDelay);
@@ -291,8 +308,6 @@ const KeystrokePlayer = ({ keystrokes, pastes, originalText, os }) => {
   useEffect(() => {
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
-
-  const hasPastes = (pastes || []).length > 0;
 
   return (
     <div className="mt-4 p-4 bg-black/40 rounded-2xl border border-white/5 overflow-hidden">
@@ -310,90 +325,40 @@ const KeystrokePlayer = ({ keystrokes, pastes, originalText, os }) => {
           {playing && (
             <span className="text-[10px] font-bold text-gsrp-orange animate-pulse">Playing Sequence...</span>
           )}
-          {hasPastes && (
-            <button
-              onClick={() => setShowKeyboard(!showKeyboard)}
-              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all
-                ${showKeyboard ? 'bg-gsrp-teal/20 text-gsrp-teal border border-gsrp-teal/30' : 'bg-gsrp-dark-surface text-gsrp-teal-light/30 hover:text-white border border-white/5'}
-              `}
-            >
-              <Keyboard size={10} /> Keyboard
-            </button>
-          )}
+          <button
+            onClick={() => setShowKeyboard(!showKeyboard)}
+            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all
+              ${showKeyboard ? 'bg-gsrp-teal/20 text-gsrp-teal border border-gsrp-teal/30' : 'bg-gsrp-dark-surface text-gsrp-teal-light/30 hover:text-white border border-white/5'}
+            `}
+          >
+            <Keyboard size={10} /> Keyboard
+          </button>
         </div>
         <span className="text-[10px] font-mono text-white/20">{progress}%</span>
       </div>
       
       <div className="relative min-h-[60px] bg-gsrp-dark-surface/50 rounded-xl p-4 border border-white/5">
         <p className="text-sm font-medium text-gsrp-teal-light leading-relaxed whitespace-pre-wrap">
-          {playing ? (
-            (() => {
-              const sorted = eventsRef.current;
-              if (sorted.length === 0) return displayText;
-              const parts = [];
-              let textSoFar = '';
-              for (let i = 0; i <= currentEventIndex && i < sorted.length; i++) {
-                const ev = sorted[i];
-                if (ev.eventType === 'paste') {
-                  parts.push(
-                    <span key={`paste-${i}`} className="bg-amber-500/20 text-amber-300 px-1 py-0.5 rounded border border-amber-500/30 font-mono text-xs">
-                      {ev.content}
-                    </span>
-                  );
-                  textSoFar += ev.content;
-                } else if (ev.key === 'Backspace') {
-                  textSoFar = textSoFar.slice(0, -1);
-                } else if (ev.key.length === 1 || ev.key === 'Enter' || ev.key === 'Tab') {
-                  textSoFar += ev.key === 'Enter' ? '\n' : ev.key === 'Tab' ? '    ' : ev.key;
-                }
-              }
-              return (
-                <>
-                  {parts.length > 0 ? (
-                    (() => {
-                      let plainText = '';
-                      const result = [];
-                      for (let i = 0; i <= currentEventIndex && i < sorted.length; i++) {
-                        const ev = sorted[i];
-                        if (ev.eventType === 'paste') {
-                          if (plainText) {
-                            result.push(<span key={`plain-${i}`}>{plainText}</span>);
-                            plainText = '';
-                          }
-                          result.push(
-                            <span key={`paste-${i}`} className="bg-amber-500/20 text-amber-300 px-1 py-0.5 rounded border border-amber-500/30 font-mono text-xs">
-                              {ev.content}
-                            </span>
-                          );
-                        } else if (ev.key === 'Backspace') {
-                          plainText = plainText.slice(0, -1);
-                        } else if (ev.key.length === 1) {
-                          plainText += ev.key;
-                        } else if (ev.key === 'Enter') {
-                          if (plainText) {
-                            result.push(<span key={`plain-${i}`}>{plainText}</span>);
-                            plainText = '';
-                          }
-                          result.push(<br key={`br-${i}`} />);
-                        }
-                      }
-                      if (plainText) result.push(<span key="plain-end">{plainText}</span>);
-                      return result;
-                    })()
-                  ) : (
-                    displayText
-                  )}
-                  <span className="inline-block w-1.5 h-4 bg-gsrp-orange ml-1 animate-pulse align-middle" />
-                </>
-              );
-            })()
+          {playing || segments.length > 0 ? (
+            <>
+              {segments.map((seg, i) =>
+                seg.type === 'paste' ? (
+                  <span key={i} className="bg-amber-500/20 text-amber-300 px-1 py-0.5 rounded border border-amber-500/30 font-mono text-xs">
+                    {seg.content}
+                  </span>
+                ) : (
+                  <span key={i}>{seg.content}</span>
+                )
+              )}
+              {playing && <span className="inline-block w-1.5 h-4 bg-gsrp-orange ml-1 animate-pulse align-middle" />}
+            </>
           ) : (
             <span className="opacity-20 italic">Click replay to see typing behavior...</span>
           )}
         </p>
       </div>
 
-      {hasPastes && (
+      {(pastes || []).length > 0 && (
         <div className="mt-3 space-y-1">
           {(pastes || []).map((p, i) => (
             <div key={i} className="flex items-start gap-2 text-[10px] text-amber-400/70 bg-amber-500/5 px-3 py-1.5 rounded-lg border border-amber-500/10">
