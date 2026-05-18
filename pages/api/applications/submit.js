@@ -19,39 +19,59 @@ export default async function handler(req, res) {
     return res.status(429).json({ message: 'Rate limited', retryAfter: rl.retryAfter });
   }
 
+  const recaptchaToken = req.body.recaptchaToken;
+  if (!recaptchaToken) {
+    return res.status(400).json({ message: 'reCAPTCHA verification required' });
+  }
+
   try {
+    const recaptchaRes = await fetch('https://www.google.com/recaptcha/api/siteverify', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        secret: process.env.RECAPTCHA_SECRET_KEY || '6Lc7mO8sAAAAAIMCi7ZRwhbtA9VYLWt8cIADqDHK',
+        response: recaptchaToken,
+      }),
+    });
+    const recaptchaData = await recaptchaRes.json();
+    if (!recaptchaData.success) {
+      return res.status(400).json({ message: 'reCAPTCHA verification failed. Please try again.' });
+    }
+
+    delete req.body.recaptchaToken;
+
     const client = await clientPromise;
     const db = client.db("gsrp_staff");
     const application = req.body;
 
-    // Save to MongoDB
     const result = await db.collection("applications").insertOne({
       ...application,
       status: 'pending',
       submittedAt: new Date(),
+      recaptchaVerified: true,
+      recaptchaScore: recaptchaData.score || null,
+      recaptchaHostname: recaptchaData.hostname || null,
     });
 
-    // Notify Discord
     const notificationChannel = "1389202990555988071";
     const typeName = application.typeName || "Staff Application";
-    const typeSlug = application.type || "staff";
 
     await sendComponentsV2(notificationChannel, {
       components: [
         {
-          type: 17, // CONTAINER
-          accent_color: 0xF97316, // Orange
+          type: 17,
+          accent_color: 0xF97316,
           components: [
             {
-              type: 10, // TEXT_DISPLAY
+              type: 10,
               content: `# New ${typeName}\nSent by <@${session.user.id}>\n\nAn application for **${typeName}** has been submitted.`
             },
             {
-              type: 1, // ACTION_ROW
+              type: 1,
               components: [
                 {
-                  type: 2, // BUTTON
-                  style: 5, // LINK
+                  type: 2,
+                  style: 5,
                   label: "View Application",
                   url: `https://join-gsrp.com/applications/${result.insertedId}`
                 }
