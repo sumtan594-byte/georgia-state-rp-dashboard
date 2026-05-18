@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useSession } from 'next-auth/react';
-import { Users, Search, Filter, Calendar, ChevronRight, Loader2, AlertCircle } from 'lucide-react';
+import { Users, Search, Filter, Calendar, ChevronRight, Loader2, AlertCircle, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
 import LoginScreen from '../../components/auth/LoginScreen';
@@ -17,6 +17,8 @@ export default function ApplicationsList() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
     if (session && canReviewApplications(effectiveSession)) {
@@ -41,6 +43,20 @@ export default function ApplicationsList() {
       });
     }
   }, [session]);
+
+  const handleDelete = async (appId) => {
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/applications/${appId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete');
+      setApplications(prev => prev.filter(a => a._id !== appId));
+      setDeleteTarget(null);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   if (status === 'loading') return null;
   if (!session) return <LoginScreen />;
@@ -173,13 +189,21 @@ export default function ApplicationsList() {
                       </div>
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Link 
-                        href={`/applications/${app._id}`}
-                        className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-xs font-bold text-gsrp-teal-light hover:text-white hover:border-gsrp-orange/50 transition-all group-hover:bg-gsrp-dark-surface/80"
-                      >
-                        Review
-                        <ChevronRight size={14} />
-                      </Link>
+                      <div className="flex items-center justify-end gap-2">
+                        <Link 
+                          href={`/applications/${app._id}`}
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-xs font-bold text-gsrp-teal-light hover:text-white hover:border-gsrp-orange/50 transition-all group-hover:bg-gsrp-dark-surface/80"
+                        >
+                          Review
+                          <ChevronRight size={14} />
+                        </Link>
+                        <button
+                          onClick={() => setDeleteTarget(app)}
+                          className="p-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-gsrp-teal-light/30 hover:text-red-500 hover:border-red-500/30 transition-all"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -188,6 +212,40 @@ export default function ApplicationsList() {
           </div>
         )}
       </div>
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !isDeleting && setDeleteTarget(null)} />
+          <div className="relative bg-gsrp-dark-card border border-red-500/30 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                <Trash2 size={20} className="text-red-500" />
+              </div>
+              <h3 className="text-white font-black text-xl">Delete Application</h3>
+            </div>
+            <p className="text-gsrp-teal-light/60 text-sm mb-2">
+              Permanently delete <span className="text-white font-bold">{deleteTarget.username}</span>'s application?
+            </p>
+            <p className="text-red-400/80 text-xs mb-6 font-medium">This cannot be undone.</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setDeleteTarget(null)} 
+                disabled={isDeleting}
+                className="flex-1 py-3 bg-gsrp-dark-surface border border-white/10 text-gsrp-teal-light font-bold rounded-xl hover:text-white transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={() => handleDelete(deleteTarget._id)}
+                disabled={isDeleting}
+                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
