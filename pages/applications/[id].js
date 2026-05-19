@@ -626,6 +626,7 @@ export default function ApplicationDetail() {
   const [isProcessing, setIsProcessing] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     if (id && session && canReviewApplications(effectiveSession)) {
@@ -738,6 +739,8 @@ export default function ApplicationDetail() {
       })
       .join('\n\n');
     navigator.clipboard.writeText(lines);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   if (status === 'loading') return null;
@@ -842,10 +845,14 @@ export default function ApplicationDetail() {
               </h2>
               <button
                 onClick={handleCopyResponses}
-                className="flex items-center gap-2 px-4 py-2 bg-gsrp-dark-surface border border-gsrp-dark-border rounded-xl text-gsrp-teal-light/60 hover:text-white hover:border-gsrp-orange transition-all text-xs font-bold uppercase tracking-widest"
+                className={`flex items-center gap-2 px-4 py-2 bg-gsrp-dark-surface border rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
+                  copied
+                    ? 'border-green-500/30 text-green-400 bg-green-500/10'
+                    : 'border-gsrp-dark-border text-gsrp-teal-light/60 hover:text-white hover:border-gsrp-orange'
+                }`}
               >
-                <Clipboard size={14} />
-                Copy user responses
+                {copied ? <CheckCircle size={14} /> : <Clipboard size={14} />}
+                {copied ? 'Copied!' : 'Copy user responses'}
               </button>
             </div>
             <div className="space-y-8">
