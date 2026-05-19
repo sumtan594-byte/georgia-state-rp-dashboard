@@ -31,6 +31,7 @@ import {
   ShieldCheck,
   ShieldX,
   Trash2,
+  Clipboard,
 } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
@@ -727,6 +728,18 @@ export default function ApplicationDetail() {
     }
   };
 
+  const handleCopyResponses = () => {
+    if (!appType || !application.answers) return;
+    const realQuestions = appType.fields.filter(f => f.type === 'textarea');
+    const lines = realQuestions
+      .map(f => {
+        const val = application.answers[f.id] || application.answers[f.label];
+        return Array.isArray(val) ? val.join(', ') : (val || 'N/A');
+      })
+      .join('\n\n');
+    navigator.clipboard.writeText(lines);
+  };
+
   if (status === 'loading') return null;
   if (!session) return <LoginScreen />;
   if (!canReviewApplications(effectiveSession)) return <div>Access Denied</div>;
@@ -822,10 +835,19 @@ export default function ApplicationDetail() {
           </div>
 
           <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-8">
-            <h2 className="text-white font-black text-sm uppercase tracking-[0.2em] mb-8 flex items-center gap-3">
-              <FileText size={18} className="text-gsrp-orange" />
-              Submission Details
-            </h2>
+            <div className="flex items-center justify-between mb-8">
+              <h2 className="text-white font-black text-sm uppercase tracking-[0.2em] flex items-center gap-3">
+                <FileText size={18} className="text-gsrp-orange" />
+                Submission Details
+              </h2>
+              <button
+                onClick={handleCopyResponses}
+                className="flex items-center gap-2 px-4 py-2 bg-gsrp-dark-surface border border-gsrp-dark-border rounded-xl text-gsrp-teal-light/60 hover:text-white hover:border-gsrp-orange transition-all text-xs font-bold uppercase tracking-widest"
+              >
+                <Clipboard size={14} />
+                Copy user responses
+              </button>
+            </div>
             <div className="space-y-8">
               {appType ? appType.fields.map((field, fIdx) => {
                 const val = application.answers?.[field.id] || application.answers?.[field.label];
