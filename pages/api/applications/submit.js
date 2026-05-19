@@ -19,27 +19,7 @@ export default async function handler(req, res) {
     return res.status(429).json({ message: 'Rate limited', retryAfter: rl.retryAfter });
   }
 
-  const recaptchaToken = req.body.recaptchaToken;
-  if (!recaptchaToken) {
-    return res.status(400).json({ message: 'reCAPTCHA verification required' });
-  }
-
   try {
-    const recaptchaRes = await fetch('https://www.google.com/recaptcha/api/siteverify', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: new URLSearchParams({
-        secret: process.env.RECAPTCHA_SECRET_KEY || '6Lc7mO8sAAAAAIMCi7ZRwhbtA9VYLWt8cIADqDHK',
-        response: recaptchaToken,
-      }),
-    });
-    const recaptchaData = await recaptchaRes.json();
-    if (!recaptchaData.success) {
-      return res.status(400).json({ message: 'reCAPTCHA verification failed. Please try again.' });
-    }
-
-    delete req.body.recaptchaToken;
-
     const client = await clientPromise;
     const db = client.db("gsrp_staff");
     const application = req.body;
@@ -48,9 +28,6 @@ export default async function handler(req, res) {
       ...application,
       status: 'pending',
       submittedAt: new Date(),
-      recaptchaVerified: true,
-      recaptchaScore: recaptchaData.score || null,
-      recaptchaHostname: recaptchaData.hostname || null,
     });
 
     const notificationChannel = "1389202990555988071";

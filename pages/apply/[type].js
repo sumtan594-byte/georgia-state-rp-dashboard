@@ -166,40 +166,6 @@ export default function DynamicApplyPage() {
   const [sessionMouseLeaves, setSessionMouseLeaves] = useState([]);
   const [userAgent, setUserAgent] = useState('');
   const [osDetected, setOsDetected] = useState('other');
-  const [recaptchaLoaded, setRecaptchaLoaded] = useState(false);
-  const [recaptchaError, setRecaptchaError] = useState(false);
-  const recaptchaWidgetId = useRef(null);
-  const recaptchaContainerRef = useRef(null);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      if (window.grecaptcha && window.grecaptcha.render) {
-        setRecaptchaLoaded(true);
-        return;
-      }
-      const script = document.createElement('script');
-      script.src = 'https://www.google.com/recaptcha/api.js?onload=onRecaptchaLoad&render=explicit';
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-      window.onRecaptchaLoad = () => setRecaptchaLoaded(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (recaptchaLoaded && recaptchaContainerRef.current && typeof grecaptcha !== 'undefined') {
-      if (recaptchaWidgetId.current !== null) {
-        grecaptcha.reset(recaptchaWidgetId.current);
-      } else {
-        recaptchaWidgetId.current = grecaptcha.render(recaptchaContainerRef.current, {
-          sitekey: process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || '6Lc7mO8sAAAAAKE48ky46O0bHG9oY0K-_ouTXlnV',
-          theme: 'dark',
-          'expired-callback': () => setRecaptchaError(true),
-          'error-callback': () => setRecaptchaError(true),
-        });
-      }
-    }
-  }, [recaptchaLoaded, step]);
 
   const activeFieldRef = useRef(null);
   const tabOutStartRef = useRef(null);
@@ -491,20 +457,8 @@ export default function DynamicApplyPage() {
   }, [typeSlug]);
 
   const handleSubmit = async () => {
-    if (typeof grecaptcha !== 'undefined' && recaptchaWidgetId.current !== null) {
-      const token = grecaptcha.getResponse(recaptchaWidgetId.current);
-      if (!token) {
-        setError('Please complete the reCAPTCHA verification.');
-        return;
-      }
-    }
-
     setIsSubmitting(true);
     setError(null);
-
-    const recaptchaToken = typeof grecaptcha !== 'undefined' && recaptchaWidgetId.current !== null
-      ? grecaptcha.getResponse(recaptchaWidgetId.current)
-      : '';
 
     const data = {
       type: appType.slug,
@@ -520,7 +474,6 @@ export default function DynamicApplyPage() {
       sessionMouseLeaves: sessionMouseLeaves,
       userAgent: userAgent,
       osDetected: osDetected,
-      recaptchaToken: recaptchaToken,
       submittedAt: new Date(),
     };
 
@@ -652,10 +605,6 @@ export default function DynamicApplyPage() {
             <button onClick={() => setStep(step + 1)} className="flex items-center gap-2 px-8 py-3 bg-gsrp-orange text-white font-black rounded-xl">Next <ArrowRight size={18} /></button>
           ) : (
             <div className="flex flex-col items-end gap-4">
-              <div ref={recaptchaContainerRef} className="min-h-[78px]" />
-              {recaptchaError && (
-                <p className="text-xs text-red-400 font-medium">reCAPTCHA expired. Please complete it again.</p>
-              )}
               {error && (
                 <div className="flex items-center gap-2 text-red-400 text-sm font-medium">
                   <AlertCircle size={16} />
