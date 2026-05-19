@@ -15,15 +15,44 @@ function DebugSessionLogger() {
   return null;
 }
 
+function AuthGuard({ isPublicPage, children }) {
+  const { data: session, status } = useSession();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (status === 'unauthenticated' && !isPublicPage) {
+      router.replace('/login');
+    }
+  }, [status, isPublicPage, router]);
+
+  if (status === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex flex-col items-center">
+          <div className="w-10 h-10 border-2 border-gsrp-orange/20 border-t-gsrp-orange rounded-full animate-spin mb-4" />
+          <span className="text-gsrp-teal-light/50 font-mono text-[9px] uppercase tracking-[0.3em]">Loading</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'unauthenticated' && !isPublicPage) {
+    return null;
+  }
+
+  return children;
+}
+
 function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPublicPage, animationFinished, isPanelPage }) {
   return (
-    <div className="min-h-screen relative">
-      <div className="fixed inset-0 z-0">
-        <img src="https://i.imgur.com/QVVQSK2.png" alt="" className="w-full h-full object-cover" aria-hidden="true" />
-        <div className="absolute inset-0 bg-gsrp-dark/80" />
-      </div>
+    <AuthGuard isPublicPage={isPublicPage}>
+      <div className="min-h-screen relative">
+        <div className="fixed inset-0 z-0">
+          <img src="https://i.imgur.com/QVVQSK2.png" alt="" className="w-full h-full object-cover" aria-hidden="true" />
+          <div className="absolute inset-0 bg-gsrp-dark/80" />
+        </div>
 
-      {isPublicPage || isPanelPage ? (
+        {isPublicPage || isPanelPage ? (
         <div className={`relative z-10 ${isPanelPage ? 'h-screen overflow-hidden' : 'min-h-screen'}`}>
           <Component {...pageProps} />
         </div>
@@ -56,6 +85,7 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
         </motion.div>
       )}
     </div>
+    </AuthGuard>
   );
 }
 
