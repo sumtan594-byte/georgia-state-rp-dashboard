@@ -21,6 +21,7 @@ export default async function handler(req, res) {
       if (!application) {
         return res.status(404).json({ message: 'Application not found' });
       }
+      console.log('[Application] GET:', id, '|', application.typeName, '| by', session.user.name);
       return res.status(200).json(application);
     }
 
@@ -29,6 +30,7 @@ export default async function handler(req, res) {
       if (result.deletedCount === 0) {
         return res.status(404).json({ message: 'Application not found' });
       }
+      console.log('[Application] DELETE:', id, 'by', session.user.name);
       return res.status(200).json({ success: true });
     }
 

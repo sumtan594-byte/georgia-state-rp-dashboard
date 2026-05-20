@@ -18,6 +18,7 @@ export default async function handler(req, res) {
       .sort({ submittedAt: -1 })
       .toArray();
 
+    console.log('[Application List] GET:', applications.length, 'applications | by', session.user.name);
     return res.status(200).json(applications);
   } catch (error) {
     console.error('[Application List Error]', error);

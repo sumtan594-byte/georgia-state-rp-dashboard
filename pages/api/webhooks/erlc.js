@@ -21,30 +21,24 @@ async function getRobloxUsername(userId) {
     const data = await response.json();
     return data.name || null;
   } catch (err) {
-    console.error('[ERLC Webhook] Error getting Roblox username:', err.message);
     return null;
   }
 }
 
 export default async function handler(req, res) {
-  console.log('[ERLC Webhook] Request received:', req.method, Object.keys(req.headers));
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
   if (!TARGET_WEBHOOK_URL) {
-    console.error('[ERLC Webhook] Missing ERLC_WEBHOOK_URL env var');
     return res.status(500).json({ error: 'Webhook not configured' });
   }
 
   const signatureHex = req.headers['x-signature-ed25519'] || req.headers['X-Signature-Ed25519'];
   const timestamp = req.headers['x-signature-timestamp'] || req.headers['X-Signature-Timestamp'];
 
-  console.log('[ERLC Webhook] Headers - sig present:', !!signatureHex, 'ts present:', !!timestamp);
-
   if (!signatureHex || !timestamp) {
-    console.error('[ERLC Webhook] Missing signature headers');
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
@@ -61,7 +55,6 @@ export default async function handler(req, res) {
 
     let isVerified = false;
     if (DEV_MODE) {
-      console.log('[ERLC Webhook] DEV_MODE - skipping signature verification');
       isVerified = true;
     } else {
       isVerified = crypto.verify(
@@ -73,12 +66,10 @@ export default async function handler(req, res) {
     }
 
     if (!isVerified) {
-      console.warn('[ERLC Webhook] Invalid signature detected');
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
     const data = JSON.parse(rawBody.toString());
-    console.log('[ERLC Webhook] Raw data:', JSON.stringify(data));
 
     const events = data.events || (data.event ? [data] : []);
     if (!events.length) {
@@ -90,8 +81,6 @@ export default async function handler(req, res) {
       const command = evt.data?.command?.toLowerCase() || evt.command?.toLowerCase() || evt.content?.toLowerCase() || '';
       const argument = evt.data?.argument || evt.argument || evt.args || '';
       const playerId = evt.data?.origin || evt.origin || evt.userId || evt.playerId || '';
-
-      console.log('[ERLC Webhook] Event type:', eventType, 'Command:', command, 'Argument:', argument);
 
       if (eventType === 'EmergencyCall' || eventType === '911' || eventType === 'emergency') {
         const commandUser = playerId ? await getRobloxUsername(playerId) : 'Unknown';
@@ -109,7 +98,6 @@ export default async function handler(req, res) {
           body: JSON.stringify(payload)
         });
 
-        console.log(`[ERLC Webhook] Emergency call from ${commandUser}`);
         continue;
       }
 
@@ -132,7 +120,6 @@ export default async function handler(req, res) {
           body: JSON.stringify(payload)
         });
 
-        console.log(`[ERLC Webhook] Forwarded ${command} from ${commandUser} for ${target}`);
         continue;
       }
 
@@ -153,7 +140,6 @@ export default async function handler(req, res) {
           body: JSON.stringify(payload)
         });
 
-        console.log(`[ERLC Webhook] Forwarded custom command ${rawCommand} from ${commandUser}: ${argument}`);
         continue;
       }
 
@@ -174,7 +160,6 @@ export default async function handler(req, res) {
           body: JSON.stringify(payload)
         });
 
-        console.log(`[ERLC Webhook] Forwarded command ${rawCommand} from ${commandUser}: ${argument}`);
         continue;
       }
 
@@ -193,14 +178,12 @@ export default async function handler(req, res) {
           body: JSON.stringify(payload)
         });
 
-        console.log(`[ERLC Webhook] PM Staff from ${commandUser}: ${content}`);
         continue;
       }
     }
 
     return res.status(200).json({ success: true });
   } catch (err) {
-    console.error('[ERLC Webhook] Processing Error:', err.message);
     return res.status(500).json({ error: 'Internal server error' });
   }
 }

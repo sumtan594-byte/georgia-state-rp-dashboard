@@ -12,7 +12,9 @@ import {
   ShieldCheck, 
   HelpCircle,
   ArrowRight,
-  ArrowLeft
+  ArrowLeft,
+  RotateCcw,
+  Save
 } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
 import { hasRole } from '../../lib/auth';
@@ -32,7 +34,7 @@ const QuestionLabel = ({ children, required = true, subtitle, sentences = 0 }) =
   </label>
 );
 
-const TextArea = ({ name, placeholder, trackEvent, value, onChange }) => (
+const TextArea = ({ name, placeholder, trackEvent, value, onChange, error }) => (
   <textarea 
     name={name}
     required 
@@ -49,11 +51,11 @@ const TextArea = ({ name, placeholder, trackEvent, value, onChange }) => (
     }}
     onContextMenu={(e) => trackEvent(name, 'contextmenu', { x: e.clientX, y: e.clientY })}
     placeholder={placeholder}
-    className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border rounded-2xl px-5 py-4 text-white focus:border-gsrp-orange focus:outline-none transition-all font-medium resize-none mb-8 text-base placeholder:text-white/10 shadow-inner"
+    className={`w-full bg-gsrp-dark-surface border rounded-2xl px-5 py-4 text-white focus:border-gsrp-orange focus:outline-none transition-all font-medium resize-none mb-8 text-base placeholder:text-white/10 shadow-inner ${error ? 'border-red-500' : 'border-gsrp-dark-border'}`}
   />
 );
 
-const Input = ({ name, type = "text", placeholder, trackEvent, required = true, value, onChange }) => (
+const Input = ({ name, type = "text", placeholder, trackEvent, required = true, value, onChange, error }) => (
   <input 
     name={name}
     type={type}
@@ -70,7 +72,7 @@ const Input = ({ name, type = "text", placeholder, trackEvent, required = true, 
     }}
     onContextMenu={(e) => trackEvent(name, 'contextmenu', { x: e.clientX, y: e.clientY })}
     placeholder={placeholder}
-    className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border rounded-2xl px-5 py-4 text-white focus:border-gsrp-orange focus:outline-none transition-all font-medium mb-8 text-base placeholder:text-white/10 shadow-inner"
+    className={`w-full bg-gsrp-dark-surface border rounded-2xl px-5 py-4 text-white focus:border-gsrp-orange focus:outline-none transition-all font-medium mb-8 text-base placeholder:text-white/10 shadow-inner ${error ? 'border-red-500' : 'border-gsrp-dark-border'}`}
   />
 );
 
@@ -146,6 +148,97 @@ function detectOS(userAgent) {
   return 'other';
 }
 
+function isMobileDevice() {
+  if (typeof window === 'undefined') return false;
+  return /Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+    || (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+}
+
+const DRAFT_KEY_PREFIX = 'gsrp_app_draft_';
+const AUTO_SAVE_INTERVAL = 5000;
+
+function getDraftKey(userId, typeSlug) {
+  return `${DRAFT_KEY_PREFIX}${userId}_${typeSlug}`;
+}
+
+function loadDraft(userId, typeSlug) {
+  try {
+    const key = getDraftKey(userId, typeSlug);
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const draft = JSON.parse(raw);
+    if (draft.expiresAt && Date.now() > draft.expiresAt) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return draft;
+  } catch {
+    return null;
+  }
+}
+
+function saveDraft(userId, typeSlug, answers) {
+  try {
+    const key = getDraftKey(userId, typeSlug);
+    const draft = {
+      answers,
+      savedAt: Date.now(),
+      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+    };
+    localStorage.setItem(key, JSON.stringify(draft));
+  } catch {
+  }
+}
+
+function clearDraft(userId, typeSlug) {
+  try {
+    const key = getDraftKey(userId, typeSlug);
+    localStorage.removeItem(key);
+  } catch {
+  }
+}
+
+function validateRequiredFields(fields, answers) {
+  const missing = [];
+  for (const field of fields) {
+    if (!field.required) continue;
+    const val = answers[field.id];
+    if (val === undefined || val === null || val === '') {
+      missing.push(field.id);
+    }
+    if (field.type === 'textarea' && field.sentences > 0) {
+      const sentences = String(val || '').split(/[.!?]+/).filter(s => s.trim().length > 2);
+      if (sentences.length < field.sentences) {
+        missing.push(field.id);
+      }
+    }
+  }
+  return missing;
+}
+
+function validateStepFields(fields, answers) {
+  const missing = [];
+  for (const field of fields) {
+    if (!field.required) continue;
+    const val = answers[field.id];
+    if (val === undefined || val === null || val === '') {
+      missing.push(field.id);
+    }
+  }
+  return missing;
+}
+
+function fetchWithTimeout(url, options, timeoutMs = 30000) {
+  return new Promise((resolve, reject) => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), timeoutMs);
+    fetch(url, { ...options, signal: controller.signal })
+      .then(resolve)
+      .catch(reject)
+      .finally(() => clearTimeout(timeout));
+  });
+}
+
 export default function DynamicApplyPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -156,6 +249,9 @@ export default function DynamicApplyPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [draftRestored, setDraftRestored] = useState(false);
+  const [lastSaved, setLastSaved] = useState(null);
   
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({});
@@ -175,6 +271,36 @@ export default function DynamicApplyPage() {
   const wpmWindowsRef = useRef({});
   const lastKeystrokeTimeRef = useRef({});
   const monitoringInitializedRef = useRef(false);
+  const answersRef = useRef({});
+  const keystrokesRef = useRef({});
+  const pastesRef = useRef({});
+  const monitoringDataRef = useRef({});
+  const sessionTabOutsRef = useRef([]);
+  const sessionMouseLeavesRef = useRef([]);
+
+  useEffect(() => {
+    answersRef.current = answers;
+  }, [answers]);
+
+  useEffect(() => {
+    keystrokesRef.current = keystrokes;
+  }, [keystrokes]);
+
+  useEffect(() => {
+    pastesRef.current = pastes;
+  }, [pastes]);
+
+  useEffect(() => {
+    monitoringDataRef.current = monitoringData;
+  }, [monitoringData]);
+
+  useEffect(() => {
+    sessionTabOutsRef.current = sessionTabOuts;
+  }, [sessionTabOuts]);
+
+  useEffect(() => {
+    sessionMouseLeavesRef.current = sessionMouseLeaves;
+  }, [sessionMouseLeaves]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -183,6 +309,46 @@ export default function DynamicApplyPage() {
       setOsDetected(detectOS(ua));
     }
   }, []);
+
+  useEffect(() => {
+    if (!session || !typeSlug || !appType) return;
+    const draft = loadDraft(session.user.id, typeSlug);
+    if (draft && draft.answers && Object.keys(draft.answers).length > 0) {
+      console.log('[Application] Draft restored:', Object.keys(draft.answers).length, 'fields');
+      setAnswers(draft.answers);
+      setDraftRestored(true);
+      setTimeout(() => setDraftRestored(false), 4000);
+    }
+  }, [session, typeSlug, appType]);
+
+  useEffect(() => {
+    if (!session || !typeSlug) return;
+    const interval = setInterval(() => {
+      if (Object.keys(answersRef.current).length > 0) {
+        saveDraft(session.user.id, typeSlug, answersRef.current);
+        setLastSaved(new Date());
+      }
+    }, AUTO_SAVE_INTERVAL);
+    console.log('[Application] Auto-save started');
+    return () => {
+      clearInterval(interval);
+      console.log('[Application] Auto-save stopped');
+    };
+  }, [session, typeSlug]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (Object.keys(answers).length > 0 && !success && !isSubmitting) {
+        if (session && typeSlug) {
+          saveDraft(session.user.id, typeSlug, answers);
+        }
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [answers, success, isSubmitting, session, typeSlug]);
 
   const getMonitoringForField = useCallback((fieldName) => {
     return monitoringData[fieldName] || {
@@ -433,7 +599,7 @@ export default function DynamicApplyPage() {
                 { id: 'frp', label: 'What is FRP?', type: 'textarea', subtitle: 'Elaborate, What is FRP? What may be a valid punishment for offenders?', sentences: 2, required: true },
                 { id: 'ltap', label: 'What is LTAP?', type: 'textarea', subtitle: 'Elaborate, What is LTAP? What may be a valid punishment for offenders?', sentences: 2, required: true },
                 { id: 'scen_1', label: 'Scenario: Spawn Shooting', type: 'textarea', subtitle: 'A player is shooting inside civilian spawn, which is a safezone. What would you do to this player?', sentences: 2, required: true },
-                { id: 'scen_2', label: 'Scenario: Arrest Button', type: 'textarea', subtitle: 'A police officer is arresting criminals through the "arrest" button. What is this classified as and what will you do in this situation?', sentences: 2, required: true },
+                { id: 'scen_2', label: 'Scenario: Arrest Button', type: 'textarea', subtitle: 'A police officer is arresting people through the "arrest" button. What is this classified as and what will you do in this situation?', sentences: 2, required: true },
                 { id: 'scen_3', label: 'Scenario: Sniper', type: 'textarea', subtitle: 'A sniper on a roof is killing people for no reason. What would you do?', sentences: 2, required: true },
                 { id: 'scen_4', label: 'Scenario: Stop Sticks', type: 'textarea', subtitle: 'A player is spamming stop sticks. What is this classified as and what would you do?', sentences: 2, required: true },
                 { id: 'scen_5', label: 'Scenario: No Response', type: 'textarea', subtitle: 'A player does not respond for more than 2 minutes on a mod call. What is your decision?', sentences: 2, required: true },
@@ -444,7 +610,7 @@ export default function DynamicApplyPage() {
                 { id: 'agree_tiring', label: 'Do you understand that moderation can become tiring and frustrating?', type: 'radio', options: ['Yes I do, and I am ready for it.', 'I don\'t think I can do that'], required: true },
                 { id: 'agree_spag', label: 'Do you understand that on shift, you are obliged to use utmost SPaG?', type: 'radio', options: ['I do', 'I cannot do that.'], required: true },
                 { id: 'agree_quota', label: 'Do you understand that you Have to meet a 4 hour quota per Week?', type: 'radio', options: ['Yes', 'No'], required: true },
-                { id: 'agree_check', label: 'Procced after checking responses?', type: 'radio', options: ['Yes!'], required: true },
+                { id: 'agree_check', label: 'Proceed after checking responses?', type: 'radio', options: ['Yes!'], required: true },
                 { id: 'questions', label: 'Questions?', type: 'text', subtitle: 'Note, asking for an update on your application will result in an instant denial + Blacklist.', required: true },
                 { id: 'agree_no_ask', label: 'Do you agree to not ask anyone when your application will be read?', type: 'radio', options: ['Yes', 'No'], required: true },
                 { id: 'melonly', label: 'How familiar are you with melonly?', type: 'radio', options: ['1 (What the hell?)', '2', '3', '4', '5 (Expert)'], required: true },
@@ -452,13 +618,63 @@ export default function DynamicApplyPage() {
             });
           }
           setLoading(false);
+        })
+        .catch(() => {
+          setLoading(false);
         });
     }
   }, [typeSlug]);
 
+  const handleNextStep = () => {
+    const fieldChunks = [];
+    for (let i = 0; i < appType.fields.length; i += 4) {
+      fieldChunks.push(appType.fields.slice(i, i + 4));
+    }
+    const currentFields = fieldChunks[step - 1] || [];
+    const missing = validateStepFields(currentFields, answers);
+    if (missing.length > 0) {
+      setValidationErrors(prev => {
+        const next = { ...prev };
+        missing.forEach(id => { next[id] = 'This field is required'; });
+        return next;
+      });
+      return;
+    }
+    setValidationErrors({});
+    setStep(step + 1);
+  };
+
   const handleSubmit = async () => {
-    setIsSubmitting(true);
     setError(null);
+    console.log('[Application] Submit started');
+
+    const missing = validateRequiredFields(appType.fields, answers);
+    if (missing.length > 0) {
+      const fieldLabels = missing.map(id => {
+        const f = appType.fields.find(x => x.id === id);
+        return f ? f.label : id;
+      });
+      console.warn('[Application] Validation failed:', fieldLabels.join(', '));
+      setError(`Please complete all required fields: ${fieldLabels.join(', ')}`);
+      const firstMissing = missing[0];
+      for (let s = 1; s <= fieldChunks.length; s++) {
+        const chunkFields = fieldChunks[s - 1];
+        if (chunkFields.some(f => f.id === firstMissing)) {
+          setStep(s);
+          break;
+        }
+      }
+      setValidationErrors(prev => {
+        const next = { ...prev };
+        missing.forEach(id => { next[id] = 'This field is required'; });
+        return next;
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    setValidationErrors({});
+    console.log('[Application] All fields valid, sending to server...');
 
     const data = {
       type: appType.slug,
@@ -466,38 +682,71 @@ export default function DynamicApplyPage() {
       username: session.user.name,
       userId: session.user.id,
       userImage: session.user.image,
-      answers: answers,
-      keystrokeData: keystrokes,
-      pasteData: pastes,
-      monitoringData: monitoringData,
-      sessionTabOuts: sessionTabOuts,
-      sessionMouseLeaves: sessionMouseLeaves,
+      answers: answersRef.current,
+      keystrokeData: keystrokesRef.current,
+      pasteData: pastesRef.current,
+      monitoringData: monitoringDataRef.current,
+      sessionTabOuts: sessionTabOutsRef.current,
+      sessionMouseLeaves: sessionMouseLeavesRef.current,
       userAgent: userAgent,
       osDetected: osDetected,
       submittedAt: new Date(),
     };
 
-    try {
-      const res = await fetch('/api/applications/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+    let lastError = null;
+    const maxRetries = 2;
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        console.log(`[Application] Submit attempt ${attempt + 1}/${maxRetries + 1}`);
+        const res = await fetchWithTimeout('/api/applications/submit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data),
+        }, 30000);
 
-      if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.message || 'Failed to submit');
+        if (!res.ok) {
+          const err = await res.json();
+          console.error('[Application] Server error:', res.status, err.message);
+          throw new Error(err.message || 'Failed to submit');
+        }
+
+        const result = await res.json();
+        console.log('[Application] Submit successful, ID:', result.id);
+        if (session && typeSlug) {
+          clearDraft(session.user.id, typeSlug);
+          console.log('[Application] Draft cleared');
+        }
+        setSuccess(true);
+        return;
+      } catch (err) {
+        lastError = err;
+        if (err.name === 'AbortError') {
+          console.error('[Application] Request timed out on attempt', attempt + 1);
+          lastError = new Error('Request timed out. Please check your connection and try again.');
+        } else {
+          console.error('[Application] Error on attempt', attempt + 1, ':', err.message);
+        }
+        if (attempt < maxRetries) {
+          const delay = 1500 * (attempt + 1);
+          console.log('[Application] Retrying in', delay, 'ms...');
+          await new Promise(r => setTimeout(r, delay));
+        }
       }
-
-      setSuccess(true);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsSubmitting(false);
     }
+
+    console.error('[Application] All attempts failed');
+    setError(lastError?.message || 'Failed to submit application. Please try again.');
+    setIsSubmitting(false);
   };
 
-  if (status === 'loading' || loading) return null;
+  if (status === 'loading' || loading) {
+    return (
+      <div className="max-w-3xl mx-auto py-20 px-4 text-center">
+        <Loader2 className="w-10 h-10 text-gsrp-orange animate-spin mx-auto" />
+        <p className="text-gsrp-teal-light mt-4 font-medium">Loading application...</p>
+      </div>
+    );
+  }
   if (!session) return <LoginScreen />;
   if (!appType) return <div className="text-center py-20 text-white">Application type not found.</div>;
 
@@ -509,7 +758,7 @@ export default function DynamicApplyPage() {
         </div>
         <h1 className="text-3xl font-black text-white mb-4">Application Sent!</h1>
         <p className="text-gsrp-teal-light text-base mb-8 max-w-md mx-auto">
-          Your {appType.name} has been successfully recorded.
+          Your {appType.name} has been successfully submitted and is being reviewed.
         </p>
         <button onClick={() => window.location.href = '/'} className="px-8 py-3 bg-gsrp-orange text-white font-black rounded-xl">Return Home</button>
       </div>
@@ -545,6 +794,19 @@ export default function DynamicApplyPage() {
         </div>
       </div>
 
+      {draftRestored && (
+        <div className="mb-6 p-4 rounded-2xl bg-gsrp-teal/10 border border-gsrp-teal/20 flex items-center gap-3 animate-fade-in-up">
+          <Save className="w-5 h-5 text-gsrp-teal flex-shrink-0" />
+          <p className="text-gsrp-teal-light text-sm font-medium">Draft restored from your last session.</p>
+        </div>
+      )}
+
+      {lastSaved && !success && (
+        <div className="mb-4 text-right">
+          <span className="text-xs text-white/30 font-medium">Last saved: {lastSaved.toLocaleTimeString()}</span>
+        </div>
+      )}
+
       <div className="bg-gsrp-dark-card rounded-[2rem] border border-white/20 p-8 shadow-2xl relative">
         <div className="space-y-2 animate-fade-in-right">
           {currentFields.map((field) => (
@@ -558,21 +820,49 @@ export default function DynamicApplyPage() {
                   name={field.id} 
                   value={answers[field.id] || ''} 
                   trackEvent={trackEvent}
-                  onChange={(e) => setAnswers({...answers, [field.id]: e.target.value})}
+                  onChange={(e) => {
+                    setAnswers({...answers, [field.id]: e.target.value});
+                    if (validationErrors[field.id]) {
+                      setValidationErrors(prev => {
+                        const next = { ...prev };
+                        delete next[field.id];
+                        return next;
+                      });
+                    }
+                  }}
+                  error={validationErrors[field.id]}
                 />
               ) : field.type === 'radio' ? (
                 <RadioGroup 
                   name={field.id} 
                   options={field.options} 
                   value={answers[field.id]} 
-                  onChange={(val) => setAnswers({...answers, [field.id]: val})}
+                  onChange={(val) => {
+                    setAnswers({...answers, [field.id]: val});
+                    if (validationErrors[field.id]) {
+                      setValidationErrors(prev => {
+                        const next = { ...prev };
+                        delete next[field.id];
+                        return next;
+                      });
+                    }
+                  }}
                 />
               ) : field.type === 'checkbox' ? (
                 <CheckboxGroup 
                   name={field.id} 
                   options={field.options} 
                   value={answers[field.id]} 
-                  onChange={(val) => setAnswers({...answers, [field.id]: val})}
+                  onChange={(val) => {
+                    setAnswers({...answers, [field.id]: val});
+                    if (validationErrors[field.id]) {
+                      setValidationErrors(prev => {
+                        const next = { ...prev };
+                        delete next[field.id];
+                        return next;
+                      });
+                    }
+                  }}
                 />
               ) : field.type === 'slider' ? (
                 <Slider 
@@ -589,8 +879,21 @@ export default function DynamicApplyPage() {
                   required={field.required}
                   value={answers[field.id] || ''} 
                   trackEvent={trackEvent}
-                  onChange={(e) => setAnswers({...answers, [field.id]: e.target.value})}
+                  onChange={(e) => {
+                    setAnswers({...answers, [field.id]: e.target.value});
+                    if (validationErrors[field.id]) {
+                      setValidationErrors(prev => {
+                        const next = { ...prev };
+                        delete next[field.id];
+                        return next;
+                      });
+                    }
+                  }}
+                  error={validationErrors[field.id]}
                 />
+              )}
+              {validationErrors[field.id] && (
+                <p className="text-red-400 text-xs font-medium -mt-6 mb-6 ml-2">{validationErrors[field.id]}</p>
               )}
             </div>
           ))}
@@ -598,11 +901,11 @@ export default function DynamicApplyPage() {
 
         <div className="flex items-center justify-between mt-10">
           {step > 1 && (
-            <button onClick={() => setStep(step - 1)} className="flex items-center gap-2 px-6 py-3 bg-gsrp-dark-surface text-white font-bold rounded-xl border border-white/5"><ArrowLeft size={18} /> Back</button>
+            <button onClick={() => { setValidationErrors({}); setStep(step - 1); }} className="flex items-center gap-2 px-6 py-3 bg-gsrp-dark-surface text-white font-bold rounded-xl border border-white/5"><ArrowLeft size={18} /> Back</button>
           )}
           <div className="flex-1" />
           {step < totalSteps ? (
-            <button onClick={() => setStep(step + 1)} className="flex items-center gap-2 px-8 py-3 bg-gsrp-orange text-white font-black rounded-xl">Next <ArrowRight size={18} /></button>
+            <button onClick={handleNextStep} className="flex items-center gap-2 px-8 py-3 bg-gsrp-orange text-white font-black rounded-xl">Next <ArrowRight size={18} /></button>
           ) : (
             <div className="flex flex-col items-end gap-4">
               {error && (
@@ -614,9 +917,9 @@ export default function DynamicApplyPage() {
               <button 
                 onClick={handleSubmit} 
                 disabled={isSubmitting}
-                className="px-10 py-3 bg-gradient-to-r from-gsrp-orange to-gsrp-warm text-white font-black rounded-xl shadow-lg shadow-gsrp-orange/20 disabled:opacity-50"
+                className="px-10 py-3 bg-gradient-to-r from-gsrp-orange to-gsrp-warm text-white font-black rounded-xl shadow-lg shadow-gsrp-orange/20 disabled:opacity-50 flex items-center gap-2"
               >
-                {isSubmitting ? <Loader2 className="animate-spin" /> : 'Submit Application'}
+                {isSubmitting ? <><Loader2 className="animate-spin w-5 h-5" /> Submitting...</> : <><Send size={18} /> Submit Application</>}
               </button>
             </div>
           )}

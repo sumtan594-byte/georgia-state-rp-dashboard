@@ -15,6 +15,7 @@ export default async function handler(req, res) {
   }
 
   const { id, status, reason } = req.body;
+  console.log('[Application Decide] Staff', session.user.name, status, 'application', id);
 
   try {
     const client = await clientPromise;

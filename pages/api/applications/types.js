@@ -17,6 +17,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'GET') {
     const types = await db.collection("application_types").find({}).toArray();
+    console.log('[Application Types] GET:', types.length, 'types loaded');
     if (!canReviewApplications(session)) {
       return res.status(200).json(types.map(t => ({
         name: t.name,
@@ -57,7 +58,7 @@ export default async function handler(req, res) {
       },
       { upsert: true }
     );
-    
+    console.log('[Application Types] POST:', name, 'saved (upserted:', !!result.upsertedId, ')');
     return res.status(200).json({ success: true, id: result.upsertedId || slug });
   }
 
