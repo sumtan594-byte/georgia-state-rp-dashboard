@@ -1,5 +1,6 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import { Loader2, Users, Search, Filter, ChevronDown, ChevronUp, Clock, RotateCcw } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
