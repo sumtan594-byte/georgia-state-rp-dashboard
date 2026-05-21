@@ -1,6 +1,6 @@
 import { useSession } from 'next-auth/react';
-import { useEffect, useState, useCallback } from 'react';
-import { Loader2, BookOpen, Terminal, Shield, AlertTriangle, RotateCcw, ChevronRight } from 'lucide-react';
+import { useEffect, useState, useCallback, useRef } from 'react';
+import { Loader2, BookOpen, Terminal, Shield, AlertTriangle, RotateCcw, ChevronRight, Clock, Play, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import LoginScreen from '../../components/auth/LoginScreen';
 import { getServerSession } from 'next-auth';
@@ -17,6 +17,35 @@ import {
   generateRetryQuizSet,
   getQuestionIds,
 } from '../../lib/quiz-questions';
+
+const SESSION_KEY = 'gsrp_quiz_session';
+
+function loadSession(userId) {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY + '_' + userId);
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    if (Date.now() - session.timestamp > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(SESSION_KEY + '_' + userId);
+      return null;
+    }
+    return session;
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(userId, data) {
+  try {
+    localStorage.setItem(SESSION_KEY + '_' + userId, JSON.stringify({ ...data, timestamp: Date.now() }));
+  } catch { /* storage full — ignore */ }
+}
+
+function clearSession(userId) {
+  try {
+    localStorage.removeItem(SESSION_KEY + '_' + userId);
+  } catch { /* ignore */ }
+}
 
 export default function TrainingPage() {
   const { data: session, status } = useSession();
@@ -35,6 +64,17 @@ export default function TrainingPage() {
   const [hasPassed, setHasPassed] = useState(false);
   const [showCommands, setShowCommands] = useState(false);
   const [commandsVisible, setCommandsVisible] = useState(false);
+  const [savedSession, setSavedSession] = useState(null);
+  const [resumeDismissed, setResumeDismissed] = useState(false);
+  const sessionCheckDone = useRef(false);
+
+  // Check for saved quiz session
+  useEffect(() => {
+    if (!progressChecked || !effectiveSession || sessionCheckDone.current) return;
+    sessionCheckDone.current = true;
+    const s = loadSession(effectiveSession.user.id);
+    if (s) setSavedSession(s);
+  }, [progressChecked, effectiveSession]);
 
   // Check handbook progress
   useEffect(() => {
@@ -107,7 +147,33 @@ export default function TrainingPage() {
       setQuestions(newQuestions);
     }
     setQuizStarted(true);
+    setSavedSession(null);
   }, [previousQuestionIds]);
+
+  const handleResume = useCallback(() => {
+    if (!savedSession || !effectiveSession) return;
+    setQuestions(savedSession.questions);
+    setQuizStarted(true);
+    setSavedSession(null);
+  }, [savedSession, effectiveSession]);
+
+  const handleDiscardSession = useCallback(() => {
+    if (effectiveSession) clearSession(effectiveSession.user.id);
+    setSavedSession(null);
+    setResumeDismissed(true);
+  }, [effectiveSession]);
+
+  const handleSaveProgress = useCallback((state) => {
+    if (!effectiveSession || !questions.length) return;
+    saveSession(effectiveSession.user.id, {
+      ...state,
+      questions,
+    });
+  }, [effectiveSession, questions]);
+
+  const handleClearProgress = useCallback(() => {
+    if (effectiveSession) clearSession(effectiveSession.user.id);
+  }, [effectiveSession]);
 
   const handleSubmit = useCallback(async (result) => {
     try {
@@ -253,6 +319,9 @@ export default function TrainingPage() {
           onSubmit={handleSubmit}
           user={effectiveSession.user}
           isRetry={previousQuestionIds.length > 0}
+          initialState={savedSession ? { currentQ: savedSession.currentQ, score: savedSession.score, userAnswers: savedSession.userAnswers } : undefined}
+          onSaveProgress={handleSaveProgress}
+          onClearProgress={handleClearProgress}
         />
       </div>
     );
@@ -273,7 +342,7 @@ export default function TrainingPage() {
       </div>
 
       {/* Info Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
         <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-5">
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 rounded-xl bg-gsrp-orange/10 flex items-center justify-center">
@@ -306,7 +375,53 @@ export default function TrainingPage() {
           <p className="text-2xl font-black text-gsrp-teal-light">{QUIZ_CONFIG.TOTAL_QUESTIONS}</p>
           <p className="text-xs text-gsrp-teal-light/30 mt-1">Randomised each attempt</p>
         </div>
+
+        <div className="card-glass rounded-2xl border border-gsrp-teal/20 p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-gsrp-teal/10 flex items-center justify-center">
+              <BookOpen size={18} className="text-gsrp-teal-light" />
+            </div>
+            <h3 className="text-sm font-black text-gsrp-teal-light">Open Book</h3>
+          </div>
+          <p className="text-xs text-gsrp-teal-light/50">Handbook accessible at any time during the quiz</p>
+        </div>
       </div>
+
+      {/* Resume Banner */}
+      {savedSession && !resumeDismissed && (
+        <div className="card-glass rounded-2xl border border-gsrp-teal/30 p-5 animate-fade-in-up">
+          <div className="flex items-start gap-4">
+            <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gsrp-teal/10 shrink-0">
+              <Clock size={22} className="text-gsrp-teal-light" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-sm font-black text-gsrp-teal-light mb-1">Quiz in Progress</h3>
+              <p className="text-xs text-gsrp-teal-light/50 mb-1">
+                You were on question {savedSession.currentQ + 1} of {savedSession.questions?.length || QUIZ_CONFIG.TOTAL_QUESTIONS} with a score of {savedSession.score}.
+              </p>
+              <p className="text-[10px] text-gsrp-teal-light/30">
+                Saved {new Date(savedSession.timestamp).toLocaleTimeString()}
+              </p>
+            </div>
+            <div className="flex gap-2 shrink-0">
+              <button
+                onClick={handleResume}
+                className="px-4 py-2 bg-gsrp-teal text-white rounded-lg text-xs font-bold hover:bg-gsrp-teal/90 transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Play size={12} />
+                Resume
+              </button>
+              <button
+                onClick={handleDiscardSession}
+                className="px-4 py-2 bg-gsrp-dark-surface border border-gsrp-dark-border text-gsrp-teal-light/40 rounded-lg text-xs font-bold hover:border-gsrp-sunset/30 hover:text-gsrp-sunset transition-all cursor-pointer flex items-center gap-1.5"
+              >
+                <Trash2 size={12} />
+                Discard
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Start Quiz Button */}
       <div className="flex justify-center py-4">

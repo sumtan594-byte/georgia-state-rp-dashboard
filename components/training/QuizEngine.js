@@ -11,11 +11,11 @@ function shuffleArray(arr) {
   return a;
 }
 
-export default function QuizEngine({ questions, passScore, cooldownHours, onSubmit, user, isRetry }) {
-  const [currentQ, setCurrentQ] = useState(0);
-  const [score, setScore] = useState(0);
+export default function QuizEngine({ questions, passScore, cooldownHours, onSubmit, user, isRetry, initialState, onSaveProgress, onClearProgress }) {
+  const [currentQ, setCurrentQ] = useState(initialState?.currentQ ?? 0);
+  const [score, setScore] = useState(initialState?.score ?? 0);
   const [answered, setAnswered] = useState(false);
-  const [userAnswers, setUserAnswers] = useState([]);
+  const [userAnswers, setUserAnswers] = useState(initialState?.userAnswers ?? []);
   const [selectedMC, setSelectedMC] = useState(null);
   const [selectedTF, setSelectedTF] = useState(null);
   const [showResults, setShowResults] = useState(false);
@@ -24,6 +24,17 @@ export default function QuizEngine({ questions, passScore, cooldownHours, onSubm
   const [hasPassed, setHasPassed] = useState(false);
   const [reviewExpanded, setReviewExpanded] = useState({});
   const containerRef = useRef(null);
+  const initializedRef = useRef(false);
+
+  // Restore answered state if resuming mid-question
+  useEffect(() => {
+    if (initialState && !initializedRef.current) {
+      initializedRef.current = true;
+      if (initialState.userAnswers && initialState.userAnswers.length > initialState.currentQ) {
+        setAnswered(true);
+      }
+    }
+  }, []);
 
   const question = questions[currentQ];
   const progress = ((currentQ + (answered ? 1 : 0)) / questions.length) * 100;
@@ -55,14 +66,20 @@ export default function QuizEngine({ questions, passScore, cooldownHours, onSubm
 
     if (isCorrect) setScore(prev => prev + 1);
 
-    setUserAnswers(prev => [...prev, {
-      correct: isCorrect,
-      chosen,
-      correctAnswer: correct,
-      question: question.text,
-      explanation: question.explanation,
-      section: question.section,
-    }]);
+    setUserAnswers(prev => {
+      const next = [...prev, {
+        correct: isCorrect,
+        chosen,
+        correctAnswer: correct,
+        question: question.text,
+        explanation: question.explanation,
+        section: question.section,
+      }];
+      if (onSaveProgress) {
+        onSaveProgress({ currentQ, score: score + (isCorrect ? 1 : 0), userAnswers: next });
+      }
+      return next;
+    });
 
     setAnswered(true);
   }, [question, answered, selectedMC, selectedTF]);
@@ -73,6 +90,7 @@ export default function QuizEngine({ questions, passScore, cooldownHours, onSubm
       const passed = finalScore >= passScore;
       setHasPassed(passed);
       setShowResults(true);
+      if (onClearProgress) onClearProgress();
 
       if (!passed) {
         const cooldownMs = cooldownHours * 60 * 60 * 1000;
@@ -89,11 +107,15 @@ export default function QuizEngine({ questions, passScore, cooldownHours, onSubm
         answers: userAnswers,
       }).finally(() => setSubmitting(false));
     } else {
-      setCurrentQ(prev => prev + 1);
+      const nextQ = currentQ + 1;
+      setCurrentQ(nextQ);
       resetAnswerState();
       containerRef.current?.scrollIntoView({ behavior: 'smooth' });
+      if (onSaveProgress) {
+        onSaveProgress({ currentQ: nextQ, score, userAnswers });
+      }
     }
-  }, [currentQ, questions.length, score, userAnswers, passScore, cooldownHours, onSubmit, resetAnswerState]);
+  }, [currentQ, questions.length, score, userAnswers, passScore, cooldownHours, onSubmit, resetAnswerState, onSaveProgress]);
 
   // Keyboard shortcuts
   useEffect(() => {
