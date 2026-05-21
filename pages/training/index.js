@@ -230,23 +230,13 @@ export default function TrainingPage() {
               and study the custom commands.
             </p>
           </div>
-          <div className="flex gap-3">
-            <button
-              onClick={() => router.push('/training/handbook')}
-              className="flex-1 px-5 py-3 bg-gsrp-dark-surface border border-gsrp-dark-border rounded-xl text-gsrp-teal-light/60 font-bold text-sm hover:border-gsrp-teal/30 transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              <BookOpen size={16} />
-              Review Handbook
-            </button>
-            <a
-              href="https://discord.com/channels/1366688107788894280/1448577067607130183"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 px-5 py-3 bg-gsrp-teal/10 border border-gsrp-teal/30 rounded-xl text-gsrp-teal-light font-bold text-sm hover:bg-gsrp-teal/20 transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              Request Ridealong
-            </a>
-          </div>
+          <button
+            onClick={() => router.push('/training/handbook')}
+            className="w-full px-5 py-3 bg-gsrp-dark-surface border border-gsrp-dark-border rounded-xl text-gsrp-teal-light/60 font-bold text-sm hover:border-gsrp-teal/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <BookOpen size={16} />
+            Review Handbook
+          </button>
         </div>
       </div>
     );
