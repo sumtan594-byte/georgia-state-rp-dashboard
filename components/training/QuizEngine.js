@@ -297,9 +297,18 @@ export default function QuizEngine({ questions, passScore, cooldownHours, onSubm
           <span className="text-xs font-bold text-gsrp-teal-light/40 uppercase tracking-wider">
             Question {currentQ + 1} of {questions.length}
           </span>
-          <span className="text-xs font-bold text-gsrp-orange">
-            Score: {score}
-          </span>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/training/handbook"
+              className="text-[10px] font-bold text-gsrp-teal-light/30 hover:text-gsrp-teal-light transition-colors flex items-center gap-1"
+            >
+              <BookOpen size={10} />
+              Handbook
+            </Link>
+            <span className="text-xs font-bold text-gsrp-orange">
+              Score: {score}
+            </span>
+          </div>
         </div>
         <div className="h-2 bg-gsrp-dark-surface rounded-full overflow-hidden">
           <div

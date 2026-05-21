@@ -18,35 +18,6 @@ import {
   getQuestionIds,
 } from '../../lib/quiz-questions';
 
-const SESSION_KEY = 'gsrp_quiz_session';
-
-function loadSession(userId) {
-  try {
-    const raw = localStorage.getItem(SESSION_KEY + '_' + userId);
-    if (!raw) return null;
-    const session = JSON.parse(raw);
-    if (Date.now() - session.timestamp > 24 * 60 * 60 * 1000) {
-      localStorage.removeItem(SESSION_KEY + '_' + userId);
-      return null;
-    }
-    return session;
-  } catch {
-    return null;
-  }
-}
-
-function saveSession(userId, data) {
-  try {
-    localStorage.setItem(SESSION_KEY + '_' + userId, JSON.stringify({ ...data, timestamp: Date.now() }));
-  } catch { /* storage full — ignore */ }
-}
-
-function clearSession(userId) {
-  try {
-    localStorage.removeItem(SESSION_KEY + '_' + userId);
-  } catch { /* ignore */ }
-}
-
 export default function TrainingPage() {
   const { data: session, status } = useSession();
   const { session: refreshedSession, hasRefreshed, accessDenied } = useRefreshedUser();
@@ -65,15 +36,18 @@ export default function TrainingPage() {
   const [showCommands, setShowCommands] = useState(false);
   const [commandsVisible, setCommandsVisible] = useState(false);
   const [savedSession, setSavedSession] = useState(null);
+  const [resumeData, setResumeData] = useState(null);
   const [resumeDismissed, setResumeDismissed] = useState(false);
   const sessionCheckDone = useRef(false);
 
-  // Check for saved quiz session
+  // Check for saved quiz session from DB
   useEffect(() => {
     if (!progressChecked || !effectiveSession || sessionCheckDone.current) return;
     sessionCheckDone.current = true;
-    const s = loadSession(effectiveSession.user.id);
-    if (s) setSavedSession(s);
+    fetch(`/api/training/session?userId=${effectiveSession.user.id}`)
+      .then(r => r.json())
+      .then(d => { if (d.data) setSavedSession(d.data); })
+      .catch(() => {});
   }, [progressChecked, effectiveSession]);
 
   // Check handbook progress
@@ -152,27 +126,48 @@ export default function TrainingPage() {
 
   const handleResume = useCallback(() => {
     if (!savedSession || !effectiveSession) return;
+    setResumeData(savedSession);
     setQuestions(savedSession.questions);
     setQuizStarted(true);
     setSavedSession(null);
   }, [savedSession, effectiveSession]);
 
-  const handleDiscardSession = useCallback(() => {
-    if (effectiveSession) clearSession(effectiveSession.user.id);
+  const handleDiscardSession = useCallback(async () => {
+    if (!effectiveSession) return;
+    try {
+      await fetch('/api/training/session', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: effectiveSession.user.id }),
+      });
+    } catch {}
     setSavedSession(null);
     setResumeDismissed(true);
   }, [effectiveSession]);
 
-  const handleSaveProgress = useCallback((state) => {
+  const handleSaveProgress = useCallback(async (state) => {
     if (!effectiveSession || !questions.length) return;
-    saveSession(effectiveSession.user.id, {
-      ...state,
-      questions,
-    });
+    try {
+      await fetch('/api/training/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: effectiveSession.user.id,
+          data: { ...state, questions },
+        }),
+      });
+    } catch {}
   }, [effectiveSession, questions]);
 
-  const handleClearProgress = useCallback(() => {
-    if (effectiveSession) clearSession(effectiveSession.user.id);
+  const handleClearProgress = useCallback(async () => {
+    if (!effectiveSession) return;
+    try {
+      await fetch('/api/training/session', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: effectiveSession.user.id }),
+      });
+    } catch {}
   }, [effectiveSession]);
 
   const handleSubmit = useCallback(async (result) => {
@@ -319,7 +314,7 @@ export default function TrainingPage() {
           onSubmit={handleSubmit}
           user={effectiveSession.user}
           isRetry={previousQuestionIds.length > 0}
-          initialState={savedSession ? { currentQ: savedSession.currentQ, score: savedSession.score, userAnswers: savedSession.userAnswers } : undefined}
+          initialState={resumeData ? { currentQ: resumeData.currentQ, score: resumeData.score, userAnswers: resumeData.userAnswers } : undefined}
           onSaveProgress={handleSaveProgress}
           onClearProgress={handleClearProgress}
         />
