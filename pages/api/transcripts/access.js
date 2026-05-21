@@ -65,7 +65,7 @@ export default async function handler(req, res) {
       accesses: enrichedAccesses,
       denies: enrichedDenies,
       admins: enrichedAdmins,
-      canManage,
+      isAdmin,
       canRemoveAdmins,
     });
   }
