@@ -306,6 +306,18 @@ export default function TrainingPage() {
         </div>
       </div>
 
+      {/* Start Quiz Button */}
+      <div className="flex justify-center py-4">
+        <button
+          onClick={() => setShowWarning(true)}
+          className="group px-10 py-4 bg-gradient-to-r from-gsrp-orange to-gsrp-orange-light text-white font-black text-lg rounded-2xl shadow-lg shadow-gsrp-orange/20 hover:shadow-gsrp-orange/30 transition-all cursor-pointer flex items-center gap-3"
+        >
+          <Shield size={20} />
+          Start Quiz
+          <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+        </button>
+      </div>
+
       {/* What to expect */}
       <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
         <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4">What to Expect</h3>
@@ -331,18 +343,6 @@ export default function TrainingPage() {
       {/* Custom Commands Reference */}
       <div id="commands-section">
         <CustomCommandsSection isVisible={commandsVisible} />
-      </div>
-
-      {/* Start Quiz Button */}
-      <div className="flex justify-center pt-4 pb-12">
-        <button
-          onClick={() => setShowWarning(true)}
-          className="group px-10 py-4 bg-gradient-to-r from-gsrp-orange to-gsrp-orange-light text-white font-black text-lg rounded-2xl shadow-lg shadow-gsrp-orange/20 hover:shadow-gsrp-orange/30 transition-all cursor-pointer flex items-center gap-3"
-        >
-          <Shield size={20} />
-          Start Quiz
-          <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
-        </button>
       </div>
 
       {/* Warning Modal */}
