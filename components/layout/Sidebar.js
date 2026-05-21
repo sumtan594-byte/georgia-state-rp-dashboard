@@ -25,7 +25,7 @@ import { useRefreshedUser } from '../../lib/UserRefreshContext';
 
 export default function Sidebar({ open, onToggle }) {
   const { data: session } = useSession();
-  const { refreshedUser, session: refreshedSession } = useRefreshedUser();
+  const { refreshedUser, session: refreshedSession, hasRefreshed } = useRefreshedUser();
   const effectiveSession = refreshedSession || session;
   const [serverStatus, setServerStatus] = useState(null);
   const [transcriptCount, setTranscriptCount] = useState(0);
@@ -54,14 +54,14 @@ export default function Sidebar({ open, onToggle }) {
       .catch(() => {});
   }, [session, open]);
 
-  const hasPanel = canAccessPanel(effectiveSession);
-  const hasHandbook = canAccessHandbook(effectiveSession);
-  const hasTraining = canAccessTraining(effectiveSession);
-  const hasAttempts = canViewAttempts(effectiveSession);
-  const showAllTranscripts = canViewAllTranscripts(effectiveSession);
-  const canReviewApps = canReviewApplications(effectiveSession);
-  const canManageAdminList = canManageAdmins(effectiveSession);
-  const isFullAdminUser = effectiveSession?.user?.isAdmin;
+  const hasPanel = hasRefreshed ? canAccessPanel(effectiveSession) : false;
+  const hasHandbook = hasRefreshed ? canAccessHandbook(effectiveSession) : false;
+  const hasTraining = hasRefreshed ? canAccessTraining(effectiveSession) : false;
+  const hasAttempts = hasRefreshed ? canViewAttempts(effectiveSession) : false;
+  const showAllTranscripts = hasRefreshed ? canViewAllTranscripts(effectiveSession) : false;
+  const canReviewApps = hasRefreshed ? canReviewApplications(effectiveSession) : false;
+  const canManageAdminList = hasRefreshed ? canManageAdmins(effectiveSession) : false;
+  const isFullAdminUser = hasRefreshed ? (effectiveSession?.user?.isAdmin) : false;
 
   const navItems = [
     { href: '/', icon: LayoutDashboard, label: 'Dashboard' },

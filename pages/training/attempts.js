@@ -2,6 +2,8 @@ import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { Loader2, Users, Search, Filter, ChevronDown, ChevronUp, Clock, RotateCcw } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
+import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import AccessDenied from '../../components/auth/AccessDenied';
 
 function esc(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -21,6 +23,9 @@ function formatCooldown(cooldownUntil) {
 
 export default function AttemptsPage() {
   const { data: session, status } = useSession();
+  const { session: refreshedSession, hasRefreshed, accessDenied } = useRefreshedUser();
+  const effectiveSession = refreshedSession || session;
+  const router = useRouter();
   const [attempts, setAttempts] = useState([]);
   const [userData, setUserData] = useState({});
   const [loading, setLoading] = useState(true);
@@ -31,21 +36,22 @@ export default function AttemptsPage() {
   const [revoking, setRevoking] = useState(null);
 
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetch('/api/training/attempts?userData=true')
-        .then(r => r.json())
-        .then(data => {
-          if (Array.isArray(data)) {
-            setAttempts(data);
-          } else if (data.attempts) {
-            setAttempts(data.attempts);
-            setUserData(data.users || {});
-          }
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
-    }
-  }, [status]);
+    if (status === 'unauthenticated') return;
+    if (!hasRefreshed || accessDenied) return;
+
+    fetch('/api/training/attempts?userData=true')
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data)) {
+          setAttempts(data);
+        } else if (data.attempts) {
+          setAttempts(data.attempts);
+          setUserData(data.users || {});
+        }
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, [status, hasRefreshed, accessDenied]);
 
   const handleRevoke = async (userId) => {
     if (!confirm('Revoke cooldown for this user? They will be able to retake immediately.')) return;
@@ -55,8 +61,8 @@ export default function AttemptsPage() {
         method: 'POST',
         headers: { 
           'Content-Type': 'application/json',
-          'x-user-id': session.user.id,
-          'x-user-roles': JSON.stringify(session.user.roles || []),
+          'x-user-id': effectiveSession.user.id,
+          'x-user-roles': JSON.stringify(effectiveSession.user.roles || []),
         },
         body: JSON.stringify({ action: 'revoke', userId }),
       });
@@ -70,7 +76,7 @@ export default function AttemptsPage() {
     setRevoking(null);
   };
 
-  if (status === 'loading' || loading) {
+  if (status === 'loading' || !hasRefreshed || loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center">
@@ -82,6 +88,10 @@ export default function AttemptsPage() {
   }
 
   if (!session) return <LoginScreen />;
+
+  if (accessDenied) {
+    return <AccessDenied roleId={accessDenied.roleId} />;
+  }
 
   let filtered = [...attempts];
   if (search) {

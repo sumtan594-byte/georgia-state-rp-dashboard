@@ -1,16 +1,17 @@
 import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import { useSession } from 'next-auth/react';
-import { Users, Search, Filter, Calendar, ChevronRight, Loader2, AlertCircle, Trash2 } from 'lucide-react';
+import { Users, Search, Filter, Calendar, ChevronRight, Loader2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
 import LoginScreen from '../../components/auth/LoginScreen';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import AccessDenied from '../../components/auth/AccessDenied';
 import { createPortal } from 'react-dom';
 
 export default function ApplicationsList() {
   const { data: session, status } = useSession();
-  const { session: refreshedSession } = useRefreshedUser();
+  const { session: refreshedSession, hasRefreshed, accessDenied } = useRefreshedUser();
   const effectiveSession = refreshedSession || session;
   const [applications, setApplications] = useState([]);
   const [types, setTypes] = useState([]);
@@ -22,28 +23,28 @@ export default function ApplicationsList() {
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    if (session && canReviewApplications(effectiveSession)) {
-      Promise.all([
-        fetch('/api/applications/list').then(r => r.ok ? r.json() : []),
-        fetch('/api/applications/types').then(r => r.ok ? r.json() : [])
-      ])
-      .then(([apps, appTypes]) => {
-        setApplications(apps);
-        
-        // Ensure staff exists in types
-        const hasStaff = appTypes.find(t => t.slug === 'staff');
-        if (!hasStaff) {
-          appTypes.unshift({ name: 'Staff Application', slug: 'staff' });
-        }
-        setTypes(appTypes);
-        setLoading(false);
-      })
-      .catch(err => {
-        setError(err.message);
-        setLoading(false);
-      });
-    }
-  }, [session]);
+    if (status !== 'authenticated') return;
+    if (!hasRefreshed || !canReviewApplications(effectiveSession)) return;
+    Promise.all([
+      fetch('/api/applications/list').then(r => r.ok ? r.json() : []),
+      fetch('/api/applications/types').then(r => r.ok ? r.json() : [])
+    ])
+    .then(([apps, appTypes]) => {
+      setApplications(apps);
+      
+      // Ensure staff exists in types
+      const hasStaff = appTypes.find(t => t.slug === 'staff');
+      if (!hasStaff) {
+        appTypes.unshift({ name: 'Staff Application', slug: 'staff' });
+      }
+      setTypes(appTypes);
+      setLoading(false);
+    })
+    .catch(err => {
+      setError(err.message);
+      setLoading(false);
+    });
+  }, [status, hasRefreshed, effectiveSession]);
 
   const handleDelete = async (appId) => {
     setIsDeleting(true);
@@ -59,16 +60,11 @@ export default function ApplicationsList() {
     }
   };
 
-  if (status === 'loading') return null;
+  if (status === 'loading' || !hasRefreshed) return null;
   if (!session) return <LoginScreen />;
+  if (accessDenied) return <AccessDenied roleId={accessDenied.roleId} />;
   if (!canReviewApplications(effectiveSession)) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center animate-fade-in-up">
-        <AlertCircle className="w-16 h-16 text-red-500/20 mb-4" />
-        <h1 className="text-2xl font-black text-white mb-2">Access Denied</h1>
-        <p className="text-gsrp-teal-light/40">You do not have permission to view staff applications.</p>
-      </div>
-    );
+    return <AccessDenied roleId="1372491512709124106" />;
   }
 
   const filtered = applications.filter(app => {

@@ -1,6 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/router';
 import { 
   Search, 
   ChevronRight, 
@@ -20,21 +19,19 @@ import {
 } from 'lucide-react';
 import { canAccessHandbook } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import AccessDenied from '../../components/auth/AccessDenied';
 import { HANDBOOK_CONTENT } from '../../data/handbook';
 
 export default function StaffHandbookPage() {
   const { data: session, status: sessionStatus } = useSession();
-  const { session: refreshedSession } = useRefreshedUser();
+  const { session: refreshedSession, hasRefreshed, accessDenied } = useRefreshedUser();
   const effectiveSession = refreshedSession || session;
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [activeChapterId, setActiveChapterId] = useState(HANDBOOK_CONTENT[0].id);
 
   useEffect(() => {
     if (sessionStatus === 'unauthenticated') {
-      router.push('/login');
-    } else if (sessionStatus === 'authenticated' && session && !canAccessHandbook(effectiveSession)) {
-      router.push('/');
+      window.location.href = '/login';
     }
   }, [sessionStatus]);
 
@@ -56,12 +53,20 @@ export default function StaffHandbookPage() {
     }).filter(Boolean);
   }, [searchQuery]);
 
-  if (sessionStatus === 'loading' || !session || !canAccessHandbook(effectiveSession)) {
+  if (sessionStatus === 'loading' || !hasRefreshed) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="text-gsrp-orange animate-pulse">Checking access...</div>
       </div>
     );
+  }
+
+  if (accessDenied) {
+    return <AccessDenied roleId={accessDenied.roleId} />;
+  }
+
+  if (!session || !canAccessHandbook(effectiveSession)) {
+    return <AccessDenied roleId="1372476380096237609" />;
   }
 
   const activeChapter = HANDBOOK_CONTENT.find(c => c.id === activeChapterId) || HANDBOOK_CONTENT[0];

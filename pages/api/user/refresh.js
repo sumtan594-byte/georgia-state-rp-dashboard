@@ -54,6 +54,10 @@ export default async function handler(req, res) {
         displayRole = role.name;
         break;
       }
+
+      const discordRoles = allRoles.filter(r => roles.includes(r.id)).map(r => ({ id: r.id, name: r.name }));
+    } else {
+      var discordRoles = [];
     }
 
     res.setHeader('Cache-Control', 'no-store, max-age=0');
@@ -73,6 +77,7 @@ export default async function handler(req, res) {
       roles,
       displayRole,
       isAdmin: isAdminUser,
+      discordRoles: typeof discordRoles !== 'undefined' ? discordRoles : [],
     });
   } catch (err) {
     console.error('[user/refresh] Error:', err.message);

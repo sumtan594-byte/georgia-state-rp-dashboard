@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useSession } from 'next-auth/react';
-import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import { ROLES, hasRole } from '../../lib/auth';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../lib/auth-options';
+import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import AccessDenied from '../../components/auth/AccessDenied';
 import {
   Server, Users, Activity, Clock, Loader2, RefreshCw,
   TrendingUp, TrendingDown, Minus, UserCheck, ListOrdered,
@@ -34,7 +35,7 @@ function saveHistory(history) {
 
 export default function ServerStatsPage() {
   const { status } = useSession();
-  const { refreshedUser } = useRefreshedUser();
+  const { refreshedUser, hasRefreshed, accessDenied } = useRefreshedUser();
   const [stats, setStats] = useState(null);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -83,7 +84,7 @@ export default function ServerStatsPage() {
     setRefreshing(false);
   };
 
-  if (status === 'loading' || loading) {
+  if (status === 'loading' || !hasRefreshed || loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
@@ -91,14 +92,12 @@ export default function ServerStatsPage() {
     );
   }
 
+  if (accessDenied) {
+    return <AccessDenied roleId={accessDenied.roleId} />;
+  }
+
   if (!canAccess) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <Server className="w-12 h-12 text-gray-500 mb-4" />
-        <h2 className="text-xl font-semibold text-white mb-2">Access Denied</h2>
-        <p className="text-gray-400">Panel access required.</p>
-      </div>
-    );
+    return <AccessDenied roleId="1372476381115453550" />;
   }
 
   const currentPlayers = stats?.playerCount ?? 0;

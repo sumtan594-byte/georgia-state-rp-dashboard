@@ -10,7 +10,7 @@ import { useRefreshedUser } from '../lib/UserRefreshContext';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
-  const { session: refreshedSession } = useRefreshedUser();
+  const { session: refreshedSession, hasRefreshed } = useRefreshedUser();
   const effectiveSession = refreshedSession || session;
   const [stats, setStats] = useState({ transcripts: 0, players: 0, online: false });
   const [statsLoading, setStatsLoading] = useState(true);
@@ -32,7 +32,7 @@ export default function Dashboard() {
   }, [session]);
 
 
-  if (status === 'loading') {
+  if (status === 'loading' || !hasRefreshed) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center">

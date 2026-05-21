@@ -1,6 +1,5 @@
 import { useSession } from 'next-auth/react';
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter } from 'next/router';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {
@@ -12,6 +11,7 @@ import PlayerList from '../../components/panel/PlayerList';
 import InfoPanel from '../../components/panel/InfoPanel';
 import CommandBar from '../../components/panel/CommandBar';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import AccessDenied from '../../components/auth/AccessDenied';
 
 const LiveMap = dynamic(() => import('../../components/panel/LiveMap'), { ssr: false });
 
@@ -35,8 +35,7 @@ const NKZ_ROLE_ID = '1372468936867708988';
 
 export default function PanelPage() {
   const { data: session, status } = useSession();
-  const { session: refreshedSession } = useRefreshedUser();
-  const router = useRouter();
+  const { session: refreshedSession, hasRefreshed, accessDenied } = useRefreshedUser();
   const effectiveSession = refreshedSession || session;
   const [data, setData] = useState(null);
   const [live, setLive] = useState(true);
@@ -112,7 +111,7 @@ export default function PanelPage() {
     return res;
   }, []);
 
-  if (status === 'loading') {
+  if (status === 'loading' || !hasRefreshed) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center">
@@ -124,6 +123,10 @@ export default function PanelPage() {
   }
 
   if (!session) return <LoginScreen />;
+
+  if (accessDenied) {
+    return <AccessDenied roleId={accessDenied.roleId} />;
+  }
 
   return (
     <div className="h-full flex flex-col">

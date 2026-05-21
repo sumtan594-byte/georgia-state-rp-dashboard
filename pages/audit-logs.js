@@ -4,6 +4,7 @@ import { useRefreshedUser } from '../lib/UserRefreshContext';
 import { Shield, UserPlus, UserMinus, FileCheck, FileX, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../lib/auth-options';
+import AccessDenied from '../components/auth/AccessDenied';
 
 const ACTION_LABELS = {
   admin_add: { label: 'Admin Added', icon: UserPlus, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
@@ -14,7 +15,7 @@ const ACTION_LABELS = {
 
 export default function AuditLogsPage() {
   const { status } = useSession();
-  const { refreshedUser } = useRefreshedUser();
+  const { refreshedUser, hasRefreshed, accessDenied } = useRefreshedUser();
   const [logs, setLogs] = useState([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(0);
@@ -26,6 +27,10 @@ export default function AuditLogsPage() {
 
   useEffect(() => {
     if (status === 'loading') return;
+    if (!hasRefreshed || accessDenied) {
+      setLoading(false);
+      return;
+    }
     if (!isAdmin) {
       setLoading(false);
       return;
@@ -44,9 +49,9 @@ export default function AuditLogsPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [status, isAdmin, page, filter]);
+  }, [status, hasRefreshed, accessDenied, isAdmin, page, filter]);
 
-  if (status === 'loading') {
+  if (status === 'loading' || !hasRefreshed) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
@@ -54,14 +59,12 @@ export default function AuditLogsPage() {
     );
   }
 
+  if (accessDenied) {
+    return <AccessDenied roleId={accessDenied.roleId} />;
+  }
+
   if (!isAdmin) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <Shield className="w-12 h-12 text-gray-500 mb-4" />
-        <h2 className="text-xl font-semibold text-white mb-2">Access Denied</h2>
-        <p className="text-gray-400">You do not have permission to view audit logs.</p>
-      </div>
-    );
+    return <AccessDenied roleId="ADMIN" />;
   }
 
   const totalPages = Math.ceil(total / pageSize);

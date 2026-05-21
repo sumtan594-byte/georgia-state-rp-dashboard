@@ -1,13 +1,17 @@
 import { useSession, signOut } from 'next-auth/react';
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { Loader2, ExternalLink } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useRouter } from 'next/router';
 import LoginScreen from '../../components/auth/LoginScreen';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../lib/auth-options';
+import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import AccessDenied from '../../components/auth/AccessDenied';
 
 export default function TrainingPage() {
   const { data: session, status } = useSession();
+  const { session: refreshedSession, hasRefreshed, accessDenied } = useRefreshedUser();
+  const effectiveSession = refreshedSession || session;
   const [loaded, setLoaded] = useState(false);
   const [progressChecked, setProgressChecked] = useState(false);
   const [checkingProgress, setCheckingProgress] = useState(true);
@@ -16,8 +20,11 @@ export default function TrainingPage() {
   const router = useRouter();
 
   useEffect(() => {
+    if (status === 'unauthenticated') return;
+    if (!hasRefreshed || !effectiveSession) return;
+    if (accessDenied) return;
+
     async function checkProgress() {
-      if (!session) return;
       try {
         const res = await fetch('/api/training/progress');
         const data = await res.json();
@@ -28,15 +35,13 @@ export default function TrainingPage() {
         }
       } catch (e) {
         console.error('Progress check failed', e);
-        // Default to allow if API fails? Or block? 
-        // Let's block to be safe.
         router.push('/training/handbook');
       } finally {
         setCheckingProgress(false);
       }
     }
     checkProgress();
-  }, [session, router]);
+  }, [status, hasRefreshed, effectiveSession, accessDenied, router]);
 
   const sendSessionToIframe = useCallback(() => {
     if (iframeRef.current && session && !sessionSent.current) {
@@ -70,7 +75,7 @@ export default function TrainingPage() {
     }
   }, [loaded, session, sendSessionToIframe]);
 
-  if (status === 'loading' || checkingProgress) {
+  if (status === 'loading' || checkingProgress || !hasRefreshed) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center">
@@ -82,6 +87,10 @@ export default function TrainingPage() {
   }
 
   if (!session) return <LoginScreen />;
+
+  if (accessDenied) {
+    return <AccessDenied roleId={accessDenied.roleId} />;
+  }
 
   return (
     <div className="w-full h-[calc(100vh-60px)] rounded-2xl overflow-hidden border border-gsrp-dark-border/50 animate-scale-in">

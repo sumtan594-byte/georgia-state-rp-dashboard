@@ -18,13 +18,14 @@ import {
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import AccessDenied from '../../components/auth/AccessDenied';
 import { useToast } from '../../lib/ToastContext';
 import LoginScreen from '../../components/auth/LoginScreen';
 import { useRouter } from 'next/router';
 
 export default function ManageApplicationTypes() {
   const { data: session, status } = useSession();
-  const { session: refreshedSession } = useRefreshedUser();
+  const { session: refreshedSession, hasRefreshed, accessDenied } = useRefreshedUser();
   const { addToast } = useToast();
   const effectiveSession = refreshedSession || session;
   const [types, setTypes] = useState([]);
@@ -49,10 +50,11 @@ export default function ManageApplicationTypes() {
   });
 
   useEffect(() => {
-    if (session && canReviewApplications(effectiveSession)) {
-      fetch('/api/applications/types')
-        .then(r => r.json())
-        .then(data => {
+    if (status !== 'authenticated') return;
+    if (!hasRefreshed || !canReviewApplications(effectiveSession)) return;
+    fetch('/api/applications/types')
+      .then(r => r.json())
+      .then(data => {
           // If no staff app exists, add the default one so it can be edited
           const hasStaff = data.find(t => t.slug === 'staff');
           if (!hasStaff) {
@@ -92,8 +94,7 @@ export default function ManageApplicationTypes() {
       fetch('/api/applications/roles')
         .then(r => r.ok ? r.json() : [])
         .then(data => setServerRoles(data));
-    }
-  }, [session]);
+  }, [status, hasRefreshed, effectiveSession]);
 
   const hasChanges = editingType && JSON.stringify(form) !== JSON.stringify(originalForm);
 
@@ -254,9 +255,10 @@ export default function ManageApplicationTypes() {
     });
   };
 
-  if (status === 'loading') return null;
+  if (status === 'loading' || !hasRefreshed) return null;
   if (!session) return <LoginScreen />;
-  if (!canReviewApplications(effectiveSession)) return <div>Access Denied</div>;
+  if (accessDenied) return <AccessDenied roleId={accessDenied.roleId} />;
+  if (!canReviewApplications(effectiveSession)) return <AccessDenied roleId="1372491512709124106" />;
 
   return (
     <div className={`max-w-6xl mx-auto py-12 px-6 transition-transform duration-500 ${isShaking ? 'animate-shake' : ''}`}>

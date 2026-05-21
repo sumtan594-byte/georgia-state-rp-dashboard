@@ -4,10 +4,11 @@ import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import { BarChart3, Users, CheckCircle, XCircle, Clock, TrendingUp, Loader2, Award } from 'lucide-react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../lib/auth-options';
+import AccessDenied from '../../components/auth/AccessDenied';
 
 export default function QuizAnalyticsPage() {
   const { status } = useSession();
-  const { refreshedUser } = useRefreshedUser();
+  const { refreshedUser, hasRefreshed, accessDenied } = useRefreshedUser();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -17,7 +18,12 @@ export default function QuizAnalyticsPage() {
   const canView = isTrainer || isAdmin;
 
   useEffect(() => {
-    if (status === 'loading' || !canView) {
+    if (status === 'loading') return;
+    if (!hasRefreshed || accessDenied) {
+      setLoading(false);
+      return;
+    }
+    if (!canView) {
       setLoading(false);
       return;
     }
@@ -29,9 +35,9 @@ export default function QuizAnalyticsPage() {
         setLoading(false);
       })
       .catch(() => setLoading(false));
-  }, [status, canView]);
+  }, [status, hasRefreshed, accessDenied, canView]);
 
-  if (status === 'loading' || loading) {
+  if (status === 'loading' || !hasRefreshed || loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
@@ -39,14 +45,12 @@ export default function QuizAnalyticsPage() {
     );
   }
 
+  if (accessDenied) {
+    return <AccessDenied roleId={accessDenied.roleId} />;
+  }
+
   if (!canView) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center">
-        <BarChart3 className="w-12 h-12 text-gray-500 mb-4" />
-        <h2 className="text-xl font-semibold text-white mb-2">Access Denied</h2>
-        <p className="text-gray-400">Trainer access required to view analytics.</p>
-      </div>
-    );
+    return <AccessDenied roleId={TRAINER_ROLE} />;
   }
 
   if (!stats) {

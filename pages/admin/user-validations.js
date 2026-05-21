@@ -3,6 +3,8 @@ import { useSession } from 'next-auth/react';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../lib/auth-options';
 import LoginScreen from '../../components/auth/LoginScreen';
+import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import AccessDenied from '../../components/auth/AccessDenied';
 import {
   Users, Search, Loader2, BookOpen, FileText, Clock, CheckCircle, XCircle,
   RefreshCw, Shield, ChevronDown, ChevronRight, AlertTriangle, Eye,
@@ -11,6 +13,7 @@ import {
 
 export default function UserValidationsPage() {
   const { data: session, status } = useSession();
+  const { refreshedUser, hasRefreshed, accessDenied } = useRefreshedUser();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -20,8 +23,10 @@ export default function UserValidationsPage() {
   const [toast, setToast] = useState(null);
 
   useEffect(() => {
+    if (status === 'unauthenticated') return;
+    if (!hasRefreshed || accessDenied) return;
     fetchUsers();
-  }, []);
+  }, [status, hasRefreshed, accessDenied]);
 
   async function fetchUsers() {
     setLoading(true);
@@ -82,7 +87,7 @@ export default function UserValidationsPage() {
     return matchesSearch;
   });
 
-  if (status === 'loading') {
+  if (status === 'loading' || !hasRefreshed) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
@@ -91,6 +96,14 @@ export default function UserValidationsPage() {
   }
 
   if (!session) return <LoginScreen />;
+
+  if (accessDenied) {
+    return <AccessDenied roleId={accessDenied.roleId} />;
+  }
+
+  if (!refreshedUser?.isAdmin) {
+    return <AccessDenied roleId="ADMIN" />;
+  }
 
   return (
     <div className="max-w-7xl mx-auto">

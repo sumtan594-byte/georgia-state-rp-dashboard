@@ -1,17 +1,16 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/router';
 import { ShieldCheck, Loader2, Trash2, Plus, X, Users, AlertCircle } from 'lucide-react';
 import { canManageAdmins } from '../lib/auth';
 import { useRefreshedUser } from '../lib/UserRefreshContext';
+import AccessDenied from '../components/auth/AccessDenied';
 import LoginScreen from '../components/auth/LoginScreen';
 
 export default function AdminsPage() {
   const { data: session, status } = useSession();
-  const { session: refreshedSession } = useRefreshedUser();
+  const { session: refreshedSession, hasRefreshed, accessDenied } = useRefreshedUser();
   const effectiveSession = refreshedSession || session;
-  const router = useRouter();
 
   const [admins, setAdmins] = useState([]);
   const [envAdmins, setEnvAdmins] = useState([]);
@@ -33,7 +32,6 @@ export default function AdminsPage() {
       } else {
         const body = await res.json();
         setError(body.error || 'Failed to fetch');
-        if (res.status === 403) router.push('/');
       }
     } catch {
       setError('Network error');
@@ -43,12 +41,9 @@ export default function AdminsPage() {
 
   useEffect(() => {
     if (status !== 'authenticated') return;
-    if (!canManageAdmins(effectiveSession)) {
-      router.push('/');
-      return;
-    }
+    if (!hasRefreshed) return;
     fetchAdmins();
-  }, [status]);
+  }, [status, hasRefreshed]);
 
   const handleAdd = async () => {
     if (!newUserId.trim()) return;
@@ -98,8 +93,16 @@ export default function AdminsPage() {
     }
   };
 
-  if (status === 'loading') return null;
+  if (status === 'loading' || !hasRefreshed) return null;
   if (!session) return <LoginScreen />;
+
+  if (accessDenied) {
+    return <AccessDenied roleId={accessDenied.roleId} />;
+  }
+
+  if (!canManageAdmins(effectiveSession)) {
+    return <AccessDenied roleId="1486826723210428496" />;
+  }
 
   return (
     <div className="max-w-3xl mx-auto animate-fade-in-up">

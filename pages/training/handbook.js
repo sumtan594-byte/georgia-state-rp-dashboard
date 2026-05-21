@@ -4,6 +4,8 @@ import { useRouter } from 'next/router';
 import { Loader2, BookOpen, ArrowLeft, CheckCircle2, Circle } from 'lucide-react';
 import Link from 'next/link';
 import LoginScreen from '../../components/auth/LoginScreen';
+import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import AccessDenied from '../../components/auth/AccessDenied';
 
 const sections = [
   { id: 'overview', num: 'Overview', title: 'GSRP Staff Handbook' },
@@ -164,6 +166,8 @@ Appeal Windows:
 
   export default function HandbookPage() {
   const { data: session, status } = useSession();
+  const { session: refreshedSession, hasRefreshed, accessDenied } = useRefreshedUser();
+  const effectiveSession = refreshedSession || session;
   const router = useRouter();
   const [activeSection, setActiveSection] = useState('overview');
   const [progress, setProgress] = useState({ completedSections: [], handbookCompleted: false });
@@ -171,6 +175,8 @@ Appeal Windows:
   const [showCompletion, setShowCompletion] = useState(false);
 
   useEffect(() => {
+    if (status === 'unauthenticated') return;
+    if (!hasRefreshed || accessDenied) return;
     async function fetchProgress() {
       try {
         const res = await fetch('/api/training/progress');
@@ -182,11 +188,11 @@ Appeal Windows:
         setLoadingProgress(false);
       }
     }
-    if (session) fetchProgress();
-  }, [session]);
+    if (effectiveSession) fetchProgress();
+  }, [status, hasRefreshed, accessDenied, effectiveSession]);
 
   const toggleSection = async (sectionId) => {
-    if (!session?.user?.roles?.includes('1372476380096237609')) return;
+    if (!effectiveSession?.user?.roles?.includes('1372476380096237609')) return;
     try {
       const res = await fetch('/api/training/progress', {
         method: 'POST',
@@ -230,7 +236,7 @@ Appeal Windows:
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  if (status === 'loading') {
+  if (status === 'loading' || !hasRefreshed) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
         <div className="flex flex-col items-center">
@@ -242,6 +248,14 @@ Appeal Windows:
   }
 
   if (!session) return <LoginScreen />;
+
+  if (accessDenied) {
+    return <AccessDenied roleId={accessDenied.roleId} />;
+  }
+
+  if (!effectiveSession?.user?.roles?.includes('1372476380096237609') && !effectiveSession?.user?.isAdmin) {
+    return <AccessDenied roleId="1372476380096237609" />;
+  }
 
   const section = handbookContent[activeSection];
 
@@ -328,8 +342,8 @@ Appeal Windows:
             if (!content) return null;
             return (
                <div key={s.id} id={'hb-' + s.id} className="card-glass rounded-2xl p-6 scroll-mt-24 relative group">
-                 <div className="absolute top-4 right-4 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                   {session?.user?.roles?.includes('1372476380096237609') && (
+                  <div className="absolute top-4 right-4 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    {effectiveSession?.user?.roles?.includes('1372476380096237609') && (
                      <button
                        onClick={() => toggleSection(s.id)}
                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${
