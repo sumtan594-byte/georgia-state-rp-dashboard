@@ -174,15 +174,17 @@ export default function TrainingPage() {
           </div>
           <h2 className="text-3xl font-black text-white mb-2">Training Complete!</h2>
           <p className="text-gsrp-teal-light/50 text-sm mb-6">
-            You have passed the SSD Training Quiz and may now apply for staff positions.
+            You have passed the SSD Training Quiz. Next, request a Ridealong training session.
           </p>
           <div className="flex gap-3">
-            <button
-              onClick={() => router.push('/apply')}
-              className="flex-1 px-5 py-3 bg-gsrp-orange text-white rounded-xl font-bold text-sm hover:bg-gsrp-orange/90 transition-all cursor-pointer"
+            <a
+              href="https://discord.com/channels/1366688107788894280/1448577067607130183"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 px-5 py-3 bg-gsrp-orange text-white rounded-xl font-bold text-sm hover:bg-gsrp-orange/90 transition-all cursor-pointer flex items-center justify-center gap-2"
             >
-              Apply for Staff
-            </button>
+              Request Ridealong
+            </a>
             <button
               onClick={() => router.push('/')}
               className="flex-1 px-5 py-3 bg-gsrp-dark-surface border border-gsrp-dark-border rounded-xl text-gsrp-teal-light/60 font-bold text-sm hover:border-gsrp-teal/30 transition-all cursor-pointer"
@@ -228,13 +230,23 @@ export default function TrainingPage() {
               and study the custom commands.
             </p>
           </div>
-          <button
-            onClick={() => router.push('/training/handbook')}
-            className="w-full px-5 py-3 bg-gsrp-dark-surface border border-gsrp-dark-border rounded-xl text-gsrp-teal-light/60 font-bold text-sm hover:border-gsrp-teal/30 transition-all cursor-pointer flex items-center justify-center gap-2"
-          >
-            <BookOpen size={16} />
-            Review Handbook
-          </button>
+          <div className="flex gap-3">
+            <button
+              onClick={() => router.push('/training/handbook')}
+              className="flex-1 px-5 py-3 bg-gsrp-dark-surface border border-gsrp-dark-border rounded-xl text-gsrp-teal-light/60 font-bold text-sm hover:border-gsrp-teal/30 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              <BookOpen size={16} />
+              Review Handbook
+            </button>
+            <a
+              href="https://discord.com/channels/1366688107788894280/1448577067607130183"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex-1 px-5 py-3 bg-gsrp-teal/10 border border-gsrp-teal/30 rounded-xl text-gsrp-teal-light font-bold text-sm hover:bg-gsrp-teal/20 transition-all cursor-pointer flex items-center justify-center gap-2"
+            >
+              Request Ridealong
+            </a>
+          </div>
         </div>
       </div>
     );
