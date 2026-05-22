@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
 import { sendComponentsV2 } from "../../../lib/discord-v2";
 import { rateLimit } from '../../../lib/rate-limiter';
+import { invalidateAppListCache } from './list';
 
 const MAX_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
@@ -81,6 +82,7 @@ export default async function handler(req, res) {
       await db.collection("applications").deleteOne({ _id: existingPending._id });
     }
 
+    invalidateAppListCache();
     console.log('[Application API] New submission:', session.user.name, '|', application.typeName, '|', Object.keys(application.answers).length, 'fields');
 
     const sanitizedMonitoring = sanitizeMonitoringData(application.monitoringData);

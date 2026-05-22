@@ -4,7 +4,11 @@ import { authOptions } from "../../../lib/auth-options";
 import { canReviewApplications } from "../../../lib/auth";
 
 const listCache = { data: null, ts: 0 };
-const CACHE_TTL = 15000;
+const CACHE_TTL = 2000;
+
+export function invalidateAppListCache() {
+  listCache.ts = 0;
+}
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
