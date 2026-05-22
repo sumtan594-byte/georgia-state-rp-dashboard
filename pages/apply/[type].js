@@ -165,14 +165,17 @@ function loadDraft(userId, typeSlug) {
   try {
     const key = getDraftKey(userId, typeSlug);
     const raw = localStorage.getItem(key);
-    if (!raw) return null;
+    if (!raw) { console.log('[Draft] loadDraft: no data for', key); return null; }
     const draft = JSON.parse(raw);
     if (draft.expiresAt && Date.now() > draft.expiresAt) {
+      console.log('[Draft] loadDraft: expired, removing', key);
       localStorage.removeItem(key);
       return null;
     }
+    console.log('[Draft] loadDraft: restored', Object.keys(draft.answers || {}).length, 'fields from', key);
     return draft;
-  } catch {
+  } catch (e) {
+    console.error('[Draft] loadDraft error:', e);
     return null;
   }
 }
@@ -186,15 +189,20 @@ function saveDraft(userId, typeSlug, answers) {
       expiresAt: Date.now() + 5 * 60 * 60 * 1000,
     };
     localStorage.setItem(key, JSON.stringify(draft));
-  } catch {
+    console.log('[Draft] saveDraft: saved', Object.keys(answers).length, 'fields to', key);
+  } catch (e) {
+    console.error('[Draft] saveDraft error:', e);
   }
 }
 
 function clearDraft(userId, typeSlug) {
   try {
     const key = getDraftKey(userId, typeSlug);
+    const before = localStorage.getItem(key);
     localStorage.removeItem(key);
-  } catch {
+    console.log('[Draft] clearDraft: removed', key, '| existed:', !!before);
+  } catch (e) {
+    console.error('[Draft] clearDraft error:', e);
   }
 }
 
@@ -252,6 +260,7 @@ export default function DynamicApplyPage() {
   const [validationErrors, setValidationErrors] = useState({});
   const [draftRestored, setDraftRestored] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
+  const submitSuccessRef = useRef(false);
   
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({});
@@ -335,9 +344,13 @@ export default function DynamicApplyPage() {
   }, [session, typeSlug, appType]);
 
   useEffect(() => {
+    submitSuccessRef.current = success;
+  }, [success]);
+
+  useEffect(() => {
     if (!session || !typeSlug || success) return;
     const interval = setInterval(() => {
-      if (Object.keys(answersRef.current).length > 0) {
+      if (Object.keys(answersRef.current).length > 0 && !submitSuccessRef.current) {
         saveDraft(session.user.id, typeSlug, answersRef.current);
       }
     }, AUTO_SAVE_INTERVAL);
@@ -748,9 +761,10 @@ export default function DynamicApplyPage() {
 
         const result = await res.json();
         console.log('[Application] Submit successful, ID:', result.id);
+        submitSuccessRef.current = true;
+        answersRef.current = {};
         if (session && typeSlug) {
           clearDraft(session.user.id, typeSlug);
-          console.log('[Application] Draft cleared');
         }
         setSuccess(true);
         return;
