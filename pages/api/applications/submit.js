@@ -50,7 +50,11 @@ export default async function handler(req, res) {
       chunks.push(chunk);
     }
     if (chunks.length === 0) {
-      console.error('[Application API] Empty body');
+      const ua = req.headers['user-agent'] || 'unknown';
+      const origin = req.headers['origin'] || 'unknown';
+      const referer = req.headers['referer'] || 'unknown';
+      const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
+      console.error('[Application API] Empty body from', session.user?.id || 'no-session', 'ua:', ua, 'ref:', referer);
       return res.status(400).json({ message: 'Request body is empty' });
     }
     const rawBody = Buffer.concat(chunks);
