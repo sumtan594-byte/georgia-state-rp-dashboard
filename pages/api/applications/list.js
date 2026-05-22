@@ -3,6 +3,9 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
 import { canReviewApplications } from "../../../lib/auth";
 
+const listCache = { data: null, ts: 0 };
+const CACHE_TTL = 15000;
+
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session || !canReviewApplications(session)) {
@@ -10,6 +13,10 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (Date.now() - listCache.ts < CACHE_TTL && listCache.data) {
+      return res.status(200).json(listCache.data);
+    }
+
     const client = await clientPromise;
     const db = client.db("gsrp_staff");
     
@@ -18,7 +25,8 @@ export default async function handler(req, res) {
       .sort({ submittedAt: -1 })
       .toArray();
 
-    console.log('[Application List] GET:', applications.length, 'applications | by', session.user.name);
+    listCache.data = applications;
+    listCache.ts = Date.now();
     return res.status(200).json(applications);
   } catch (error) {
     console.error('[Application List Error]', error);
