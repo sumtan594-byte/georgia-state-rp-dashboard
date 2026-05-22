@@ -183,7 +183,7 @@ function saveDraft(userId, typeSlug, answers) {
     const draft = {
       answers,
       savedAt: Date.now(),
-      expiresAt: Date.now() + 7 * 24 * 60 * 60 * 1000,
+      expiresAt: Date.now() + 5 * 60 * 60 * 1000,
     };
     localStorage.setItem(key, JSON.stringify(draft));
   } catch {
