@@ -676,6 +676,16 @@ export default function DynamicApplyPage() {
     setValidationErrors({});
     console.log('[Application] All fields valid, sending to server...');
 
+    function truncateArrays(obj, maxLen = 50) {
+      if (!obj || typeof obj !== 'object') return obj;
+      if (Array.isArray(obj)) return obj.slice(-maxLen);
+      const result = {};
+      for (const [k, v] of Object.entries(obj)) {
+        result[k] = truncateArrays(v, maxLen);
+      }
+      return result;
+    }
+
     const data = {
       type: appType.slug,
       typeName: appType.name,
@@ -683,11 +693,11 @@ export default function DynamicApplyPage() {
       userId: session.user.id,
       userImage: session.user.image,
       answers: answersRef.current,
-      keystrokeData: keystrokesRef.current,
-      pasteData: pastesRef.current,
-      monitoringData: monitoringDataRef.current,
-      sessionTabOuts: sessionTabOutsRef.current,
-      sessionMouseLeaves: sessionMouseLeavesRef.current,
+      keystrokeData: truncateArrays(keystrokesRef.current, 100),
+      pasteData: truncateArrays(pastesRef.current, 20),
+      monitoringData: truncateArrays(monitoringDataRef.current, 20),
+      sessionTabOuts: Array.isArray(sessionTabOutsRef.current) ? sessionTabOutsRef.current.slice(-50) : [],
+      sessionMouseLeaves: Array.isArray(sessionMouseLeavesRef.current) ? sessionMouseLeavesRef.current.slice(-50) : [],
       userAgent: userAgent,
       osDetected: osDetected,
       submittedAt: new Date(),

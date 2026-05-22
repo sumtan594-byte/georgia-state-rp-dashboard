@@ -4,10 +4,12 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
 import { canReviewApplications } from "../../../lib/auth";
 
+const typesCache = { data: null, ts: 0 };
+const CACHE_TTL = 30000;
+
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   
-  // Only staff can manage types
   if (!session) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
@@ -16,8 +18,23 @@ export default async function handler(req, res) {
   const db = client.db("gsrp_staff");
 
   if (req.method === 'GET') {
+    if (Date.now() - typesCache.ts < CACHE_TTL && typesCache.data) {
+      const types = typesCache.data;
+      if (!canReviewApplications(session)) {
+        return res.status(200).json(types.map(t => ({
+          name: t.name,
+          slug: t.slug,
+          description: t.description,
+          requiredRole: t.requiredRole,
+          fields: t.fields,
+        })));
+      }
+      return res.status(200).json(types);
+    }
+
     const types = await db.collection("application_types").find({}).toArray();
-    console.log('[Application Types] GET:', types.length, 'types loaded');
+    typesCache.data = types;
+    typesCache.ts = Date.now();
     if (!canReviewApplications(session)) {
       return res.status(200).json(types.map(t => ({
         name: t.name,

@@ -55,11 +55,12 @@ export default async function handler(req, res) {
       return res.status(413).json({ message: 'Application too large' });
     }
 
+    const bodyStr = rawBody.toString();
     let application;
     try {
-      application = JSON.parse(rawBody.toString());
-    } catch {
-      console.error('[Application API] Invalid JSON body');
+      application = JSON.parse(bodyStr);
+    } catch (parseErr) {
+      console.error('[Application API] Invalid JSON body - size:', rawBody.length, 'first 200:', bodyStr.substring(0, 200));
       return res.status(400).json({ message: 'Invalid request body' });
     }
 

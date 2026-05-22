@@ -2,6 +2,27 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth-options';
 import clientPromise from '../../../lib/mongodb';
 
+const cache = new Map();
+const CACHE_TTL_MS = 30000;
+
+function getCached(key) {
+  const entry = cache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.ts > CACHE_TTL_MS) {
+    cache.delete(key);
+    return null;
+  }
+  return entry.data;
+}
+
+function setCached(key, data) {
+  if (cache.size > 500) {
+    const keys = [...cache.keys()].slice(0, 100);
+    keys.forEach(k => cache.delete(k));
+  }
+  cache.set(key, { data, ts: Date.now() });
+}
+
 async function getDbAdminIds() {
   try {
     const client = await clientPromise;
@@ -13,6 +34,38 @@ async function getDbAdminIds() {
   }
 }
 
+async function fetchGuildRoles() {
+  const cacheKey = 'guild_roles';
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  const res = await fetch(
+    `https://discord.com/api/guilds/${process.env.ALLOWED_GUILD_ID}/roles`,
+    { headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` } }
+  );
+
+  if (!res.ok) return null;
+  const roles = await res.json();
+  setCached(cacheKey, roles);
+  return roles;
+}
+
+async function fetchMember(userId) {
+  const cacheKey = `member_${userId}`;
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  const res = await fetch(
+    `https://discord.com/api/guilds/${process.env.ALLOWED_GUILD_ID}/members/${userId}`,
+    { headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` } }
+  );
+
+  if (!res.ok) return null;
+  const member = await res.json();
+  setCached(cacheKey, member);
+  return member;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -22,26 +75,20 @@ export default async function handler(req, res) {
   const userId = session.user.id;
 
   try {
-    const memberRes = await fetch(
-      `https://discord.com/api/guilds/${process.env.ALLOWED_GUILD_ID}/members/${userId}`,
-      { headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` } }
-    );
+    const [member, allRoles] = await Promise.all([
+      fetchMember(userId),
+      fetchGuildRoles(),
+    ]);
 
-    if (!memberRes.ok) {
+    if (!member) {
       return res.status(200).json({ error: 'Failed to fetch member', roles: [], displayRole: 'User' });
     }
 
-    const member = await memberRes.json();
     const roles = member.roles || [];
-
     let displayRole = 'User';
-    const rolesRes = await fetch(
-      `https://discord.com/api/guilds/${process.env.ALLOWED_GUILD_ID}/roles`,
-      { headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` } }
-    );
+    let discordRoles = [];
 
-    if (rolesRes.ok) {
-      const allRoles = await rolesRes.json();
+    if (allRoles) {
       const userRoles = allRoles.filter(r => roles.includes(r.id));
       userRoles.sort((a, b) => b.position - a.position);
 
@@ -55,9 +102,7 @@ export default async function handler(req, res) {
         break;
       }
 
-      const discordRoles = allRoles.filter(r => roles.includes(r.id)).map(r => ({ id: r.id, name: r.name }));
-    } else {
-      var discordRoles = [];
+      discordRoles = allRoles.filter(r => roles.includes(r.id)).map(r => ({ id: r.id, name: r.name }));
     }
 
     res.setHeader('Cache-Control', 'no-store, max-age=0');
@@ -77,7 +122,7 @@ export default async function handler(req, res) {
       roles,
       displayRole,
       isAdmin: isAdminUser,
-      discordRoles: typeof discordRoles !== 'undefined' ? discordRoles : [],
+      discordRoles,
     });
   } catch (err) {
     console.error('[user/refresh] Error:', err.message);
