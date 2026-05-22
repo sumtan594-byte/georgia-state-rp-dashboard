@@ -49,6 +49,10 @@ export default async function handler(req, res) {
     for await (const chunk of req) {
       chunks.push(chunk);
     }
+    if (chunks.length === 0) {
+      console.error('[Application API] Empty body');
+      return res.status(400).json({ message: 'Request body is empty' });
+    }
     const rawBody = Buffer.concat(chunks);
     if (rawBody.length > MAX_PAYLOAD_SIZE) {
       console.error('[Application API] Payload too large after read:', rawBody.length);

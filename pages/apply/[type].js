@@ -315,6 +315,7 @@ export default function DynamicApplyPage() {
     const draft = loadDraft(session.user.id, typeSlug);
     if (draft && draft.answers && Object.keys(draft.answers).length > 0) {
       console.log('[Application] Draft restored:', Object.keys(draft.answers).length, 'fields');
+      answersRef.current = draft.answers;
       setAnswers(draft.answers);
       setDraftRestored(true);
       setTimeout(() => setDraftRestored(false), 4000);
@@ -631,7 +632,8 @@ export default function DynamicApplyPage() {
       fieldChunks.push(appType.fields.slice(i, i + 4));
     }
     const currentFields = fieldChunks[step - 1] || [];
-    const missing = validateStepFields(currentFields, answers);
+    const currentAnswers = answersRef.current;
+    const missing = validateStepFields(currentFields, currentAnswers);
     if (missing.length > 0) {
       setValidationErrors(prev => {
         const next = { ...prev };
@@ -648,7 +650,7 @@ export default function DynamicApplyPage() {
     setError(null);
     console.log('[Application] Submit started');
 
-    const missing = validateRequiredFields(appType.fields, answers);
+    const missing = validateRequiredFields(appType.fields, answersRef.current);
     if (missing.length > 0) {
       const fieldLabels = missing.map(id => {
         const f = appType.fields.find(x => x.id === id);
@@ -831,7 +833,9 @@ export default function DynamicApplyPage() {
                   value={answers[field.id] || ''} 
                   trackEvent={trackEvent}
                   onChange={(e) => {
-                    setAnswers({...answers, [field.id]: e.target.value});
+                    const val = e.target.value;
+                    answersRef.current = { ...answersRef.current, [field.id]: val };
+                    setAnswers(answersRef.current);
                     if (validationErrors[field.id]) {
                       setValidationErrors(prev => {
                         const next = { ...prev };
@@ -848,7 +852,8 @@ export default function DynamicApplyPage() {
                   options={field.options} 
                   value={answers[field.id]} 
                   onChange={(val) => {
-                    setAnswers({...answers, [field.id]: val});
+                    answersRef.current = { ...answersRef.current, [field.id]: val };
+                    setAnswers(answersRef.current);
                     if (validationErrors[field.id]) {
                       setValidationErrors(prev => {
                         const next = { ...prev };
@@ -864,7 +869,8 @@ export default function DynamicApplyPage() {
                   options={field.options} 
                   value={answers[field.id]} 
                   onChange={(val) => {
-                    setAnswers({...answers, [field.id]: val});
+                    answersRef.current = { ...answersRef.current, [field.id]: val };
+                    setAnswers(answersRef.current);
                     if (validationErrors[field.id]) {
                       setValidationErrors(prev => {
                         const next = { ...prev };
@@ -881,7 +887,10 @@ export default function DynamicApplyPage() {
                   max={field.max} 
                   cues={field.cues}
                   value={answers[field.id] || field.min || 0} 
-                  onChange={(val) => setAnswers({...answers, [field.id]: val})}
+                  onChange={(val) => {
+                    answersRef.current = { ...answersRef.current, [field.id]: val };
+                    setAnswers(answersRef.current);
+                  }}
                 />
               ) : (
                 <Input 
@@ -890,7 +899,9 @@ export default function DynamicApplyPage() {
                   value={answers[field.id] || ''} 
                   trackEvent={trackEvent}
                   onChange={(e) => {
-                    setAnswers({...answers, [field.id]: e.target.value});
+                    const val = e.target.value;
+                    answersRef.current = { ...answersRef.current, [field.id]: val };
+                    setAnswers(answersRef.current);
                     if (validationErrors[field.id]) {
                       setValidationErrors(prev => {
                         const next = { ...prev };
