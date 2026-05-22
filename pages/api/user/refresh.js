@@ -2,25 +2,41 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth-options';
 import clientPromise from '../../../lib/mongodb';
 
-const cache = new Map();
+const dataCache = new Map();
 const CACHE_TTL_MS = 30000;
 
 function getCached(key) {
-  const entry = cache.get(key);
+  const entry = dataCache.get(key);
   if (!entry) return null;
   if (Date.now() - entry.ts > CACHE_TTL_MS) {
-    cache.delete(key);
+    dataCache.delete(key);
     return null;
   }
-  return entry.data;
+  return entry;
 }
 
 function setCached(key, data) {
-  if (cache.size > 500) {
-    const keys = [...cache.keys()].slice(0, 100);
-    keys.forEach(k => cache.delete(k));
+  if (dataCache.size > 500) {
+    const keys = [...dataCache.keys()].slice(0, 100);
+    keys.forEach(k => dataCache.delete(k));
   }
-  cache.set(key, { data, ts: Date.now() });
+  dataCache.set(key, { data, ts: Date.now() });
+}
+
+function getRateLimit(res, status) {
+  const remaining = res.headers.get('X-RateLimit-Remaining');
+  const resetAfter = res.headers.get('X-RateLimit-Reset-After');
+  const retryAfter = res.headers.get('Retry-After');
+  const scope = res.headers.get('X-RateLimit-Scope');
+  const isGlobal = res.headers.get('X-RateLimit-Global');
+  return {
+    remaining: remaining !== null ? parseInt(remaining, 10) : null,
+    resetAfter: resetAfter !== null ? parseFloat(resetAfter) : null,
+    retryAfter: retryAfter !== null ? parseFloat(retryAfter) : null,
+    scope: scope || null,
+    isGlobal: isGlobal === 'true',
+    status,
+  };
 }
 
 async function getDbAdminIds() {
@@ -37,33 +53,37 @@ async function getDbAdminIds() {
 async function fetchGuildRoles() {
   const cacheKey = 'guild_roles';
   const cached = getCached(cacheKey);
-  if (cached) return cached;
+  if (cached) return { ...cached, cached: true, rateLimit: null };
 
   const res = await fetch(
     `https://discord.com/api/guilds/${process.env.ALLOWED_GUILD_ID}/roles`,
     { headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` } }
   );
 
-  if (!res.ok) return null;
+  const rateLimit = getRateLimit(res, res.status);
+
+  if (!res.ok) return { data: null, cached: false, rateLimit };
   const roles = await res.json();
-  setCached(cacheKey, roles);
-  return roles;
+  setCached(cacheKey, roles, res.headers);
+  return { data: roles, cached: false, rateLimit };
 }
 
 async function fetchMember(userId) {
   const cacheKey = `member_${userId}`;
   const cached = getCached(cacheKey);
-  if (cached) return cached;
+  if (cached) return { ...cached, cached: true, rateLimit: null };
 
   const res = await fetch(
     `https://discord.com/api/guilds/${process.env.ALLOWED_GUILD_ID}/members/${userId}`,
     { headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` } }
   );
 
-  if (!res.ok) return null;
+  const rateLimit = getRateLimit(res, res.status);
+
+  if (!res.ok) return { data: null, cached: false, rateLimit };
   const member = await res.json();
-  setCached(cacheKey, member);
-  return member;
+  setCached(cacheKey, member, res.headers);
+  return { data: member, cached: false, rateLimit };
 }
 
 export default async function handler(req, res) {
@@ -75,13 +95,29 @@ export default async function handler(req, res) {
   const userId = session.user.id;
 
   try {
-    const [member, allRoles] = await Promise.all([
+    const [memberResult, rolesResult] = await Promise.all([
       fetchMember(userId),
       fetchGuildRoles(),
     ]);
 
+    const member = memberResult?.data || null;
+    const allRoles = rolesResult?.data || null;
+
+    const liveRateLimits = [memberResult.rateLimit, rolesResult.rateLimit].filter(Boolean);
+    const mostStrict = liveRateLimits.reduce((acc, rl) => {
+      if (!acc) return rl;
+      const accRem = acc.remaining ?? Infinity;
+      const rlRem = rl.remaining ?? Infinity;
+      return rlRem < accRem ? rl : acc;
+    }, null);
+
     if (!member) {
-      return res.status(200).json({ error: 'Failed to fetch member', roles: [], displayRole: 'User' });
+      return res.status(200).json({
+        error: 'Failed to fetch member',
+        roles: [],
+        displayRole: 'User',
+        _ratelimit: mostStrict ? { remaining: mostStrict.remaining, resetAfter: mostStrict.resetAfter } : null,
+      });
     }
 
     const roles = member.roles || [];
@@ -123,6 +159,7 @@ export default async function handler(req, res) {
       displayRole,
       isAdmin: isAdminUser,
       discordRoles,
+      _ratelimit: mostStrict ? { remaining: mostStrict.remaining, resetAfter: mostStrict.resetAfter } : null,
     });
   } catch (err) {
     console.error('[user/refresh] Error:', err.message);
