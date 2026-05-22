@@ -35,7 +35,11 @@ export default function TopBar({ onMenuClick }) {
             )}
           </div>
           <button
-            onClick={() => signOut({ callbackUrl: '/login' })}
+            onClick={async (e) => {
+              e.preventDefault();
+              await signOut({ redirect: false });
+              window.location.href = '/login';
+            }}
             className="p-2 rounded-lg hover:bg-gsrp-sunset/10 text-gsrp-teal-light/40 hover:text-gsrp-sunset transition-colors cursor-pointer"
             title="Sign Out"
           >
