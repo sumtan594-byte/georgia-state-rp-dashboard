@@ -77,8 +77,8 @@ export default async function handler(req, res) {
       status: 'pending',
     });
     if (existingPending) {
-      console.warn('[Application API] Duplicate pending application:', session.user.id, application.type);
-      return res.status(409).json({ message: 'You already have a pending application of this type.' });
+      console.log('[Application API] Replacing existing pending application:', existingPending._id, 'for', session.user.id);
+      await db.collection("applications").deleteOne({ _id: existingPending._id });
     }
 
     console.log('[Application API] New submission:', session.user.name, '|', application.typeName, '|', Object.keys(application.answers).length, 'fields');
