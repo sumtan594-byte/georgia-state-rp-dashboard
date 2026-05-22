@@ -317,7 +317,19 @@ export default function DynamicApplyPage() {
       console.log('[Application] Draft restored:', Object.keys(draft.answers).length, 'fields');
       answersRef.current = draft.answers;
       setAnswers(draft.answers);
+      setKeystrokes({});
+      keystrokesRef.current = {};
+      setPastes({});
+      pastesRef.current = {};
+      setMonitoringData({});
+      monitoringDataRef.current = {};
+      setSessionTabOuts([]);
+      sessionTabOutsRef.current = [];
+      setSessionMouseLeaves([]);
+      sessionMouseLeavesRef.current = [];
       setDraftRestored(true);
+      setValidationErrors({});
+      setStep(1);
       setTimeout(() => setDraftRestored(false), 4000);
     }
   }, [session, typeSlug, appType]);

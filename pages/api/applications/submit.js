@@ -39,36 +39,22 @@ export default async function handler(req, res) {
   }
 
   try {
-    const contentLength = parseInt(req.headers['content-length'] || '0', 10);
-    if (contentLength > MAX_PAYLOAD_SIZE) {
-      console.error('[Application API] Payload too large:', contentLength);
-      return res.status(413).json({ message: 'Application too large' });
-    }
-
-    const chunks = [];
-    for await (const chunk of req) {
-      chunks.push(chunk);
-    }
-    if (chunks.length === 0) {
-      const ua = req.headers['user-agent'] || 'unknown';
-      const origin = req.headers['origin'] || 'unknown';
-      const referer = req.headers['referer'] || 'unknown';
-      const ip = req.headers['x-forwarded-for'] || req.socket?.remoteAddress || 'unknown';
-      console.error('[Application API] Empty body from', session.user?.id || 'no-session', 'ua:', ua, 'ref:', referer);
+    if (!req.body || Object.keys(req.body).length === 0) {
+      console.error('[Application API] Empty body from', session.user.id, 'ua:', req.headers['user-agent'], 'ref:', req.headers['referer']);
       return res.status(400).json({ message: 'Request body is empty' });
     }
-    const rawBody = Buffer.concat(chunks);
-    if (rawBody.length > MAX_PAYLOAD_SIZE) {
-      console.error('[Application API] Payload too large after read:', rawBody.length);
+
+    const bodyStr = typeof req.body === 'string' ? req.body : JSON.stringify(req.body);
+    if (bodyStr.length > MAX_PAYLOAD_SIZE) {
+      console.error('[Application API] Payload too large:', bodyStr.length);
       return res.status(413).json({ message: 'Application too large' });
     }
 
-    const bodyStr = rawBody.toString();
     let application;
     try {
-      application = JSON.parse(bodyStr);
+      application = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     } catch (parseErr) {
-      console.error('[Application API] Invalid JSON body - size:', rawBody.length, 'first 200:', bodyStr.substring(0, 200));
+      console.error('[Application API] Invalid JSON body - first 200:', bodyStr.substring(0, 200));
       return res.status(400).json({ message: 'Invalid request body' });
     }
 
