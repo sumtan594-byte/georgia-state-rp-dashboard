@@ -705,15 +705,32 @@ export default function DynamicApplyPage() {
       submittedAt: new Date(),
     };
 
+    let bodyStr;
+    try {
+      bodyStr = JSON.stringify(data);
+    } catch (serializeErr) {
+      console.error('[Application] JSON.stringify failed:', serializeErr.message);
+      setError('Failed to prepare application data. Please try again.');
+      setIsSubmitting(false);
+      return;
+    }
+
+    if (!bodyStr || bodyStr === '{}' || bodyStr === '[]') {
+      console.error('[Application] Serialized body is empty or trivial');
+      setError('Application data is empty. Please fill in the fields.');
+      setIsSubmitting(false);
+      return;
+    }
+
     let lastError = null;
-    const maxRetries = 2;
+    const maxRetries = 1;
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
-        console.log(`[Application] Submit attempt ${attempt + 1}/${maxRetries + 1}`);
+        console.log(`[Application] Submit attempt ${attempt + 1}/${maxRetries + 1}`, 'body length:', bodyStr.length);
         const res = await fetchWithTimeout('/api/applications/submit', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(data),
+          body: bodyStr,
         }, 30000);
 
         if (!res.ok) {
