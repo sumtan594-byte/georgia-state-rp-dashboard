@@ -335,19 +335,14 @@ export default function DynamicApplyPage() {
   }, [session, typeSlug, appType]);
 
   useEffect(() => {
-    if (!session || !typeSlug) return;
+    if (!session || !typeSlug || success) return;
     const interval = setInterval(() => {
       if (Object.keys(answersRef.current).length > 0) {
         saveDraft(session.user.id, typeSlug, answersRef.current);
-        setLastSaved(new Date());
       }
     }, AUTO_SAVE_INTERVAL);
-    console.log('[Application] Auto-save started');
-    return () => {
-      clearInterval(interval);
-      console.log('[Application] Auto-save stopped');
-    };
-  }, [session, typeSlug]);
+    return () => clearInterval(interval);
+  }, [session, typeSlug, success]);
 
   useEffect(() => {
     const handleBeforeUnload = (e) => {
