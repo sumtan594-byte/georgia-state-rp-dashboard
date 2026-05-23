@@ -70,6 +70,7 @@ export default function Sidebar({ open, onToggle }) {
     ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null }] : []),
     ...(hasHandbook ? [{ href: '/staff-handbook', icon: BookOpen, label: 'Staff Handbook' }] : []),
     ...(hasTraining ? [{ href: '/training', icon: BookOpen, label: 'Training' }] : []),
+    ...(hasTraining ? [{ href: '/training/ridealong', icon: ShieldCheck, label: 'Ridealong' }] : []),
     ...(hasAttempts ? [{ href: '/training/attempts', icon: ClipboardList, label: 'Attempts' }] : []),
     { href: '/verify', icon: ShieldCheck, label: 'Verification' },
     { href: '/shop', icon: ShoppingCart, label: 'Store' },
@@ -147,8 +148,9 @@ export default function Sidebar({ open, onToggle }) {
               {[
                 ...(hasHandbook ? [{ href: '/staff-handbook', icon: BookOpen, label: 'Handbook' }] : []),
                 ...(hasTraining ? [{ href: '/training', icon: BookOpen, label: 'ssd quiz' }] : []),
-                 ...(hasAttempts ? [{ href: '/training/attempts', icon: ClipboardList, label: 'Attempts' }] : []),
-                 ...(hasAttempts ? [{ href: '/training/analytics', icon: BarChart3, label: 'Quiz Analytics' }] : []),
+                ...(hasTraining ? [{ href: '/training/ridealong', icon: ShieldCheck, label: 'Ridealong' }] : []),
+                ...(hasAttempts ? [{ href: '/training/attempts', icon: ClipboardList, label: 'Attempts' }] : []),
+                ...(hasAttempts ? [{ href: '/training/analytics', icon: BarChart3, label: 'Quiz Analytics' }] : []),
               ].map((item, idx) => (
                 <Link
                   key={item.href}

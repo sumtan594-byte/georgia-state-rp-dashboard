@@ -1,0 +1,348 @@
+import { useSession } from 'next-auth/react'
+import { useEffect, useState, useCallback, useRef } from 'react'
+import { Loader2, Shield, AlertTriangle, RotateCcw, ChevronRight, BookOpen } from 'lucide-react'
+import { useRouter } from 'next/router'
+import LoginScreen from '../../../components/auth/LoginScreen'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '../../../lib/auth-options'
+import { useRefreshedUser } from '../../../lib/UserRefreshContext'
+import AccessDenied from '../../../components/auth/AccessDenied'
+import RidealongEngine from '../../../components/training/RidealongEngine'
+import { SCENARIO_BANK } from '../../../lib/ridealong-scenarios'
+import { RIDEALONG_CONFIG } from '../../../lib/ridealong-config'
+
+function shuffleArray(arr) {
+  const a = [...arr]
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[a[i], a[j]] = [a[j], a[i]]
+  }
+  return a
+}
+
+function drawScenarios() {
+  const shuffled = shuffleArray(SCENARIO_BANK)
+  return shuffled.slice(0, RIDEALONG_CONFIG.TOTAL_SCENARIOS)
+}
+
+export default function RidealongPage() {
+  const { data: session, status } = useSession()
+  const { session: refreshedSession, hasRefreshed, accessDenied } = useRefreshedUser()
+  const effectiveSession = refreshedSession || session
+  const router = useRouter()
+
+  const [checkingAccess, setCheckingAccess] = useState(true)
+  const [quizPassed, setQuizPassed] = useState(false)
+  const [ridealongPassed, setRidealongPassed] = useState(false)
+  const [showStart, setShowStart] = useState(false)
+  const [scenarios, setScenarios] = useState([])
+  const [started, setStarted] = useState(false)
+  const [cooldownUntil, setCooldownUntil] = useState(null)
+
+  useEffect(() => {
+    if (status === 'unauthenticated') return
+    if (!hasRefreshed || !effectiveSession) return
+    if (accessDenied) return
+
+    async function checkAccess() {
+      try {
+        const quizRes = await fetch(`/api/training/cooldown?userId=${effectiveSession.user.id}`)
+        const quizData = await quizRes.json()
+
+        const ridealongRes = await fetch(`/api/training/ridealong/progress?userId=${effectiveSession.user.id}`)
+        const ridealongData = await ridealongRes.json()
+
+        if (ridealongData.hasPassed) {
+          setRidealongPassed(true)
+        } else if (ridealongData.cooldownUntil) {
+          const until = new Date(ridealongData.cooldownUntil)
+          if (until > new Date()) {
+            setCooldownUntil(ridealongData.cooldownUntil)
+          }
+        }
+
+        if (quizData.hasPassed) {
+          setQuizPassed(true)
+        }
+      } catch (e) {
+        console.warn('Access check failed:', e)
+      } finally {
+        setCheckingAccess(false)
+        setShowStart(true)
+      }
+    }
+    checkAccess()
+  }, [status, hasRefreshed, effectiveSession, accessDenied])
+
+  const handleStart = useCallback(() => {
+    setScenarios(drawScenarios())
+    setStarted(true)
+  }, [])
+
+  const handleSubmit = useCallback(async (result) => {
+    try {
+      const res = await fetch('/api/training/ridealong/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: effectiveSession.user.id,
+          username: effectiveSession.user.name,
+          globalName: effectiveSession.user.name,
+          avatar: effectiveSession.user.avatar,
+          score: result.score,
+          total: result.total,
+          pct: result.pct,
+          pass: result.pass,
+          results: result.results,
+          timestamp: new Date().toISOString(),
+        }),
+      })
+      const data = await res.json()
+      if (!result.pass && data.cooldownUntil) {
+        setCooldownUntil(data.cooldownUntil)
+      }
+    } catch (e) {
+      console.warn('Submit failed:', e)
+    }
+  }, [effectiveSession])
+
+  const handleSaveProgress = useCallback(async (state) => {
+    try {
+      await fetch('/api/training/ridealong/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: effectiveSession.user.id,
+          data: state,
+        }),
+      })
+    } catch {}
+  }, [effectiveSession])
+
+  const handleClearProgress = useCallback(async () => {
+    try {
+      await fetch('/api/training/ridealong/progress', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: effectiveSession.user.id }),
+      })
+    } catch {}
+  }, [effectiveSession])
+
+  if (status === 'loading' || checkingAccess || !hasRefreshed) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="flex flex-col items-center">
+          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
+          <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Verifying Access</span>
+        </div>
+      </div>
+    )
+  }
+
+  if (!session) return <LoginScreen />
+  if (accessDenied) return <AccessDenied roleId={accessDenied.roleId} />
+
+  if (ridealongPassed) {
+    return (
+      <div className="max-w-2xl mx-auto animate-scale-in">
+        <div className="card-glass rounded-3xl border border-gsrp-teal/30 p-8 text-center">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-gsrp-teal via-gsrp-teal-light to-gsrp-teal rounded-t-3xl" />
+          <div className="flex items-center justify-center w-20 h-20 rounded-full mx-auto mb-6 bg-gsrp-teal/10 border-2 border-gsrp-teal/30">
+            <Shield size={36} className="text-gsrp-teal-light" />
+          </div>
+          <h2 className="text-3xl font-black text-white mb-2">Ridealong Complete!</h2>
+          <p className="text-gsrp-teal-light/50 text-sm mb-6">
+            You have passed the Ridealong Simulation. Your Discord roles and nickname have been updated.
+          </p>
+          <button
+            onClick={() => router.push('/training')}
+            className="px-5 py-3 bg-gsrp-teal text-white rounded-xl font-bold text-sm hover:bg-gsrp-teal/90 transition-all cursor-pointer"
+          >
+            Return to Training
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (started && scenarios.length > 0) {
+    return (
+      <div className="max-w-4xl mx-auto animate-fade-in-up">
+        <RidealongEngine
+          scenarios={scenarios}
+          passScore={RIDEALONG_CONFIG.PASS_SCORE}
+          cooldownHours={RIDEALONG_CONFIG.COOLDOWN_HOURS}
+          onSubmit={handleSubmit}
+          user={effectiveSession.user}
+          onSaveProgress={handleSaveProgress}
+          onClearProgress={handleClearProgress}
+        />
+      </div>
+    )
+  }
+
+  return (
+    <div className="max-w-4xl mx-auto animate-fade-in-up space-y-8">
+      <div className="flex items-center gap-4 mb-2">
+        <div className="flex items-center justify-center w-14 h-14 rounded-2xl bg-gsrp-orange/10 border border-gsrp-orange/20">
+          <Shield size={26} className="text-gsrp-orange" />
+        </div>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-black text-white">Ridealong Simulation</h1>
+          <p className="text-gsrp-teal-light/40 text-xs font-medium">Simulated mod call training — Georgia State Roleplay</p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-gsrp-orange/10 flex items-center justify-center">
+              <AlertTriangle size={18} className="text-gsrp-orange" />
+            </div>
+            <h3 className="text-sm font-black text-white">Pass Score</h3>
+          </div>
+          <p className="text-2xl font-black text-gsrp-orange">{RIDEALONG_CONFIG.PASS_SCORE}/{RIDEALONG_CONFIG.TOTAL_SCENARIOS}</p>
+          <p className="text-xs text-gsrp-teal-light/30 mt-1">Correct scenarios required</p>
+        </div>
+
+        <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-gsrp-sunset/10 flex items-center justify-center">
+              <RotateCcw size={18} className="text-gsrp-sunset" />
+            </div>
+            <h3 className="text-sm font-black text-white">Cooldown</h3>
+          </div>
+          <p className="text-2xl font-black text-gsrp-sunset">{RIDEALONG_CONFIG.COOLDOWN_HOURS}h</p>
+          <p className="text-xs text-gsrp-teal-light/30 mt-1">Between failed attempts</p>
+        </div>
+
+        <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-gsrp-teal/10 flex items-center justify-center">
+              <BookOpen size={18} className="text-gsrp-teal-light" />
+            </div>
+            <h3 className="text-sm font-black text-white">Scenarios</h3>
+          </div>
+          <p className="text-2xl font-black text-gsrp-teal-light">{RIDEALONG_CONFIG.TOTAL_SCENARIOS}</p>
+          <p className="text-xs text-gsrp-teal-light/30 mt-1">Randomised each attempt</p>
+        </div>
+      </div>
+
+      {!quizPassed && !checkingAccess && (
+        <div className="card-glass rounded-2xl border border-gsrp-sunset/30 p-6 text-center">
+          <p className="text-gsrp-sunset text-sm font-bold mb-2">Quiz Required First</p>
+          <p className="text-gsrp-teal-light/50 text-xs mb-4">
+            You must pass the SSD Training Quiz before attempting the ridealong simulation.
+          </p>
+          <button
+            onClick={() => router.push('/training')}
+            className="px-5 py-2.5 bg-gsrp-orange text-white rounded-xl text-sm font-bold hover:bg-gsrp-orange/90 transition-all cursor-pointer"
+          >
+            Go to Quiz
+          </button>
+        </div>
+      )}
+
+      {cooldownUntil && (
+        <div className="card-glass rounded-2xl border border-gsrp-sunset/30 p-6 text-center">
+          <p className="text-gsrp-sunset text-sm font-bold mb-1">Cooldown Active</p>
+          <p className="text-gsrp-teal-light/50 text-xs">
+            Next attempt available {new Date(cooldownUntil).toLocaleString()}
+          </p>
+        </div>
+      )}
+
+      {showStart && quizPassed && !cooldownUntil && !ridealongPassed && (
+        <div className="space-y-6">
+          <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
+            <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4">How It Works</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
+                <span className="text-lg">🚨</span>
+                <div>
+                  <p className="text-sm font-bold text-white">Receive Mod Call</p>
+                  <p className="text-[10px] text-gsrp-teal-light/40">A popup appears with caller info</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
+                <span className="text-lg">🎥</span>
+                <div>
+                  <p className="text-sm font-bold text-white">Review Evidence</p>
+                  <p className="text-[10px] text-gsrp-teal-light/40">Watch bodycam footage before deciding</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
+                <span className="text-lg">⚖️</span>
+                <div>
+                  <p className="text-sm font-bold text-white">Take Action</p>
+                  <p className="text-[10px] text-gsrp-teal-light/40">Choose the correct punishment</p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
+                <span className="text-lg">📝</span>
+                <div>
+                  <p className="text-sm font-bold text-white">Get Feedback</p>
+                  <p className="text-[10px] text-gsrp-teal-light/40">Immediate explanation of right/wrong</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="card-glass rounded-2xl border border-gsrp-teal/20 p-5">
+            <h3 className="text-xs font-bold text-gsrp-teal-light uppercase tracking-wider mb-2">Requirements</h3>
+            <ul className="text-xs text-gsrp-teal-light/50 space-y-1">
+              <li className="flex items-center gap-2">
+                <CheckIcon />
+                SSD Training Quiz passed
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckIcon />
+                Review video evidence before each decision (mandatory)
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckIcon />
+                Score {RIDEALONG_CONFIG.PASS_SCORE}/{RIDEALONG_CONFIG.TOTAL_SCENARIOS} or higher to pass
+              </li>
+            </ul>
+          </div>
+
+          <div className="flex justify-center py-4">
+            <button
+              onClick={handleStart}
+              className="group px-10 py-4 bg-gradient-to-r from-gsrp-orange to-gsrp-orange-light text-white font-black text-lg rounded-2xl shadow-lg shadow-gsrp-orange/20 hover:shadow-gsrp-orange/30 transition-all cursor-pointer flex items-center gap-3"
+            >
+              <Shield size={20} />
+              Start Ridealong
+              <ChevronRight size={18} className="group-hover:translate-x-1 transition-transform" />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function CheckIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" className="text-gsrp-teal-light/30 shrink-0">
+      <polyline points="20 6 9 17 4 12" />
+    </svg>
+  )
+}
+
+export async function getServerSideProps(context) {
+  const { isFullAdmin } = await import('../../../lib/admin-helper')
+  const session = await getServerSession(context.req, context.res, authOptions)
+
+  if (!session) return { props: {} }
+
+  const hasRole = session.user?.roles?.includes('1372476380096237609')
+  const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || [])
+
+  if ((session.user?.roles?.length > 0 || isAdmin) && !hasRole && !isAdmin) {
+    return { redirect: { destination: '/', permanent: false } }
+  }
+
+  return { props: {} }
+}

@@ -1,6 +1,6 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState, useCallback, useRef } from 'react';
-import { Loader2, BookOpen, Terminal, Shield, AlertTriangle, RotateCcw, ChevronRight, Clock, Play, Trash2 } from 'lucide-react';
+import { Loader2, BookOpen, Terminal, Shield, AlertTriangle, RotateCcw, ChevronRight, Clock, Play, Trash2, CheckCircle2, Lock } from 'lucide-react';
 import { useRouter } from 'next/router';
 import LoginScreen from '../../components/auth/LoginScreen';
 import { getServerSession } from 'next-auth';
@@ -38,6 +38,8 @@ export default function TrainingPage() {
   const [savedSession, setSavedSession] = useState(null);
   const [resumeData, setResumeData] = useState(null);
   const [resumeDismissed, setResumeDismissed] = useState(false);
+  const [ridealongPassed, setRidealongPassed] = useState(false);
+  const [ridealongChecked, setRidealongChecked] = useState(false);
   const sessionCheckDone = useRef(false);
 
   // Check for saved quiz session from DB
@@ -81,8 +83,11 @@ export default function TrainingPage() {
     if (!progressChecked || !effectiveSession) return;
     async function checkStatus() {
       try {
-        const res = await fetch(`/api/training/cooldown?userId=${effectiveSession.user.id}`);
-        const data = await res.json();
+        const [cooldownRes, ridealongRes] = await Promise.all([
+          fetch(`/api/training/cooldown?userId=${effectiveSession.user.id}`),
+          fetch(`/api/training/ridealong/progress?userId=${effectiveSession.user.id}`),
+        ]);
+        const data = await cooldownRes.json();
         if (data.hasPassed) {
           setHasPassed(true);
         } else if (data.isOnCooldown && data.cooldownUntil) {
@@ -91,8 +96,12 @@ export default function TrainingPage() {
             setCooldownUntil(data.cooldownUntil);
           }
         }
+
+        const ridealongData = await ridealongRes.json();
+        setRidealongPassed(ridealongData.hasPassed);
+        setRidealongChecked(true);
       } catch (e) {
-        console.warn('Cooldown check failed:', e);
+        console.warn('Status check failed:', e);
       }
     }
     checkStatus();
@@ -235,23 +244,38 @@ export default function TrainingPage() {
           </div>
           <h2 className="text-3xl font-black text-white mb-2">Training Complete!</h2>
           <p className="text-gsrp-teal-light/50 text-sm mb-6">
-            You have passed the SSD Training Quiz. Next, request a Ridealong training session.
+            {ridealongPassed
+              ? 'You have completed both the quiz and the ridealong simulation. Your Discord roles have been updated.'
+              : 'You have passed the SSD Training Quiz. Complete the ridealong simulation to advance.'}
           </p>
-          <div className="flex gap-3">
-            <a
-              href="https://discord.com/channels/1366688107788894280/1448577067607130183"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1 px-5 py-3 bg-gsrp-orange text-white rounded-xl font-bold text-sm hover:bg-gsrp-orange/90 transition-all cursor-pointer flex items-center justify-center gap-2"
-            >
-              Request Ridealong
-            </a>
-            <button
-              onClick={() => router.push('/')}
-              className="flex-1 px-5 py-3 bg-gsrp-dark-surface border border-gsrp-dark-border rounded-xl text-gsrp-teal-light/60 font-bold text-sm hover:border-gsrp-teal/30 transition-all cursor-pointer"
-            >
-              Return Home
-            </button>
+          <div className="flex flex-col gap-3">
+            <div className="flex gap-3">
+              {!ridealongPassed && (
+                <button
+                  onClick={() => router.push('/training/ridealong')}
+                  className="flex-1 px-5 py-3 bg-gradient-to-r from-gsrp-orange to-gsrp-orange-light text-white rounded-xl font-bold text-sm hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
+                >
+                  <Shield size={16} />
+                  Start Ridealong Simulation
+                </button>
+              )}
+              <a
+                href="https://discord.com/channels/1366688107788894280/1448577067607130183"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`px-5 py-3 bg-gsrp-dark-surface border border-gsrp-dark-border rounded-xl text-gsrp-teal-light/60 font-bold text-sm hover:border-gsrp-teal/30 transition-all cursor-pointer flex items-center justify-center gap-2 ${ridealongPassed ? 'flex-1' : ''}`}
+              >
+                Request Ridealong
+              </a>
+              {ridealongPassed && (
+                <button
+                  onClick={() => router.push('/')}
+                  className="flex-1 px-5 py-3 bg-gsrp-teal text-white rounded-xl font-bold text-sm hover:bg-gsrp-teal/90 transition-all cursor-pointer"
+                >
+                  Return Home
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -450,6 +474,41 @@ export default function TrainingPage() {
         <p className="text-xs text-gsrp-teal-light/30 mt-4">
           Questions are randomly selected from a pool of 50+. Each retry swaps at least 40% of questions to prevent memorisation.
         </p>
+      </div>
+
+      {/* Ridealong Simulation */}
+      <div className="card-glass rounded-2xl border border-gsrp-teal/20 p-6">
+        <div className="flex items-start gap-4">
+          <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gsrp-teal/10 border border-gsrp-teal/20 shrink-0">
+            <Shield size={22} className="text-gsrp-teal-light" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-sm font-black text-gsrp-teal-light mb-1">Ridealong Simulation</h3>
+            <p className="text-xs text-gsrp-teal-light/50 mb-3">
+              After passing the quiz, test your skills with simulated mod calls. Review video evidence and decide the correct course of action.
+            </p>
+              {hasPassed ? (
+              ridealongPassed ? (
+                <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-gsrp-teal-light bg-gsrp-teal/10 px-3 py-1.5 rounded-lg">
+                  <CheckCircle2 size={10} />
+                  Completed
+                </span>
+              ) : (
+                <button
+                  onClick={() => router.push('/training/ridealong')}
+                  className="px-4 py-2 bg-gsrp-teal text-white rounded-lg text-xs font-bold hover:bg-gsrp-teal/90 transition-all cursor-pointer"
+                >
+                  Start Ridealong
+                </button>
+              )
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-[10px] text-gsrp-teal-light/30 bg-gsrp-dark-surface/50 px-3 py-1.5 rounded-lg">
+                <Lock size={10} />
+                Pass the quiz first
+              </span>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Custom Commands Reference */}
