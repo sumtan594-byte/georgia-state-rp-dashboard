@@ -3,7 +3,7 @@ import { authOptions } from '../../../../lib/auth-options'
 import clientPromise from '../../../../lib/mongodb'
 import { rateLimit } from '../../../../lib/rate-limiter'
 import { RIDEALONG_CONFIG, RIDEALONG_ROLES, RIDEALONG_NICKNAME_PREFIX } from '../../../../lib/ridealong-config'
-import { addMemberRole, modifyGuildMember } from '../../../../lib/discord-v2'
+import { getGuildMember, addMemberRole, modifyGuildMember } from '../../../../lib/discord-v2'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -101,16 +101,18 @@ export default async function handler(req, res) {
   )
 
   if (pass) {
+    let currentNick = 'User'
     try {
       if (DISCORD_GUILD_ID) {
-        const displayName = session.user.name || username || 'User'
-
         for (const roleId of RIDEALONG_ROLES) {
           await addMemberRole(DISCORD_GUILD_ID, userId, roleId)
         }
 
+        const member = await getGuildMember(DISCORD_GUILD_ID, userId)
+        currentNick = member?.nick || member?.user?.global_name || member?.user?.username || 'User'
+
         await modifyGuildMember(DISCORD_GUILD_ID, userId, {
-          nick: `${RIDEALONG_NICKNAME_PREFIX}${displayName}`,
+          nick: `${RIDEALONG_NICKNAME_PREFIX}${currentNick}`,
         })
 
         discordRolesApplied = true
@@ -139,7 +141,7 @@ export default async function handler(req, res) {
                 { name: 'User', value: `<@${userId}> (\`${username || session.user.name}\`)`, inline: true },
                 { name: 'Score', value: `${score} / ${total} (${pct}%)`, inline: true },
                 { name: 'Roles Updated', value: discordRolesApplied ? 'Yes ✅' : 'No ❌', inline: true },
-                { name: 'Nickname Set', value: discordRolesApplied ? `JM | ${session.user.name}` : 'No', inline: true },
+                { name: 'Nickname Set', value: discordRolesApplied ? `JM | ${currentNick}` : 'No', inline: true },
               ],
               timestamp: new Date().toISOString(),
               footer: { text: 'GSRP Ridealong Simulation' },
