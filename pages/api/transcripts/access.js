@@ -24,6 +24,49 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
+    // Quick access check — used by the polling interval on the viewer page
+    if (req.query.check === '1') {
+      let hasAccess = isAdmin;
+
+      if (!hasAccess) {
+        // Check if user is the ticket owner
+        const [ticketRows] = await pool.query(
+          'SELECT owner_id FROM transcripts WHERE id = ? LIMIT 1',
+          [transcriptId]
+        );
+        if (ticketRows.length > 0 && String(ticketRows[0].owner_id) === currentUserId) {
+          hasAccess = true;
+        }
+      }
+
+      if (!hasAccess) {
+        // Check custom access grants
+        const rolePlaceholders = userRoles.map(() => '?').join(',');
+        if (rolePlaceholders) {
+          const [accessRows] = await pool.query(
+            `SELECT 1 FROM transcript_access WHERE transcript_id = ? AND ((grantee_type = 'user' AND grantee_id = ?) OR (grantee_type = 'role' AND grantee_id IN (${rolePlaceholders}))) LIMIT 1`,
+            [transcriptId, currentUserId, ...userRoles]
+          );
+          if (accessRows.length > 0) hasAccess = true;
+        }
+      }
+
+      // Check transcript_deny table — denied admins lose access
+      if (hasAccess) {
+        try {
+          const [denyRows] = await pool.query(
+            'SELECT 1 FROM transcript_deny WHERE transcript_id = ? AND user_id = ? LIMIT 1',
+            [transcriptId, currentUserId]
+          );
+          if (denyRows.length > 0) hasAccess = false;
+        } catch (e) {
+          if (e.code !== 'ER_NO_SUCH_TABLE') console.error('[Access] deny check error:', e.message);
+        }
+      }
+
+      return res.status(200).json({ hasAccess });
+    }
+
     const [accessRows] = await pool.query(
       'SELECT id, grantee_id, grantee_type, created_at FROM transcript_access WHERE transcript_id = ? ORDER BY created_at DESC',
       [transcriptId]

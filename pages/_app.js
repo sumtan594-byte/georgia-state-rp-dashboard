@@ -8,7 +8,7 @@ import TopBar from "../components/layout/TopBar";
 import WelcomeScreen from "../components/auth/WelcomeScreen";
 import { UserRefreshProvider } from "../lib/UserRefreshContext";
 import { ToastProvider } from "../lib/ToastContext";
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 function DebugSessionLogger() {
   const { status, data } = useSession();
@@ -43,7 +43,7 @@ function AuthGuard({ isPublicPage, children }) {
   return children;
 }
 
-function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPublicPage, animationFinished, isPanelPage }) {
+function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPublicPage, animationFinished, isPanelPage, routerPath }) {
   return (
     <AuthGuard isPublicPage={isPublicPage}>
       <div className="min-h-screen relative">
@@ -57,35 +57,71 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
           <Component {...pageProps} />
         </div>
       ) : (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={animationFinished ? { opacity: 1, y: 0 } : {}}
-          transition={{ duration: 0.6, ease: "easeOut" }}
-          className="relative z-10 flex min-h-screen"
-        >
-          <div className={`hidden md:block flex-shrink-0 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-[72px]'}`}>
-            <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
-          </div>
-
-          {sidebarOpen && (
-            <div className="md:hidden fixed inset-0 z-50">
-              <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-              <div className="fixed left-0 top-0 h-screen w-64 shadow-2xl">
-                <Sidebar open={true} onToggle={() => setSidebarOpen(false)} />
-              </div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={routerPath}
+            initial={{ opacity: 0, y: 20 }}
+            animate={animationFinished ? { opacity: 1, y: 0 } : {}}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.4, ease: "easeOut" }}
+            className="relative z-10 flex min-h-screen"
+          >
+            <div className={`hidden md:block flex-shrink-0 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-[72px]'}`}>
+              <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
             </div>
-          )}
 
-          <div className="flex-1 flex flex-col min-w-0">
-            <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
-            <main className="flex-1 p-4 md:p-6 lg:p-8">
-              <Component {...pageProps} />
-            </main>
-          </div>
-        </motion.div>
+            {sidebarOpen && (
+              <div className="md:hidden fixed inset-0 z-50">
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+                <div className="fixed left-0 top-0 h-screen w-64 shadow-2xl">
+                  <Sidebar open={true} onToggle={() => setSidebarOpen(false)} />
+                </div>
+              </div>
+            )}
+
+            <div className="flex-1 flex flex-col min-w-0">
+              <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
+              <main className="flex-1 p-4 md:p-6 lg:p-8">
+                <Component {...pageProps} />
+              </main>
+            </div>
+          </motion.div>
+        </AnimatePresence>
       )}
     </div>
     </AuthGuard>
+  );
+}
+
+function RouteLoadingBar() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const start = () => setLoading(true);
+    const end = () => setLoading(false);
+
+    router.events.on('routeChangeStart', start);
+    router.events.on('routeChangeComplete', end);
+    router.events.on('routeChangeError', end);
+
+    return () => {
+      router.events.off('routeChangeStart', start);
+      router.events.off('routeChangeComplete', end);
+      router.events.off('routeChangeError', end);
+    };
+  }, [router]);
+
+  return (
+    <div
+      className={`fixed top-0 left-0 z-[100] h-0.5 bg-gradient-to-r from-gsrp-orange via-gsrp-teal to-gsrp-orange transition-all duration-300 ease-out ${
+        loading ? 'w-full opacity-100' : 'w-0 opacity-0'
+      }`}
+      style={{
+        backgroundSize: '200% 100%',
+        animation: loading ? 'shimmer 1s linear infinite' : 'none',
+      }}
+    />
   );
 }
 
@@ -122,6 +158,8 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
     <SessionProvider session={session}>
       <UserRefreshProvider>
         <ToastProvider>
+          <RouteLoadingBar />
+
           {showWelcome && (
             <WelcomeScreen
               onComplete={handleWelcomeComplete}
@@ -136,6 +174,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
             isPublicPage={isPublicPage}
             animationFinished={animationFinished}
             isPanelPage={router.pathname === '/panel'}
+            routerPath={router.pathname}
           />
         </ToastProvider>
       </UserRefreshProvider>

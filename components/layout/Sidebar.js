@@ -153,7 +153,7 @@ export default function Sidebar({ open, onToggle }) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/60 hover:text-white hover:bg-gsrp-dark-surface/60 transition-all duration-200 group animate-slide-left stagger-${idx+1}`}
+className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/60 hover:text-white hover:bg-gsrp-dark-surface/60 hover:scale-105 transition-all duration-200 group animate-slide-left stagger-${idx+1}`}
                 >
                   <item.icon size={18} className="flex-shrink-0 group-hover:text-gsrp-orange transition-colors" />
                   {open && <span className="text-sm font-medium flex-1">{item.label}</span>}

@@ -6,7 +6,7 @@ export default function FeatureCard({ href, icon: Icon, title, description, badg
   return (
     <Link
       href={href}
-      className={`card-glass rounded-2xl p-6 hover:border-gsrp-orange/30 transition-all duration-300 group cursor-pointer border border-gsrp-dark-border/50 block ${className}`}
+      className={`card-glass rounded-2xl p-6 hover:border-gsrp-orange/30 hover:scale-105 transition-all duration-300 group cursor-pointer border border-gsrp-dark-border/50 block ${className}`}
     >
       <div className="flex items-start justify-between mb-4">
         <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gsrp-orange/10 to-gsrp-teal/10 border border-gsrp-orange/20 flex items-center justify-center group-hover:from-gsrp-orange/20 group-hover:to-gsrp-teal/20 transition-all duration-300">
