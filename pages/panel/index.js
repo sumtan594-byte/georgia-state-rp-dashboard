@@ -25,9 +25,11 @@ export async function getServerSideProps(context) {
   const hasRole = session.user?.roles?.includes('1372476381115453550');
   const { isFullAdmin } = require('../../lib/admin-helper');
   const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || []);
-  
-  if (!hasRole && !isAdmin) return { redirect: { destination: '/', permanent: false } };
-  
+
+  if (session.user?.roles?.length > 0 && !hasRole && !isAdmin) {
+    return { redirect: { destination: '/', permanent: false } };
+  }
+
   return { props: {} };
 }
 
