@@ -11,9 +11,10 @@ import {
   BarChart3, Ban, Undo2, Trash2, Copy, ExternalLink
 } from 'lucide-react';
 
-export default function UserValidationsPage() {
+export default function UserValidationsPage({ canAccess: serverCanAccess, userIsAdmin: serverIsAdmin }) {
   const { data: session, status } = useSession();
   const { refreshedUser, hasRefreshed, accessDenied } = useRefreshedUser();
+  const isAdmin = refreshedUser?.isAdmin || serverIsAdmin;
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -101,7 +102,7 @@ export default function UserValidationsPage() {
     return <AccessDenied roleId={accessDenied.roleId} />;
   }
 
-  if (!refreshedUser?.isAdmin) {
+  if (!serverCanAccess) {
     return <AccessDenied roleId="ADMIN" />;
   }
 
@@ -220,6 +221,7 @@ function UserCard({ user, isExpanded, onToggle, onAction, actionLoading }) {
           <div className="flex items-center gap-3 mt-1 flex-wrap">
             <StatusBadge icon={BookOpen} label={user.handbookCompleted ? 'Handbook Complete' : 'Handbook Pending'} active={user.handbookCompleted} />
             <StatusBadge icon={FileText} label={user.hasPassed ? 'Quiz Passed' : 'Quiz Not Passed'} active={user.hasPassed} />
+            <StatusBadge icon={Shield} label={user.ridealongPassed ? 'Ridealong Passed' : 'Ridealong Not Passed'} active={user.ridealongPassed} />
             {user.totalAttempts > 0 && (
               <span className="text-xs text-gray-500 bg-gsrp-dark-surface px-2 py-0.5 rounded flex items-center gap-1">
                 <BarChart3 className="w-3 h-3" />
@@ -368,6 +370,7 @@ function UserCard({ user, isExpanded, onToggle, onAction, actionLoading }) {
             </div>
           )}
 
+          {isAdmin && (
           <div className="bg-gsrp-dark-card/50 rounded-lg p-3">
             <button
               onClick={() => setShowActions(!showActions)}
@@ -419,6 +422,14 @@ function UserCard({ user, isExpanded, onToggle, onAction, actionLoading }) {
                   disabled={!user.isOnCooldown}
                 />
                 <ActionButton
+                  label="Revoke Ridealong"
+                  icon={Ban}
+                  loading={actionLoading[`${user.userId}_revoke_ridealong_pass`]}
+                  onClick={() => onAction(user.userId, 'revoke_ridealong_pass', 'Revoke ridealong pass for this user?')}
+                  variant="danger"
+                  disabled={!user.ridealongPassed}
+                />
+                <ActionButton
                   label="Reset Quiz"
                   icon={Trash2}
                   loading={actionLoading[`${user.userId}_reset_quiz`]}
@@ -435,6 +446,7 @@ function UserCard({ user, isExpanded, onToggle, onAction, actionLoading }) {
               </div>
             )}
           </div>
+          )}
         </div>
       )}
     </div>
@@ -479,7 +491,18 @@ export async function getServerSideProps(context) {
 
   const { isFullAdmin } = await import('../../lib/admin-helper');
   const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || []);
-  if (!isAdmin) return { redirect: { destination: '/', permanent: false } };
 
-  return { props: {} };
+  let quizPassed = false;
+  try {
+    const clientPromise = (await import('../../lib/mongodb')).default;
+    const client = await clientPromise;
+    const db = client.db();
+    const quizData = await db.collection('quiz_attempts').findOne({ userId: session.user.id });
+    quizPassed = quizData?.hasPassed === true;
+  } catch {}
+
+  const canAccess = isAdmin || quizPassed;
+  if (!canAccess) return { redirect: { destination: '/', permanent: false } };
+
+  return { props: { canAccess, userIsAdmin: isAdmin } };
 }

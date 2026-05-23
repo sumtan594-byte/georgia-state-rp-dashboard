@@ -75,6 +75,14 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, message: 'Quiz data fully reset' });
       }
 
+      case 'revoke_ridealong_pass': {
+        await dbDefault.collection('ridealong_attempts').updateOne(
+          { userId },
+          { $set: { hasPassed: false, hasPassedAt: null, cooldownUntil: null, discordRolesApplied: false } }
+        );
+        return res.status(200).json({ ok: true, message: 'Ridealong pass revoked' });
+      }
+
       case 'reset_all': {
         await dbStaff.collection('training_progress').updateOne(
           { userId },
@@ -84,6 +92,10 @@ export default async function handler(req, res) {
         await dbDefault.collection('quiz_attempts').updateOne(
           { userId },
           { $set: { hasPassed: false, hasPassedAt: null, cooldownUntil: null, attempts: [] } }
+        );
+        await dbDefault.collection('ridealong_attempts').updateOne(
+          { userId },
+          { $set: { hasPassed: false, hasPassedAt: null, cooldownUntil: null, discordRolesApplied: false } }
         );
         return res.status(200).json({ ok: true, message: 'All validations reset' });
       }

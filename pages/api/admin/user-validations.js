@@ -35,9 +35,10 @@ export default async function handler(req, res) {
     const dbStaff = client.db('gsrp_staff');
     const dbDefault = client.db();
 
-    const [trainingProgress, quizAttempts] = await Promise.all([
+    const [trainingProgress, quizAttempts, ridealongData] = await Promise.all([
       dbStaff.collection('training_progress').find({}).toArray(),
       dbDefault.collection('quiz_attempts').find({}).toArray(),
+      dbDefault.collection('ridealong_attempts').find({}).toArray(),
     ]);
 
     const userMap = {};
@@ -59,11 +60,7 @@ export default async function handler(req, res) {
           totalAttempts: 0,
           bestScore: 0,
           lastAttempt: null,
-          scenarioCompleted: false,
-          scenarioScore: null,
-          scenarioPercentage: null,
-          scenarioPassed: null,
-          scenarioCompletedAt: null,
+          ridealongPassed: false,
         };
       }
       userMap[tp.userId].handbookCompleted = tp.handbookCompleted || false;
@@ -88,6 +85,7 @@ export default async function handler(req, res) {
           totalAttempts: 0,
           bestScore: 0,
           lastAttempt: null,
+          ridealongPassed: false,
         };
       }
       userMap[qa.userId].hasPassed = qa.hasPassed || false;
@@ -112,6 +110,29 @@ export default async function handler(req, res) {
         userMap[qa.userId].bestScore = Math.max(...attempts.map(a => a.score || 0));
         userMap[qa.userId].lastAttempt = attempts[attempts.length - 1];
       }
+    }
+
+    for (const ra of ridealongData) {
+      if (!userMap[ra.userId]) {
+        userMap[ra.userId] = {
+          userId: ra.userId,
+          username: null,
+          avatar: null,
+          handbookCompleted: false,
+          completedSections: [],
+          lastHandbookUpdate: null,
+          hasPassed: false,
+          hasPassedAt: null,
+          cooldownUntil: null,
+          isOnCooldown: false,
+          attempts: [],
+          totalAttempts: 0,
+          bestScore: 0,
+          lastAttempt: null,
+          ridealongPassed: false,
+        };
+      }
+      userMap[ra.userId].ridealongPassed = ra.hasPassed || false;
     }
 
     const users = Object.values(userMap).sort((a, b) => {
