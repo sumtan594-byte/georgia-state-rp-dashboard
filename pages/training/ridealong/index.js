@@ -1,6 +1,6 @@
 import { useSession } from 'next-auth/react'
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Loader2, Shield, AlertTriangle, RotateCcw, ChevronRight, BookOpen } from 'lucide-react'
+import { Loader2, Shield, AlertTriangle, RotateCcw, ChevronRight, BookOpen, Ban } from 'lucide-react'
 import { useRouter } from 'next/router'
 import LoginScreen from '../../../components/auth/LoginScreen'
 import { getServerSession } from 'next-auth'
@@ -54,6 +54,7 @@ export default function RidealongPage() {
   const [scenarios, setScenarios] = useState([])
   const [started, setStarted] = useState(false)
   const [cooldownUntil, setCooldownUntil] = useState(null)
+  const [revoked, setRevoked] = useState(false)
 
   useEffect(() => {
     if (status === 'unauthenticated') return
@@ -89,6 +90,23 @@ export default function RidealongPage() {
     }
     checkAccess()
   }, [status, hasRefreshed, effectiveSession, accessDenied])
+
+  useEffect(() => {
+    if (!effectiveSession?.user?.id) return
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`/api/training/cooldown?userId=${effectiveSession.user.id}`)
+        const data = await res.json()
+        if (!data.hasPassed && started) {
+          setRevoked(true)
+        }
+        setQuizPassed(!!data.hasPassed)
+      } catch {}
+    }, 15000)
+
+    return () => clearInterval(interval)
+  }, [effectiveSession?.user?.id, started])
 
   const handleStart = useCallback(() => {
     setScenarios(drawScenarios())
@@ -176,6 +194,29 @@ export default function RidealongPage() {
             className="px-5 py-3 bg-gsrp-teal text-white rounded-xl font-bold text-sm hover:bg-gsrp-teal/90 transition-all cursor-pointer"
           >
             Return to Training
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (revoked) {
+    return (
+      <div className="max-w-2xl mx-auto animate-scale-in">
+        <div className="card-glass rounded-3xl border border-gsrp-sunset/40 p-8 text-center">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-red-500 via-gsrp-sunset to-red-500 rounded-t-3xl" />
+          <div className="flex items-center justify-center w-20 h-20 rounded-full mx-auto mb-6 bg-red-500/10 border-2 border-red-500/30">
+            <Ban size={36} className="text-red-400" />
+          </div>
+          <h2 className="text-3xl font-black text-white mb-2">Access Revoked</h2>
+          <p className="text-gsrp-teal-light/50 text-sm mb-6">
+            Your access to the ridealong has been revoked, please redo the SSD training.
+          </p>
+          <button
+            onClick={() => router.push('/training')}
+            className="px-5 py-3 bg-gsrp-orange text-white rounded-xl font-bold text-sm hover:bg-gsrp-orange/90 transition-all cursor-pointer"
+          >
+            Go to Training
           </button>
         </div>
       </div>

@@ -180,6 +180,7 @@ export default function UserValidationsPage({ canAccess: serverCanAccess, userIs
               onToggle={() => setExpandedUser(expandedUser === user.userId ? null : user.userId)}
               onAction={handleAction}
               actionLoading={actionLoading}
+              isAdmin={isAdmin}
             />
           ))}
         </div>
@@ -188,7 +189,7 @@ export default function UserValidationsPage({ canAccess: serverCanAccess, userIs
   );
 }
 
-function UserCard({ user, isExpanded, onToggle, onAction, actionLoading }) {
+function UserCard({ user, isExpanded, onToggle, onAction, actionLoading, isAdmin }) {
   const [showActions, setShowActions] = useState(false);
 
   const lastAttempt = user.lastAttempt;
