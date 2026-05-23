@@ -297,6 +297,8 @@ function formatInlineMarkdown(text) {
 }
 
 export async function getServerSideProps(context) {
+  const { getServerSession } = require('next-auth');
+  const { authOptions } = require('../../lib/auth-options');
   const session = await getServerSession(context.req, context.res, authOptions);
   return { props: {} };
 }
