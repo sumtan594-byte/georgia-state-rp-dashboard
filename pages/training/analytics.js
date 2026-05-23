@@ -248,20 +248,6 @@ function StatCard({ icon: Icon, label, value, color, bg }) {
 }
 
 export async function getServerSideProps(context) {
-  const { isFullAdmin } = await import('../../lib/admin-helper');
   const session = await getServerSession(context.req, context.res, authOptions);
-
-  if (!session) {
-    return { redirect: { destination: '/login', permanent: false } };
-  }
-
-  const TRAINER_ROLE = '1372482495035211908';
-  const hasTrainer = session.user?.roles?.includes(TRAINER_ROLE);
-  const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || []);
-
-  if (!hasTrainer && !isAdmin) {
-    return { redirect: { destination: '/', permanent: false } };
-  }
-
   return { props: {} };
 }

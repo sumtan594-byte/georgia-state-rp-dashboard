@@ -16,20 +16,7 @@ import AccessDenied from '../../components/auth/AccessDenied';
 const LiveMap = dynamic(() => import('../../components/panel/LiveMap'), { ssr: false });
 
 export async function getServerSideProps(context) {
-  const { getServerSession } = require('next-auth');
-  const { authOptions } = require('../../lib/auth-options');
   const session = await getServerSession(context.req, context.res, authOptions);
-
-  if (!session) return { props: {} };
-
-  const hasRole = session.user?.roles?.includes('1372476381115453550');
-  const { isFullAdmin } = require('../../lib/admin-helper');
-  const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || []);
-
-  if (session.user?.roles?.length > 0 && !hasRole && !isAdmin) {
-    return { redirect: { destination: '/', permanent: false } };
-  }
-
   return { props: {} };
 }
 

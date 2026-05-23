@@ -161,18 +161,6 @@ export default function AuditLogsPage() {
 }
 
 export async function getServerSideProps(context) {
-  const { isFullAdmin } = await import('../lib/admin-helper');
   const session = await getServerSession(context.req, context.res, authOptions);
-
-  if (!session) {
-    return { redirect: { destination: '/login', permanent: false } };
-  }
-
-  const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || []);
-
-  if (!isAdmin) {
-    return { redirect: { destination: '/', permanent: false } };
-  }
-
   return { props: {} };
 }

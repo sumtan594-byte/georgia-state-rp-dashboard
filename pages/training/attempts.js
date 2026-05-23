@@ -388,17 +388,6 @@ export default function AttemptsPage() {
 }
 
 export async function getServerSideProps(context) {
-  const { getServerSession } = require('next-auth');
-  const { authOptions } = require('../../lib/auth-options');
   const session = await getServerSession(context.req, context.res, authOptions);
-
-  if (!session) return { props: {} };
-
-  const hasRole = session.user?.roles?.includes('1372482495035211908');
-  const { isFullAdmin } = require('../../lib/admin-helper');
-  const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || []);
-  
-  if (!hasRole && !isAdmin) return { redirect: { destination: '/', permanent: false } };
-
   return { props: {} };
 }

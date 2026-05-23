@@ -297,22 +297,6 @@ function formatInlineMarkdown(text) {
 }
 
 export async function getServerSideProps(context) {
-  const { authOptions } = require('../../lib/auth-options');
   const session = await getServerSession(context.req, context.res, authOptions);
-
-  if (!session) return { props: {} };
-
-  const { isFullAdmin } = require('../../lib/admin-helper');
-  const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || []);
-  const hasTraineeRole = session.user?.roles?.includes('1372476380096237609');
-  const hasPanelRole = session.user?.roles?.includes('1372476381115453550');
-
-  // Only redirect if we have roles data in the session AND the user clearly lacks access.
-  // If roles are absent from the JWT (e.g. role was assigned after last login),
-  // let the client-side UserRefreshContext handle access with fresh Discord data.
-  if (session.user?.roles?.length > 0 && !hasTraineeRole && !hasPanelRole && !isAdmin) {
-    return { redirect: { destination: '/', permanent: false } };
-  }
-
   return { props: {} };
 }
