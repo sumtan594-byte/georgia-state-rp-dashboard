@@ -62,6 +62,7 @@ export default function RidealongEngine({
 
     const result = {
       scenarioId: scenario.id,
+      evidenceValid: scenario.evidenceValid !== false,
       correct: isCorrect,
       chosenOption: selectedOption,
       chosenText: chosen?.text || '',
@@ -365,6 +366,7 @@ export default function RidealongEngine({
 
           <VideoEvidencePanel
             evidence={scenario.videoEvidence}
+            evidenceValid={scenario.evidenceValid !== false}
             onView={handleEvidenceViewed}
           />
 
@@ -411,11 +413,7 @@ export default function RidealongEngine({
                       }`}>
                         {opt.text}
                       </span>
-                      {isSelected && opt.command && !answered && (
-                        <span className="text-[10px] text-gsrp-teal-light/30 font-mono mt-1 block">
-                          Command: {opt.command}
-                        </span>
-                      )}
+
                     </div>
                   </button>
                 )

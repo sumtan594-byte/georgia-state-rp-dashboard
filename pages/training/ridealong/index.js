@@ -21,8 +21,24 @@ function shuffleArray(arr) {
 }
 
 function drawScenarios() {
-  const shuffled = shuffleArray(SCENARIO_BANK)
-  return shuffled.slice(0, RIDEALONG_CONFIG.TOTAL_SCENARIOS)
+  const total = RIDEALONG_CONFIG.TOTAL_SCENARIOS
+  const invalidBank = SCENARIO_BANK.filter(s => s.evidenceValid === false)
+  const validBank = SCENARIO_BANK.filter(s => s.evidenceValid !== false)
+
+  const picked = []
+  if (invalidBank.length > 0) {
+    const shuffledInvalid = shuffleArray(invalidBank)
+    picked.push(shuffledInvalid[0])
+  }
+
+  const remaining = total - picked.length
+  const shuffledValid = shuffleArray(validBank)
+  for (const s of shuffledValid) {
+    if (picked.length >= total) break
+    if (!picked.find(p => p.id === s.id)) picked.push(s)
+  }
+
+  return shuffleArray(picked)
 }
 
 export default function RidealongPage() {
