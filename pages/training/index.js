@@ -331,7 +331,7 @@ export default function TrainingPage() {
           <Shield size={26} className="text-gsrp-orange" />
         </div>
         <div>
-          <h1 className="text-3xl font-black text-white">SSD Training Quiz</h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-white">SSD Training Quiz</h1>
           <p className="text-gsrp-teal-light/40 text-xs font-medium">Staff Standards & Development — Georgia State Roleplay</p>
         </div>
       </div>

@@ -166,14 +166,14 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
                 : 'No records found'}
             </p>
           </div>
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={fetchTranscripts}
               disabled={loading}
               className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 text-gsrp-teal-light/70 text-[10px] font-bold uppercase tracking-wider hover:bg-gsrp-dark-surface/60 hover:border-gsrp-teal/30 hover:text-gsrp-teal-light transition-all duration-200 disabled:opacity-50 cursor-pointer"
             >
               <RefreshCw size={12} className={loading ? 'animate-spin' : ''} />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </button>
             <div className="flex items-center bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-xl px-3.5 py-2.5 gap-2">
               <Clock size={12} className="text-gsrp-teal-light/40 flex-shrink-0" />
@@ -192,7 +192,7 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
                 type="date"
                 value={date}
                 onChange={(e) => setDate(e.target.value)}
-                className="bg-transparent outline-none text-[10px] font-bold text-gsrp-teal-light/70"
+                className="bg-transparent outline-none text-[10px] font-bold text-gsrp-teal-light/70 max-w-[130px]"
               />
               {date && (
                 <button onClick={() => setDate('')} className="ml-1 text-gsrp-dark-border hover:text-gsrp-teal-light/50 transition-colors cursor-pointer">

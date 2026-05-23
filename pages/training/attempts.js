@@ -180,7 +180,7 @@ export default function AttemptsPage() {
                         <p className="text-[10px] text-gsrp-teal-light/30 font-mono">{a.userId}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4 flex-shrink-0">
+                    <div className="flex items-center gap-2 sm:gap-4 flex-shrink-0">
                       {(() => {
                         const ud = userData[a.userId] || {};
                         const cooldown = formatCooldown(ud.cooldownUntil);

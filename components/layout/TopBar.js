@@ -16,7 +16,7 @@ export default function TopBar({ onMenuClick }) {
         </button>
         <img src="https://i.imgur.com/SSbZ8VZ.png" alt="GSRP" className="w-7 h-7 rounded-lg object-cover hidden sm:block" />
         <div>
-          <h1 className="text-white font-bold text-sm md:text-base">Georgia State Roleplay</h1>
+          <h1 className="text-white font-bold text-sm md:text-base truncate max-w-[160px] sm:max-w-none">Georgia State Roleplay</h1>
           <p className="text-[10px] text-gsrp-teal-light/40 uppercase tracking-widest hidden sm:block">Dashboard</p>
         </div>
       </div>

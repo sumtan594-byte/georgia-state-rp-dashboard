@@ -436,7 +436,7 @@ export default function QuizEngine({ questions, passScore, cooldownHours, onSubm
 
         {/* Navigation */}
         <div className="flex items-center justify-between mt-6 pt-4 border-t border-gsrp-dark-border/30">
-          <span className="text-xs text-gsrp-teal-light/30">
+          <span className="hidden sm:inline text-xs text-gsrp-teal-light/30">
             Press <kbd className="px-1.5 py-0.5 bg-gsrp-dark-surface rounded text-[10px] font-mono">Space</kbd> to check, <kbd className="px-1.5 py-0.5 bg-gsrp-dark-surface rounded text-[10px] font-mono">Enter</kbd> for next
           </span>
           <div className="flex gap-3">

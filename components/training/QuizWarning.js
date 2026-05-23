@@ -65,7 +65,7 @@ export default function QuizWarning({ onProceed, onGoToHandbook }) {
         </label>
 
         {/* Actions */}
-        <div className="flex gap-3">
+        <div className="flex flex-col sm:flex-row gap-3">
           <button
             onClick={onGoToHandbook}
             className="flex-1 px-5 py-3 bg-gsrp-dark-surface border border-gsrp-dark-border rounded-xl text-gsrp-teal-light/60 text-sm font-bold hover:border-gsrp-teal/30 hover:text-gsrp-teal-light transition-all cursor-pointer"

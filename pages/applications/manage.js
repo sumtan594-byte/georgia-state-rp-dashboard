@@ -261,14 +261,14 @@ export default function ManageApplicationTypes() {
   if (!canReviewApplications(effectiveSession)) return <AccessDenied roleId="1372491512709124106" />;
 
   return (
-    <div className={`max-w-6xl mx-auto py-12 px-6 transition-transform duration-500 ${isShaking ? 'animate-shake' : ''}`}>
+    <div className={`max-w-6xl mx-auto py-12 px-4 md:px-6 transition-transform duration-500 ${isShaking ? 'animate-shake' : ''}`}>
       <Head>
         <title>Manage Application Types | GSRP</title>
       </Head>
 
       {/* Floating Action Bar */}
       {hasChanges && (
-        <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] flex items-center gap-4 bg-gsrp-dark-card border-2 ${isShaking ? 'border-gsrp-orange' : 'border-white/10'} p-4 rounded-2xl shadow-2xl animate-fade-in-up`}>
+        <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] flex flex-wrap items-center gap-4 bg-gsrp-dark-card border-2 ${isShaking ? 'border-gsrp-orange' : 'border-white/10'} p-4 rounded-2xl shadow-2xl animate-fade-in-up max-w-[calc(100vw-32px)]`}>
           <div className="px-4 border-r border-white/5">
             <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gsrp-orange">Unsaved Changes</p>
             <p className="text-[9px] text-white/40 font-bold">You have modified the application structure.</p>

@@ -73,7 +73,7 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
             {sidebarOpen && (
               <div className="md:hidden fixed inset-0 z-50">
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-                <div className="fixed left-0 top-0 h-screen w-64 shadow-2xl">
+                <div className="fixed left-0 top-0 h-screen w-64 max-w-[80vw] shadow-2xl">
                   <Sidebar open={true} onToggle={() => setSidebarOpen(false)} />
                 </div>
               </div>
