@@ -75,6 +75,14 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, message: 'Quiz data fully reset' });
       }
 
+      case 'clear_ridealong_cooldown': {
+        await dbDefault.collection('ridealong_attempts').updateOne(
+          { userId },
+          { $set: { cooldownUntil: null } }
+        );
+        return res.status(200).json({ ok: true, message: 'Ridealong cooldown cleared' });
+      }
+
       case 'revoke_ridealong_pass': {
         await dbDefault.collection('ridealong_attempts').updateOne(
           { userId },

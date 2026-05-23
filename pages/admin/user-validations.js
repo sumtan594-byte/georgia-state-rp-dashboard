@@ -423,6 +423,14 @@ function UserCard({ user, isExpanded, onToggle, onAction, actionLoading, isAdmin
                   disabled={!user.isOnCooldown}
                 />
                 <ActionButton
+                  label="Clear RA Cooldown"
+                  icon={Undo2}
+                  loading={actionLoading[`${user.userId}_clear_ridealong_cooldown`]}
+                  onClick={() => onAction(user.userId, 'clear_ridealong_cooldown', 'Clear ridealong cooldown for this user?')}
+                  variant="warning"
+                  disabled={!user.ridealongOnCooldown}
+                />
+                <ActionButton
                   label="Revoke Ridealong"
                   icon={Ban}
                   loading={actionLoading[`${user.userId}_revoke_ridealong_pass`]}

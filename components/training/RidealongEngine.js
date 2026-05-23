@@ -35,10 +35,26 @@ export default function RidealongEngine({
   const [showResults, setShowResults] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [cooldownUntil, setCooldownUntil] = useState(null)
+  const [cooldownRemaining, setCooldownRemaining] = useState(null)
   const [hasPassed, setHasPassed] = useState(false)
   const [reviewExpanded, setReviewExpanded] = useState({})
   const containerRef = useRef(null)
   const total = scenarios.length
+
+  useEffect(() => {
+    if (!cooldownUntil) {
+      setCooldownRemaining(null)
+      return
+    }
+    const tick = () => {
+      const remaining = Math.max(0, Math.floor((new Date(cooldownUntil).getTime() - Date.now()) / 1000))
+      setCooldownRemaining(remaining)
+      if (remaining <= 0) setCooldownUntil(null)
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [cooldownUntil])
 
   const scenario = scenarios[currentQ]
   const progress = ((currentQ + (answered ? 1 : 0)) / total) * 100
@@ -129,6 +145,7 @@ export default function RidealongEngine({
     setResults([])
     setShowResults(false)
     setCooldownUntil(null)
+    setCooldownRemaining(null)
     setHasPassed(false)
   }, [])
 
@@ -199,14 +216,17 @@ export default function RidealongEngine({
             </div>
           </div>
 
-          {!passed && cooldownUntil && (
+          {!passed && cooldownRemaining !== null && cooldownRemaining > 0 && (
             <div className="bg-gsrp-sunset/10 border border-gsrp-sunset/20 rounded-xl p-4 mb-6">
               <div className="flex items-center justify-center gap-2 text-gsrp-sunset text-sm font-bold">
                 <Clock size={16} />
-                <span>Cooldown: {cooldownHours} hours</span>
+                <span>Cooldown</span>
               </div>
-              <p className="text-gsrp-teal-light/40 text-xs mt-1 text-center">
-                Next attempt available after {new Date(cooldownUntil).toLocaleString()}
+              <p className="text-2xl font-black text-gsrp-sunset mt-2 tabular-nums">
+                {Math.floor(cooldownRemaining / 3600)}h {Math.floor((cooldownRemaining % 3600) / 60)}m {cooldownRemaining % 60}s
+              </p>
+              <p className="text-gsrp-teal-light/40 text-xs mt-2 text-center">
+                Next attempt available {new Date(cooldownUntil).toLocaleString()}
               </p>
             </div>
           )}
@@ -232,15 +252,17 @@ export default function RidealongEngine({
             ) : (
               <button
                 onClick={handleRetry}
-                disabled={!!cooldownUntil}
+                disabled={cooldownRemaining !== null && cooldownRemaining > 0}
                 className={`flex-1 px-5 py-3 rounded-xl font-bold text-sm transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                  cooldownUntil
+                  cooldownRemaining !== null && cooldownRemaining > 0
                     ? 'bg-gsrp-dark-surface text-gsrp-teal-light/20 border border-gsrp-dark-border cursor-not-allowed'
                     : 'bg-gsrp-orange text-white hover:bg-gsrp-orange/90'
                 }`}
               >
                 <RotateCcw size={16} />
-                {cooldownUntil ? `Retry in ${cooldownHours}h` : 'Retry Ridealong'}
+                {cooldownRemaining !== null && cooldownRemaining > 0
+                  ? `Retry in ${Math.floor(cooldownRemaining / 3600)}h ${Math.floor((cooldownRemaining % 3600) / 60)}m ${cooldownRemaining % 60}s`
+                  : 'Retry Ridealong'}
               </button>
             )}
           </div>

@@ -133,6 +133,9 @@ export default async function handler(req, res) {
         };
       }
       userMap[ra.userId].ridealongPassed = ra.hasPassed || false;
+      userMap[ra.userId].ridealongCooldownUntil = ra.cooldownUntil || null;
+      const raCooldown = ra.cooldownUntil ? new Date(ra.cooldownUntil) : null;
+      userMap[ra.userId].ridealongOnCooldown = !!(raCooldown && raCooldown > new Date());
     }
 
     const users = Object.values(userMap).sort((a, b) => {

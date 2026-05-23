@@ -38,7 +38,11 @@ function drawScenarios() {
     if (!picked.find(p => p.id === s.id)) picked.push(s)
   }
 
-  return shuffleArray(picked)
+  const shuffled = shuffleArray(picked)
+  return shuffled.map(s => ({
+    ...s,
+    options: shuffleArray(s.options),
+  }))
 }
 
 export default function RidealongPage() {
@@ -54,6 +58,7 @@ export default function RidealongPage() {
   const [scenarios, setScenarios] = useState([])
   const [started, setStarted] = useState(false)
   const [cooldownUntil, setCooldownUntil] = useState(null)
+  const [cooldownRemaining, setCooldownRemaining] = useState(null)
   const [revoked, setRevoked] = useState(false)
 
   useEffect(() => {
@@ -90,6 +95,21 @@ export default function RidealongPage() {
     }
     checkAccess()
   }, [status, hasRefreshed, effectiveSession, accessDenied])
+
+  useEffect(() => {
+    if (!cooldownUntil) {
+      setCooldownRemaining(null)
+      return
+    }
+    const tick = () => {
+      const remaining = Math.max(0, Math.floor((new Date(cooldownUntil).getTime() - Date.now()) / 1000))
+      setCooldownRemaining(remaining)
+      if (remaining <= 0) setCooldownUntil(null)
+    }
+    tick()
+    const id = setInterval(tick, 1000)
+    return () => clearInterval(id)
+  }, [cooldownUntil])
 
   useEffect(() => {
     if (!effectiveSession?.user?.id) return
@@ -301,10 +321,13 @@ export default function RidealongPage() {
         </div>
       )}
 
-      {cooldownUntil && (
+      {cooldownUntil && cooldownRemaining !== null && cooldownRemaining > 0 && (
         <div className="card-glass rounded-2xl border border-gsrp-sunset/30 p-6 text-center">
           <p className="text-gsrp-sunset text-sm font-bold mb-1">Cooldown Active</p>
-          <p className="text-gsrp-teal-light/50 text-xs">
+          <p className="text-2xl font-black text-gsrp-sunset mt-2 tabular-nums">
+            {Math.floor(cooldownRemaining / 3600)}h {Math.floor((cooldownRemaining % 3600) / 60)}m {cooldownRemaining % 60}s
+          </p>
+          <p className="text-gsrp-teal-light/50 text-xs mt-2">
             Next attempt available {new Date(cooldownUntil).toLocaleString()}
           </p>
         </div>
