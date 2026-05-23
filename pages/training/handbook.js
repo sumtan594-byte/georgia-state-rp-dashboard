@@ -192,7 +192,6 @@ Appeal Windows:
   }, [status, hasRefreshed, accessDenied, effectiveSession]);
 
   const toggleSection = async (sectionId) => {
-    if (!effectiveSession?.user?.roles?.includes('1372476380096237609')) return;
     try {
       const res = await fetch('/api/training/progress', {
         method: 'POST',
@@ -343,19 +342,19 @@ Appeal Windows:
             return (
                <div key={s.id} id={'hb-' + s.id} className="card-glass rounded-2xl p-6 scroll-mt-24 relative group">
                   <div className="absolute top-4 right-4 flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {effectiveSession?.user?.roles?.includes('1372476380096237609') && (
+                    {(effectiveSession?.user?.roles?.includes('1372476380096237609') || effectiveSession?.user?.isAdmin) && (
                      <button
-                       onClick={() => toggleSection(s.id)}
-                       className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${
-                         progress.completedSections.includes(s.id) 
-                           ? 'bg-gsrp-teal/20 text-gsrp-teal-light border border-gsrp-teal/30' 
-                           : 'bg-gsrp-orange/20 text-gsrp-orange border border-gsrp-orange/30 hover:bg-gsrp-orange/30'
-                       }`}
-                     >
-                       {progress.completedSections.includes(s.id) ? <CheckCircle2 size={14} /> : <Circle size={14} />}
-                       {progress.completedSections.includes(s.id) ? 'Completed' : 'Mark as Read'}
-                     </button>
-                   )}
+                        onClick={() => toggleSection(s.id)}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${
+                          progress.completedSections.includes(s.id) 
+                            ? 'bg-gsrp-teal/20 text-gsrp-teal-light border border-gsrp-teal/30' 
+                            : 'bg-gsrp-orange/20 text-gsrp-orange border border-gsrp-orange/30 hover:bg-gsrp-orange/30'
+                        }`}
+                      >
+                        {progress.completedSections.includes(s.id) ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+                        {progress.completedSections.includes(s.id) ? 'Completed' : 'Mark as Read'}
+                      </button>
+                    )}
                    <button
                      onClick={() => {
                        const url = window.location.origin + '/training/handbook#' + s.id;
