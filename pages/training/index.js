@@ -528,20 +528,6 @@ export default function TrainingPage() {
 }
 
 export async function getServerSideProps(context) {
-  const { isFullAdmin } = await import('../../lib/admin-helper');
   const session = await getServerSession(context.req, context.res, authOptions);
-
-  if (!session) return { props: {} };
-
-  const hasRole = session.user?.roles?.includes('1372476380096237609');
-  const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || []);
-
-  // Only redirect if we have roles data in the session AND neither condition is met.
-  // If roles are absent from the JWT (e.g. role was assigned after last login),
-  // let the client-side UserRefreshContext handle the access check with fresh Discord data.
-  if ((session.user?.roles?.length > 0 || isAdmin) && !hasRole && !isAdmin) {
-    return { redirect: { destination: '/', permanent: false } };
-  }
-
   return { props: {} };
 }

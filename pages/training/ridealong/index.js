@@ -389,17 +389,6 @@ function CheckIcon() {
 }
 
 export async function getServerSideProps(context) {
-  const { isFullAdmin } = await import('../../../lib/admin-helper')
   const session = await getServerSession(context.req, context.res, authOptions)
-
-  if (!session) return { props: {} }
-
-  const hasRole = session.user?.roles?.includes('1372476380096237609')
-  const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || [])
-
-  if ((session.user?.roles?.length > 0 || isAdmin) && !hasRole && !isAdmin) {
-    return { redirect: { destination: '/', permanent: false } }
-  }
-
   return { props: {} }
 }
