@@ -200,20 +200,20 @@ const KeystrokePlayer = ({ keystrokes, pastes, originalText, os }) => {
   const [showKeyboard, setShowKeyboard] = useState(false);
   const [activeKeys, setActiveKeys] = useState(new Set());
   const [heldModifiers, setHeldModifiers] = useState(new Set());
+  // Use a ref for the "stop requested" flag so the async chain can check it
+  const stopRequestedRef = useRef(false);
   const timerRef = useRef(null);
-  const timelineRef = useRef([]);
 
   const buildTimeline = useCallback(() => {
     const keys = (keystrokes || []).map(k => ({ ...k, eventType: 'keystroke' }));
     const pasteEvents = (pastes || []).map(p => ({ ...p, eventType: 'paste' }));
-    const merged = [...keys, ...pasteEvents].sort((a, b) => a.timestamp - b.timestamp);
-    timelineRef.current = merged;
-    return merged;
+    return [...keys, ...pasteEvents].sort((a, b) => a.timestamp - b.timestamp);
   }, [keystrokes, pastes]);
 
   const stop = useCallback(() => {
-    setPlaying(false);
+    stopRequestedRef.current = true;
     if (timerRef.current) clearTimeout(timerRef.current);
+    setPlaying(false);
     setSegments([]);
     setProgress(0);
     setActiveKeys(new Set());
@@ -222,94 +222,112 @@ const KeystrokePlayer = ({ keystrokes, pastes, originalText, os }) => {
 
   const play = useCallback(() => {
     if (playing) return stop();
-    
+
     const sorted = buildTimeline();
     if (sorted.length === 0) return;
-    
+
+    stopRequestedRef.current = false;
     setPlaying(true);
     setSegments([]);
     setProgress(0);
     setActiveKeys(new Set());
     setHeldModifiers(new Set());
 
-    let textBuffer = '';
-    let segList = [];
+    // Build cumulative delays from relative inter-keystroke gaps (capped at 300ms each).
+    // This avoids negative delays from out-of-order or same-ms timestamps, and
+    // avoids the old recursive-setTimeout pattern that fired everything at once.
+    const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock']);
+    const KEY_CODE_MAP = { 'Backspace': 'Backspace', 'Enter': 'Enter', 'Tab': 'Tab', ' ': 'Space' };
 
-    const playSequence = (index) => {
-      if (index >= sorted.length) {
-        if (textBuffer) {
-          segList.push({ type: 'text', content: textBuffer });
-          textBuffer = '';
-        }
-        setSegments([...segList]);
-        setPlaying(false);
-        setActiveKeys(new Set());
-        setHeldModifiers(new Set());
-        return;
+    let cumulativeDelay = 0;
+    // Snapshot of mutable text state — shared across closures via object ref
+    const state = { textBuffer: '', segList: [] };
+
+    sorted.forEach((current, index) => {
+      // Compute per-event delay: clamp gap to [10, 300]ms, or 0 for first event
+      if (index > 0) {
+        const raw = current.timestamp - sorted[index - 1].timestamp;
+        cumulativeDelay += Math.min(Math.max(raw, 10), 300);
       }
 
-      const current = sorted[index];
-      const nextDelay = index === 0 ? 0 : Math.min(current.timestamp - sorted[index - 1].timestamp, 300);
+      const delay = cumulativeDelay;
 
       timerRef.current = setTimeout(() => {
+        // Bail out if stop() was called
+        if (stopRequestedRef.current) return;
+
         if (current.eventType === 'paste') {
-          if (textBuffer) {
-            segList.push({ type: 'text', content: textBuffer });
-            textBuffer = '';
+          if (state.textBuffer) {
+            state.segList.push({ type: 'text', content: state.textBuffer });
+            state.textBuffer = '';
           }
-          segList.push({ type: 'paste', content: current.content });
+          state.segList.push({ type: 'paste', content: current.content || '' });
           setActiveKeys(new Set());
         } else {
           const key = current.key;
-          const isModifier = ['Shift', 'Control', 'Alt', 'Meta', 'CapsLock'].includes(key);
-          if (key === 'Backspace') {
-            if (textBuffer.length > 0) {
-              textBuffer = textBuffer.slice(0, -1);
-            } else {
-              for (let i = segList.length - 1; i >= 0; i--) {
-                if (segList[i].type === 'text' && segList[i].content.length > 0) {
-                  segList[i] = { ...segList[i], content: segList[i].content.slice(0, -1) };
+          if (!key) {
+            // Skip malformed keystroke entries
+          } else if (key === 'Backspace') {
+            if (state.textBuffer.length > 0) {
+              state.textBuffer = state.textBuffer.slice(0, -1);
+            } else if (state.segList.length > 0) {
+              // Walk back through segments to delete one character
+              for (let i = state.segList.length - 1; i >= 0; i--) {
+                if (state.segList[i].type === 'text' && state.segList[i].content.length > 0) {
+                  state.segList[i] = { ...state.segList[i], content: state.segList[i].content.slice(0, -1) };
                   break;
                 }
               }
             }
           } else if (key === 'Enter') {
-            textBuffer += '\n';
+            state.textBuffer += '\n';
           } else if (key === 'Tab') {
-            textBuffer += '    ';
+            state.textBuffer += '    ';
           } else if (key.length === 1) {
-            textBuffer += key;
+            state.textBuffer += key;
           }
+          // All other special keys (ArrowLeft, etc.) are ignored for text output
 
-          if (isModifier) {
-            setHeldModifiers(prev => {
-              const next = new Set(prev);
-              if (next.has(key)) next.delete(key);
-              else next.add(key);
-              return next;
-            });
+          if (MODIFIER_KEYS.has(key)) {
+            // Show modifier as "held" for one step, then clear — simple visual feedback
+            setHeldModifiers(new Set([key]));
+            setTimeout(() => setHeldModifiers(new Set()), 200);
           } else {
-            const codeMap = {
-              'Backspace': 'Backspace', 'Enter': 'Enter', 'Tab': 'Tab',
-              ' ': 'Space',
-            };
-            const code = codeMap[key] || (key.length === 1 ? `Key${key.toUpperCase()}` : key);
+            const code = KEY_CODE_MAP[key] || (key.length === 1 ? `Key${key.toUpperCase()}` : key);
             setActiveKeys(new Set([code]));
             setTimeout(() => setActiveKeys(new Set()), 150);
           }
         }
 
-        setSegments([...segList, textBuffer ? { type: 'text', content: textBuffer } : null].filter(Boolean));
-        setProgress(Math.round(((index + 1) / sorted.length) * 100));
-        playSequence(index + 1);
-      }, nextDelay);
-    };
+        // Push current textBuffer as a trailing live segment for display
+        const liveSegments = [
+          ...state.segList,
+          state.textBuffer ? { type: 'text', content: state.textBuffer } : null,
+        ].filter(Boolean);
 
-    playSequence(0);
+        setSegments(liveSegments);
+        setProgress(Math.round(((index + 1) / sorted.length) * 100));
+
+        // Last event — flush buffer and mark done
+        if (index === sorted.length - 1) {
+          if (state.textBuffer) {
+            state.segList.push({ type: 'text', content: state.textBuffer });
+            state.textBuffer = '';
+          }
+          setSegments([...state.segList]);
+          setPlaying(false);
+          setActiveKeys(new Set());
+          setHeldModifiers(new Set());
+        }
+      }, delay);
+    });
   }, [playing, stop, buildTimeline]);
 
   useEffect(() => {
-    return () => { if (timerRef.current) clearTimeout(timerRef.current); };
+    return () => {
+      stopRequestedRef.current = true;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
   }, []);
 
   return (
