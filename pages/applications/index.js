@@ -140,6 +140,7 @@ export default function ApplicationsList() {
             <p className="text-gsrp-teal-light/40 font-medium">No {activeTab} applications found.</p>
           </div>
         ) : (
+          <>
           {/* Mobile cards — visible on small screens */}
           <div className="block md:hidden divide-y divide-gsrp-dark-border/30">
             {filtered.map((app) => (
@@ -249,6 +250,7 @@ export default function ApplicationsList() {
               </tbody>
             </table>
           </div>
+          </>
         )}
       </div>
 
