@@ -140,7 +140,49 @@ export default function ApplicationsList() {
             <p className="text-gsrp-teal-light/40 font-medium">No {activeTab} applications found.</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
+          {/* Mobile cards — visible on small screens */}
+          <div className="block md:hidden divide-y divide-gsrp-dark-border/30">
+            {filtered.map((app) => (
+              <div key={app._id} className="p-4 flex items-center gap-3">
+                {app.userImage ? (
+                  <img src={app.userImage} alt="" className="w-10 h-10 rounded-full border border-gsrp-dark-border/50 object-cover flex-shrink-0" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 flex items-center justify-center text-gsrp-teal-light font-black text-xs flex-shrink-0">
+                    {app.username.charAt(0).toUpperCase()}
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-bold text-sm truncate">{app.username}</p>
+                  <p className="text-[10px] text-gsrp-teal-light/30 font-mono truncate">{app.userId}</p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-widest border
+                      ${app.status === 'pending' ? 'bg-gsrp-orange/10 text-gsrp-orange border-gsrp-orange/20' :
+                        app.status === 'accepted' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
+                        'bg-red-500/10 text-red-500 border-red-500/20'}
+                    `}>{app.status}</span>
+                    <span className="text-[10px] text-gsrp-teal-light/30">{new Date(app.submittedAt).toLocaleDateString()}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <Link
+                    href={`/applications/${app._id}`}
+                    className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-xs font-bold text-gsrp-teal-light hover:text-white hover:border-gsrp-orange/50 transition-all"
+                  >
+                    Review <ChevronRight size={13} />
+                  </Link>
+                  <button
+                    onClick={() => setDeleteTarget(app)}
+                    className="p-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-gsrp-teal-light/30 hover:text-red-500 hover:border-red-500/30 transition-all"
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Desktop table — hidden on small screens */}
+          <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gsrp-dark-border/50 bg-gsrp-dark-surface/30">
@@ -177,8 +219,8 @@ export default function ApplicationsList() {
                     <td className="px-6 py-4">
                       <div className="flex justify-center">
                         <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border
-                          ${app.status === 'pending' ? 'bg-gsrp-orange/10 text-gsrp-orange border-gsrp-orange/20' : 
-                            app.status === 'accepted' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 
+                          ${app.status === 'pending' ? 'bg-gsrp-orange/10 text-gsrp-orange border-gsrp-orange/20' :
+                            app.status === 'accepted' ? 'bg-green-500/10 text-green-500 border-green-500/20' :
                             'bg-red-500/10 text-red-500 border-red-500/20'}
                         `}>
                           {app.status}
@@ -187,7 +229,7 @@ export default function ApplicationsList() {
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Link 
+                        <Link
                           href={`/applications/${app._id}`}
                           className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-xs font-bold text-gsrp-teal-light hover:text-white hover:border-gsrp-orange/50 transition-all group-hover:bg-gsrp-dark-surface/80"
                         >

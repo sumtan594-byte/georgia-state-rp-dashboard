@@ -195,207 +195,140 @@ const KeyboardVisualizer = ({ os, activeKeys, heldModifiers }) => {
 
 const KeystrokePlayer = ({ keystrokes, pastes, originalText, os }) => {
   const [playing, setPlaying] = useState(false);
-  const [segments, setSegments] = useState([]);
+  const [displayText, setDisplayText] = useState('');
+  const [pasteSegments, setPasteSegments] = useState([]);
   const [progress, setProgress] = useState(0);
-  const [showKeyboard, setShowKeyboard] = useState(false);
-  const [activeKeys, setActiveKeys] = useState(new Set());
-  const [heldModifiers, setHeldModifiers] = useState(new Set());
-  // Use a ref for the "stop requested" flag so the async chain can check it
-  const stopRequestedRef = useRef(false);
+  const stopRef = useRef(false);
   const timerRef = useRef(null);
 
-  const buildTimeline = useCallback(() => {
+  // Build a flat sorted timeline of keystroke + paste events
+  const buildTimeline = () => {
     const keys = (keystrokes || []).map(k => ({ ...k, eventType: 'keystroke' }));
     const pasteEvents = (pastes || []).map(p => ({ ...p, eventType: 'paste' }));
     return [...keys, ...pasteEvents].sort((a, b) => a.timestamp - b.timestamp);
-  }, [keystrokes, pastes]);
+  };
 
-  const stop = useCallback(() => {
-    stopRequestedRef.current = true;
+  const stopReplay = () => {
+    stopRef.current = true;
     if (timerRef.current) clearTimeout(timerRef.current);
     setPlaying(false);
-    setSegments([]);
+    setDisplayText('');
+    setPasteSegments([]);
     setProgress(0);
-    setActiveKeys(new Set());
-    setHeldModifiers(new Set());
-  }, []);
+  };
 
-  const play = useCallback(() => {
-    if (playing) return stop();
+  const startReplay = () => {
+    if (playing) return stopReplay();
 
     const sorted = buildTimeline();
-    if (sorted.length === 0) return;
+    if (!sorted.length) return;
 
-    stopRequestedRef.current = false;
+    stopRef.current = false;
     setPlaying(true);
-    setSegments([]);
+    setDisplayText('');
+    setPasteSegments([]);
     setProgress(0);
-    setActiveKeys(new Set());
-    setHeldModifiers(new Set());
 
-    // Build cumulative delays from relative inter-keystroke gaps (capped at 300ms each).
-    // This avoids negative delays from out-of-order or same-ms timestamps, and
-    // avoids the old recursive-setTimeout pattern that fired everything at once.
-    const MODIFIER_KEYS = new Set(['Shift', 'Control', 'Alt', 'Meta', 'CapsLock']);
-    const KEY_CODE_MAP = { 'Backspace': 'Backspace', 'Enter': 'Enter', 'Tab': 'Tab', ' ': 'Space' };
+    // text accumulator — lives in a ref so the recursive closure always reads current value
+    const acc = { text: '' };
 
-    let cumulativeDelay = 0;
-    // Snapshot of mutable text state — shared across closures via object ref
-    const state = { textBuffer: '', segList: [] };
-
-    sorted.forEach((current, index) => {
-      // Compute per-event delay: clamp gap to [10, 300]ms, or 0 for first event
-      if (index > 0) {
-        const raw = current.timestamp - sorted[index - 1].timestamp;
-        cumulativeDelay += Math.min(Math.max(raw, 10), 300);
+    const step = (index) => {
+      if (stopRef.current || index >= sorted.length) {
+        if (!stopRef.current) {
+          setDisplayText(acc.text);
+          setProgress(100);
+          setPlaying(false);
+        }
+        return;
       }
 
-      const delay = cumulativeDelay;
+      const event = sorted[index];
+      const prev = sorted[index - 1];
+      // Gap clamped to 10–300 ms so it always feels snappy and never hangs
+      const delay = index === 0 ? 0 : Math.min(Math.max(event.timestamp - prev.timestamp, 10), 300);
 
       timerRef.current = setTimeout(() => {
-        // Bail out if stop() was called
-        if (stopRequestedRef.current) return;
+        if (stopRef.current) return;
 
-        if (current.eventType === 'paste') {
-          if (state.textBuffer) {
-            state.segList.push({ type: 'text', content: state.textBuffer });
-            state.textBuffer = '';
-          }
-          state.segList.push({ type: 'paste', content: current.content || '' });
-          setActiveKeys(new Set());
+        if (event.eventType === 'paste') {
+          acc.text += (event.content || '');
+          setPasteSegments(ps => [...ps, { index: index, content: event.content || '', timestamp: event.timestamp }]);
         } else {
-          const key = current.key;
+          const key = event.key;
           if (!key) {
-            // Skip malformed keystroke entries
+            // skip empty/malformed
           } else if (key === 'Backspace') {
-            if (state.textBuffer.length > 0) {
-              state.textBuffer = state.textBuffer.slice(0, -1);
-            } else if (state.segList.length > 0) {
-              // Walk back through segments to delete one character
-              for (let i = state.segList.length - 1; i >= 0; i--) {
-                if (state.segList[i].type === 'text' && state.segList[i].content.length > 0) {
-                  state.segList[i] = { ...state.segList[i], content: state.segList[i].content.slice(0, -1) };
-                  break;
-                }
-              }
-            }
+            acc.text = acc.text.slice(0, -1);
           } else if (key === 'Enter') {
-            state.textBuffer += '\n';
+            acc.text += '\n';
           } else if (key === 'Tab') {
-            state.textBuffer += '    ';
+            acc.text += '\t';
           } else if (key.length === 1) {
-            state.textBuffer += key;
+            // Regular printable character (already correct case from browser event)
+            acc.text += key;
           }
-          // All other special keys (ArrowLeft, etc.) are ignored for text output
-
-          if (MODIFIER_KEYS.has(key)) {
-            // Show modifier as "held" for one step, then clear — simple visual feedback
-            setHeldModifiers(new Set([key]));
-            setTimeout(() => setHeldModifiers(new Set()), 200);
-          } else {
-            const code = KEY_CODE_MAP[key] || (key.length === 1 ? `Key${key.toUpperCase()}` : key);
-            setActiveKeys(new Set([code]));
-            setTimeout(() => setActiveKeys(new Set()), 150);
-          }
+          // Ignore modifier-only keys, arrows, etc — they don't affect text output
         }
 
-        // Push current textBuffer as a trailing live segment for display
-        const liveSegments = [
-          ...state.segList,
-          state.textBuffer ? { type: 'text', content: state.textBuffer } : null,
-        ].filter(Boolean);
-
-        setSegments(liveSegments);
+        setDisplayText(acc.text);
         setProgress(Math.round(((index + 1) / sorted.length) * 100));
-
-        // Last event — flush buffer and mark done
-        if (index === sorted.length - 1) {
-          if (state.textBuffer) {
-            state.segList.push({ type: 'text', content: state.textBuffer });
-            state.textBuffer = '';
-          }
-          setSegments([...state.segList]);
-          setPlaying(false);
-          setActiveKeys(new Set());
-          setHeldModifiers(new Set());
-        }
+        step(index + 1);
       }, delay);
-    });
-  }, [playing, stop, buildTimeline]);
+    };
+
+    step(0);
+  };
 
   useEffect(() => {
     return () => {
-      stopRequestedRef.current = true;
+      stopRef.current = true;
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, []);
 
   return (
     <div className="mt-4 p-4 bg-black/40 rounded-2xl border border-white/5 overflow-hidden">
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <button 
-            onClick={play} 
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all
-              ${playing ? 'bg-gsrp-orange text-white' : 'bg-gsrp-dark-surface text-gsrp-teal-light/40 hover:text-white'}
-            `}
-          >
-            {playing ? <RotateCcw size={12} /> : <Play size={12} />}
-            {playing ? 'Stop Replay' : 'Replay Typing'}
-          </button>
-          {playing && (
-            <span className="text-[10px] font-bold text-gsrp-orange animate-pulse">Playing Sequence...</span>
-          )}
-          <button
-            onClick={() => setShowKeyboard(!showKeyboard)}
-            className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[9px] font-bold uppercase tracking-wider transition-all
-              ${showKeyboard ? 'bg-gsrp-teal/20 text-gsrp-teal border border-gsrp-teal/30' : 'bg-gsrp-dark-surface text-gsrp-teal-light/30 hover:text-white border border-white/5'}
-            `}
-          >
-            <Keyboard size={10} /> Keyboard
-          </button>
-        </div>
-        <span className="text-[10px] font-mono text-white/20">{progress}%</span>
-      </div>
-      
-      <div className="relative min-h-[60px] bg-gsrp-dark-surface/50 rounded-xl p-4 border border-white/5">
-        <p className="text-sm font-medium text-gsrp-teal-light leading-relaxed whitespace-pre-wrap">
-          {playing || segments.length > 0 ? (
-            <>
-              {segments.map((seg, i) =>
-                seg.type === 'paste' ? (
-                  <span key={i} className="bg-amber-500/20 text-amber-300 px-1 py-0.5 rounded border border-amber-500/30 font-mono text-xs">
-                    {seg.content}
-                  </span>
-                ) : (
-                  <span key={i}>{seg.content}</span>
-                )
-              )}
-              {playing && <span className="inline-block w-1.5 h-4 bg-gsrp-orange ml-1 animate-pulse align-middle" />}
-            </>
-          ) : (
-            <span className="opacity-20 italic">Click replay to see typing behavior...</span>
-          )}
-        </p>
+      {/* Controls — wrap on small screens so buttons are always visible */}
+      <div className="flex flex-wrap items-center gap-2 mb-3">
+        <button
+          onClick={startReplay}
+          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all
+            ${playing ? 'bg-gsrp-orange text-white' : 'bg-gsrp-dark-surface text-gsrp-teal-light/40 hover:text-white border border-white/5'}
+          `}
+        >
+          {playing ? <RotateCcw size={12} /> : <Play size={12} />}
+          {playing ? 'Stop' : 'Replay Typing'}
+        </button>
+        {playing && (
+          <span className="text-[10px] font-bold text-gsrp-orange animate-pulse">Playing…</span>
+        )}
+        <span className="ml-auto text-[10px] font-mono text-white/20">{progress}%</span>
       </div>
 
-      {(pastes || []).length > 0 && (
+      {/* Text display */}
+      <div className="relative min-h-[60px] bg-gsrp-dark-surface/50 rounded-xl p-4 border border-white/5">
+        {playing || displayText ? (
+          <p className="text-sm font-medium text-gsrp-teal-light leading-relaxed whitespace-pre-wrap break-words">
+            {displayText}
+            {playing && (
+              <span className="inline-block w-1.5 h-4 bg-gsrp-orange ml-0.5 animate-pulse align-middle" />
+            )}
+          </p>
+        ) : (
+          <p className="text-sm text-gsrp-teal-light/20 italic">Click replay to see typing behaviour…</p>
+        )}
+      </div>
+
+      {/* Paste warnings */}
+      {pasteSegments.length > 0 && (
         <div className="mt-3 space-y-1">
-          {(pastes || []).map((p, i) => (
+          {pasteSegments.map((p, i) => (
             <div key={i} className="flex items-start gap-2 text-[10px] text-amber-400/70 bg-amber-500/5 px-3 py-1.5 rounded-lg border border-amber-500/10">
               <AlertTriangle size={10} className="mt-0.5 flex-shrink-0" />
-              <span>Paste #{i + 1}: {p.charCount || p.content?.length || 0} chars at {new Date(p.timestamp).toLocaleTimeString()}</span>
+              <span>Paste #{i + 1}: {p.content.length} chars at {new Date(p.timestamp).toLocaleTimeString()}</span>
             </div>
           ))}
         </div>
-      )}
-
-      {showKeyboard && (
-        <KeyboardVisualizer 
-          os={os || 'windows'} 
-          activeKeys={activeKeys} 
-          heldModifiers={heldModifiers} 
-        />
       )}
     </div>
   );
