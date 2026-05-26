@@ -961,7 +961,7 @@ export default function ApplicationDetail() {
                 </div>
                 <div className="text-center">
                   <p className="text-[9px] font-bold text-gsrp-teal-light/20 uppercase tracking-widest">
-                    Reviewed by {`<@${application.reviewedBy}>`}
+                    Reviewed by {application.reviewedByName || application.reviewedBy || 'Unknown'}
                   </p>
                 </div>
               </div>

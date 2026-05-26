@@ -30,7 +30,7 @@ export default async function handler(req, res) {
     // Update DB
     await db.collection("applications").updateOne(
       { _id: new ObjectId(id) },
-      { $set: { status, reason, reviewedBy: session.user.id, reviewedAt: new Date() } }
+      { $set: { status, reason, reviewedBy: session.user.id, reviewedByName: session.user.name, reviewedAt: new Date() } }
     );
 
     const isAccepted = status === 'accepted';
