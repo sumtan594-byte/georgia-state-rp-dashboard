@@ -3,7 +3,7 @@ import { authOptions } from '../../../../lib/auth-options'
 import clientPromise from '../../../../lib/mongodb'
 import { rateLimit } from '../../../../lib/rate-limiter'
 import { RIDEALONG_CONFIG, RIDEALONG_ROLES, RIDEALONG_NICKNAME_PREFIX } from '../../../../lib/ridealong-config'
-import { getGuildMember, addMemberRole, modifyGuildMember } from '../../../../lib/discord-v2'
+import { getGuildMember, addMemberRole, removeMemberRole, modifyGuildMember } from '../../../../lib/discord-v2'
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -114,6 +114,8 @@ export default async function handler(req, res) {
         await modifyGuildMember(DISCORD_GUILD_ID, userId, {
           nick: `${RIDEALONG_NICKNAME_PREFIX}${currentNick}`,
         })
+
+        await removeMemberRole(DISCORD_GUILD_ID, userId, "1372476380096237609")
 
         discordRolesApplied = true
 

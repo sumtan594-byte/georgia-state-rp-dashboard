@@ -63,8 +63,8 @@ export default async function handler(req, res) {
         if (appType.slug === 'staff') {
           console.log(`[Role Sync] Applying legacy staff roles...`);
           await addMemberRole(guildId, application.userId, "1372480733234593812");
-          console.log(`[Role Sync] Removing trainee role on staff accept`);
-          await removeMemberRole(guildId, application.userId, "1372476380096237609");
+          console.log(`[Role Sync] Adding trainee role on staff accept`);
+          await addMemberRole(guildId, application.userId, "1372476380096237609");
         }
       } else {
         await helper('add', appType.roleAddDenied);
