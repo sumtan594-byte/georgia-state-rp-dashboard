@@ -19,7 +19,8 @@ export default async function handler(req, res) {
       return res.status(200).json(progress || { 
         userId, 
         completedSections: [], 
-        handbookCompleted: false 
+        handbookCompleted: false,
+        readingVerified: false
       });
     } catch (error) {
       console.error('[Training Progress GET Error]', error);
@@ -40,10 +41,19 @@ export default async function handler(req, res) {
       if (resetAll) {
         await db.collection("training_progress").updateOne(
           { userId },
-          { $set: { completedSections: [], handbookCompleted: false, lastUpdated: new Date() } },
+          { $set: { completedSections: [], handbookCompleted: false, readingVerified: false, lastUpdated: new Date() } },
           { upsert: true }
         );
-        return res.status(200).json({ completedSections: [], handbookCompleted: false });
+        return res.status(200).json({ completedSections: [], handbookCompleted: false, readingVerified: false });
+      }
+
+      if (req.body.readingVerified) {
+        await db.collection("training_progress").updateOne(
+          { userId },
+          { $set: { readingVerified: true, lastUpdated: new Date() } },
+          { upsert: true }
+        );
+        return res.status(200).json({ readingVerified: true });
       }
 
       if (!sectionId) {

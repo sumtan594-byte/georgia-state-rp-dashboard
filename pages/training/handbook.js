@@ -104,7 +104,7 @@ export default function HandbookPage() {
   const effectiveSession = refreshedSession || session;
   const router = useRouter();
   const [activeSection, setActiveSection] = useState(ALL_SECTIONS[0]?.id || '');
-  const [progress, setProgress] = useState({ completedSections: [], handbookCompleted: false });
+  const [progress, setProgress] = useState({ completedSections: [], handbookCompleted: false, readingVerified: false });
   const [loadingProgress, setLoadingProgress] = useState(true);
   const [showCompletion, setShowCompletion] = useState(false);
   const [showWarning, setShowWarning] = useState(false);
@@ -188,17 +188,26 @@ export default function HandbookPage() {
   }, []);
 
   const handleGoToQuiz = () => {
+    if (progress.readingVerified) {
+      router.push('/training');
+      return;
+    }
     const totalTime = (Date.now() - pageEntryTime.current) / 1000;
     if (totalTime < 75) {
       setWarningMessage('Actually read it, not just pressing the read button. :)');
       setShowWarning(true);
       return;
     }
+    fetch('/api/training/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ readingVerified: true })
+    }).catch(e => console.error('Failed to set readingVerified', e));
     router.push('/training');
   };
 
   const handleGoBackAndRead = () => {
-    setProgress({ completedSections: [], handbookCompleted: false });
+    setProgress({ completedSections: [], handbookCompleted: false, readingVerified: false });
     setShowCompletion(false);
     setShowWarning(false);
     pageEntryTime.current = Date.now();
