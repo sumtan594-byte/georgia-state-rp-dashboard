@@ -188,35 +188,12 @@ export default function HandbookPage() {
   }, []);
 
   const handleGoToQuiz = () => {
-    const now = Date.now();
-    const totalTime = (now - pageEntryTime.current) / 1000;
-
-    if (totalTime < 60) {
+    const totalTime = (Date.now() - pageEntryTime.current) / 1000;
+    if (totalTime < 75) {
       setWarningMessage('Actually read it, not just pressing the read button. :)');
       setShowWarning(true);
       return;
     }
-
-    const orderedSections = progress.completedSections
-      .map(id => ({
-        id,
-        time: checkTimestamps.current[id],
-        section: ALL_SECTIONS.find(s => s.id === id)
-      }))
-      .filter(s => s.time)
-      .sort((a, b) => a.time - b.time);
-
-    for (let i = 1; i < orderedSections.length; i++) {
-      const elapsed = orderedSections[i].time - orderedSections[i - 1].time;
-      const wordCount = (orderedSections[i].section?.content || '').split(/\s+/).filter(Boolean).length;
-      const minTime = Math.max(3000, wordCount * 300);
-      if (elapsed < minTime) {
-        setWarningMessage('Actually read it, not just pressing the read button. :)');
-        setShowWarning(true);
-        return;
-      }
-    }
-
     router.push('/training');
   };
 
