@@ -62,11 +62,9 @@ export default async function handler(req, res) {
         // Legacy fallback for main staff app
         if (appType.slug === 'staff') {
           console.log(`[Role Sync] Applying legacy staff roles...`);
-          const legacyRoles = ["1372480733234593812", "1372476380096237609"];
-          for (const roleId of legacyRoles) {
-            console.log(`[Role Sync] Adding legacy role: ${roleId}`);
-            await addMemberRole(guildId, application.userId, roleId);
-          }
+          await addMemberRole(guildId, application.userId, "1372480733234593812");
+          console.log(`[Role Sync] Removing trainee role on staff accept`);
+          await removeMemberRole(guildId, application.userId, "1372476380096237609");
         }
       } else {
         await helper('add', appType.roleAddDenied);
