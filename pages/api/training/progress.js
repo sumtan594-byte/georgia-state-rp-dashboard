@@ -57,8 +57,8 @@ export default async function handler(req, res) {
       // We can pass totalSections from the client or define it here.
       // Let's define the current required sections based on the handbook.js file.
       const REQUIRED_SECTIONS = [
-        'overview', 'guidelines', 'shifts', 'vehicles', 'punishments', 
-        'warnings', 'kicks', 'bans', 'staff-disc', 'escalation', 'custom-commands'
+        '1.1', '1.2', '1.3', '2.1', '3.1', '4.1', '5.1', '6.1', '7.1',
+        '8.1', '8.2', '9.1', '10.1', '11.1', '12.1'
       ];
 
       const handbookCompleted = REQUIRED_SECTIONS.every(id => completedSections.includes(id));
