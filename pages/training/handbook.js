@@ -219,8 +219,7 @@ export default function HandbookPage() {
     return <AccessDenied roleId="1372476380096237609" />;
   }
 
-  return (
-    <div className="max-w-6xl mx-auto animate-fade-in-up">
+  const mainContent = (
       <div className="flex items-center gap-3 mb-6">
         <Link href="/training" className="p-2 rounded-lg hover:bg-gsrp-dark-surface/60 text-gsrp-teal-light/40 hover:text-white transition-colors cursor-pointer">
           <ArrowLeft size={16} />
@@ -340,8 +339,14 @@ export default function HandbookPage() {
         </div>
       )}
 
+    </div>
+  );
+
+  return (
+    <>
+      {mainContent}
       {showWarning && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm animate-fade-in-up">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm">
           <div className="card-glass rounded-2xl p-8 max-w-md mx-4 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gsrp-gold/20 flex items-center justify-center">
               <AlertTriangle size={32} className="text-gsrp-gold" />
@@ -357,7 +362,7 @@ export default function HandbookPage() {
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
