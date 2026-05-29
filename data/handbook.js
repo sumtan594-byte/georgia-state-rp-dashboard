@@ -226,7 +226,10 @@ From SHR to HR:
       {
         id: "11.1",
         title: "Command Reference",
-        content: `
+        content: `At GSRP, we aim to make the moderation experience as smooth and seamless as possible. This is why we offer our staff custom in-game commands which can be run to simplify the moderation processes. For example:
+
+You see someone commit RDM. Instead of going through the whole process of recalling what the punishment is, then checking the user's logs for how many times they did it, then deciding on the punishment, then informing the user, then finally kicking them... Yeah, lots of steps right? Well now you can simply run \`;rdm <user>\` which does all this for you. Then it will respond with "<Punishment given> to <username>" and all you have to do is log it in Melonly! Simple.
+
 | Command Name | Trigger | 1st Offense | 2nd Offense | 3rd Offense |
 | :--- | :--- | :--- | :--- | :--- |
 | **Random Death Match** | \`;rdm\` | Warning | Kick | Ban |
