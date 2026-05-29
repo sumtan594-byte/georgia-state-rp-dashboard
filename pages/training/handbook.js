@@ -41,6 +41,23 @@ function parseContent(text) {
   return blocks.map((block, i) => {
     if (block.type === 'text') {
       const content = Array.isArray(block.content) ? block.content.join('\n') : block.content;
+      const allLines = content.split('\n');
+      const isBulletList = allLines.filter(l => l.trim().length > 0).every(l => l.trim().startsWith('- ')) && allLines.some(l => l.trim().startsWith('- '));
+      if (isBulletList) {
+        return (
+          <ul key={i} className="space-y-3 text-gsrp-teal-light/60 text-sm">
+            {allLines.filter(l => l.trim()).map((line, j) => {
+              const text = line.trim().replace(/^- /, '');
+              return (
+                <li key={j} className="flex items-start gap-2">
+                  <span className="text-gsrp-orange shrink-0 mt-1">•</span>
+                  <span className="leading-relaxed">{text}</span>
+                </li>
+              );
+            })}
+          </ul>
+        );
+      }
       return (
         <div key={i} className="whitespace-pre-wrap text-gsrp-teal-light/60 text-sm leading-relaxed">
           {content.trim() ? content : '\u00A0'}
@@ -202,6 +219,25 @@ export default function HandbookPage() {
     router.push('/training');
   };
 
+  const handleGoBackAndRead = async () => {
+    for (const id of progress.completedSections) {
+      try {
+        await fetch('/api/training/progress', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sectionId: id })
+        });
+      } catch (e) {
+        console.error('Failed to reset section', e);
+      }
+    }
+    setProgress({ completedSections: [], handbookCompleted: false });
+    setShowCompletion(false);
+    setShowWarning(false);
+    pageEntryTime.current = Date.now();
+    checkTimestamps.current = {};
+  };
+
   if (status === 'loading' || !hasRefreshed) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -220,6 +256,7 @@ export default function HandbookPage() {
   }
 
   const mainContent = (
+    <div className="max-w-6xl mx-auto animate-fade-in-up">
       <div className="flex items-center gap-3 mb-6">
         <Link href="/training" className="p-2 rounded-lg hover:bg-gsrp-dark-surface/60 text-gsrp-teal-light/40 hover:text-white transition-colors cursor-pointer">
           <ArrowLeft size={16} />
@@ -354,7 +391,7 @@ export default function HandbookPage() {
             <h2 className="text-white font-bold text-xl mb-3">Hold up!</h2>
             <p className="text-gsrp-teal-light/60 text-sm mb-6">{warningMessage}</p>
             <button
-              onClick={() => setShowWarning(false)}
+              onClick={handleGoBackAndRead}
               className="px-6 py-2.5 bg-gsrp-orange text-white text-sm font-bold rounded-lg hover:bg-gsrp-orange/90 transition-all"
             >
               Go back and read
