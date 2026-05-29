@@ -219,23 +219,20 @@ export default function HandbookPage() {
     router.push('/training');
   };
 
-  const handleGoBackAndRead = async () => {
-    for (const id of progress.completedSections) {
-      try {
-        await fetch('/api/training/progress', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sectionId: id })
-        });
-      } catch (e) {
-        console.error('Failed to reset section', e);
-      }
-    }
+  const handleGoBackAndRead = () => {
+    const toToggle = progress.completedSections;
     setProgress({ completedSections: [], handbookCompleted: false });
     setShowCompletion(false);
     setShowWarning(false);
     pageEntryTime.current = Date.now();
     checkTimestamps.current = {};
+    for (const id of toToggle) {
+      fetch('/api/training/progress', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sectionId: id })
+      }).catch(e => console.error('Failed to reset section', e));
+    }
   };
 
   if (status === 'loading' || !hasRefreshed) {
