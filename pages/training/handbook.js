@@ -220,19 +220,16 @@ export default function HandbookPage() {
   };
 
   const handleGoBackAndRead = () => {
-    const toToggle = progress.completedSections;
     setProgress({ completedSections: [], handbookCompleted: false });
     setShowCompletion(false);
     setShowWarning(false);
     pageEntryTime.current = Date.now();
     checkTimestamps.current = {};
-    for (const id of toToggle) {
-      fetch('/api/training/progress', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sectionId: id })
-      }).catch(e => console.error('Failed to reset section', e));
-    }
+    fetch('/api/training/progress', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ resetAll: true })
+    }).catch(e => console.error('Failed to reset progress', e));
   };
 
   if (status === 'loading' || !hasRefreshed) {
