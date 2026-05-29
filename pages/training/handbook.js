@@ -191,29 +191,30 @@ export default function HandbookPage() {
     const now = Date.now();
     const totalTime = (now - pageEntryTime.current) / 1000;
 
-    const timestamps = progress.completedSections
-      .map(id => checkTimestamps.current[id])
-      .filter(Boolean)
-      .sort((a, b) => a - b);
-
-    let fastClicks = false;
-    for (let i = 1; i < timestamps.length; i++) {
-      if (timestamps[i] - timestamps[i - 1] < 10000) {
-        fastClicks = true;
-        break;
-      }
-    }
-
     if (totalTime < 60) {
       setWarningMessage('Actually read it, not just pressing the read button. :)');
       setShowWarning(true);
       return;
     }
 
-    if (fastClicks) {
-      setWarningMessage('Actually read it, not just pressing the read button. :)');
-      setShowWarning(true);
-      return;
+    const orderedSections = progress.completedSections
+      .map(id => ({
+        id,
+        time: checkTimestamps.current[id],
+        section: ALL_SECTIONS.find(s => s.id === id)
+      }))
+      .filter(s => s.time)
+      .sort((a, b) => a.time - b.time);
+
+    for (let i = 1; i < orderedSections.length; i++) {
+      const elapsed = orderedSections[i].time - orderedSections[i - 1].time;
+      const wordCount = (orderedSections[i].section?.content || '').split(/\s+/).filter(Boolean).length;
+      const minTime = Math.max(3000, wordCount * 300);
+      if (elapsed < minTime) {
+        setWarningMessage('Actually read it, not just pressing the read button. :)');
+        setShowWarning(true);
+        return;
+      }
     }
 
     router.push('/training');
