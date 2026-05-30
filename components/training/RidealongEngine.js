@@ -7,13 +7,7 @@ import {
 import Link from 'next/link'
 import ModCallPopup from './ModCallPopup'
 import VideoEvidencePanel from './VideoEvidencePanel'
-
-const MOCK_USER_NAMES = [
-  'LunaRae_22', 'NovaBlitz_7', 'ShadowVex_99', 'DriftKing_42',
-  'EmberFang_88', 'StormWeaver_11', 'PixelProwl_5', 'FrostByte_00',
-  'VenomStrike_77', 'CipherHavok_33', 'NeonWolf_55', 'ArcaneRider_3',
-  'BlazeFury_17', 'QuantumVex_89', 'AeroKnight_44', 'CyberPuma_66',
-]
+import { MOCK_USERS } from '../../lib/ridealong-scenarios'
 
 const PUNISHMENT_OPTIONS = ['Warn', 'Kick', 'Ban']
 
@@ -740,7 +734,7 @@ export default function RidealongEngine({
                     />
                     {pFormUserOpen && (
                       <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl shadow-xl max-h-40 overflow-y-auto">
-                        {MOCK_USER_NAMES
+                        {MOCK_USERS
                           .filter(n => n.toLowerCase().includes(pFormData.offender.toLowerCase()))
                           .slice(0, 8)
                           .map(n => (
@@ -755,7 +749,7 @@ export default function RidealongEngine({
                               {n}
                             </button>
                           ))}
-                        {MOCK_USER_NAMES.filter(n => n.toLowerCase().includes(pFormData.offender.toLowerCase())).length === 0 && (
+                        {MOCK_USERS.filter(n => n.toLowerCase().includes(pFormData.offender.toLowerCase())).length === 0 && (
                           <p className="px-4 py-2 text-xs text-gsrp-teal-light/30">No users found</p>
                         )}
                       </div>
