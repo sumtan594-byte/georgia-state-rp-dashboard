@@ -148,6 +148,7 @@ export default function AllVisitsPage({ canAccess }) {
                 <tr className="text-gray-500 border-b border-gsrp-dark-border/50">
                   <th className="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider">User</th>
                   <th className="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider">IP</th>
+                  <th className="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider">Location</th>
                   <th className="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider">Device</th>
                   <th className="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider">Page</th>
                   <th className="text-left py-2 px-3 text-xs font-semibold uppercase tracking-wider">Time</th>
@@ -168,6 +169,13 @@ export default function AllVisitsPage({ canAccess }) {
                     </td>
                     <td className="py-2.5 px-3">
                       <span className="text-white font-mono text-xs">{log.ip}</span>
+                    </td>
+                    <td className="py-2.5 px-3">
+                      {log.geo ? (
+                        <span className="text-gray-400 text-xs">{[log.geo.city, log.geo.region, log.geo.country].filter(Boolean).join(', ') || <span className="text-gray-600">Unknown</span>}</span>
+                      ) : (
+                        <span className="text-gray-600 text-xs">Pending...</span>
+                      )}
                     </td>
                     <td className="py-2.5 px-3">
                       <div className="flex items-center gap-1.5">

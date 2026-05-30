@@ -265,6 +265,58 @@ export default function UsersPage({ canAccess }) {
                         </div>
                       </div>
                     </div>
+
+                    {p.geo && (
+                      <div className="bg-gsrp-dark-card/50 rounded-lg p-3">
+                        <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2 flex items-center gap-2">
+                          <Globe className="w-3.5 h-3.5" />
+                          Location
+                        </h3>
+                        <div className="space-y-1.5">
+                          {p.geo.isp && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-400">ISP</span>
+                              <span className="text-white text-xs text-right max-w-[180px]">{p.geo.isp}</span>
+                            </div>
+                          )}
+                          {p.geo.org && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-400">Organization</span>
+                              <span className="text-white text-xs text-right max-w-[180px]">{p.geo.org}</span>
+                            </div>
+                          )}
+                          {p.geo.as && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-400">ASN</span>
+                              <span className="text-white text-xs">{p.geo.as}</span>
+                            </div>
+                          )}
+                          {p.geo.hostname && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-400">Hostname</span>
+                              <span className="text-white text-xs font-mono truncate max-w-[160px]" title={p.geo.hostname}>{p.geo.hostname}</span>
+                            </div>
+                          )}
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-400">Location</span>
+                            <span className="text-white text-xs text-right">{[p.geo.city, p.geo.region, p.geo.country].filter(Boolean).join(', ')}</span>
+                          </div>
+                          {p.geo.lat && p.geo.lon && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-400">Coordinates</span>
+                              <a
+                                href={`https://www.google.com/maps?q=${p.geo.lat},${p.geo.lon}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-gsrp-orange text-xs hover:underline"
+                              >
+                                {p.geo.lat.toFixed(4)}, {p.geo.lon.toFixed(4)}
+                              </a>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-4 text-sm">

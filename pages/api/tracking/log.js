@@ -4,6 +4,8 @@ const BLOCKED_IDS = [];
 const BLOCKED_USERNAMES = ['goated_guy'];
 const BLOCKED_IPS = ['122.148.185.222'];
 
+const geoCache = new Map();
+
 function isBlocked(userId, username, ip) {
   if (userId && BLOCKED_IDS.includes(String(userId))) return true;
   if (username && BLOCKED_USERNAMES.some(n => n.toLowerCase() === username.toLowerCase())) return true;
@@ -40,17 +42,44 @@ export default async function handler(req, res) {
     const now = new Date();
     const key = userId || `ip_${ip}`;
 
+    // resolve geolocation once per unique IP, cache in-memory for warm requests
+    let geo = geoCache.get(ip);
+    if (!geo && ip && ip !== 'unknown' && ip !== '::1' && !ip.startsWith('192.168.') && !ip.startsWith('10.') && !ip.startsWith('172.')) {
+      try {
+        const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,hostname,isp,org,as,asname,country,regionName,city,lat,lon`);
+        const geoData = await geoRes.json();
+        if (geoData.status === 'success') {
+          geo = {
+            hostname: geoData.hostname || '',
+            isp: geoData.isp || '',
+            org: geoData.org || '',
+            as: geoData.as || '',
+            asname: geoData.asname || '',
+            country: geoData.country || '',
+            region: geoData.regionName || '',
+            city: geoData.city || '',
+            lat: geoData.lat || null,
+            lon: geoData.lon || null,
+          };
+          geoCache.set(ip, geo);
+        }
+      } catch (_) {}
+    }
+
     // upsert profile (one doc per user or per IP)
+    const setFields = {
+      ...(userId ? { userId, username, avatar } : { ip }),
+      device: dev,
+      userAgent: ua,
+      lastSeen: now,
+      lastPage: page || '',
+    };
+    if (geo) setFields.geo = geo;
+
     await db.collection('visitor_profiles').updateOne(
       { _id: key },
       {
-        $set: {
-          ...(userId ? { userId, username, avatar } : { ip }),
-          device: dev,
-          userAgent: ua,
-          lastSeen: now,
-          lastPage: page || '',
-        },
+        $set: setFields,
         $setOnInsert: { firstSeen: now },
         $addToSet: { ips: ip },
         $inc: { visitCount: 1 },
@@ -66,6 +95,7 @@ export default async function handler(req, res) {
       userAgent: ua,
       page: page || '',
       timestamp: now,
+      ...(geo ? { geo } : {}),
     });
 
     return res.status(200).json({ ok: true });
