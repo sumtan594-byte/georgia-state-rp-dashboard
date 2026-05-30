@@ -357,7 +357,7 @@ export default function RidealongPage() {
                   <span className="text-lg">🎥</span>
                   <div>
                     <p className="text-sm font-bold text-white">Review Evidence</p>
-                    <p className="text-[10px] text-gsrp-teal-light/40">Watch bodycam footage before deciding</p>
+                    <p className="text-[10px] text-gsrp-teal-light/40">Review player-submitted clips before deciding</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">

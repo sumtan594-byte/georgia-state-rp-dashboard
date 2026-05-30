@@ -25,7 +25,7 @@ export default function VideoEvidencePanel({ evidence, evidenceValid, onView, re
               <span className={`text-xs font-black uppercase tracking-wider ${
                 viewed ? (evidenceValid ? 'text-gsrp-teal-light' : 'text-amber-400') : 'text-gsrp-orange'
               }`}>
-                {viewed ? 'Evidence Reviewed' : requestLabel ? 'Details Available' : 'Video Evidence Available'}
+                {viewed ? 'Evidence Reviewed' : requestLabel ? 'Details Available' : 'Evidence Available'}
               </span>
               {!viewed && (
                 <span className="text-[10px] text-gsrp-teal-light/30 ml-2">Required</span>
@@ -52,7 +52,7 @@ export default function VideoEvidencePanel({ evidence, evidenceValid, onView, re
                 evidenceValid ? 'bg-gsrp-teal-light' : 'bg-amber-400'
               }`} />
               <span className="text-[10px] font-mono uppercase tracking-wider text-gsrp-teal-light/40">
-                {requestLabel ? 'RP Request Context' : 'Bodycam Footage — Playback'}
+                {requestLabel ? 'RP Request Context' : 'Player-submitted Clip'}
               </span>
               {!evidenceValid && (
                 <span className="ml-auto text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
@@ -72,7 +72,7 @@ export default function VideoEvidencePanel({ evidence, evidenceValid, onView, re
             className="w-full py-2.5 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm font-bold text-gsrp-teal-light/70 hover:border-gsrp-orange/40 hover:text-gsrp-orange transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             <Eye size={14} />
-            {requestLabel || 'Request Video Evidence'}
+            {requestLabel || 'Review Evidence'}
           </button>
         )}
       </div>
