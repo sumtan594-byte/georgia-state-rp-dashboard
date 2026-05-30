@@ -3,15 +3,34 @@ import { authOptions } from '../../../lib/auth-options';
 import clientPromise from '../../../lib/mongodb';
 import { enrichUserInfo } from '../../../lib/discord-api';
 
-const RESOLVE_DELAY_MS = 50;
+const BATCH_SIZE = 20;
 
-async function resolveDiscordUser(userId) {
-  const info = await enrichUserInfo(userId);
-  if (!info) return null;
-  return {
-    username: info.username,
-    avatar: info.avatarUrl,
-  };
+async function getCachedUserInfo(db, userId) {
+  const doc = await db.collection('discord_user_cache').findOne({ userId });
+  if (doc && Date.now() - doc.updatedAt < 86_400_000) {
+    return { username: doc.username, avatar: doc.avatar };
+  }
+  return null;
+}
+
+async function setCachedUserInfo(db, userId, info) {
+  await db.collection('discord_user_cache').updateOne(
+    { userId },
+    { $set: { username: info.username, avatar: info.avatar, updatedAt: Date.now() } },
+    { upsert: true }
+  );
+}
+
+async function resolveDiscordUser(db, userId) {
+  const cached = await getCachedUserInfo(db, userId);
+  if (cached) return cached;
+
+  const raw = await enrichUserInfo(userId);
+  if (!raw) return null;
+
+  const info = { username: raw.username, avatar: raw.avatarUrl };
+  await setCachedUserInfo(db, userId, info);
+  return info;
 }
 
 export default async function handler(req, res) {
@@ -139,14 +158,17 @@ export default async function handler(req, res) {
     });
 
     const userIds = users.map(u => u.userId);
-    for (let i = 0; i < userIds.length; i++) {
-      const info = await resolveDiscordUser(userIds[i]);
-      if (info) {
-        users[i].username = info.username;
-        users[i].avatar = info.avatar;
-      }
-      if (i < userIds.length - 1) {
-        await new Promise(r => setTimeout(r, RESOLVE_DELAY_MS));
+    for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
+      const batch = userIds.slice(i, i + BATCH_SIZE);
+      const results = await Promise.allSettled(
+        batch.map(uid => resolveDiscordUser(dbDefault, uid))
+      );
+      for (let j = 0; j < results.length; j++) {
+        const info = results[j].status === 'fulfilled' ? results[j].value : null;
+        if (info) {
+          users[i + j].username = info.username;
+          users[i + j].avatar = info.avatar;
+        }
       }
     }
 
