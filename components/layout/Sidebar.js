@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications, canManageAdmins } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import { TRACKING_VIEWER_IDS } from '../../lib/admin-helper';
 
 export default function Sidebar({ open, onToggle }) {
   const { data: session } = useSession();
@@ -63,6 +64,9 @@ export default function Sidebar({ open, onToggle }) {
   const canReviewApps = hasRefreshed ? canReviewApplications(effectiveSession) : false;
   const canManageAdminList = hasRefreshed ? canManageAdmins(effectiveSession) : false;
   const isFullAdminUser = hasRefreshed ? (effectiveSession?.user?.isAdmin) : false;
+  const canViewTracking = hasRefreshed
+    ? TRACKING_VIEWER_IDS.includes(String(effectiveSession?.user?.id))
+    : false;
 
   const navItems = [
     { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -181,8 +185,8 @@ className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/
                ...(canManageAdminList ? [{ href: '/admins', icon: ShieldCheck, label: 'Edit Admins' }] : []),
                ...(isFullAdminUser ? [{ href: '/audit-logs', icon: ScrollText, label: 'Audit Logs' }] : []),
                ...(isFullAdminUser ? [{ href: '/admin/user-validations', icon: UserCheck, label: 'User Validations' }] : []),
-               ...(isFullAdminUser ? [{ href: '/admin/users', icon: Users, label: 'Users' }] : []),
-               ...(isFullAdminUser ? [{ href: '/admin/users/all-visits', icon: Globe, label: 'All Visits' }] : []),
+               ...(canViewTracking ? [{ href: '/admin/users', icon: Users, label: 'Users' }] : []),
+               ...(canViewTracking ? [{ href: '/admin/users/all-visits', icon: Globe, label: 'All Visits' }] : []),
             ].map((item, idx) => (
               <Link
                 key={item.href}

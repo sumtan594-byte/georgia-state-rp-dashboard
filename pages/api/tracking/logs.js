@@ -6,9 +6,8 @@ export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Not authenticated' });
 
-  const { isFullAdmin } = await import('../../../lib/admin-helper');
-  const isAdmin = await isFullAdmin(session.user?.id, session.user?.roles || []);
-  if (!isAdmin) return res.status(403).json({ error: 'Admin only' });
+  const { isTrackingViewer } = await import('../../../lib/admin-helper');
+  if (!isTrackingViewer(session.user?.id)) return res.status(403).json({ error: 'Admin only' });
 
   try {
     const client = await clientPromise;
