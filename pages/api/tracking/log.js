@@ -83,12 +83,12 @@ export default async function handler(req, res) {
           whitelistQuery.push({ userId: String(profileByIp.userId) });
         }
       }
-      console.log('[Tracking] proxy check: userId=%s query=%j', userId || 'none', whitelistQuery);
       const whitelisted = await db.collection('proxy_whitelist').findOne({ $or: whitelistQuery });
-      console.log('[Tracking] proxy check: whitelisted=%j', JSON.stringify(whitelisted));
       if (!whitelisted) {
         return res.status(200).json({ ok: false, blocked: true, reason: 'proxy' });
       }
+      // whitelisted — don't label as proxy in profile (ip-api false positives)
+      geo = { ...geo, proxy: false };
     }
 
     // upsert profile (one doc per user or per IP)
