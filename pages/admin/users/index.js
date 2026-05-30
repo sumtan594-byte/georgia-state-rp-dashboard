@@ -154,7 +154,16 @@ export default function UsersPage({ canAccess }) {
       <div className="flex gap-2 mb-4">
         <button
           onClick={() => { setActiveTab('discord'); setExpanded(null); setWhitelistMsg(null); }}
-...
+          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
+            activeTab === 'discord'
+              ? 'bg-gsrp-orange text-white'
+              : 'bg-gsrp-dark-card border border-gsrp-dark-border text-gray-400 hover:text-white'
+          }`}
+        >
+          <UserCheck className="w-3.5 h-3.5" />
+          Discord Users ({filteredDiscord.length})
+        </button>
+        <button
           onClick={() => { setActiveTab('anonymous'); setExpanded(null); setWhitelistMsg(null); }}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
             activeTab === 'anonymous'
