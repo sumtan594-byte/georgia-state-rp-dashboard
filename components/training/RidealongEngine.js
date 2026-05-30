@@ -64,6 +64,9 @@ export default function RidealongEngine({
   const [pFormData, setPFormData] = useState({ offender: '', punishment: '', reason: '' })
   const [pFormUserOpen, setPFormUserOpen] = useState(false)
   const [pFormError, setPFormError] = useState('')
+  const [rpLogData, setRpLogData] = useState({ location: '', duration: '', peopleCount: '' })
+  const [rpLogFormOpen, setRpLogFormOpen] = useState(false)
+  const [rpLogError, setRpLogError] = useState('')
   const containerRef = useRef(null)
   const total = scenarios.length
 
@@ -175,6 +178,62 @@ export default function RidealongEngine({
     }
   }, [scenario, answered, results, score, evidenceViewed, onSaveProgress])
 
+  
+  const handleRpLogSubmit = useCallback(() => {
+    if (!scenario || answered) return
+
+    if (!rpLogData.location.trim() || !rpLogData.duration.trim() || !rpLogData.peopleCount.trim()) {
+      setRpLogError('Please fill in all fields before submitting.')
+      return
+    }
+    setRpLogError('')
+
+    const locationMatch = rpLogData.location.trim().toLowerCase() === scenario.location.toLowerCase()
+    const durationMatch = rpLogData.duration.trim().toLowerCase() === scenario.duration.toLowerCase()
+    const peopleMatch = rpLogData.peopleCount.trim() === String(scenario.peopleCount)
+
+    const isCorrect = locationMatch && durationMatch && peopleMatch && !scenario.hasOngoing
+
+    let wrongReason = null
+    if (scenario.hasOngoing) {
+      wrongReason = 'There is already an active RP. You should have informed the caller to wait.'
+    } else if (!isCorrect) {
+      wrongReason = 'One or more fields were incorrect. Please check the location, duration, and people count.'
+    }
+
+    if (isCorrect) setScore(prev => prev + 1)
+
+    const result = {
+      scenarioId: scenario.id,
+      evidenceValid: true,
+      correct: isCorrect,
+      chosenOption: 'log',
+      chosenText: `Logged: ${rpLogData.location}, ${rpLogData.duration}, ${rpLogData.peopleCount} people`,
+      correctAnswer: scenario.hasOngoing
+        ? 'Inform the caller that this RP is already being handled'
+        : `Logged: ${scenario.location}, ${scenario.duration}, ${scenario.peopleCount} people`,
+      correctCommand: scenario.hasOngoing ? 'N/A' : ';log_rp',
+      explanation: scenario.explanation,
+      wrongReason,
+      evidenceViewed,
+      type: 'rp-log'
+    }
+
+    const newResults = [...results, result]
+    setResults(newResults)
+    setAnswered(true)
+
+    if (onSaveProgress) {
+      onSaveProgress({
+        currentQ,
+        score: score + (isCorrect ? 1 : 0),
+        results: newResults,
+        phase: 'result',
+      })
+    }
+  }, [scenario, answered, rpLogData, results, score, evidenceViewed, onSaveProgress])
+
+
   const handlePFormSubmit = useCallback(() => {
     if (!scenario || answered) return
 
@@ -183,6 +242,9 @@ export default function RidealongEngine({
       return
     }
     setPFormError('')
+      setRpLogData({ location: '', duration: '', peopleCount: '' })
+      setRpLogFormOpen(false)
+      setRpLogError('')
 
     const offenderMatch = pFormData.offender.trim().toLowerCase() === scenario.offender.toLowerCase()
     const punishmentMatch = pFormData.punishment === scenario.correctPunishment
@@ -258,6 +320,9 @@ export default function RidealongEngine({
       setPFormData({ offender: '', punishment: '', reason: '' })
       setPFormUserOpen(false)
       setPFormError('')
+      setRpLogData({ location: '', duration: '', peopleCount: '' })
+      setRpLogFormOpen(false)
+      setRpLogError('')
       containerRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [currentQ, total, score, passScore, cooldownHours, onSubmit, onClearProgress, results])
@@ -280,6 +345,9 @@ export default function RidealongEngine({
     setPFormData({ offender: '', punishment: '', reason: '' })
     setPFormUserOpen(false)
     setPFormError('')
+      setRpLogData({ location: '', duration: '', peopleCount: '' })
+      setRpLogFormOpen(false)
+      setRpLogError('')
   }, [])
 
   if (showResults) {
@@ -534,61 +602,7 @@ export default function RidealongEngine({
       {phase === 'scene' && (
         <div className="animate-fade-in-up space-y-5">
           <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-1.5 h-1.5 rounded-full bg-gsrp-orange" />
-              <span className="text-[10px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider">
-                Scene — Responded to {scenario.modCall.callerName}
-              </span>
-              {isRplog && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gsrp-teal/10 text-gsrp-teal-light/50 ml-auto">
-                  RP Logging
-                </span>
-              )}
-              {isPlog && (
-                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gsrp-orange/10 text-gsrp-orange/50 ml-auto">
-                  Punishment Log
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-gsrp-teal-light/70 leading-relaxed">
-              {scenario.sceneDescription}
-            </p>
-          </div>
-
-          <VideoEvidencePanel
-            evidence={scenario.videoEvidence}
-            evidenceValid={scenario.evidenceValid !== false}
-            onView={handleEvidenceViewed}
-            requestLabel={isRplog ? 'Request more details' : undefined}
-          />
-
-          {isRplog && !answered && (
-            <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
-              {!rpLogsViewed ? (
-                <div className="text-center py-6">
-                  <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-gsrp-teal/10 border border-gsrp-teal/20 mx-auto mb-4">
-                    <Search size={24} className="text-gsrp-teal-light" />
-                  </div>
-                  <h3 className="text-sm font-bold text-white mb-2">Check Active Logs</h3>
-                  <p className="text-xs text-gsrp-teal-light/50 mb-5 max-w-md mx-auto">
-                    Before making a decision, review the currently active roleplay logs to check for conflicts.
-                  </p>
-                  <button
-                    onClick={() => setRpLogOpen(true)}
-                    className="px-5 py-2.5 bg-gsrp-teal/10 border border-gsrp-teal/30 text-gsrp-teal-light rounded-xl text-sm font-bold hover:bg-gsrp-teal/20 transition-all cursor-pointer flex items-center gap-2 mx-auto"
-                  >
-                    <FileText size={14} />
-                    Request Chat Logs
-                  </button>
-                </div>
-              ) : (
-                <div>
-                  <div className="flex items-center gap-2 mb-4">
-                    <FileText size={14} className="text-gsrp-teal-light" />
-                    <h3 className="text-xs font-bold text-gsrp-teal-light/60 uppercase tracking-wider">
-                      Logs Reviewed — Make Your Decision
-                    </h3>
-                  </div>
+            
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-gsrp-teal/10 text-gsrp-teal-light">
                       Logs Viewed
@@ -600,36 +614,89 @@ export default function RidealongEngine({
                       Re-open logs
                     </button>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      onClick={() => handleRpLogDecision('log')}
-                      disabled={!evidenceViewed}
-                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
-                        !evidenceViewed
-                          ? 'border-gsrp-dark-border/30 bg-gsrp-dark-surface/30 opacity-50 cursor-not-allowed'
-                          : 'border-gsrp-teal/30 bg-gsrp-teal/5 hover:bg-gsrp-teal/10 hover:border-gsrp-teal/50'
-                      }`}
-                    >
-                      <span className="block text-sm font-bold text-white mb-1">Log the RP</span>
-                      <span className="block text-[11px] text-gsrp-teal-light/50">
-                        No conflicting RPs found
-                      </span>
-                    </button>
-                    <button
-                      onClick={() => handleRpLogDecision('inform')}
-                      disabled={!evidenceViewed}
-                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
-                        !evidenceViewed
-                          ? 'border-gsrp-dark-border/30 bg-gsrp-dark-surface/30 opacity-50 cursor-not-allowed'
-                          : 'border-gsrp-orange/30 bg-gsrp-orange/5 hover:bg-gsrp-orange/10 hover:border-gsrp-orange/50'
-                      }`}
-                    >
-                      <span className="block text-sm font-bold text-white mb-1">Inform Caller to Wait</span>
-                      <span className="block text-[11px] text-gsrp-teal-light/50">
-                        There is already an active RP
-                      </span>
-                    </button>
-                  </div>
+                  
+                  {!rpLogFormOpen ? (
+                    <div className="grid grid-cols-2 gap-3">
+                      <button
+                        onClick={() => setRpLogFormOpen(true)}
+                        disabled={!evidenceViewed}
+                        className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                          !evidenceViewed
+                            ? 'border-gsrp-dark-border/30 bg-gsrp-dark-surface/30 opacity-50 cursor-not-allowed'
+                            : 'border-gsrp-teal/30 bg-gsrp-teal/5 hover:bg-gsrp-teal/10 hover:border-gsrp-teal/50'
+                        }`}
+                      >
+                        <span className="block text-sm font-bold text-white mb-1">Log the RP</span>
+                        <span className="block text-[11px] text-gsrp-teal-light/50">
+                          Fill out the RP log form
+                        </span>
+                      </button>
+                      <button
+                        onClick={() => handleRpLogDecision('inform')}
+                        disabled={!evidenceViewed}
+                        className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                          !evidenceViewed
+                            ? 'border-gsrp-dark-border/30 bg-gsrp-dark-surface/30 opacity-50 cursor-not-allowed'
+                            : 'border-gsrp-orange/30 bg-gsrp-orange/5 hover:bg-gsrp-orange/10 hover:border-gsrp-orange/50'
+                        }`}
+                      >
+                        <span className="block text-sm font-bold text-white mb-1">Inform Caller to Wait</span>
+                        <span className="block text-[11px] text-gsrp-teal-light/50">
+                          There is already an active RP
+                        </span>
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 mt-4 bg-gsrp-dark-surface/50 p-4 rounded-xl border border-gsrp-dark-border/50">
+                      <h4 className="text-xs font-bold text-gsrp-teal-light/60 uppercase tracking-wider mb-2">RP Logging Form</h4>
+                      <div>
+                        <label className="text-[11px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider block mb-1.5">Location</label>
+                        <input
+                          type="text"
+                          value={rpLogData.location}
+                          onChange={e => setRpLogData(prev => ({ ...prev, location: e.target.value }))}
+                          placeholder="e.g. Bank of River City"
+                          className="w-full px-4 py-2 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider block mb-1.5">Duration</label>
+                        <input
+                          type="text"
+                          value={rpLogData.duration}
+                          onChange={e => setRpLogData(prev => ({ ...prev, duration: e.target.value }))}
+                          placeholder="e.g. 20m"
+                          className="w-full px-4 py-2 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider block mb-1.5">Amount of People</label>
+                        <input
+                          type="number"
+                          value={rpLogData.peopleCount}
+                          onChange={e => setRpLogData(prev => ({ ...prev, peopleCount: e.target.value }))}
+                          placeholder="e.g. 5"
+                          className="w-full px-4 py-2 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-white"
+                        />
+                      </div>
+                      {rpLogError && <p className="text-xs text-gsrp-sunset">{rpLogError}</p>}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setRpLogFormOpen(false)}
+                          className="flex-1 py-2 rounded-xl text-sm font-bold bg-gsrp-dark-surface border border-gsrp-dark-border text-white"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleRpLogSubmit}
+                          className="flex-1 py-2 rounded-xl text-sm font-bold bg-gsrp-teal text-white hover:bg-gsrp-teal/90"
+                        >
+                          Submit Log
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                 </div>
               )}
             </div>
