@@ -132,9 +132,11 @@ function ProxyBlockOverlay() {
 
 function VisitorTracker({ setProxyBlocked }) {
   const router = useRouter();
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   useEffect(() => {
+    console.log('[Tracker] status:', status, 'userId:', session?.user?.id, 'pathname:', router.pathname);
+    if (status === 'loading') return;
     const data = {
       userAgent: navigator.userAgent,
       page: window.location.pathname,
@@ -144,6 +146,7 @@ function VisitorTracker({ setProxyBlocked }) {
       data.username = session.user.name || '';
       data.avatar = session.user.image || '';
     }
+    console.log('[Tracker] sending:', JSON.stringify({ ...data, userAgent: data.userAgent.slice(0, 50) }));
     fetch('/api/tracking/log', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -151,10 +154,11 @@ function VisitorTracker({ setProxyBlocked }) {
     })
       .then(r => r.json())
       .then(json => {
+        console.log('[Tracker] response:', JSON.stringify(json));
         if (json.blocked) setProxyBlocked(true);
       })
       .catch(() => {});
-  }, [router.pathname, session?.user?.id]);
+  }, [router.pathname, session?.user?.id, status]);
 
   return null;
 }

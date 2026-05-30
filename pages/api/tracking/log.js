@@ -71,12 +71,21 @@ export default async function handler(req, res) {
 
     // proxy / VPN block check
     if (geo && geo.proxy) {
-      const whitelisted = await db.collection('proxy_whitelist').findOne({
-        $or: [
-          ...(userId ? [{ userId: String(userId) }] : []),
-          { ip },
-        ],
-      });
+      const whitelistQuery = [{ ip }];
+      if (userId) {
+        whitelistQuery.push({ userId: String(userId) });
+      } else {
+        const profileByIp = await db.collection('visitor_profiles').findOne(
+          { ips: ip, userId: { $exists: true, $ne: '' } },
+          { projection: { userId: 1 } },
+        );
+        if (profileByIp?.userId) {
+          whitelistQuery.push({ userId: String(profileByIp.userId) });
+        }
+      }
+      console.log('[Tracking] proxy check: userId=%s query=%j', userId || 'none', whitelistQuery);
+      const whitelisted = await db.collection('proxy_whitelist').findOne({ $or: whitelistQuery });
+      console.log('[Tracking] proxy check: whitelisted=%j', JSON.stringify(whitelisted));
       if (!whitelisted) {
         return res.status(200).json({ ok: false, blocked: true, reason: 'proxy' });
       }
