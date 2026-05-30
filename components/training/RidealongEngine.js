@@ -2,10 +2,28 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import {
   Loader2, CheckCircle2, XCircle, ArrowRight, RotateCcw, Clock,
   Shield, ChevronDown, ChevronUp, BookOpen, AlertTriangle, Camera,
+  FileText, Search, X,
 } from 'lucide-react'
 import Link from 'next/link'
 import ModCallPopup from './ModCallPopup'
 import VideoEvidencePanel from './VideoEvidencePanel'
+
+const MOCK_USER_NAMES = [
+  'LunaRae_22', 'NovaBlitz_7', 'ShadowVex_99', 'DriftKing_42',
+  'EmberFang_88', 'StormWeaver_11', 'PixelProwl_5', 'FrostByte_00',
+  'VenomStrike_77', 'CipherHavok_33', 'NeonWolf_55', 'ArcaneRider_3',
+  'BlazeFury_17', 'QuantumVex_89', 'AeroKnight_44', 'CyberPuma_66',
+]
+
+const PUNISHMENT_OPTIONS = ['Warn', 'Kick', 'Ban']
+
+const PUNISHMENT_REASONS = [
+  'RDM - First Offence', 'VDM - First Offence', 'FRP - First Offence',
+  'Cuff Rushing - First Offence', 'LTAP - First Offence (Bannable)',
+  'Mass VDM - Obvious Trolling', 'Exploiting / Third-party Software',
+  'Metagaming - First Offence', 'NLR - First Offence',
+  'Staff Disrespect - First Offence',
+]
 
 function shuffleArray(arr) {
   const a = [...arr]
@@ -14,6 +32,14 @@ function shuffleArray(arr) {
     ;[a[i], a[j]] = [a[j], a[i]]
   }
   return a
+}
+
+function formatTime(ts) {
+  try {
+    return new Date(ts).toLocaleString()
+  } catch {
+    return ts
+  }
 }
 
 export default function RidealongEngine({
@@ -38,6 +64,12 @@ export default function RidealongEngine({
   const [cooldownRemaining, setCooldownRemaining] = useState(null)
   const [hasPassed, setHasPassed] = useState(false)
   const [reviewExpanded, setReviewExpanded] = useState({})
+  const [rpLogOpen, setRpLogOpen] = useState(false)
+  const [rpLogsViewed, setRpLogsViewed] = useState(false)
+  const [rpDecision, setRpDecision] = useState(null)
+  const [pFormData, setPFormData] = useState({ offender: '', punishment: '', reason: '' })
+  const [pFormUserOpen, setPFormUserOpen] = useState(false)
+  const [pFormError, setPFormError] = useState('')
   const containerRef = useRef(null)
   const total = scenarios.length
 
@@ -87,6 +119,7 @@ export default function RidealongEngine({
       explanation: scenario.explanation,
       wrongReason: chosen?.wrongReason || null,
       evidenceViewed,
+      type: 'standard',
     }
 
     const newResults = [...results, result]
@@ -102,6 +135,100 @@ export default function RidealongEngine({
       })
     }
   }, [scenario, answered, selectedOption, results, score, evidenceViewed, onSaveProgress])
+
+  const handleRpLogDecision = useCallback((choice) => {
+    if (!scenario || answered) return
+
+    const isCorrect = choice === 'log' ? !scenario.hasOngoing : scenario.hasOngoing
+
+    if (isCorrect) setScore(prev => prev + 1)
+
+    let wrongReason = null
+    if (!isCorrect) {
+      wrongReason = choice === 'log'
+        ? 'You checked the logs and found an active RP. Logging a new one would cause scene interference. You should have informed the caller to wait.'
+        : 'You checked the logs and found no active RPs. The caller should have been permitted to start their RP.'
+    }
+
+    const result = {
+      scenarioId: scenario.id,
+      evidenceValid: true,
+      correct: isCorrect,
+      chosenOption: choice,
+      chosenText: choice === 'log' ? 'Log the RP' : 'Inform caller to wait',
+      correctAnswer: scenario.hasOngoing
+        ? 'Inform the caller that this RP is already being handled'
+        : 'Log the RP with details',
+      correctCommand: scenario.hasOngoing ? 'N/A' : ';log_rp',
+      explanation: scenario.explanation,
+      wrongReason,
+      evidenceViewed,
+      type: 'rp-log',
+    }
+
+    const newResults = [...results, result]
+    setResults(newResults)
+    setAnswered(true)
+    setRpDecision(choice)
+
+    if (onSaveProgress) {
+      onSaveProgress({
+        currentQ,
+        score: score + (isCorrect ? 1 : 0),
+        results: newResults,
+        phase: 'result',
+      })
+    }
+  }, [scenario, answered, results, score, evidenceViewed, onSaveProgress])
+
+  const handlePFormSubmit = useCallback(() => {
+    if (!scenario || answered) return
+
+    if (!pFormData.offender.trim() || !pFormData.punishment || !pFormData.reason) {
+      setPFormError('Please fill in all fields before submitting.')
+      return
+    }
+    setPFormError('')
+
+    const offenderMatch = pFormData.offender.trim().toLowerCase() === scenario.offender.toLowerCase()
+    const punishmentMatch = pFormData.punishment === scenario.correctPunishment
+    const reasonMatch = pFormData.reason === scenario.correctReason
+
+    const matchedFields = [offenderMatch, punishmentMatch, reasonMatch].filter(Boolean).length
+    const isCorrect = matchedFields === 3
+
+    if (isCorrect) setScore(prev => prev + 1)
+
+    const result = {
+      scenarioId: scenario.id,
+      evidenceValid: true,
+      correct: isCorrect,
+      chosenOption: 'form',
+      chosenText: `Offender: ${pFormData.offender}, Punishment: ${pFormData.punishment}, Reason: ${pFormData.reason}`,
+      correctAnswer: `Offender: ${scenario.offender}, Punishment: ${scenario.correctPunishment}, Reason: ${scenario.correctReason}`,
+      correctCommand: '',
+      explanation: scenario.explanation,
+      wrongReason: !isCorrect
+        ? `You matched ${matchedFields}/3 fields correctly. ${!offenderMatch ? 'Offender name was incorrect. ' : ''}${!punishmentMatch ? `Expected punishment: ${scenario.correctPunishment}. ` : ''}${!reasonMatch ? `Expected reason: "${scenario.correctReason}".` : ''}`
+        : null,
+      evidenceViewed,
+      type: 'p-log',
+      pFormMatched: { offender: offenderMatch, punishment: punishmentMatch, reason: reasonMatch },
+    }
+
+    const newResults = [...results, result]
+    setResults(newResults)
+    setAnswered(true)
+
+    if (onSaveProgress) {
+      onSaveProgress({
+        currentQ,
+        score: score + (isCorrect ? 1 : 0),
+        results: newResults,
+        phase: 'result',
+      })
+    }
+  }, [scenario, answered, pFormData, results, score, evidenceViewed, onSaveProgress])
 
   const handleNext = useCallback(() => {
     if (currentQ + 1 >= total) {
@@ -131,6 +258,12 @@ export default function RidealongEngine({
       setSelectedOption(null)
       setAnswered(false)
       setPhase('popup')
+      setRpLogOpen(false)
+      setRpLogsViewed(false)
+      setRpDecision(null)
+      setPFormData({ offender: '', punishment: '', reason: '' })
+      setPFormUserOpen(false)
+      setPFormError('')
       containerRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [currentQ, total, score, passScore, cooldownHours, onSubmit, onClearProgress, results])
@@ -147,6 +280,12 @@ export default function RidealongEngine({
     setCooldownUntil(null)
     setCooldownRemaining(null)
     setHasPassed(false)
+    setRpLogOpen(false)
+    setRpLogsViewed(false)
+    setRpDecision(null)
+    setPFormData({ offender: '', punishment: '', reason: '' })
+    setPFormUserOpen(false)
+    setPFormError('')
   }, [])
 
   if (showResults) {
@@ -288,6 +427,12 @@ export default function RidealongEngine({
                     ? <CheckCircle2 size={16} className="text-gsrp-teal-light shrink-0" />
                     : <XCircle size={16} className="text-gsrp-sunset shrink-0" />}
                   <span className="text-sm text-gsrp-teal-light/60 truncate">Scenario {i + 1}</span>
+                  {r.type === 'rp-log' && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gsrp-teal/10 text-gsrp-teal-light/50">RP-Log</span>
+                  )}
+                  {r.type === 'p-log' && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-gsrp-orange/10 text-gsrp-orange/50">P-Log</span>
+                  )}
                 </div>
                 <div className="flex items-center gap-2">
                   <span className={`text-[10px] px-2 py-0.5 rounded-full ${
@@ -314,16 +459,31 @@ export default function RidealongEngine({
                         <span className="text-gsrp-teal-light/40 block mb-1 text-[10px] uppercase tracking-wider">Correct Action</span>
                         {r.correctAnswer}
                       </p>
-                      <p className="text-xs text-gsrp-teal-light">
-                        <span className="text-gsrp-teal-light/40 block mb-1 text-[10px] uppercase tracking-wider">Command</span>
-                        <code className="text-gsrp-orange font-mono">{r.correctCommand}</code>
-                      </p>
+                      {r.correctCommand && (
+                        <p className="text-xs text-gsrp-teal-light">
+                          <span className="text-gsrp-teal-light/40 block mb-1 text-[10px] uppercase tracking-wider">Command</span>
+                          <code className="text-gsrp-orange font-mono">{r.correctCommand}</code>
+                        </p>
+                      )}
                       {r.wrongReason && (
                         <p className="text-xs text-gsrp-sunset/70 bg-gsrp-sunset/5 rounded-lg p-2.5 mt-2">
                           {r.wrongReason}
                         </p>
                       )}
                     </>
+                  )}
+                  {r.type === 'p-log' && r.pFormMatched && (
+                    <div className="flex gap-2 mt-1">
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${r.pFormMatched.offender ? 'bg-gsrp-teal/10 text-gsrp-teal-light' : 'bg-gsrp-sunset/10 text-gsrp-sunset'}`}>
+                        Offender {r.pFormMatched.offender ? '✓' : '✗'}
+                      </span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${r.pFormMatched.punishment ? 'bg-gsrp-teal/10 text-gsrp-teal-light' : 'bg-gsrp-sunset/10 text-gsrp-sunset'}`}>
+                        Punishment {r.pFormMatched.punishment ? '✓' : '✗'}
+                      </span>
+                      <span className={`text-[10px] px-1.5 py-0.5 rounded ${r.pFormMatched.reason ? 'bg-gsrp-teal/10 text-gsrp-teal-light' : 'bg-gsrp-sunset/10 text-gsrp-sunset'}`}>
+                        Reason {r.pFormMatched.reason ? '✓' : '✗'}
+                      </span>
+                    </div>
                   )}
                   <p className="text-xs text-gsrp-teal-light/40 mt-1">{r.explanation}</p>
                 </div>
@@ -344,12 +504,17 @@ export default function RidealongEngine({
     )
   }
 
+  const isRplog = scenario.type === 'rp-log'
+  const isPlog = scenario.type === 'p-log'
+
   return (
     <div className="max-w-3xl mx-auto" ref={containerRef}>
       <div className="mb-6">
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-bold text-gsrp-teal-light/40 uppercase tracking-wider">
             Scenario {currentQ + 1} of {total}
+            {isRplog && <span className="ml-2 text-gsrp-teal-light/30">— RP Logging</span>}
+            {isPlog && <span className="ml-2 text-gsrp-teal-light/30">— Punishment Logging</span>}
           </span>
           <span className="text-xs font-bold text-gsrp-orange">
             Score: {score}
@@ -380,6 +545,16 @@ export default function RidealongEngine({
               <span className="text-[10px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider">
                 Scene — Responded to {scenario.modCall.callerName}
               </span>
+              {isRplog && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gsrp-teal/10 text-gsrp-teal-light/50 ml-auto">
+                  RP Logging
+                </span>
+              )}
+              {isPlog && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gsrp-orange/10 text-gsrp-orange/50 ml-auto">
+                  Punishment Log
+                </span>
+              )}
             </div>
             <p className="text-sm text-gsrp-teal-light/70 leading-relaxed">
               {scenario.sceneDescription}
@@ -392,56 +567,310 @@ export default function RidealongEngine({
             onView={handleEvidenceViewed}
           />
 
-          <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
-            <h3 className="text-xs font-bold text-gsrp-teal-light/40 uppercase tracking-wider mb-4">
-              What action do you take?
-            </h3>
-
-            <div className="grid gap-3">
-              {scenario.options.map((opt) => {
-                const isSelected = selectedOption === opt.id
-                const isCorrect = answered && opt.correct
-                const isWrong = answered && isSelected && !opt.correct
-
-                return (
+          {isRplog && !answered && (
+            <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
+              {!rpLogsViewed ? (
+                <div className="text-center py-6">
+                  <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-gsrp-teal/10 border border-gsrp-teal/20 mx-auto mb-4">
+                    <Search size={24} className="text-gsrp-teal-light" />
+                  </div>
+                  <h3 className="text-sm font-bold text-white mb-2">Check Active Logs</h3>
+                  <p className="text-xs text-gsrp-teal-light/50 mb-5 max-w-md mx-auto">
+                    Before making a decision, review the currently active roleplay logs to check for conflicts.
+                  </p>
                   <button
-                    key={opt.id}
-                    onClick={() => !answered && setSelectedOption(opt.id)}
-                    disabled={answered}
-                    className={`flex items-start gap-3 p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
-                      isCorrect
-                        ? 'border-gsrp-teal/40 bg-gsrp-teal/10'
-                        : isWrong
-                        ? 'border-gsrp-sunset/40 bg-gsrp-sunset/10'
-                        : isSelected
-                        ? 'border-gsrp-orange/40 bg-gsrp-orange/10'
-                        : 'border-gsrp-dark-border/50 hover:border-gsrp-dark-border hover:bg-gsrp-dark-surface/40'
-                    } ${answered ? 'cursor-default' : ''}`}
+                    onClick={() => setRpLogOpen(true)}
+                    className="px-5 py-2.5 bg-gsrp-teal/10 border border-gsrp-teal/30 text-gsrp-teal-light rounded-xl text-sm font-bold hover:bg-gsrp-teal/20 transition-all cursor-pointer flex items-center gap-2 mx-auto"
                   >
-                    <span className={`flex items-center justify-center w-7 h-7 rounded-lg text-xs font-black shrink-0 mt-0.5 ${
-                      isCorrect
-                        ? 'bg-gsrp-teal text-white'
-                        : isWrong
-                        ? 'bg-gsrp-sunset text-white'
-                        : isSelected
-                        ? 'bg-gsrp-orange text-white'
-                        : 'bg-gsrp-dark-surface text-gsrp-teal-light/40 border border-gsrp-dark-border'
-                    }`}>
-                      {isCorrect ? '✓' : isWrong ? '✗' : opt.id.toUpperCase()}
-                    </span>
-                    <div className="min-w-0">
-                      <span className={`text-sm font-medium block ${
-                        isCorrect ? 'text-gsrp-teal-light' : isWrong ? 'text-gsrp-sunset' : isSelected ? 'text-white' : 'text-gsrp-teal-light/70'
-                      }`}>
-                        {opt.text}
-                      </span>
-
-                    </div>
+                    <FileText size={14} />
+                    Request Chat Logs
                   </button>
-                )
-              })}
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText size={14} className="text-gsrp-teal-light" />
+                    <h3 className="text-xs font-bold text-gsrp-teal-light/60 uppercase tracking-wider">
+                      Logs Reviewed — Make Your Decision
+                    </h3>
+                  </div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-gsrp-teal/10 text-gsrp-teal-light">
+                      Logs Viewed
+                    </span>
+                    <button
+                      onClick={() => setRpLogOpen(true)}
+                      className="text-[10px] text-gsrp-teal-light/40 underline hover:text-gsrp-teal-light/60 cursor-pointer"
+                    >
+                      Re-open logs
+                    </button>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      onClick={() => handleRpLogDecision('log')}
+                      disabled={!evidenceViewed}
+                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                        !evidenceViewed
+                          ? 'border-gsrp-dark-border/30 bg-gsrp-dark-surface/30 opacity-50 cursor-not-allowed'
+                          : 'border-gsrp-teal/30 bg-gsrp-teal/5 hover:bg-gsrp-teal/10 hover:border-gsrp-teal/50'
+                      }`}
+                    >
+                      <span className="block text-sm font-bold text-white mb-1">Log the RP</span>
+                      <span className="block text-[11px] text-gsrp-teal-light/50">
+                        No conflicting RPs found
+                      </span>
+                    </button>
+                    <button
+                      onClick={() => handleRpLogDecision('inform')}
+                      disabled={!evidenceViewed}
+                      className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                        !evidenceViewed
+                          ? 'border-gsrp-dark-border/30 bg-gsrp-dark-surface/30 opacity-50 cursor-not-allowed'
+                          : 'border-gsrp-orange/30 bg-gsrp-orange/5 hover:bg-gsrp-orange/10 hover:border-gsrp-orange/50'
+                      }`}
+                    >
+                      <span className="block text-sm font-bold text-white mb-1">Inform Caller to Wait</span>
+                      <span className="block text-[11px] text-gsrp-teal-light/50">
+                        There is already an active RP
+                      </span>
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
+          )}
+
+          {rpLogOpen && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+              <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => {}} />
+              <div className="relative w-full max-w-lg max-h-[80vh] overflow-y-auto bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-2xl shadow-2xl animate-scale-in">
+                <div className="sticky top-0 bg-gsrp-dark-surface/95 backdrop-blur-sm border-b border-gsrp-dark-border/30 px-5 py-4 flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <FileText size={14} className="text-gsrp-teal-light" />
+                    Active Roleplay Logs
+                  </h3>
+                  <span className="text-[10px] text-gsrp-teal-light/30">
+                    {scenario.logs.filter(l => l.active).length} active
+                  </span>
+                </div>
+                <div className="p-5 space-y-3">
+                  {scenario.logs.length === 0 ? (
+                    <p className="text-xs text-gsrp-teal-light/40 text-center py-8">
+                      No roleplay logs found in the system.
+                    </p>
+                  ) : (
+                    scenario.logs.map((log, idx) => (
+                      <div
+                        key={idx}
+                        className={`rounded-xl border p-4 ${
+                          log.active
+                            ? 'border-gsrp-teal/20 bg-gsrp-teal/5'
+                            : 'border-gsrp-dark-border/30 bg-gsrp-dark-surface/30'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-xs font-bold text-white">{log.player}</span>
+                          {log.active ? (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-gsrp-teal/10 text-gsrp-teal-light">
+                              Active
+                            </span>
+                          ) : (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full bg-gsrp-dark-border/30 text-gsrp-teal-light/30">
+                              Inactive
+                            </span>
+                          )}
+                        </div>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[11px]">
+                          <span className="text-gsrp-teal-light/40">Type:</span>
+                          <span className="text-gsrp-teal-light/70">{log.type || scenario.rpType?.label || 'RP'}</span>
+                          <span className="text-gsrp-teal-light/40">Location:</span>
+                          <span className="text-gsrp-teal-light/70">{log.location}</span>
+                          <span className="text-gsrp-teal-light/40">Duration:</span>
+                          <span className="text-gsrp-teal-light/70">{log.duration || `${log.ends || 'N/A'}`}</span>
+                          {log.quickKill && (
+                            <>
+                              <span className="text-gsrp-teal-light/40">Quick Kill:</span>
+                              <span className="text-gsrp-teal-light/70">{log.quickKill}</span>
+                            </>
+                          )}
+                          <span className="text-gsrp-teal-light/40">Moderator:</span>
+                          <span className="text-gsrp-teal-light/70">{log.moderator}</span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className="sticky bottom-0 bg-gsrp-dark-surface/95 backdrop-blur-sm border-t border-gsrp-dark-border/30 px-5 py-4">
+                  <button
+                    onClick={() => { setRpLogOpen(false); setRpLogsViewed(true) }}
+                    className="w-full py-2.5 bg-gsrp-orange text-white rounded-xl text-sm font-bold hover:bg-gsrp-orange/90 transition-all cursor-pointer"
+                  >
+                    Close Logs — I've Reviewed Them
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isPlog && !answered && (
+            <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
+              <div className="flex items-center gap-2 mb-5">
+                <Shield size={14} className="text-gsrp-orange" />
+                <h3 className="text-xs font-bold text-gsrp-teal-light/40 uppercase tracking-wider">
+                  Melonly Punishment Form
+                </h3>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="text-[11px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider block mb-1.5">
+                    Offender Username
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={pFormData.offender}
+                      onChange={e => {
+                        setPFormData(prev => ({ ...prev, offender: e.target.value }))
+                        setPFormUserOpen(e.target.value.length > 0)
+                      }}
+                      onFocus={() => setPFormUserOpen(pFormData.offender.length > 0)}
+                      placeholder="Search username..."
+                      className="w-full px-4 py-2.5 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-gsrp-teal-light/70 placeholder:text-gsrp-teal-light/20 focus:outline-none focus:border-gsrp-teal/40 transition-all"
+                    />
+                    {pFormUserOpen && (
+                      <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl shadow-xl max-h-40 overflow-y-auto">
+                        {MOCK_USER_NAMES
+                          .filter(n => n.toLowerCase().includes(pFormData.offender.toLowerCase()))
+                          .slice(0, 8)
+                          .map(n => (
+                            <button
+                              key={n}
+                              onClick={() => {
+                                setPFormData(prev => ({ ...prev, offender: n }))
+                                setPFormUserOpen(false)
+                              }}
+                              className="w-full text-left px-4 py-2 text-xs text-gsrp-teal-light/70 hover:bg-gsrp-teal/10 hover:text-gsrp-teal-light transition-colors cursor-pointer"
+                            >
+                              {n}
+                            </button>
+                          ))}
+                        {MOCK_USER_NAMES.filter(n => n.toLowerCase().includes(pFormData.offender.toLowerCase())).length === 0 && (
+                          <p className="px-4 py-2 text-xs text-gsrp-teal-light/30">No users found</p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider block mb-1.5">
+                    Punishment Type
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {PUNISHMENT_OPTIONS.map(p => (
+                      <button
+                        key={p}
+                        onClick={() => setPFormData(prev => ({ ...prev, punishment: p }))}
+                        className={`py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+                          pFormData.punishment === p
+                            ? 'bg-gsrp-orange text-white'
+                            : 'bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-gsrp-teal-light/50 hover:border-gsrp-orange/30 hover:text-gsrp-teal-light/70'
+                        }`}
+                      >
+                        {p}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[11px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider block mb-1.5">
+                    Reason
+                  </label>
+                  <select
+                    value={pFormData.reason}
+                    onChange={e => setPFormData(prev => ({ ...prev, reason: e.target.value }))}
+                    className="w-full px-4 py-2.5 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-gsrp-teal-light/70 focus:outline-none focus:border-gsrp-teal/40 transition-all appearance-none"
+                  >
+                    <option value="" disabled>Select a reason...</option>
+                    {PUNISHMENT_REASONS.map(r => (
+                      <option key={r} value={r}>{r}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {pFormError && (
+                  <p className="text-xs text-gsrp-sunset bg-gsrp-sunset/5 rounded-lg p-2.5">{pFormError}</p>
+                )}
+
+                <button
+                  onClick={handlePFormSubmit}
+                  disabled={!evidenceViewed || !pFormData.offender.trim() || !pFormData.punishment || !pFormData.reason}
+                  className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
+                    evidenceViewed && pFormData.offender.trim() && pFormData.punishment && pFormData.reason
+                      ? 'bg-gsrp-orange text-white hover:bg-gsrp-orange/90'
+                      : 'bg-gsrp-dark-surface text-gsrp-teal-light/20 border border-gsrp-dark-border cursor-not-allowed'
+                  }`}
+                >
+                  <Shield size={14} />
+                  {!evidenceViewed ? 'Review Evidence First' : 'Submit Punishment'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {!isRplog && !isPlog && (
+            <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
+              <h3 className="text-xs font-bold text-gsrp-teal-light/40 uppercase tracking-wider mb-4">
+                What action do you take?
+              </h3>
+
+              <div className="grid gap-3">
+                {scenario.options.map((opt) => {
+                  const isSelected = selectedOption === opt.id
+                  const isCorrect = answered && opt.correct
+                  const isWrong = answered && isSelected && !opt.correct
+
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={() => !answered && setSelectedOption(opt.id)}
+                      disabled={answered}
+                      className={`flex items-start gap-3 p-4 rounded-xl border text-left transition-all duration-200 cursor-pointer ${
+                        isCorrect
+                          ? 'border-gsrp-teal/40 bg-gsrp-teal/10'
+                          : isWrong
+                          ? 'border-gsrp-sunset/40 bg-gsrp-sunset/10'
+                          : isSelected
+                          ? 'border-gsrp-orange/40 bg-gsrp-orange/10'
+                          : 'border-gsrp-dark-border/50 hover:border-gsrp-dark-border hover:bg-gsrp-dark-surface/40'
+                      } ${answered ? 'cursor-default' : ''}`}
+                    >
+                      <span className={`flex items-center justify-center w-7 h-7 rounded-lg text-xs font-black shrink-0 mt-0.5 ${
+                        isCorrect
+                          ? 'bg-gsrp-teal text-white'
+                          : isWrong
+                          ? 'bg-gsrp-sunset text-white'
+                          : isSelected
+                          ? 'bg-gsrp-orange text-white'
+                          : 'bg-gsrp-dark-surface text-gsrp-teal-light/40 border border-gsrp-dark-border'
+                      }`}>
+                        {isCorrect ? '✓' : isWrong ? '✗' : opt.id.toUpperCase()}
+                      </span>
+                      <div className="min-w-0">
+                        <span className={`text-sm font-medium block ${
+                          isCorrect ? 'text-gsrp-teal-light' : isWrong ? 'text-gsrp-sunset' : isSelected ? 'text-white' : 'text-gsrp-teal-light/70'
+                        }`}>
+                          {opt.text}
+                        </span>
+                      </div>
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
 
           {answered && (
             <div className={`card-glass rounded-2xl border p-5 animate-fade-in-up ${
@@ -489,17 +918,19 @@ export default function RidealongEngine({
             </div>
             <div className="flex gap-3">
               {!answered ? (
-                <button
-                  onClick={handleCheck}
-                  disabled={selectedOption === null || !evidenceViewed}
-                  className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                    selectedOption !== null && evidenceViewed
-                      ? 'bg-gsrp-orange text-white hover:bg-gsrp-orange/90'
-                      : 'bg-gsrp-dark-surface text-gsrp-teal-light/20 border border-gsrp-dark-border cursor-not-allowed'
-                  }`}
-                >
-                  {!evidenceViewed ? 'Review Evidence First' : 'Confirm Answer'}
-                </button>
+                !isRplog && !isPlog && (
+                  <button
+                    onClick={handleCheck}
+                    disabled={selectedOption === null || !evidenceViewed}
+                    className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+                      selectedOption !== null && evidenceViewed
+                        ? 'bg-gsrp-orange text-white hover:bg-gsrp-orange/90'
+                        : 'bg-gsrp-dark-surface text-gsrp-teal-light/20 border border-gsrp-dark-border cursor-not-allowed'
+                    }`}
+                  >
+                    {!evidenceViewed ? 'Review Evidence First' : 'Confirm Answer'}
+                  </button>
+                )
               ) : (
                 <button
                   onClick={handleNext}

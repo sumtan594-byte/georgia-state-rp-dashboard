@@ -8,7 +8,7 @@ import { authOptions } from '../../../lib/auth-options'
 import { useRefreshedUser } from '../../../lib/UserRefreshContext'
 import AccessDenied from '../../../components/auth/AccessDenied'
 import RidealongEngine from '../../../components/training/RidealongEngine'
-import { SCENARIO_BANK } from '../../../lib/ridealong-scenarios'
+import { SCENARIO_BANK, generateRpLogScenario, generatePLogScenario, RIDEALONG_POOL } from '../../../lib/ridealong-scenarios'
 import { RIDEALONG_CONFIG } from '../../../lib/ridealong-config'
 
 function shuffleArray(arr) {
@@ -21,28 +21,36 @@ function shuffleArray(arr) {
 }
 
 function drawScenarios() {
-  const total = RIDEALONG_CONFIG.TOTAL_SCENARIOS
   const invalidBank = SCENARIO_BANK.filter(s => s.evidenceValid === false)
   const validBank = SCENARIO_BANK.filter(s => s.evidenceValid !== false)
 
   const picked = []
   if (invalidBank.length > 0) {
     const shuffledInvalid = shuffleArray(invalidBank)
-    picked.push(shuffledInvalid[0])
+    picked.push({ ...shuffledInvalid[0], options: shuffleArray(shuffledInvalid[0].options) })
   }
 
-  const remaining = total - picked.length
+  const needed = RIDEALONG_CONFIG.TOTAL_SCENARIOS - picked.length
+
+  const rpLogCount = Math.min(RIDEALONG_POOL.RP_LOG, needed)
+  const pLogCount = Math.min(RIDEALONG_POOL.P_LOG, needed - rpLogCount)
+  const standardCount = Math.min(RIDEALONG_POOL.STANDARD, needed - rpLogCount - pLogCount)
+
+  for (let i = 0; i < rpLogCount; i++) {
+    picked.push(generateRpLogScenario(i))
+  }
+
+  for (let i = 0; i < pLogCount; i++) {
+    picked.push(generatePLogScenario(i))
+  }
+
   const shuffledValid = shuffleArray(validBank)
   for (const s of shuffledValid) {
-    if (picked.length >= total) break
-    if (!picked.find(p => p.id === s.id)) picked.push(s)
+    if (picked.length >= RIDEALONG_CONFIG.TOTAL_SCENARIOS) break
+    if (!picked.find(p => p.id === s.id)) picked.push({ ...s, options: shuffleArray(s.options) })
   }
 
-  const shuffled = shuffleArray(picked)
-  return shuffled.map(s => ({
-    ...s,
-    options: shuffleArray(s.options),
-  }))
+  return shuffleArray(picked)
 }
 
 export default function RidealongPage() {
@@ -337,36 +345,50 @@ export default function RidealongPage() {
         <div className="space-y-6">
           <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
             <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4">How It Works</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
-                <span className="text-lg">🚨</span>
-                <div>
-                  <p className="text-sm font-bold text-white">Receive Mod Call</p>
-                  <p className="text-[10px] text-gsrp-teal-light/40">A popup appears with caller info</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
+                  <span className="text-lg">🚨</span>
+                  <div>
+                    <p className="text-sm font-bold text-white">Receive Mod Call</p>
+                    <p className="text-[10px] text-gsrp-teal-light/40">A popup appears with caller info</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
+                  <span className="text-lg">🎥</span>
+                  <div>
+                    <p className="text-sm font-bold text-white">Review Evidence</p>
+                    <p className="text-[10px] text-gsrp-teal-light/40">Watch bodycam footage before deciding</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
+                  <span className="text-lg">⚖️</span>
+                  <div>
+                    <p className="text-sm font-bold text-white">Take Action</p>
+                    <p className="text-[10px] text-gsrp-teal-light/40">Choose the correct action</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
+                  <span className="text-lg">📝</span>
+                  <div>
+                    <p className="text-sm font-bold text-white">Get Feedback</p>
+                    <p className="text-[10px] text-gsrp-teal-light/40">Immediate explanation of right/wrong</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
+                  <span className="text-lg">📋</span>
+                  <div>
+                    <p className="text-sm font-bold text-white">RP Logging</p>
+                    <p className="text-[10px] text-gsrp-teal-light/40">Check logs before approving RPs</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
+                  <span className="text-lg">🔨</span>
+                  <div>
+                    <p className="text-sm font-bold text-white">Melonly Form</p>
+                    <p className="text-[10px] text-gsrp-teal-light/40">Log punishments via melonly system</p>
+                  </div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
-                <span className="text-lg">🎥</span>
-                <div>
-                  <p className="text-sm font-bold text-white">Review Evidence</p>
-                  <p className="text-[10px] text-gsrp-teal-light/40">Watch bodycam footage before deciding</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
-                <span className="text-lg">⚖️</span>
-                <div>
-                  <p className="text-sm font-bold text-white">Take Action</p>
-                  <p className="text-[10px] text-gsrp-teal-light/40">Choose the correct punishment</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
-                <span className="text-lg">📝</span>
-                <div>
-                  <p className="text-sm font-bold text-white">Get Feedback</p>
-                  <p className="text-[10px] text-gsrp-teal-light/40">Immediate explanation of right/wrong</p>
-                </div>
-              </div>
-            </div>
           </div>
 
           <div className="card-glass rounded-2xl border border-gsrp-teal/20 p-5">
@@ -383,6 +405,18 @@ export default function RidealongPage() {
               <li className="flex items-center gap-2">
                 <CheckIcon />
                 Score {RIDEALONG_CONFIG.PASS_SCORE}/{RIDEALONG_CONFIG.TOTAL_SCENARIOS} or higher to pass
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckIcon />
+                {RIDEALONG_POOL.RP_LOG} RP logging scenarios per attempt
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckIcon />
+                {RIDEALONG_POOL.P_LOG} melonly form scenarios per attempt
+              </li>
+              <li className="flex items-center gap-2">
+                <CheckIcon />
+                Interactive multi-step decision making
               </li>
             </ul>
           </div>
