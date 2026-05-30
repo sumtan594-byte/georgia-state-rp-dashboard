@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth-options';
 import LoginScreen from '../../../components/auth/LoginScreen';
 import { useRefreshedUser } from '../../../lib/UserRefreshContext';
+import { useToast } from '../../../lib/ToastContext';
 import AccessDenied from '../../../components/auth/AccessDenied';
 import Link from 'next/link';
 import {
@@ -15,6 +16,7 @@ import {
 export default function UsersPage({ canAccess }) {
   const { data: session, status } = useSession();
   const { refreshedUser, hasRefreshed, accessDenied } = useRefreshedUser();
+  const { addToast } = useToast();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -345,23 +347,30 @@ export default function UsersPage({ canAccess }) {
                       onClick={async () => {
                         setAllowing(p.userId || p.ip);
                         try {
-                          await fetch('/api/tracking/whitelist', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                              userId: p.userId || undefined,
-                              ip: p.ip || undefined,
-                              username: p.username || '',
-                            }),
-                          });
-                          const updated = profiles.map(pr =>
-                            (pr.userId || pr.ip) === (p.userId || p.ip)
-                              ? { ...pr, geo: { ...pr.geo, proxy: false } }
-                              : pr
-                          );
-                          setProfiles(updated);
-                        } catch (_) {}
-                        setAllowing(null);
+                            const res = await fetch('/api/tracking/whitelist', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                userId: p.userId || undefined,
+                                ip: p.ip || undefined,
+                                username: p.username || '',
+                              }),
+                            });
+                            if (res.ok) {
+                              addToast('Proxy access granted — user will no longer be blocked', 'success');
+                            } else {
+                              addToast('Failed to whitelist user', 'error');
+                            }
+                            const updated = profiles.map(pr =>
+                              (pr.userId || pr.ip) === (p.userId || p.ip)
+                                ? { ...pr, geo: { ...pr.geo, proxy: false } }
+                                : pr
+                            );
+                            setProfiles(updated);
+                          } catch (_) {
+                            addToast('Network error — could not whitelist', 'error');
+                          }
+                          setAllowing(null);
                       }}
                       disabled={allowing === (p.userId || p.ip)}
                       className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 transition-colors cursor-pointer disabled:opacity-50"
