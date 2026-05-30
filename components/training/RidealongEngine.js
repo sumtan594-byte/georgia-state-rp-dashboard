@@ -559,6 +559,7 @@ export default function RidealongEngine({
             evidence={scenario.videoEvidence}
             evidenceValid={scenario.evidenceValid !== false}
             onView={handleEvidenceViewed}
+            requestLabel={isRplog ? 'Request more details' : undefined}
           />
 
           {isRplog && !answered && (

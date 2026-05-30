@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Video, Eye, CheckCircle, AlertTriangle } from 'lucide-react'
 
-export default function VideoEvidencePanel({ evidence, evidenceValid, onView }) {
+export default function VideoEvidencePanel({ evidence, evidenceValid, onView, requestLabel }) {
   const [viewed, setViewed] = useState(false)
 
   const handleView = () => {
@@ -25,7 +25,7 @@ export default function VideoEvidencePanel({ evidence, evidenceValid, onView }) 
               <span className={`text-xs font-black uppercase tracking-wider ${
                 viewed ? (evidenceValid ? 'text-gsrp-teal-light' : 'text-amber-400') : 'text-gsrp-orange'
               }`}>
-                {viewed ? 'Evidence Reviewed' : 'Video Evidence Available'}
+                {viewed ? 'Evidence Reviewed' : requestLabel ? 'Details Available' : 'Video Evidence Available'}
               </span>
               {!viewed && (
                 <span className="text-[10px] text-gsrp-teal-light/30 ml-2">Required</span>
@@ -52,7 +52,7 @@ export default function VideoEvidencePanel({ evidence, evidenceValid, onView }) 
                 evidenceValid ? 'bg-gsrp-teal-light' : 'bg-amber-400'
               }`} />
               <span className="text-[10px] font-mono uppercase tracking-wider text-gsrp-teal-light/40">
-                Bodycam Footage — Playback
+                {requestLabel ? 'RP Request Context' : 'Bodycam Footage — Playback'}
               </span>
               {!evidenceValid && (
                 <span className="ml-auto text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
@@ -72,7 +72,7 @@ export default function VideoEvidencePanel({ evidence, evidenceValid, onView }) 
             className="w-full py-2.5 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm font-bold text-gsrp-teal-light/70 hover:border-gsrp-orange/40 hover:text-gsrp-orange transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             <Eye size={14} />
-            Request Video Evidence
+            {requestLabel || 'Request Video Evidence'}
           </button>
         )}
       </div>
