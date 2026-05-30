@@ -475,12 +475,6 @@ export default function TrainingPage() {
 </div>
 <p className="text-xs text-gsrp-teal-light/30 mt-4">Questions are randomly selected from a pool of 65+. Each retry swaps at least 40% of questions. Interactive simulation questions require you to complete multi-step workflows. </p>
 </div>
-          ))}
-        </div>
-        <p className="text-xs text-gsrp-teal-light/30 mt-4">
-          Questions are randomly selected from a pool of 50+. Each retry swaps at least 40% of questions to prevent memorisation.
-        </p>
-      </div>
 
       {/* Ridealong Simulation */}
       <div className="card-glass rounded-2xl border border-gsrp-teal/20 p-6">
