@@ -23,7 +23,13 @@ import {
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications, canManageAdmins } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
-import { TRACKING_VIEWER_IDS } from '../../lib/admin-helper';
+
+const TRACKING_VIEWER_IDS = [
+  '901075576943673416',
+  '1115966197100458107',
+  '654799559498661888',
+  '1258366303899619381',
+];
 
 export default function Sidebar({ open, onToggle }) {
   const { data: session } = useSession();
