@@ -14,7 +14,18 @@ export default async function handler(req, res) {
     const db = client.db();
 
     if (req.method === 'DELETE') {
-      const { type } = req.query;
+      const { type, userId, ip } = req.query;
+
+      if (userId || ip) {
+        const filter = userId ? { userId: String(userId) } : { ip: String(ip) };
+        const profileKey = userId ? String(userId) : `ip_${ip}`;
+        await Promise.all([
+          db.collection('visitor_profiles').deleteOne({ _id: profileKey }),
+          db.collection('visitor_logs').deleteMany(filter),
+        ]);
+        return res.status(200).json({ ok: true, deleted: profileKey });
+      }
+
       if (type === 'profiles') {
         await db.collection('visitor_profiles').deleteMany({});
       } else if (type === 'logs') {
