@@ -361,50 +361,50 @@ export default function TrainingPage() {
       </div>
 
       {/* Info Cards */}
-  <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-  <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-5">
-    <div className="flex items-center gap-3 mb-3">
-      <div className="w-10 h-10 rounded-xl bg-gsrp-orange/10 flex items-center justify-center">
-        <AlertTriangle size={18} className="text-gsrp-orange" />
-      </div>
-      <h3 className="text-sm font-black text-white">Pass Score</h3>
-    </div>
-    <p className="text-2xl font-black text-gsrp-orange">7/10</p>
-    <p className="text-xs text-gsrp-teal-light/30 mt-1">70% required to pass</p>
-  </div>
+      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+        <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-gsrp-orange/10 flex items-center justify-center">
+              <AlertTriangle size={18} className="text-gsrp-orange" />
+            </div>
+            <h3 className="text-sm font-black text-white">Pass Score</h3>
+          </div>
+          <p className="text-2xl font-black text-gsrp-orange">{QUIZ_CONFIG.PASS_SCORE}/{QUIZ_CONFIG.TOTAL_QUESTIONS}</p>
+          <p className="text-xs text-gsrp-teal-light/30 mt-1">Correct answers required</p>
+        </div>
 
-  <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-5">
-    <div className="flex items-center gap-3 mb-3">
-      <div className="w-10 h-10 rounded-xl bg-gsrp-sunset/10 flex items-center justify-center">
-        <RotateCcw size={18} className="text-gsrp-sunset" />
-      </div>
-      <h3 className="text-sm font-black text-white">Cooldown</h3>
-    </div>
-    <p className="text-2xl font-black text-gsrp-sunset">{QUIZ_CONFIG.COOLDOWN_HOURS}h</p>
-    <p className="text-xs text-gsrp-teal-light/30 mt-1">Between failed attempts</p>
-  </div>
+        <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-gsrp-sunset/10 flex items-center justify-center">
+              <RotateCcw size={18} className="text-gsrp-sunset" />
+            </div>
+            <h3 className="text-sm font-black text-white">Cooldown</h3>
+          </div>
+          <p className="text-2xl font-black text-gsrp-sunset">{QUIZ_CONFIG.COOLDOWN_HOURS}h</p>
+          <p className="text-xs text-gsrp-teal-light/30 mt-1">Between failed attempts</p>
+        </div>
 
-  <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-5">
-    <div className="flex items-center gap-3 mb-3">
-      <div className="w-10 h-10 rounded-xl bg-gsrp-teal/10 flex items-center justify-center">
-        <BookOpen size={18} className="text-gsrp-teal-light" />
-      </div>
-      <h3 className="text-sm font-black text-white">Questions</h3>
-    </div>
-    <p className="text-2xl font-black text-gsrp-teal-light">{QUIZ_CONFIG.TOTAL_QUESTIONS}</p>
-    <p className="text-xs text-gsrp-teal-light/30 mt-1">Randomised each attempt</p>
-  </div>
+        <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-gsrp-teal/10 flex items-center justify-center">
+              <BookOpen size={18} className="text-gsrp-teal-light" />
+            </div>
+            <h3 className="text-sm font-black text-white">Questions</h3>
+          </div>
+          <p className="text-2xl font-black text-gsrp-teal-light">{QUIZ_CONFIG.TOTAL_QUESTIONS}</p>
+          <p className="text-xs text-gsrp-teal-light/30 mt-1">Randomised each attempt</p>
+        </div>
 
-  <div className="card-glass rounded-2xl border border-gsrp-teal/20 p-5">
-    <div className="flex items-center gap-3 mb-3">
-      <div className="w-10 h-10 rounded-xl bg-gsrp-teal/10 flex items-center justify-center">
-        <BookOpen size={18} className="text-gsrp-teal-light" />
+        <div className="card-glass rounded-2xl border border-gsrp-teal/20 p-5">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-10 h-10 rounded-xl bg-gsrp-teal/10 flex items-center justify-center">
+              <BookOpen size={18} className="text-gsrp-teal-light" />
+            </div>
+            <h3 className="text-sm font-black text-gsrp-teal-light">Open Book</h3>
+          </div>
+          <p className="text-xs text-gsrp-teal-light/50">Handbook accessible at any time during the quiz</p>
+        </div>
       </div>
-      <h3 className="text-sm font-black text-gsrp-teal-light">Open Book</h3>
-    </div>
-    <p className="text-xs text-gsrp-teal-light/50">Handbook accessible at any time during the quiz</p>
-  </div>
-</div>
 
       {/* Resume Banner */}
       {savedSession && !resumeDismissed && (
@@ -454,27 +454,27 @@ export default function TrainingPage() {
         </button>
       </div>
 
-{/* What to expect */}
-<div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
-  <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4">What to Expect</h3>
-  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-  {[
-    { label: 'In-Game Punishments', count: '~2 questions', color: 'text-gsrp-orange' },
-    { label: 'Staff Rules', count: '~2 questions', color: 'text-gsrp-teal-light' },
-    { label: 'Staff Discipline', count: '~2 questions', color: 'text-gsrp-gold' },
-    { label: 'Custom Commands', count: '~1 question', color: 'text-gsrp-cyan' },
-    { label: 'Vehicles & Patrol', count: '~1 question', color: 'text-gsrp-sky' },
-    { label: 'Roleplay Logging', count: '~1 question', color: 'text-gsrp-purple' },
-    { label: 'Punishment Logging', count: '~1 question', color: 'text-gsrp-pink' },
-  ].map((item, i) => (
-    <div key={i} className="flex items-center justify-between p-3 bg-gsrp-dark-surface/40 rounded-xl">
-      <span className="text-sm text-gsrp-teal-light/60">{item.label}</span>
-      <span className={`text-xs font-bold ${item.color}`}>{item.count}</span>
-    </div>
-  ))}
-</div>
-<p className="text-xs text-gsrp-teal-light/30 mt-4">Questions are randomly selected from a pool of 65+. Each retry swaps at least 40% of questions. Interactive simulation questions require you to complete multi-step workflows. </p>
-</div>
+      {/* What to expect */}
+      <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
+        <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4">What to Expect</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {[
+            { label: 'In-Game Punishments', count: '~5 questions', color: 'text-gsrp-orange' },
+            { label: 'Staff Rules', count: '~6 questions', color: 'text-gsrp-teal-light' },
+            { label: 'Staff Discipline', count: '~3 questions', color: 'text-gsrp-gold' },
+            { label: 'Custom Commands', count: '~4 questions', color: 'text-gsrp-cyan' },
+            { label: 'Vehicles & Patrol', count: '~2 questions', color: 'text-gsrp-sky' },
+          ].map((item, i) => (
+            <div key={i} className="flex items-center justify-between p-3 bg-gsrp-dark-surface/40 rounded-xl">
+              <span className="text-sm text-gsrp-teal-light/60">{item.label}</span>
+              <span className={`text-xs font-bold ${item.color}`}>{item.count}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-gsrp-teal-light/30 mt-4">
+          Questions are randomly selected from a pool of 50+. Each retry swaps at least 40% of questions to prevent memorisation.
+        </p>
+      </div>
 
       {/* Ridealong Simulation */}
       <div className="card-glass rounded-2xl border border-gsrp-teal/20 p-6">
