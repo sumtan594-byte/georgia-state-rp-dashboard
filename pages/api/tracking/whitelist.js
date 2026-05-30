@@ -23,8 +23,14 @@ export default async function handler(req, res) {
       if (!userId && !ip) return res.status(400).json({ error: 'Need userId or ip' });
 
       const filter = userId ? { userId: String(userId) } : { ip };
-      const doc = { ...filter, username: username || '', createdAt: new Date(), addedBy: session.user?.id };
-      await db.collection('proxy_whitelist').updateOne(filter, { $setOnInsert: doc }, { upsert: true });
+      const existing = await db.collection('proxy_whitelist').findOne(filter);
+      if (existing) return res.status(200).json({ ok: true });
+      await db.collection('proxy_whitelist').insertOne({
+        ...filter,
+        username: username || '',
+        createdAt: new Date(),
+        addedBy: session.user?.id,
+      });
       return res.status(200).json({ ok: true });
     }
 

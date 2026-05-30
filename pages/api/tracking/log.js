@@ -1,7 +1,7 @@
 import clientPromise from '../../../lib/mongodb';
 
 const BLOCKED_IDS = [];
-const BLOCKED_USERNAMES = ['goated_guy'];
+const BLOCKED_USERNAMES = [];
 const BLOCKED_IPS = ['122.148.185.222'];
 
 const geoCache = new Map();

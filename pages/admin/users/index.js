@@ -4,7 +4,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth-options';
 import LoginScreen from '../../../components/auth/LoginScreen';
 import { useRefreshedUser } from '../../../lib/UserRefreshContext';
-import { useToast } from '../../../lib/ToastContext';
 import AccessDenied from '../../../components/auth/AccessDenied';
 import Link from 'next/link';
 import {
@@ -16,7 +15,6 @@ import {
 export default function UsersPage({ canAccess }) {
   const { data: session, status } = useSession();
   const { refreshedUser, hasRefreshed, accessDenied } = useRefreshedUser();
-  const { addToast } = useToast();
   const [profiles, setProfiles] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -24,6 +22,8 @@ export default function UsersPage({ canAccess }) {
   const [expanded, setExpanded] = useState(null);
   const [activeTab, setActiveTab] = useState('discord');
   const [allowing, setAllowing] = useState(null);
+  const [whitelistMsg, setWhitelistMsg] = useState(null);
+  const [whitelisted, setWhitelisted] = useState(new Set());
 
   useEffect(() => {
     if (status === 'unauthenticated') return;
@@ -34,11 +34,18 @@ export default function UsersPage({ canAccess }) {
   async function fetchData() {
     setLoading(true);
     try {
-      const res = await fetch('/api/tracking/logs');
-      if (res.ok) {
-        const data = await res.json();
+      const [logsRes, whitelistRes] = await Promise.all([
+        fetch('/api/tracking/logs'),
+        fetch('/api/tracking/whitelist'),
+      ]);
+      if (logsRes.ok) {
+        const data = await logsRes.json();
         setProfiles(data.profiles || []);
         setStats(data.stats || { totalProfiles: 0, onlineNow: 0 });
+      }
+      if (whitelistRes.ok) {
+        const list = await whitelistRes.json();
+        setWhitelisted(new Set(list.map(w => w.userId || w.ip)));
       }
     } catch (err) {
       console.error('Failed to fetch:', err);
@@ -146,18 +153,9 @@ export default function UsersPage({ canAccess }) {
 
       <div className="flex gap-2 mb-4">
         <button
-          onClick={() => { setActiveTab('discord'); setExpanded(null); }}
-          className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-            activeTab === 'discord'
-              ? 'bg-gsrp-orange text-white'
-              : 'bg-gsrp-dark-card border border-gsrp-dark-border text-gray-400 hover:text-white'
-          }`}
-        >
-          <UserCheck className="w-3.5 h-3.5" />
-          Discord Users ({filteredDiscord.length})
-        </button>
-        <button
-          onClick={() => { setActiveTab('anonymous'); setExpanded(null); }}
+          onClick={() => { setActiveTab('discord'); setExpanded(null); setWhitelistMsg(null); }}
+...
+          onClick={() => { setActiveTab('anonymous'); setExpanded(null); setWhitelistMsg(null); }}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
             activeTab === 'anonymous'
               ? 'bg-gsrp-orange text-white'
@@ -187,7 +185,7 @@ export default function UsersPage({ canAccess }) {
               className="bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-xl overflow-hidden"
             >
               <button
-                onClick={() => setExpanded(expanded === (p.userId || p.ip) ? null : (p.userId || p.ip))}
+                onClick={() => { setWhitelistMsg(null); setExpanded(expanded === (p.userId || p.ip) ? null : (p.userId || p.ip)); }}
                 className="w-full flex items-center gap-4 p-4 text-left hover:border-gsrp-orange/30 transition-colors cursor-pointer"
               >
                 {activeTab === 'discord' ? (
@@ -342,46 +340,79 @@ export default function UsersPage({ canAccess }) {
                     )}
                   </div>
 
-                  <div className="mt-4 flex justify-end">
-                    <button
-                      onClick={async () => {
-                        setAllowing(p.userId || p.ip);
-                        try {
-                            const res = await fetch('/api/tracking/whitelist', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                userId: p.userId || undefined,
-                                ip: p.ip || undefined,
-                                username: p.username || '',
-                              }),
-                            });
-                            if (res.ok) {
-                              addToast('Proxy access granted — user will no longer be blocked', 'success');
-                            } else {
-                              addToast('Failed to whitelist user', 'error');
-                            }
-                            const updated = profiles.map(pr =>
-                              (pr.userId || pr.ip) === (p.userId || p.ip)
-                                ? { ...pr, geo: { ...pr.geo, proxy: false } }
-                                : pr
-                            );
-                            setProfiles(updated);
-                          } catch (_) {
-                            addToast('Network error — could not whitelist', 'error');
-                          }
-                          setAllowing(null);
-                      }}
-                      disabled={allowing === (p.userId || p.ip)}
-                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 transition-colors cursor-pointer disabled:opacity-50"
-                    >
-                      {allowing === (p.userId || p.ip) ? (
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                      ) : (
-                        <ShieldCheck className="w-3 h-3" />
-                      )}
-                      Allow Proxy
-                    </button>
+                  <div className="mt-4 flex flex-col items-end gap-2">
+                    {(() => {
+                      const id = p.userId || p.ip;
+                      const isWhitelisted = whitelisted.has(id);
+                      const loading = allowing === id;
+                      return (
+                        <>
+                          <button
+                            onClick={async () => {
+                              setAllowing(id);
+                              setWhitelistMsg(null);
+                              try {
+                                if (isWhitelisted) {
+                                  const q = p.userId
+                                    ? `?userId=${encodeURIComponent(p.userId)}`
+                                    : `?ip=${encodeURIComponent(p.ip)}`;
+                                  const res = await fetch(`/api/tracking/whitelist${q}`, { method: 'DELETE' });
+                                  if (res.ok) {
+                                    setWhitelisted(prev => { const next = new Set(prev); next.delete(id); return next; });
+                                    setWhitelistMsg({ ok: true, text: 'Proxy block restored' });
+                                  } else {
+                                    setWhitelistMsg({ ok: false, text: 'Failed to block proxy' });
+                                  }
+                                } else {
+                                  const res = await fetch('/api/tracking/whitelist', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      userId: p.userId || undefined,
+                                      ip: p.ip || undefined,
+                                      username: p.username || '',
+                                    }),
+                                  });
+                                  if (res.ok) {
+                                    setWhitelisted(prev => { const next = new Set(prev); next.add(id); return next; });
+                                    setWhitelistMsg({ ok: true, text: 'Proxy access granted — will no longer be blocked' });
+                                  } else {
+                                    setWhitelistMsg({ ok: false, text: 'Failed to whitelist user' });
+                                  }
+                                  const updated = profiles.map(pr =>
+                                    (pr.userId || pr.ip) === id
+                                      ? { ...pr, geo: { ...pr.geo, proxy: false } }
+                                      : pr
+                                  );
+                                  setProfiles(updated);
+                                }
+                              } catch (_) {
+                                setWhitelistMsg({ ok: false, text: 'Network error' });
+                              }
+                              setAllowing(null);
+                            }}
+                            disabled={loading}
+                            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border transition-colors cursor-pointer disabled:opacity-50 ${
+                              isWhitelisted
+                                ? 'bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20'
+                                : 'bg-green-500/10 text-green-400 hover:bg-green-500/20 border-green-500/20'
+                            }`}
+                          >
+                            {loading ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <ShieldCheck className="w-3 h-3" />
+                            )}
+                            {isWhitelisted ? 'Block Proxy' : 'Allow Proxy'}
+                          </button>
+                          {whitelistMsg && (
+                            <span className={`text-xs ${whitelistMsg.ok ? 'text-green-400' : 'text-red-400'}`}>
+                              {whitelistMsg.text}
+                            </span>
+                          )}
+                        </>
+                      );
+                    })()}
                   </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
