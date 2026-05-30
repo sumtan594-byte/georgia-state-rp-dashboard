@@ -18,7 +18,7 @@ export default function PrivacyPolicy() {
           <div className="card-glass rounded-2xl p-8 shadow-2xl">
             <h1 className="text-white font-black text-2xl mb-6">Privacy Policy</h1>
             <div className="text-gsrp-teal-light/60 text-sm space-y-4 leading-relaxed">
-              <p><strong className="text-white">Last Updated:</strong> January 2025</p>
+              <p><strong className="text-white">Last Updated:</strong> May 2026</p>
               <p>Georgia State Roleplay ("GSRP", "we", "our") operates this verification portal and associated services. This Privacy Policy explains how we collect, use, and protect your information.</p>
 
               <h2 className="text-white font-bold text-lg mt-6 mb-2">Information We Collect</h2>
@@ -27,6 +27,7 @@ export default function PrivacyPolicy() {
                 <li><strong className="text-white">Roblox Information:</strong> During verification, your Roblox auth code is forwarded to our Discord bot via webhook. We do not store your Roblox credentials.</li>
                 <li><strong className="text-white">Quiz Results:</strong> Training quiz scores and answers are stored in a GitHub repository for record-keeping purposes.</li>
                 <li><strong className="text-white">Server Data:</strong> When using the Live Panel, we proxy ERLC server data (player lists, staff lists, logs). This data is not stored persistently.</li>
+                <li><strong className="text-white">Visitor Information:</strong> We collect your IP address and device type for anti-raid traffic monitoring and security purposes.</li>
               </ul>
 
               <h2 className="text-white font-bold text-lg mt-6 mb-2">How We Use Your Information</h2>
@@ -36,6 +37,7 @@ export default function PrivacyPolicy() {
                 <li>Link your Roblox account for citizenship verification</li>
                 <li>Display your Discord username and avatar within the dashboard</li>
                 <li>Record training quiz results for staff development tracking</li>
+                <li>Monitor visitor traffic and IP addresses to ensure valid anti-raid security</li>
               </ul>
 
               <h2 className="text-white font-bold text-lg mt-6 mb-2">Data Storage</h2>
@@ -44,6 +46,7 @@ export default function PrivacyPolicy() {
                 <li><strong className="text-white">Session Cookies:</strong> Encrypted session cookies managed by NextAuth.js. These expire when your Discord token expires.</li>
                 <li><strong className="text-white">GitHub Repository:</strong> Transcript HTML files and quiz attempt records are stored in a private GitHub repository.</li>
                 <li><strong className="text-white">In-Memory Cache:</strong> ERLC server data and presence information is held temporarily in server memory and is not persisted.</li>
+                <li><strong className="text-white">Visitor Database:</strong> IP addresses, browser/device information, and page visits are stored in a secured database for anti-raid monitoring. This data is retained for a rolling period for security purposes.</li>
               </ul>
 
               <h2 className="text-white font-bold text-lg mt-6 mb-2">Data Sharing</h2>

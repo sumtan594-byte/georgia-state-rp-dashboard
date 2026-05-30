@@ -1,23 +1,17 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth-options';
 import clientPromise from '../../../lib/mongodb';
+import { enrichUserInfo } from '../../../lib/discord-api';
+
+const RESOLVE_DELAY_MS = 50;
 
 async function resolveDiscordUser(userId) {
-  try {
-    const res = await fetch(`https://discord.com/api/users/${userId}`, {
-      headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` },
-    });
-    if (!res.ok) return null;
-    const user = await res.json();
-    return {
-      username: user.global_name || user.username || userId,
-      avatar: user.avatar
-        ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png?size=64`
-        : `https://cdn.discordapp.com/embed/avatars/${(BigInt(user.id) >> 22n) % 6n}.png`,
-    };
-  } catch {
-    return null;
-  }
+  const info = await enrichUserInfo(userId);
+  if (!info) return null;
+  return {
+    username: info.username,
+    avatar: info.avatarUrl,
+  };
 }
 
 export default async function handler(req, res) {
@@ -145,13 +139,16 @@ export default async function handler(req, res) {
     });
 
     const userIds = users.map(u => u.userId);
-    const resolved = await Promise.all(userIds.map(id => resolveDiscordUser(id)));
-    resolved.forEach((info, i) => {
+    for (let i = 0; i < userIds.length; i++) {
+      const info = await resolveDiscordUser(userIds[i]);
       if (info) {
         users[i].username = info.username;
         users[i].avatar = info.avatar;
       }
-    });
+      if (i < userIds.length - 1) {
+        await new Promise(r => setTimeout(r, RESOLVE_DELAY_MS));
+      }
+    }
 
     return res.status(200).json({ users });
   } catch (err) {

@@ -19,6 +19,7 @@ import {
   Server,
   ScrollText,
   UserCheck,
+  Globe,
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications, canManageAdmins } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
@@ -180,6 +181,8 @@ className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/
                ...(canManageAdminList ? [{ href: '/admins', icon: ShieldCheck, label: 'Edit Admins' }] : []),
                ...(isFullAdminUser ? [{ href: '/audit-logs', icon: ScrollText, label: 'Audit Logs' }] : []),
                ...(isFullAdminUser ? [{ href: '/admin/user-validations', icon: UserCheck, label: 'User Validations' }] : []),
+               ...(isFullAdminUser ? [{ href: '/admin/users', icon: Users, label: 'Users' }] : []),
+               ...(isFullAdminUser ? [{ href: '/admin/users/all-visits', icon: Globe, label: 'All Visits' }] : []),
             ].map((item, idx) => (
               <Link
                 key={item.href}

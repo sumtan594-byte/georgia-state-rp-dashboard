@@ -93,6 +93,30 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
   );
 }
 
+function VisitorTracker() {
+  const router = useRouter();
+  const { data: session } = useSession();
+
+  useEffect(() => {
+    const data = {
+      userAgent: navigator.userAgent,
+      page: window.location.pathname,
+    };
+    if (session?.user) {
+      data.userId = session.user.id;
+      data.username = session.user.name || '';
+      data.avatar = session.user.image || '';
+    }
+    fetch('/api/tracking/log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }).catch(() => {});
+  }, [router.pathname, session?.user?.id]);
+
+  return null;
+}
+
 function RouteLoadingBar() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -159,6 +183,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
       <UserRefreshProvider>
         <ToastProvider>
           <RouteLoadingBar />
+          <VisitorTracker />
 
           {showWelcome && (
             <WelcomeScreen
