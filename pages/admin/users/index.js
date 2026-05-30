@@ -9,6 +9,7 @@ import Link from 'next/link';
 import {
   Users, Globe, Monitor, Search, UserCheck, HelpCircle,
   Loader2, RefreshCw, ChevronDown, ChevronUp, Clock, Wifi, ExternalLink,
+  ShieldAlert, ShieldCheck,
 } from 'lucide-react';
 
 export default function UsersPage({ canAccess }) {
@@ -20,6 +21,7 @@ export default function UsersPage({ canAccess }) {
   const [stats, setStats] = useState({ totalProfiles: 0, onlineNow: 0 });
   const [expanded, setExpanded] = useState(null);
   const [activeTab, setActiveTab] = useState('discord');
+  const [allowing, setAllowing] = useState(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') return;
@@ -210,6 +212,12 @@ export default function UsersPage({ canAccess }) {
                       <Wifi className="w-2.5 h-2.5" />
                       {p.visitCount || 1} visits
                     </span>
+                    {p.geo?.proxy && (
+                      <span className="text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded font-semibold flex items-center gap-1">
+                        <ShieldAlert className="w-2.5 h-2.5" />
+                        VPN
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-3 mt-1 flex-wrap">
                     <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -241,6 +249,9 @@ export default function UsersPage({ canAccess }) {
                         {(p.ips && p.ips.length > 0 ? p.ips : [p.ip || 'Unknown']).map((ip, i) => (
                           <div key={i} className="flex items-center justify-between">
                             <span className="text-sm font-mono text-white">{ip}</span>
+                            {p.geo?.proxy && (
+                              <span className="text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded font-semibold">PROXY</span>
+                            )}
                           </div>
                         ))}
                         {(!p.ips || p.ips.length === 0) && (
@@ -297,6 +308,16 @@ export default function UsersPage({ canAccess }) {
                               <span className="text-white text-xs font-mono truncate max-w-[160px]" title={p.geo.hostname}>{p.geo.hostname}</span>
                             </div>
                           )}
+                          {(p.geo.proxy || p.geo.hosting || p.geo.mobile) && (
+                            <div className="flex justify-between text-sm">
+                              <span className="text-gray-400">Flags</span>
+                              <span className="flex gap-1.5">
+                                {p.geo.proxy && <span className="text-[10px] bg-red-500/10 text-red-400 px-1.5 py-0.5 rounded font-semibold">PROXY</span>}
+                                {p.geo.hosting && <span className="text-[10px] bg-yellow-500/10 text-yellow-400 px-1.5 py-0.5 rounded font-semibold">HOSTING</span>}
+                                {p.geo.mobile && <span className="text-[10px] bg-blue-500/10 text-blue-400 px-1.5 py-0.5 rounded font-semibold">MOBILE</span>}
+                              </span>
+                            </div>
+                          )}
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-400">Location</span>
                             <span className="text-white text-xs text-right">{[p.geo.city, p.geo.region, p.geo.country].filter(Boolean).join(', ')}</span>
@@ -318,6 +339,43 @@ export default function UsersPage({ canAccess }) {
                       </div>
                     )}
                   </div>
+
+                  {p.geo?.proxy && (
+                    <div className="mt-4 flex justify-end">
+                      <button
+                        onClick={async () => {
+                          setAllowing(p.userId || p.ip);
+                          try {
+                            await fetch('/api/tracking/whitelist', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                userId: p.userId || undefined,
+                                ip: p.ip || undefined,
+                                username: p.username || '',
+                              }),
+                            });
+                            const updated = profiles.map(pr =>
+                              (pr.userId || pr.ip) === (p.userId || p.ip)
+                                ? { ...pr, geo: { ...pr.geo, proxy: false } }
+                                : pr
+                            );
+                            setProfiles(updated);
+                          } catch (_) {}
+                          setAllowing(null);
+                        }}
+                        disabled={allowing === (p.userId || p.ip)}
+                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {allowing === (p.userId || p.ip) ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <ShieldCheck className="w-3 h-3" />
+                        )}
+                        Allow Proxy
+                      </button>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
                     <div>

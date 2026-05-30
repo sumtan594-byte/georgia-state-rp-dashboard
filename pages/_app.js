@@ -8,6 +8,7 @@ import TopBar from "../components/layout/TopBar";
 import WelcomeScreen from "../components/auth/WelcomeScreen";
 import { UserRefreshProvider } from "../lib/UserRefreshContext";
 import { ToastProvider } from "../lib/ToastContext";
+import { ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 function DebugSessionLogger() {
@@ -93,7 +94,43 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
   );
 }
 
-function VisitorTracker() {
+const SUPPORT_TICKET_URL = 'https://discord.com/channels/1366688107788894280/1372499646223482930';
+
+function ProxyBlockOverlay() {
+  return (
+    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-gsrp-dark">
+      <div className="max-w-md mx-auto px-6 text-center">
+        <div className="w-16 h-16 mx-auto mb-6 rounded-full bg-red-500/10 flex items-center justify-center">
+          <ShieldAlert className="w-8 h-8 text-red-400" />
+        </div>
+        <h1 className="text-2xl font-bold text-white mb-3">VPN / Proxy Alert</h1>
+        <p className="text-gray-400 text-sm leading-relaxed mb-6">
+          To avoid attacks and malicious activity, we require all users to access the website without a VPN.
+          Please turn your VPN / proxy off and refresh the page.
+        </p>
+        <p className="text-gray-500 text-sm mb-8">
+          If the issue persists, please{' '}
+          <a
+            href={SUPPORT_TICKET_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-gsrp-orange hover:underline font-semibold"
+          >
+            make a support ticket
+          </a>.
+        </p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-6 py-2.5 rounded-lg bg-gsrp-orange text-white font-semibold text-sm hover:bg-gsrp-orange/90 transition-colors cursor-pointer"
+        >
+          Refresh Page
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function VisitorTracker({ setProxyBlocked }) {
   const router = useRouter();
   const { data: session } = useSession();
 
@@ -111,7 +148,12 @@ function VisitorTracker() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),
-    }).catch(() => {});
+    })
+      .then(r => r.json())
+      .then(json => {
+        if (json.blocked) setProxyBlocked(true);
+      })
+      .catch(() => {});
   }, [router.pathname, session?.user?.id]);
 
   return null;
@@ -155,6 +197,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
   const [mounted, setMounted] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [animationFinished, setAnimationFinished] = useState(true);
+  const [proxyBlocked, setProxyBlocked] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -183,7 +226,9 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
       <UserRefreshProvider>
         <ToastProvider>
           <RouteLoadingBar />
-          <VisitorTracker />
+          <VisitorTracker setProxyBlocked={setProxyBlocked} />
+
+          {proxyBlocked && <ProxyBlockOverlay />}
 
           {showWelcome && (
             <WelcomeScreen

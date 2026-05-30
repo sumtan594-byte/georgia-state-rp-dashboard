@@ -42,11 +42,11 @@ export default async function handler(req, res) {
     const now = new Date();
     const key = userId || `ip_${ip}`;
 
-    // resolve geolocation once per unique IP, cache in-memory for warm requests
+    // resolve geolocation + proxy detection once per unique IP
     let geo = geoCache.get(ip);
     if (!geo && ip && ip !== 'unknown' && ip !== '::1' && !ip.startsWith('192.168.') && !ip.startsWith('10.') && !ip.startsWith('172.')) {
       try {
-        const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,hostname,isp,org,as,asname,country,regionName,city,lat,lon`);
+        const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,hostname,isp,org,as,asname,country,regionName,city,lat,lon,proxy,hosting,mobile`);
         const geoData = await geoRes.json();
         if (geoData.status === 'success') {
           geo = {
@@ -60,10 +60,26 @@ export default async function handler(req, res) {
             city: geoData.city || '',
             lat: geoData.lat || null,
             lon: geoData.lon || null,
+            proxy: !!geoData.proxy,
+            hosting: !!geoData.hosting,
+            mobile: !!geoData.mobile,
           };
           geoCache.set(ip, geo);
         }
       } catch (_) {}
+    }
+
+    // proxy / VPN block check
+    if (geo && geo.proxy) {
+      const whitelisted = await db.collection('proxy_whitelist').findOne({
+        $or: [
+          ...(userId ? [{ userId: String(userId) }] : []),
+          { ip },
+        ],
+      });
+      if (!whitelisted) {
+        return res.status(200).json({ ok: false, blocked: true, reason: 'proxy' });
+      }
     }
 
     // upsert profile (one doc per user or per IP)
