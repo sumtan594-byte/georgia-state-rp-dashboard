@@ -340,42 +340,40 @@ export default function UsersPage({ canAccess }) {
                     )}
                   </div>
 
-                  {p.geo?.proxy && (
-                    <div className="mt-4 flex justify-end">
-                      <button
-                        onClick={async () => {
-                          setAllowing(p.userId || p.ip);
-                          try {
-                            await fetch('/api/tracking/whitelist', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                userId: p.userId || undefined,
-                                ip: p.ip || undefined,
-                                username: p.username || '',
-                              }),
-                            });
-                            const updated = profiles.map(pr =>
-                              (pr.userId || pr.ip) === (p.userId || p.ip)
-                                ? { ...pr, geo: { ...pr.geo, proxy: false } }
-                                : pr
-                            );
-                            setProfiles(updated);
-                          } catch (_) {}
-                          setAllowing(null);
-                        }}
-                        disabled={allowing === (p.userId || p.ip)}
-                        className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 transition-colors cursor-pointer disabled:opacity-50"
-                      >
-                        {allowing === (p.userId || p.ip) ? (
-                          <Loader2 className="w-3 h-3 animate-spin" />
-                        ) : (
-                          <ShieldCheck className="w-3 h-3" />
-                        )}
-                        Allow Proxy
-                      </button>
-                    </div>
-                  )}
+                  <div className="mt-4 flex justify-end">
+                    <button
+                      onClick={async () => {
+                        setAllowing(p.userId || p.ip);
+                        try {
+                          await fetch('/api/tracking/whitelist', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              userId: p.userId || undefined,
+                              ip: p.ip || undefined,
+                              username: p.username || '',
+                            }),
+                          });
+                          const updated = profiles.map(pr =>
+                            (pr.userId || pr.ip) === (p.userId || p.ip)
+                              ? { ...pr, geo: { ...pr.geo, proxy: false } }
+                              : pr
+                          );
+                          setProfiles(updated);
+                        } catch (_) {}
+                        setAllowing(null);
+                      }}
+                      disabled={allowing === (p.userId || p.ip)}
+                      className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold bg-green-500/10 text-green-400 hover:bg-green-500/20 border border-green-500/20 transition-colors cursor-pointer disabled:opacity-50"
+                    >
+                      {allowing === (p.userId || p.ip) ? (
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                      ) : (
+                        <ShieldCheck className="w-3 h-3" />
+                      )}
+                      Allow Proxy
+                    </button>
+                  </div>
 
                   <div className="grid grid-cols-2 gap-4 mt-4 text-sm">
                     <div>
