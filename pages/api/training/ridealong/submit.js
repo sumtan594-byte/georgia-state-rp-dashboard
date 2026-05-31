@@ -17,8 +17,9 @@ async function sendRidealongWebhook({ webhookUrl, userId, username, score, total
       }).join('\n')
     : 'No scenario data available'
 
+  const passFailEmoji = pass ? '✅' : '❌'
   const payload = {
-    // Components V2 flag (IS_COMPONENTS_V2 = 1 << 15 = 32768)
+    content: `${passFailEmoji} **Ridealong ${passFail}** — ${username} scored ${score}/${total} (${pct}%)`,
     flags: 1 << 15,
     components: [
       // Container
