@@ -65,6 +65,9 @@ export default function RidealongPage() {
   const [showStart, setShowStart] = useState(false)
   const [scenarios, setScenarios] = useState([])
   const [started, setStarted] = useState(false)
+  const [callsignGate, setCallsignGate] = useState(false)
+  const [callsignInput, setCallsignInput] = useState('')
+  const [callsignError, setCallsignError] = useState('')
   const [cooldownUntil, setCooldownUntil] = useState(null)
   const [cooldownRemaining, setCooldownRemaining] = useState(null)
   const [revoked, setRevoked] = useState(false)
@@ -137,9 +140,23 @@ export default function RidealongPage() {
   }, [effectiveSession?.user?.id, started])
 
   const handleStart = useCallback(() => {
-    setScenarios(drawScenarios())
-    setStarted(true)
+    setCallsignGate(true)
   }, [])
+
+  const handleCallsignSubmit = useCallback(() => {
+    const trimmed = callsignInput.trim()
+    // Accept JM-<one or more digits>, case-insensitive
+    if (/^[Jj][Mm]-\d+$/.test(trimmed)) {
+      setCallsignError('')
+      setCallsignGate(false)
+      setScenarios(drawScenarios())
+      setStarted(true)
+    } else {
+      setCallsignError(
+        'Incorrect callsign. Your callsign must match your rank — Junior Moderators must use the prefix JM- (e.g. JM-1234). The numbers at the end do not matter, but the prefix does.'
+      )
+    }
+  }, [callsignInput])
 
   const handleSubmit = useCallback(async (result) => {
     try {
@@ -245,6 +262,63 @@ export default function RidealongPage() {
             className="px-5 py-3 bg-gsrp-orange text-white rounded-xl font-bold text-sm hover:bg-gsrp-orange/90 transition-all cursor-pointer"
           >
             Go to Training
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  if (callsignGate) {
+    return (
+      <div className="max-w-lg mx-auto animate-scale-in">
+        <div className="card-glass rounded-3xl border border-gsrp-orange/30 p-8">
+          <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-gsrp-orange via-gsrp-orange-light to-gsrp-orange rounded-t-3xl" />
+
+          <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gsrp-orange/10 border border-gsrp-orange/20 mx-auto mb-6">
+            <Shield size={28} className="text-gsrp-orange" />
+          </div>
+
+          <h2 className="text-2xl font-black text-white text-center mb-1">Callsign Verification</h2>
+          <p className="text-gsrp-teal-light/40 text-xs text-center mb-8">
+            Answer correctly to begin the ridealong simulation.
+          </p>
+
+          <div className="bg-gsrp-dark-surface/60 rounded-2xl border border-gsrp-dark-border/40 p-5 mb-6">
+            <p className="text-sm font-bold text-gsrp-teal-light/50 uppercase tracking-wider mb-3 text-[11px]">Question</p>
+            <p className="text-base font-semibold text-white leading-relaxed">
+              You are a Junior Moderator. What callsign will you use?
+            </p>
+          </div>
+
+          <div className="mb-4">
+            <input
+              type="text"
+              value={callsignInput}
+              onChange={e => { setCallsignInput(e.target.value); setCallsignError('') }}
+              onKeyDown={e => e.key === 'Enter' && handleCallsignSubmit()}
+              placeholder="e.g. JM-1234"
+              autoFocus
+              className={`w-full px-4 py-3 bg-gsrp-dark-surface border rounded-xl text-sm text-white placeholder:text-gsrp-teal-light/20 focus:outline-none transition-all ${
+                callsignError
+                  ? 'border-gsrp-sunset/50 focus:border-gsrp-sunset'
+                  : 'border-gsrp-dark-border/50 focus:border-gsrp-orange/50'
+              }`}
+            />
+          </div>
+
+          {callsignError && (
+            <div className="bg-gsrp-sunset/8 border border-gsrp-sunset/20 rounded-xl p-4 mb-5 flex items-start gap-3">
+              <AlertTriangle size={15} className="text-gsrp-sunset shrink-0 mt-0.5" />
+              <p className="text-xs text-gsrp-sunset/90 leading-relaxed">{callsignError}</p>
+            </div>
+          )}
+
+          <button
+            onClick={handleCallsignSubmit}
+            className="w-full py-3 bg-gradient-to-r from-gsrp-orange to-gsrp-orange-light text-white font-black rounded-xl text-sm hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
+          >
+            <Shield size={15} />
+            Confirm & Begin
           </button>
         </div>
       </div>
