@@ -27,7 +27,7 @@ function drawScenarios() {
   const picked = []
   if (invalidBank.length > 0) {
     const shuffledInvalid = shuffleArray(invalidBank)
-    picked.push({ ...shuffledInvalid[0], options: shuffleArray(shuffledInvalid[0].options) })
+    picked.push({ ...shuffledInvalid[0], options: shuffledInvalid[0].options ? shuffleArray(shuffledInvalid[0].options) : undefined })
   }
 
   const needed = RIDEALONG_CONFIG.TOTAL_SCENARIOS - picked.length
@@ -47,7 +47,7 @@ function drawScenarios() {
   const shuffledValid = shuffleArray(validBank)
   for (const s of shuffledValid) {
     if (picked.length >= RIDEALONG_CONFIG.TOTAL_SCENARIOS) break
-    if (!picked.find(p => p.id === s.id)) picked.push({ ...s, options: shuffleArray(s.options) })
+    if (!picked.find(p => p.id === s.id)) picked.push({ ...s, options: s.options ? shuffleArray(s.options) : undefined })
   }
 
   return shuffleArray(picked)
