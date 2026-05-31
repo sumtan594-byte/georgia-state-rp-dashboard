@@ -728,13 +728,23 @@ export default function RidealongEngine({
                           value={rpLogData.location}
                           onChange={e => setRpLogData(prev => ({ ...prev, location: e.target.value }))}
                           placeholder="e.g. Bank of River City"
-                          className="w-full px-4 py-2 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-white"
+                          className={`w-full px-4 py-2 bg-gsrp-dark-surface rounded-xl text-sm text-white placeholder:text-gsrp-teal-light/20 focus:outline-none transition-all ${
+                            rpLogData.location.length > 0
+                              ? rpLogData.location.trim().toLowerCase() === scenario.location.toLowerCase()
+                                ? 'border-2 border-gsrp-teal/60'
+                                : 'border-2 border-gsrp-sunset/60'
+                              : 'border border-gsrp-dark-border/50'
+                          }`}
                         />
-                        {!answered && (
-                          <p className="text-[10px] text-gsrp-teal-light/30 mt-1.5 leading-relaxed">
-                            Enter the exact location where the RP takes place — it was mentioned in the scene description and call details.
-                          </p>
-                        )}
+                        {rpLogData.location.length > 0 && !answered && (() => {
+                          const m = rpLogData.location.trim().toLowerCase() === scenario.location.toLowerCase()
+                          return (
+                            <div className={`flex items-start gap-1.5 mt-1.5 text-[11px] animate-fade-in-up ${m ? 'text-gsrp-teal-light' : 'text-gsrp-sunset'}`}>
+                              {m ? <CheckCircle2 size={12} className="shrink-0 mt-0.5" /> : <XCircle size={12} className="shrink-0 mt-0.5" />}
+                              <span>{m ? 'Correct location' : `Expected: ${scenario.location}`}</span>
+                            </div>
+                          )
+                        })()}
                       </div>
                       <div>
                         <label className="text-[11px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider block mb-1.5">Duration</label>
@@ -743,13 +753,26 @@ export default function RidealongEngine({
                           value={rpLogData.duration}
                           onChange={e => setRpLogData(prev => ({ ...prev, duration: e.target.value }))}
                           placeholder="e.g. 20m"
-                          className="w-full px-4 py-2 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-white"
+                          className={`w-full px-4 py-2 bg-gsrp-dark-surface rounded-xl text-sm text-white placeholder:text-gsrp-teal-light/20 focus:outline-none transition-all ${
+                            rpLogData.duration.length > 0
+                              ? (() => {
+                                  const p = (v) => { const n = parseInt(v, 10); return isNaN(n) ? null : n }
+                                  const m = p(rpLogData.duration) === p(scenario.duration)
+                                  return m ? 'border-2 border-gsrp-teal/60' : 'border-2 border-gsrp-sunset/60'
+                                })()
+                              : 'border border-gsrp-dark-border/50'
+                          }`}
                         />
-                        {!answered && (
-                          <p className="text-[10px] text-gsrp-teal-light/30 mt-1.5 leading-relaxed">
-                            How long will this RP last? Enter a number followed by "m" for minutes (e.g. 20m, 30m).
-                          </p>
-                        )}
+                        {rpLogData.duration.length > 0 && !answered && (() => {
+                          const p = (v) => { const n = parseInt(v, 10); return isNaN(n) ? null : n }
+                          const m = p(rpLogData.duration) === p(scenario.duration)
+                          return (
+                            <div className={`flex items-start gap-1.5 mt-1.5 text-[11px] animate-fade-in-up ${m ? 'text-gsrp-teal-light' : 'text-gsrp-sunset'}`}>
+                              {m ? <CheckCircle2 size={12} className="shrink-0 mt-0.5" /> : <XCircle size={12} className="shrink-0 mt-0.5" />}
+                              <span>{m ? 'Correct duration' : `Expected: ${scenario.duration}`}</span>
+                            </div>
+                          )
+                        })()}
                       </div>
                       <div>
                         <label className="text-[11px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider block mb-1.5">Amount of People</label>
@@ -758,13 +781,23 @@ export default function RidealongEngine({
                           value={rpLogData.peopleCount}
                           onChange={e => setRpLogData(prev => ({ ...prev, peopleCount: e.target.value }))}
                           placeholder="e.g. 5"
-                          className="w-full px-4 py-2 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-white"
+                          className={`w-full px-4 py-2 bg-gsrp-dark-surface rounded-xl text-sm text-white placeholder:text-gsrp-teal-light/20 focus:outline-none transition-all ${
+                            rpLogData.peopleCount.length > 0
+                              ? rpLogData.peopleCount.trim() === String(scenario.peopleCount)
+                                ? 'border-2 border-gsrp-teal/60'
+                                : 'border-2 border-gsrp-sunset/60'
+                              : 'border border-gsrp-dark-border/50'
+                          }`}
                         />
-                        {!answered && (
-                          <p className="text-[10px] text-gsrp-teal-light/30 mt-1.5 leading-relaxed">
-                            Enter the total number of people participating in this RP. Check the scene description for the count.
-                          </p>
-                        )}
+                        {rpLogData.peopleCount.length > 0 && !answered && (() => {
+                          const m = rpLogData.peopleCount.trim() === String(scenario.peopleCount)
+                          return (
+                            <div className={`flex items-start gap-1.5 mt-1.5 text-[11px] animate-fade-in-up ${m ? 'text-gsrp-teal-light' : 'text-gsrp-sunset'}`}>
+                              {m ? <CheckCircle2 size={12} className="shrink-0 mt-0.5" /> : <XCircle size={12} className="shrink-0 mt-0.5" />}
+                              <span>{m ? 'Correct number of people' : `Expected: ${scenario.peopleCount}`}</span>
+                            </div>
+                          )
+                        })()}
                       </div>
                       {rpLogError && <p className="text-xs text-gsrp-sunset">{rpLogError}</p>}
                       <div className="flex gap-2">
@@ -884,7 +917,17 @@ export default function RidealongEngine({
                       }}
                       onFocus={() => setPFormUserOpen(pFormData.offender.length > 0)}
                       placeholder="Search username..."
-                      className="w-full px-4 py-2.5 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-gsrp-teal-light/70 placeholder:text-gsrp-teal-light/20 focus:outline-none focus:border-gsrp-teal/40 transition-all"
+                      className={`w-full px-4 py-2.5 bg-gsrp-dark-surface rounded-xl text-sm text-gsrp-teal-light/70 placeholder:text-gsrp-teal-light/20 focus:outline-none transition-all ${
+                        pFormData.offender.length > 0
+                          ? (() => {
+                              const n = (v) => v.trim().replace(/^["']|["']$/g, '').toLowerCase()
+                              const m = n(pFormData.offender) === n(scenario.offender)
+                              return m
+                                ? 'border-2 border-gsrp-teal/60'
+                                : 'border-2 border-gsrp-sunset/60'
+                            })()
+                          : 'border border-gsrp-dark-border/50'
+                      }`}
                     />
                     {pFormUserOpen && (
                       <div className="absolute z-10 top-full mt-1 left-0 right-0 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl shadow-xl max-h-40 overflow-y-auto">
@@ -909,11 +952,20 @@ export default function RidealongEngine({
                       </div>
                     )}
                   </div>
-                  {!answered && (
-                    <p className="text-[10px] text-gsrp-teal-light/30 mt-1.5 leading-relaxed">
-                      Enter the exact Roblox username of the player who committed the violation. You can find their name in the scene description.
-                    </p>
-                  )}
+                  {pFormData.offender.length > 0 && !answered && (() => {
+                    const n = (v) => v.trim().replace(/^["']|["']$/g, '').toLowerCase()
+                    const m = n(pFormData.offender) === n(scenario.offender)
+                    return (
+                      <div className={`flex items-start gap-1.5 mt-1.5 text-[11px] animate-fade-in-up ${m ? 'text-gsrp-teal-light' : 'text-gsrp-sunset'}`}>
+                        {m ? <CheckCircle2 size={12} className="shrink-0 mt-0.5" /> : <XCircle size={12} className="shrink-0 mt-0.5" />}
+                        <span>
+                          {m
+                            ? 'Correct offender'
+                            : `Expected: ${scenario.offender}`}
+                        </span>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 <div>
@@ -921,25 +973,41 @@ export default function RidealongEngine({
                     Punishment Type
                   </label>
                   <div className="grid grid-cols-3 gap-2">
-                    {PUNISHMENT_OPTIONS.map(p => (
-                      <button
-                        key={p}
-                        onClick={() => setPFormData(prev => ({ ...prev, punishment: p }))}
-                        className={`py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
-                          pFormData.punishment === p
-                            ? 'bg-gsrp-orange text-white'
-                            : 'bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-gsrp-teal-light/50 hover:border-gsrp-orange/30 hover:text-gsrp-teal-light/70'
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    ))}
+                    {PUNISHMENT_OPTIONS.map(p => {
+                      const selected = pFormData.punishment === p
+                      const correct = p.toLowerCase() === scenario.correctPunishment.toLowerCase()
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => setPFormData(prev => ({ ...prev, punishment: p }))}
+                          className={`py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+                            selected && correct
+                              ? 'bg-gsrp-teal text-white ring-2 ring-gsrp-teal/50'
+                              : selected && !correct
+                              ? 'bg-gsrp-sunset text-white ring-2 ring-gsrp-sunset/50'
+                              : selected
+                              ? 'bg-gsrp-orange text-white'
+                              : 'bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-gsrp-teal-light/50 hover:border-gsrp-orange/30 hover:text-gsrp-teal-light/70'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      )
+                    })}
                   </div>
-                  {!answered && (
-                    <p className="text-[10px] text-gsrp-teal-light/30 mt-1.5 leading-relaxed">
-                      Choose the punishment level based on the offence and player record. Follow the escalation ladder: <strong className="text-gsrp-teal-light/50">Warning → Kick → Ban</strong>.
-                    </p>
-                  )}
+                  {pFormData.punishment && !answered && (() => {
+                    const correct = pFormData.punishment.toLowerCase() === scenario.correctPunishment.toLowerCase()
+                    return (
+                      <div className={`flex items-start gap-1.5 mt-1.5 text-[11px] animate-fade-in-up ${correct ? 'text-gsrp-teal-light' : 'text-gsrp-sunset'}`}>
+                        {correct ? <CheckCircle2 size={12} className="shrink-0 mt-0.5" /> : <XCircle size={12} className="shrink-0 mt-0.5" />}
+                        <span>
+                          {correct
+                            ? `Correct — ${pFormData.punishment} is the right level`
+                            : `Expected: ${scenario.correctPunishment}`}
+                        </span>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 <div>
@@ -951,13 +1019,27 @@ export default function RidealongEngine({
                     value={pFormData.reason}
                     onChange={e => setPFormData(prev => ({ ...prev, reason: e.target.value }))}
                     placeholder="Type the reason..."
-                    className="w-full px-4 py-2.5 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-gsrp-teal-light/70 placeholder:text-gsrp-teal-light/20 focus:outline-none focus:border-gsrp-teal/40 transition-all"
+                    className={`w-full px-4 py-2.5 bg-gsrp-dark-surface rounded-xl text-sm text-gsrp-teal-light/70 placeholder:text-gsrp-teal-light/20 focus:outline-none transition-all ${
+                      pFormData.reason.length > 2
+                        ? matchesOffense(pFormData.reason, scenario)
+                          ? 'border-2 border-gsrp-teal/60'
+                          : 'border-2 border-gsrp-sunset/60'
+                        : 'border border-gsrp-dark-border/50'
+                    }`}
                   />
-                  {!answered && (
-                    <p className="text-[10px] text-gsrp-teal-light/30 mt-1.5 leading-relaxed">
-                      Enter the specific rule violation (e.g. RDM, VDM, NLR) and the offence level. The scene description tells you the player's record.
-                    </p>
-                  )}
+                  {pFormData.reason.length > 2 && !answered && (() => {
+                    const m = matchesOffense(pFormData.reason, scenario)
+                    return (
+                      <div className={`flex items-start gap-1.5 mt-1.5 text-[11px] animate-fade-in-up ${m ? 'text-gsrp-teal-light' : 'text-gsrp-sunset'}`}>
+                        {m ? <CheckCircle2 size={12} className="shrink-0 mt-0.5" /> : <XCircle size={12} className="shrink-0 mt-0.5" />}
+                        <span>
+                          {m
+                            ? 'Correct reason'
+                            : `Expected mentions: ${scenario.offenseKeywords ? scenario.offenseKeywords.slice(0, 3).join(', ').toUpperCase() : scenario.correctReason}`}
+                        </span>
+                      </div>
+                    )
+                  })()}
                 </div>
 
                 {pFormError && (
