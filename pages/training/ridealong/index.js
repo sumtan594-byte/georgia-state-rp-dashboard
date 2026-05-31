@@ -296,7 +296,7 @@ export default function RidealongPage() {
               value={callsignInput}
               onChange={e => { setCallsignInput(e.target.value); setCallsignError('') }}
               onKeyDown={e => e.key === 'Enter' && handleCallsignSubmit()}
-              placeholder="e.g. JM-1234"
+              placeholder=""
               autoFocus
               className={`w-full px-4 py-3 bg-gsrp-dark-surface border rounded-xl text-sm text-white placeholder:text-gsrp-teal-light/20 focus:outline-none transition-all ${
                 callsignError
