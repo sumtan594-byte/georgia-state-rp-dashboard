@@ -7,17 +7,9 @@ import {
 import Link from 'next/link'
 import ModCallPopup from './ModCallPopup'
 import VideoEvidencePanel from './VideoEvidencePanel'
-import { MOCK_USERS } from '../../lib/ridealong-scenarios'
+import { MOCK_USERS, matchesOffense } from '../../lib/ridealong-scenarios'
 
 const PUNISHMENT_OPTIONS = ['Warn', 'Kick', 'Ban']
-
-const PUNISHMENT_REASONS = [
-  'RDM - First Offence', 'VDM - First Offence', 'FRP - First Offence',
-  'Cuff Rushing - First Offence', 'LTAP - First Offence (Bannable)',
-  'Mass VDM - Obvious Trolling', 'Exploiting / Third-party Software',
-  'Metagaming - First Offence', 'NLR - First Offence',
-  'Staff Disrespect - First Offence',
-]
 
 function shuffleArray(arr) {
   const a = [...arr]
@@ -64,9 +56,13 @@ export default function RidealongEngine({
   const [pFormData, setPFormData] = useState({ offender: '', punishment: '', reason: '' })
   const [pFormUserOpen, setPFormUserOpen] = useState(false)
   const [pFormError, setPFormError] = useState('')
+  const [pFormHints, setPFormHints] = useState({ offender: false, punishment: false, reason: false })
+  const [pFormAttempts, setPFormAttempts] = useState({ offender: 0, punishment: 0, reason: 0 })
   const [rpLogData, setRpLogData] = useState({ location: '', duration: '', peopleCount: '' })
   const [rpLogFormOpen, setRpLogFormOpen] = useState(false)
   const [rpLogError, setRpLogError] = useState('')
+  const [rpLogHints, setRpLogHints] = useState({ location: false, duration: false, peopleCount: false })
+  const [rpLogAttempts, setRpLogAttempts] = useState({ location: 0, duration: 0, peopleCount: 0 })
   const containerRef = useRef(null)
   const total = scenarios.length
 
@@ -187,8 +183,13 @@ export default function RidealongEngine({
     }
     setRpLogError('')
 
+    const parseDuration = (val) => {
+      const n = parseInt(val, 10)
+      return isNaN(n) ? null : n
+    }
+
     const locationMatch = rpLogData.location.trim().toLowerCase() === scenario.location.toLowerCase()
-    const durationMatch = rpLogData.duration.trim().toLowerCase() === scenario.duration.toLowerCase()
+    const durationMatch = parseDuration(rpLogData.duration) === parseDuration(scenario.duration)
     const peopleMatch = rpLogData.peopleCount.trim() === String(scenario.peopleCount)
 
     const isCorrect = locationMatch && durationMatch && peopleMatch && !scenario.hasOngoing
@@ -235,15 +236,30 @@ export default function RidealongEngine({
   const handlePFormSubmit = useCallback(() => {
     if (!scenario || answered) return
 
-    if (!pFormData.offender.trim() || !pFormData.punishment || !pFormData.reason) {
+    if (!pFormData.offender.trim() || !pFormData.punishment || !pFormData.reason.trim()) {
       setPFormError('Please fill in all fields before submitting.')
       return
     }
     setPFormError('')
 
-    const offenderMatch = pFormData.offender.trim().toLowerCase() === scenario.offender.toLowerCase()
-    const punishmentMatch = pFormData.punishment === scenario.correctPunishment
-    const reasonMatch = pFormData.reason === scenario.correctReason
+    const normalizeOffender = (v) => v.trim().replace(/^["']|["']$/g, '').toLowerCase()
+    const offenderMatch = normalizeOffender(pFormData.offender) === normalizeOffender(scenario.offender)
+    const punishmentMatch = pFormData.punishment.trim().toLowerCase() === scenario.correctPunishment.toLowerCase()
+    const reasonMatch = matchesOffense(pFormData.reason, scenario)
+
+    const newPFormAttempts = {
+      offender: pFormAttempts.offender + (offenderMatch ? 0 : 1),
+      punishment: pFormAttempts.punishment + (punishmentMatch ? 0 : 1),
+      reason: pFormAttempts.reason + (reasonMatch ? 0 : 1),
+    }
+    setPFormAttempts(newPFormAttempts)
+
+    const newPFormHints = {
+      offender: !offenderMatch,
+      punishment: !punishmentMatch,
+      reason: !reasonMatch,
+    }
+    setPFormHints(newPFormHints)
 
     const matchedFields = [offenderMatch, punishmentMatch, reasonMatch].filter(Boolean).length
     const isCorrect = matchedFields === 3
@@ -260,7 +276,7 @@ export default function RidealongEngine({
       correctCommand: '',
       explanation: scenario.explanation,
       wrongReason: !isCorrect
-        ? `You matched ${matchedFields}/3 fields correctly. ${!offenderMatch ? 'Offender name was incorrect. ' : ''}${!punishmentMatch ? `Expected punishment: ${scenario.correctPunishment}. ` : ''}${!reasonMatch ? `Expected reason: "${scenario.correctReason}".` : ''}`
+        ? `You matched ${matchedFields}/3 fields correctly. ${!offenderMatch ? 'Offender name was incorrect. ' : ''}${!punishmentMatch ? `Expected punishment: ${scenario.correctPunishment}. ` : ''}${!reasonMatch ? `Expected reason mentions "${scenario.offenseKeywords ? scenario.offenseKeywords[0].toUpperCase() : scenario.correctReason}".` : ''}`
         : null,
       evidenceViewed,
       type: 'p-log',
@@ -279,7 +295,7 @@ export default function RidealongEngine({
         phase: 'result',
       })
     }
-  }, [scenario, answered, pFormData, results, score, evidenceViewed, onSaveProgress])
+  }, [scenario, answered, pFormData, pFormAttempts, results, score, evidenceViewed, onSaveProgress])
 
   const handleNext = useCallback(() => {
     if (currentQ + 1 >= total) {
@@ -315,9 +331,13 @@ export default function RidealongEngine({
       setPFormData({ offender: '', punishment: '', reason: '' })
       setPFormUserOpen(false)
       setPFormError('')
+      setPFormHints({ offender: false, punishment: false, reason: false })
+      setPFormAttempts({ offender: 0, punishment: 0, reason: 0 })
       setRpLogData({ location: '', duration: '', peopleCount: '' })
       setRpLogFormOpen(false)
       setRpLogError('')
+      setRpLogHints({ location: false, duration: false, peopleCount: false })
+      setRpLogAttempts({ location: 0, duration: 0, peopleCount: 0 })
       containerRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
   }, [currentQ, total, score, passScore, cooldownHours, onSubmit, onClearProgress, results])
@@ -340,9 +360,13 @@ export default function RidealongEngine({
     setPFormData({ offender: '', punishment: '', reason: '' })
     setPFormUserOpen(false)
     setPFormError('')
+    setPFormHints({ offender: false, punishment: false, reason: false })
+    setPFormAttempts({ offender: 0, punishment: 0, reason: 0 })
     setRpLogData({ location: '', duration: '', peopleCount: '' })
     setRpLogFormOpen(false)
     setRpLogError('')
+    setRpLogHints({ location: false, duration: false, peopleCount: false })
+    setRpLogAttempts({ location: 0, duration: 0, peopleCount: 0 })
   }, [])
 
   if (showResults) {
@@ -706,6 +730,11 @@ export default function RidealongEngine({
                           placeholder="e.g. Bank of River City"
                           className="w-full px-4 py-2 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-white"
                         />
+                        {!answered && (
+                          <p className="text-[10px] text-gsrp-teal-light/30 mt-1.5 leading-relaxed">
+                            Enter the exact location where the RP takes place — it was mentioned in the scene description and call details.
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label className="text-[11px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider block mb-1.5">Duration</label>
@@ -716,6 +745,11 @@ export default function RidealongEngine({
                           placeholder="e.g. 20m"
                           className="w-full px-4 py-2 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-white"
                         />
+                        {!answered && (
+                          <p className="text-[10px] text-gsrp-teal-light/30 mt-1.5 leading-relaxed">
+                            How long will this RP last? Enter a number followed by "m" for minutes (e.g. 20m, 30m).
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label className="text-[11px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider block mb-1.5">Amount of People</label>
@@ -726,6 +760,11 @@ export default function RidealongEngine({
                           placeholder="e.g. 5"
                           className="w-full px-4 py-2 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-white"
                         />
+                        {!answered && (
+                          <p className="text-[10px] text-gsrp-teal-light/30 mt-1.5 leading-relaxed">
+                            Enter the total number of people participating in this RP. Check the scene description for the count.
+                          </p>
+                        )}
                       </div>
                       {rpLogError && <p className="text-xs text-gsrp-sunset">{rpLogError}</p>}
                       <div className="flex gap-2">
@@ -870,6 +909,11 @@ export default function RidealongEngine({
                       </div>
                     )}
                   </div>
+                  {!answered && (
+                    <p className="text-[10px] text-gsrp-teal-light/30 mt-1.5 leading-relaxed">
+                      Enter the exact Roblox username of the player who committed the violation. You can find their name in the scene description.
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -891,22 +935,29 @@ export default function RidealongEngine({
                       </button>
                     ))}
                   </div>
+                  {!answered && (
+                    <p className="text-[10px] text-gsrp-teal-light/30 mt-1.5 leading-relaxed">
+                      Choose the punishment level based on the offence and player record. Follow the escalation ladder: <strong className="text-gsrp-teal-light/50">Warning → Kick → Ban</strong>.
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="text-[11px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider block mb-1.5">
                     Reason
                   </label>
-                  <select
+                  <input
+                    type="text"
                     value={pFormData.reason}
                     onChange={e => setPFormData(prev => ({ ...prev, reason: e.target.value }))}
-                    className="w-full px-4 py-2.5 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-gsrp-teal-light/70 focus:outline-none focus:border-gsrp-teal/40 transition-all appearance-none"
-                  >
-                    <option value="" disabled>Select a reason...</option>
-                    {PUNISHMENT_REASONS.map(r => (
-                      <option key={r} value={r}>{r}</option>
-                    ))}
-                  </select>
+                    placeholder="Type the reason..."
+                    className="w-full px-4 py-2.5 bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl text-sm text-gsrp-teal-light/70 placeholder:text-gsrp-teal-light/20 focus:outline-none focus:border-gsrp-teal/40 transition-all"
+                  />
+                  {!answered && (
+                    <p className="text-[10px] text-gsrp-teal-light/30 mt-1.5 leading-relaxed">
+                      Enter the specific rule violation (e.g. RDM, VDM, NLR) and the offence level. The scene description tells you the player's record.
+                    </p>
+                  )}
                 </div>
 
                 {pFormError && (
@@ -915,9 +966,9 @@ export default function RidealongEngine({
 
                 <button
                   onClick={handlePFormSubmit}
-                  disabled={!evidenceViewed || !pFormData.offender.trim() || !pFormData.punishment || !pFormData.reason}
+                  disabled={!evidenceViewed || !pFormData.offender.trim() || !pFormData.punishment || !pFormData.reason.trim()}
                   className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer flex items-center justify-center gap-2 ${
-                    evidenceViewed && pFormData.offender.trim() && pFormData.punishment && pFormData.reason
+                    evidenceViewed && pFormData.offender.trim() && pFormData.punishment && pFormData.reason.trim()
                       ? 'bg-gsrp-orange text-white hover:bg-gsrp-orange/90'
                       : 'bg-gsrp-dark-surface text-gsrp-teal-light/20 border border-gsrp-dark-border cursor-not-allowed'
                   }`}

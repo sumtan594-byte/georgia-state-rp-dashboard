@@ -4,6 +4,102 @@ import clientPromise from '../../../../lib/mongodb'
 import { rateLimit } from '../../../../lib/rate-limiter'
 import { RIDEALONG_CONFIG, RIDEALONG_ROLES, RIDEALONG_NICKNAME_PREFIX } from '../../../../lib/ridealong-config'
 import { getGuildMember, addMemberRole, removeMemberRole, modifyGuildMember } from '../../../../lib/discord-v2'
+async function sendRidealongWebhook({ webhookUrl, userId, username, score, total, pct, pass, results, discordRolesApplied, currentNick, timestamp }) {
+  const passFail = pass ? 'PASSED' : 'FAILED'
+  const accentColor = pass ? 0x22c55e : 0xef4444
+
+  // Build scenario result lines
+  const scenarioLines = Array.isArray(results) && results.length > 0
+    ? results.map((r, i) => {
+        const label = r.scenarioTitle || r.title || `Scenario ${i + 1}`
+        const outcome = r.passed ? 'Pass' : 'Fail'
+        return `${i + 1}. ${label} — ${outcome}`
+      }).join('\n')
+    : 'No scenario data available'
+
+  const payload = {
+    // Components V2 flag (IS_COMPONENTS_V2 = 1 << 15 = 32768)
+    flags: 1 << 15,
+    components: [
+      // Container
+      {
+        type: 17, // Container
+        accent_color: accentColor,
+        components: [
+          // Header row: title text
+          {
+            type: 10, // Text Display
+            content: `## Ridealong Simulation — ${passFail}`,
+          },
+          // Separator
+          {
+            type: 14, // Separator
+            divider: true,
+            spacing: 1,
+          },
+          // User & Score section
+          {
+            type: 10, // Text Display
+            content: [
+              `**User:** <@${userId}> (\`${username}\`)`,
+              `**Score:** ${score} / ${total} (${pct}%)`,
+              `**Result:** ${passFail}`,
+              `**Timestamp:** <t:${Math.floor(new Date(timestamp).getTime() / 1000)}:F>`,
+            ].join('\n'),
+          },
+          // Separator
+          {
+            type: 14,
+            divider: true,
+            spacing: 1,
+          },
+          // Scenario breakdown header
+          {
+            type: 10,
+            content: '**Scenario Results:**',
+          },
+          // Scenario breakdown body
+          {
+            type: 10,
+            content: scenarioLines,
+          },
+          // If pass: show Discord actions taken
+          ...(pass ? [
+            {
+              type: 14,
+              divider: true,
+              spacing: 1,
+            },
+            {
+              type: 10,
+              content: [
+                `**Roles Updated:** ${discordRolesApplied ? 'Yes' : 'No'}`,
+                `**Nickname Set:** ${discordRolesApplied ? `JM | ${currentNick}` : 'No'}`,
+              ].join('\n'),
+            },
+          ] : []),
+        ],
+      },
+    ],
+  }
+
+  const res = await fetch(webhookUrl, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!res.ok) {
+    const errBody = await res.text().catch(() => '')
+    console.error('[Ridealong Submit] Webhook returned', res.status, '—', errBody.substring(0, 300))
+    return false
+  }
+
+  console.log('[Ridealong Submit] Webhook sent successfully — pass:', pass)
+  return true
+}
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
@@ -28,6 +124,8 @@ export default async function handler(req, res) {
 
   const { username, globalName, avatar, score, total, pct, pass, results, timestamp } = body
   const userId = session.user.id
+
+  console.log('[Ridealong Submit] Received submission — user:', userId, 'username:', username || session.user.name, 'score:', score, '/', total, 'pass:', pass)
 
   if (score === undefined) return res.status(400).json({ error: 'Missing fields' })
 
@@ -59,14 +157,20 @@ export default async function handler(req, res) {
     }
   }
 
+  const submittedAt = timestamp || new Date().toISOString()
+  const resolvedUsername = username || session.user.name
+
   const newAttempt = {
     attemptId: `${userId}_${Date.now()}`,
     userId,
-    username: username || session.user.name,
+    username: resolvedUsername,
     globalName,
     avatar,
-    score, total, pct, pass,
-    timestamp: timestamp || new Date().toISOString(),
+    score,
+    total,
+    pct,
+    pass,
+    timestamp: submittedAt,
     scenarios: results || [],
   }
 
@@ -74,13 +178,16 @@ export default async function handler(req, res) {
   let hasPassed = false
   let hasPassedAt = null
   let discordRolesApplied = false
+  let currentNick = resolvedUsername
 
   if (!pass) {
     const cooldownMs = RIDEALONG_CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000
     cooldownUntil = new Date(Date.now() + cooldownMs).toISOString()
+    console.log('[Ridealong Submit] Attempt failed — cooldown until:', cooldownUntil)
   } else {
     hasPassed = true
-    hasPassedAt = timestamp || new Date().toISOString()
+    hasPassedAt = submittedAt
+    console.log('[Ridealong Submit] Attempt passed!')
   }
 
   const updateDoc = {
@@ -101,24 +208,18 @@ export default async function handler(req, res) {
   )
 
   if (pass) {
-    let currentNick = 'User'
     try {
       if (DISCORD_GUILD_ID) {
         for (const roleId of RIDEALONG_ROLES) {
           await addMemberRole(DISCORD_GUILD_ID, userId, roleId)
         }
-
         const member = await getGuildMember(DISCORD_GUILD_ID, userId)
-        currentNick = member?.nick || member?.user?.global_name || member?.user?.username || 'User'
-
+        currentNick = member?.nick || member?.user?.global_name || member?.user?.username || resolvedUsername
         await modifyGuildMember(DISCORD_GUILD_ID, userId, {
           nick: `${RIDEALONG_NICKNAME_PREFIX}${currentNick}`,
         })
-
-        await removeMemberRole(DISCORD_GUILD_ID, userId, "1372476380096237609")
-
+        await removeMemberRole(DISCORD_GUILD_ID, userId, '1372476380096237609')
         discordRolesApplied = true
-
         await attemptsCollection.updateOne(
           { userId },
           { $set: { discordRolesApplied: true } }
@@ -129,32 +230,32 @@ export default async function handler(req, res) {
     } catch (err) {
       console.error('[Ridealong] Discord API error:', err.message)
     }
-
-    try {
-      if (WEBHOOK_URL) {
-        await fetch(WEBHOOK_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            embeds: [{
-              title: 'Ridealong Simulation Passed',
-              color: 0x22c55e,
-              fields: [
-                { name: 'User', value: `<@${userId}> (\`${username || session.user.name}\`)`, inline: true },
-                { name: 'Score', value: `${score} / ${total} (${pct}%)`, inline: true },
-                { name: 'Roles Updated', value: discordRolesApplied ? 'Yes ✅' : 'No ❌', inline: true },
-                { name: 'Nickname Set', value: discordRolesApplied ? `JM | ${currentNick}` : 'No', inline: true },
-              ],
-              timestamp: new Date().toISOString(),
-              footer: { text: 'GSRP Ridealong Simulation' },
-            }],
-          }),
-        })
-      }
-    } catch (err) {
-      console.error('[Ridealong] Webhook error:', err.message)
-    }
   }
+
+  // Send webhook for every attempt (pass AND fail)
+  try {
+    if (WEBHOOK_URL) {
+      await sendRidealongWebhook({
+        webhookUrl: WEBHOOK_URL,
+        userId,
+        username: resolvedUsername,
+        score,
+        total,
+        pct,
+        pass,
+        results,
+        discordRolesApplied,
+        currentNick,
+        timestamp: submittedAt,
+      })
+    } else {
+      console.warn('[Ridealong Submit] No TRAINING_WEBHOOK_URL configured — skipping webhook')
+    }
+  } catch (err) {
+    console.error('[Ridealong Submit] Webhook error:', err.message)
+  }
+
+  console.log('[Ridealong Submit] Complete — user:', userId, 'pass:', pass, 'discordRolesApplied:', discordRolesApplied)
 
   res.status(200).json({
     ok: true,
