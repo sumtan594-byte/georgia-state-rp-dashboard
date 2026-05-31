@@ -178,7 +178,6 @@ export default function RidealongEngine({
     }
   }, [scenario, answered, results, score, evidenceViewed, onSaveProgress])
 
-  
   const handleRpLogSubmit = useCallback(() => {
     if (!scenario || answered) return
 
@@ -233,7 +232,6 @@ export default function RidealongEngine({
     }
   }, [scenario, answered, rpLogData, results, score, evidenceViewed, onSaveProgress])
 
-
   const handlePFormSubmit = useCallback(() => {
     if (!scenario || answered) return
 
@@ -242,9 +240,6 @@ export default function RidealongEngine({
       return
     }
     setPFormError('')
-      setRpLogData({ location: '', duration: '', peopleCount: '' })
-      setRpLogFormOpen(false)
-      setRpLogError('')
 
     const offenderMatch = pFormData.offender.trim().toLowerCase() === scenario.offender.toLowerCase()
     const punishmentMatch = pFormData.punishment === scenario.correctPunishment
@@ -345,9 +340,9 @@ export default function RidealongEngine({
     setPFormData({ offender: '', punishment: '', reason: '' })
     setPFormUserOpen(false)
     setPFormError('')
-      setRpLogData({ location: '', duration: '', peopleCount: '' })
-      setRpLogFormOpen(false)
-      setRpLogError('')
+    setRpLogData({ location: '', duration: '', peopleCount: '' })
+    setRpLogFormOpen(false)
+    setRpLogError('')
   }, [])
 
   if (showResults) {
@@ -602,7 +597,61 @@ export default function RidealongEngine({
       {phase === 'scene' && (
         <div className="animate-fade-in-up space-y-5">
           <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
-            
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-1.5 h-1.5 rounded-full bg-gsrp-orange" />
+              <span className="text-[10px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider">
+                Scene — Responded to {scenario.modCall.callerName}
+              </span>
+              {isRplog && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gsrp-teal/10 text-gsrp-teal-light/50 ml-auto">
+                  RP Logging
+                </span>
+              )}
+              {isPlog && (
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-gsrp-orange/10 text-gsrp-orange/50 ml-auto">
+                  Punishment Log
+                </span>
+              )}
+            </div>
+            <p className="text-sm text-gsrp-teal-light/70 leading-relaxed">
+              {scenario.sceneDescription}
+            </p>
+          </div>
+
+          <VideoEvidencePanel
+            evidence={scenario.videoEvidence}
+            evidenceValid={scenario.evidenceValid !== false}
+            onView={handleEvidenceViewed}
+            requestLabel={isRplog ? 'Request more details' : undefined}
+          />
+
+          {isRplog && !answered && (
+            <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
+              {!rpLogsViewed ? (
+                <div className="text-center py-6">
+                  <div className="flex items-center justify-center w-14 h-14 rounded-xl bg-gsrp-teal/10 border border-gsrp-teal/20 mx-auto mb-4">
+                    <Search size={24} className="text-gsrp-teal-light" />
+                  </div>
+                  <h3 className="text-sm font-bold text-white mb-2">Check Active Logs</h3>
+                  <p className="text-xs text-gsrp-teal-light/50 mb-5 max-w-md mx-auto">
+                    Before making a decision, review the currently active roleplay logs to check for conflicts.
+                  </p>
+                  <button
+                    onClick={() => setRpLogOpen(true)}
+                    className="px-5 py-2.5 bg-gsrp-teal/10 border border-gsrp-teal/30 text-gsrp-teal-light rounded-xl text-sm font-bold hover:bg-gsrp-teal/20 transition-all cursor-pointer flex items-center gap-2 mx-auto"
+                  >
+                    <FileText size={14} />
+                    Request Chat Logs
+                  </button>
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center gap-2 mb-4">
+                    <FileText size={14} className="text-gsrp-teal-light" />
+                    <h3 className="text-xs font-bold text-gsrp-teal-light/60 uppercase tracking-wider">
+                      Logs Reviewed — Make Your Decision
+                    </h3>
+                  </div>
                   <div className="flex items-center gap-2 mb-4">
                     <span className="text-[10px] px-2 py-0.5 rounded-full bg-gsrp-teal/10 text-gsrp-teal-light">
                       Logs Viewed
@@ -614,7 +663,6 @@ export default function RidealongEngine({
                       Re-open logs
                     </button>
                   </div>
-                  
                   {!rpLogFormOpen ? (
                     <div className="grid grid-cols-2 gap-3">
                       <button
@@ -647,7 +695,7 @@ export default function RidealongEngine({
                       </button>
                     </div>
                   ) : (
-                    <div className="space-y-4 mt-4 bg-gsrp-dark-surface/50 p-4 rounded-xl border border-gsrp-dark-border/50">
+                    <div className="space-y-4 bg-gsrp-dark-surface/50 p-4 rounded-xl border border-gsrp-dark-border/50">
                       <h4 className="text-xs font-bold text-gsrp-teal-light/60 uppercase tracking-wider mb-2">RP Logging Form</h4>
                       <div>
                         <label className="text-[11px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider block mb-1.5">Location</label>
@@ -696,7 +744,6 @@ export default function RidealongEngine({
                       </div>
                     </div>
                   )}
-
                 </div>
               )}
             </div>
