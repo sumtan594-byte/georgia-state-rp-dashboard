@@ -76,75 +76,6 @@ export default function RidealongEngine({
   const robloxUsername = propRobloxUsername || user?.name || 'Moderator'
   const discordDisplayName = propDiscordDisplayName || user?.name || 'Moderator'
 
-  const isTestUser = user?.id === '901075576943673416'
-
-  const handleSkip = useCallback(() => {
-    if (!scenario || answered) return
-
-    const newScore = score + 1
-    const result = {
-      scenarioId: scenario.id,
-      evidenceValid: true,
-      correct: true,
-      chosenOption: 'skip',
-      chosenText: 'Skipped (test)',
-      correctAnswer: 'Skipped',
-      correctCommand: '',
-      explanation: 'Skipped for testing purposes.',
-      wrongReason: null,
-      evidenceViewed: true,
-      type: 'standard',
-    }
-    const newResults = [...results, result]
-
-    setScore(newScore)
-    setResults(newResults)
-
-    if (currentQ + 1 >= total) {
-      const passed = newScore >= passScore
-      setHasPassed(passed)
-      if (onClearProgress) onClearProgress()
-      if (!passed) {
-        setShowResults(true)
-        const cooldownMs = cooldownHours * 60 * 60 * 1000
-        setCooldownUntil(new Date(Date.now() + cooldownMs).toISOString())
-      } else {
-        setOrientationStep(0)
-      }
-      setSubmitting(true)
-      onSubmit({
-        score: newScore,
-        total,
-        pct: Math.round((newScore / total) * 100),
-        pass: passed,
-        results: newResults,
-      }).finally(() => {
-        setSubmitting(false)
-        setSubmitResolved(true)
-      })
-    } else {
-      const nextQ = currentQ + 1
-      setCurrentQ(nextQ)
-      setEvidenceViewed(false)
-      setSelectedOption(null)
-      setAnswered(false)
-      setPhase('popup')
-      setRpLogOpen(false)
-      setRpLogsViewed(false)
-      setRpDecision(null)
-      setPFormData({ offender: '', punishment: '', reason: '' })
-      setPFormUserOpen(false)
-      setPFormError('')
-      setPFormHints({ offender: false, punishment: false, reason: false })
-      setPFormAttempts({ offender: 0, punishment: 0, reason: 0 })
-      setRpLogData({ location: '', duration: '', peopleCount: '' })
-      setRpLogFormOpen(false)
-      setRpLogError('')
-      setRpLogHints({ location: false, duration: false, peopleCount: false })
-      setRpLogAttempts({ location: 0, duration: 0, peopleCount: 0 })
-      containerRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }
-  }, [scenario, answered, score, results, currentQ, total, passScore, cooldownHours, onSubmit, onClearProgress])
 
   useEffect(() => {
     if (!cooldownUntil) {
@@ -702,18 +633,8 @@ export default function RidealongEngine({
             {isRplog && <span className="ml-2 text-gsrp-teal-light/30">— RP Logging</span>}
             {isPlog && <span className="ml-2 text-gsrp-teal-light/30">— Punishment Logging</span>}
           </span>
-          <span className="flex items-center gap-3">
-            {isTestUser && !answered && (
-              <button
-                onClick={handleSkip}
-                className="text-[10px] px-2.5 py-1 rounded-lg bg-gsrp-sunset/10 border border-gsrp-sunset/30 text-gsrp-sunset font-bold hover:bg-gsrp-sunset/20 transition-all cursor-pointer"
-              >
-                Skip Question
-              </button>
-            )}
-            <span className="text-xs font-bold text-gsrp-orange">
-              Score: {score}
-            </span>
+          <span className="text-xs font-bold text-gsrp-orange">
+            Score: {score}
           </span>
         </div>
         <div className="h-2 bg-gsrp-dark-surface rounded-full overflow-hidden">
