@@ -86,7 +86,7 @@ export default function RidealongPage() {
         const ridealongRes = await fetch(`/api/training/ridealong/progress?userId=${effectiveSession.user.id}`)
         const ridealongData = await ridealongRes.json()
 
-        if (ridealongData.hasPassed) {
+        if (ridealongData.hasPassed && !started) {
           setRidealongPassed(true)
         } else if (ridealongData.cooldownUntil) {
           const until = new Date(ridealongData.cooldownUntil)
@@ -231,7 +231,7 @@ export default function RidealongPage() {
   if (!session) return <LoginScreen />
   if (accessDenied) return <AccessDenied roleId={accessDenied.roleId} />
 
-  if (ridealongPassed) {
+  if (ridealongPassed && !started) {
     return (
       <div className="max-w-2xl mx-auto animate-scale-in">
         <div className="card-glass rounded-3xl border border-gsrp-teal/30 p-8 text-center">
