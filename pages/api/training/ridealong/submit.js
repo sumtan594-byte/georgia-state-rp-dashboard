@@ -17,68 +17,45 @@ async function sendRidealongWebhook({ webhookUrl, userId, username, score, total
       }).join('\n')
     : 'No scenario data available'
 
-  const passFailEmoji = pass ? '✅' : '❌'
   const payload = {
-    content: `${passFailEmoji} **Ridealong ${passFail}** — ${username} scored ${score}/${total} (${pct}%)`,
-    flags: 1 << 15,
-    components: [
-      // Container
+    embeds: [
       {
-        type: 17, // Container
-        accent_color: accentColor,
-        components: [
-          // Header row: title text
+        title: `Ridealong Simulation — ${passFail}`,
+        color: accentColor,
+        fields: [
           {
-            type: 10, // Text Display
-            content: `## Ridealong Simulation — ${passFail}`,
+            name: 'User',
+            value: `<@${userId}> (\`${username}\`)`,
+            inline: true,
           },
-          // Separator
           {
-            type: 14, // Separator
-            divider: true,
-            spacing: 1,
+            name: 'Score',
+            value: `${score} / ${total} (${pct}%)`,
+            inline: true,
           },
-          // User & Score section
           {
-            type: 10, // Text Display
-            content: [
-              `**User:** <@${userId}> (\`${username}\`)`,
-              `**Score:** ${score} / ${total} (${pct}%)`,
-              `**Result:** ${passFail}`,
-              `**Timestamp:** <t:${Math.floor(new Date(timestamp).getTime() / 1000)}:F>`,
+            name: 'Result',
+            value: passFail,
+            inline: true,
+          },
+          {
+            name: 'Timestamp',
+            value: `<t:${Math.floor(new Date(timestamp).getTime() / 1000)}:F>`,
+            inline: false,
+          },
+          {
+            name: 'Scenario Results',
+            value: scenarioLines.substring(0, 1024),
+            inline: false,
+          },
+          ...(pass ? [{
+            name: 'Discord Actions',
+            value: [
+              `**Roles Updated:** ${discordRolesApplied ? 'Yes' : 'No'}`,
+              `**Nickname Set:** ${discordRolesApplied ? `JM | ${currentNick}` : 'No'}`,
             ].join('\n'),
-          },
-          // Separator
-          {
-            type: 14,
-            divider: true,
-            spacing: 1,
-          },
-          // Scenario breakdown header
-          {
-            type: 10,
-            content: '**Scenario Results:**',
-          },
-          // Scenario breakdown body
-          {
-            type: 10,
-            content: scenarioLines,
-          },
-          // If pass: show Discord actions taken
-          ...(pass ? [
-            {
-              type: 14,
-              divider: true,
-              spacing: 1,
-            },
-            {
-              type: 10,
-              content: [
-                `**Roles Updated:** ${discordRolesApplied ? 'Yes' : 'No'}`,
-                `**Nickname Set:** ${discordRolesApplied ? `JM | ${currentNick}` : 'No'}`,
-              ].join('\n'),
-            },
-          ] : []),
+            inline: false,
+          }] : []),
         ],
       },
     ],
