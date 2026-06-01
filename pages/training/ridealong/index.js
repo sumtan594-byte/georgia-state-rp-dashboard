@@ -59,6 +59,20 @@ export default function RidealongPage() {
   const effectiveSession = refreshedSession || session
   const router = useRouter()
 
+  useEffect(() => {
+    const videos = [
+      '/media/Uniformsandlivery.mp4',
+      '/media/Baddriving.mp4',
+      '/media/Gooddriving.mp4',
+    ]
+    Promise.all(videos.map(src =>
+      fetch(src, { method: 'HEAD' }).then(r => r.ok).catch(() => false)
+    )).then(results => {
+      const all = videos.reduce((acc, src, i) => ({ ...acc, [src.split('/').pop()]: results[i] }), {})
+      console.log('[Media Check]', all)
+    })
+  }, [])
+
   const [checkingAccess, setCheckingAccess] = useState(true)
   const [quizPassed, setQuizPassed] = useState(false)
   const [ridealongPassed, setRidealongPassed] = useState(false)
