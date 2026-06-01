@@ -254,7 +254,7 @@ export default function PostRidealongOrientation({
           and <span className="text-gsrp-orange">SPaG</span>
           <span className="text-gsrp-teal-light/50 text-xl font-semibold"> (Spelling, Punctuation & Grammar).</span>
         </h2>
-        <CtrlVideo src="https://i.imgur.com/ffLh3Ya.mp4" />
+        <CtrlVideo src="/home/container/media/Uniforms and livery.mp4" />
         <div className="flex justify-center mt-10">
           <ActionButton ready={btnReady} onClick={next} label="Got it!" />
         </div>
@@ -286,8 +286,8 @@ export default function PostRidealongOrientation({
         </h2>
         <p className="text-gsrp-teal-light/50 text-center text-base mb-10">No swerving or cutting corners.</p>
         <div className="flex flex-col sm:flex-row gap-6 mb-10">
-          <LoopVideo src="https://i.imgur.com/qosNnCJ.mp4" label="Bad Driving ✗" accent="red" />
-          <LoopVideo src="https://i.imgur.com/cMWSRAC.mp4" label="Good Driving ✓" accent="teal" />
+          <LoopVideo src="/home/container/media/Bad driving.mp4" label="Bad Driving ✗" accent="red" />
+          <LoopVideo src="/home/container/media/Good driving.mp4" label="Good Driving ✓" accent="teal" />
         </div>
         <div className="flex justify-center">
           <ActionButton ready={btnReady} onClick={next} label="Understood." />
