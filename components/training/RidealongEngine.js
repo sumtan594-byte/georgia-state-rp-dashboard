@@ -657,17 +657,17 @@ export default function RidealongEngine({
                   <div className="space-y-2">
                     <h4 className="text-xs font-bold text-gsrp-sunset uppercase tracking-wider">Bad Driving Example</h4>
                     <div className="rounded-xl overflow-hidden border border-gsrp-sunset/30 bg-black">
-                      <video controls className="w-full aspect-video" src="/media/Bad driving.mov">
-                        Your browser does not support this video format.
-                      </video>
+                        <video controls className="w-full aspect-video" src="https://i.imgur.com/qosNnCJ.mp4">
+                          Your browser does not support this video format.
+                        </video>
+                      </div>
                     </div>
-                  </div>
-                  <div className="space-y-2">
-                    <h4 className="text-xs font-bold text-gsrp-teal-light uppercase tracking-wider">Good Driving Example</h4>
-                    <div className="rounded-xl overflow-hidden border border-gsrp-teal/30 bg-black">
-                      <video controls className="w-full aspect-video" src="/media/Good driving.mov">
-                        Your browser does not support this video format.
-                      </video>
+                    <div className="space-y-2">
+                      <h4 className="text-xs font-bold text-gsrp-teal-light uppercase tracking-wider">Good Driving Example</h4>
+                      <div className="rounded-xl overflow-hidden border border-gsrp-teal/30 bg-black">
+                        <video controls className="w-full aspect-video" src="https://i.imgur.com/cMWSRAC.mp4">
+                          Your browser does not support this video format.
+                        </video>
                     </div>
                   </div>
                 </div>
