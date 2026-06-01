@@ -57,6 +57,7 @@ export default function RidealongPage() {
   const { data: session, status } = useSession()
   const { session: refreshedSession, hasRefreshed, accessDenied } = useRefreshedUser()
   const effectiveSession = refreshedSession || session
+  const userRoles = effectiveSession?.roles || []
   const router = useRouter()
 
   const [checkingAccess, setCheckingAccess] = useState(true)
@@ -343,6 +344,7 @@ export default function RidealongPage() {
           cooldownHours={RIDEALONG_CONFIG.COOLDOWN_HOURS}
           onSubmit={handleSubmit}
           user={effectiveSession.user}
+          userRoles={userRoles}
           onSaveProgress={handleSaveProgress}
           onClearProgress={handleClearProgress}
           robloxUsername={robloxUsername}
