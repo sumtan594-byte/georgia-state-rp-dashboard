@@ -104,6 +104,20 @@ export default function PostRidealongOrientation({
 }) {
   const router = useRouter()
 
+  useEffect(() => {
+    const videos = [
+      '/media/Uniformsandlivery.mp4',
+      '/media/Baddriving.mp4',
+      '/media/Gooddriving.mp4',
+    ]
+    Promise.all(videos.map(src =>
+      fetch(src, { method: 'HEAD' }).then(r => r.ok).catch(() => false)
+    )).then(results => {
+      const all = videos.reduce((acc, src, i) => ({ ...acc, [src.split('/').pop()]: results[i] }), {})
+      console.log('[Media Check]', all)
+    })
+  }, [])
+
   // step 0 = welcome, 1 = greeting pick, 2 = greeting confirm,
   // 3 = shift start, 4 = uniforms, 5 = end shift, 6 = driving,
   // 7 = username length, 8 = final/complete
