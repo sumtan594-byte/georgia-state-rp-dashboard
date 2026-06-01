@@ -12,7 +12,7 @@ async function sendRidealongWebhook({ webhookUrl, userId, username, score, total
   const scenarioLines = Array.isArray(results) && results.length > 0
     ? results.map((r, i) => {
         const label = r.scenarioTitle || r.title || `Scenario ${i + 1}`
-        const outcome = r.passed ? 'Pass' : 'Fail'
+        const outcome = r.correct ? 'Pass' : 'Fail'
         return `${i + 1}. ${label} — ${outcome}`
       }).join('\n')
     : 'No scenario data available'
