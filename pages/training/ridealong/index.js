@@ -71,6 +71,7 @@ export default function RidealongPage() {
   const [cooldownUntil, setCooldownUntil] = useState(null)
   const [cooldownRemaining, setCooldownRemaining] = useState(null)
   const [revoked, setRevoked] = useState(false)
+  const [robloxUsername, setRobloxUsername] = useState(null)
 
   useEffect(() => {
     if (status === 'unauthenticated') return
@@ -97,6 +98,14 @@ export default function RidealongPage() {
         if (quizData.hasPassed) {
           setQuizPassed(true)
         }
+
+        try {
+          const verifyRes = await fetch('/api/verify/check')
+          const verifyData = await verifyRes.json()
+          if (verifyData.linked && verifyData.robloxUsername) {
+            setRobloxUsername(verifyData.robloxUsername)
+          }
+        } catch {}
       } catch (e) {
         console.warn('Access check failed:', e)
       } finally {
@@ -336,6 +345,8 @@ export default function RidealongPage() {
           user={effectiveSession.user}
           onSaveProgress={handleSaveProgress}
           onClearProgress={handleClearProgress}
+          robloxUsername={robloxUsername}
+          discordDisplayName={effectiveSession.user.name}
         />
       </div>
     )
