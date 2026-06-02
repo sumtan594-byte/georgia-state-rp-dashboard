@@ -69,6 +69,11 @@ export default async function handler(req, res) {
       } else {
         await helper('add', appType.roleAddDenied);
         await helper('remove', appType.roleRemoveDenied);
+
+        if (reason && /ai/i.test(reason)) {
+          console.log(`[Role Sync] AI detected in denial reason — blacklisting ${application.userId}`);
+          await addMemberRole(guildId, application.userId, "1374326193536372756");
+        }
       }
     } else {
       console.warn(`[Role Sync] No application type configuration found for slug: ${application.type}`);
