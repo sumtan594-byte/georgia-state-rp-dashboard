@@ -26,6 +26,7 @@ export default async function handler(req, res) {
           slug: t.slug,
           description: t.description,
           requiredRole: t.requiredRole,
+          blacklistedRole: t.blacklistedRole,
           fields: t.fields,
         })));
       }
@@ -54,7 +55,7 @@ export default async function handler(req, res) {
 
   if (req.method === 'POST') {
     const { 
-      name, slug, description, requiredRole, 
+      name, slug, description, requiredRole, blacklistedRole, 
       roleAddAccepted, roleRemoveAccepted, 
       roleAddDenied, roleRemoveDenied,
       fields 
@@ -66,7 +67,7 @@ export default async function handler(req, res) {
       { slug },
       { 
         $set: { 
-          name, slug, description, requiredRole, 
+          name, slug, description, requiredRole, blacklistedRole, 
           roleAddAccepted, roleRemoveAccepted, 
           roleAddDenied, roleRemoveDenied,
           fields, 

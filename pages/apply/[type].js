@@ -800,6 +800,25 @@ export default function DynamicApplyPage() {
   if (!session) return <LoginScreen />;
   if (!appType) return <div className="text-center py-20 text-white">Application type not found.</div>;
 
+  const blacklistedRoles = Array.isArray(appType.blacklistedRole)
+    ? appType.blacklistedRole
+    : (appType.blacklistedRole ? [appType.blacklistedRole] : []);
+
+  const isBlacklisted = blacklistedRoles.some(roleId => hasRole(session, roleId));
+
+  if (isBlacklisted) {
+    return (
+      <div className="max-w-2xl mx-auto py-24 px-6 text-center animate-fade-in-up">
+        <div className="bg-gsrp-dark-card border border-red-500/20 rounded-3xl p-10">
+          <h1 className="text-3xl font-black text-white mb-4">You are blacklisted from this application</h1>
+          <p className="text-white/50 text-sm leading-relaxed">
+            Your current Discord roles prevent access to this application form.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   if (success) {
     return (
       <div className="max-w-2xl mx-auto py-20 px-4 text-center animate-fade-in-up">

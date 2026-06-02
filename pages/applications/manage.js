@@ -42,6 +42,7 @@ export default function ManageApplicationTypes() {
     slug: '',
     description: '',
     requiredRole: '',
+    blacklistedRole: [],
     roleAddAccepted: [],
     roleRemoveAccepted: [],
     roleAddDenied: [],
@@ -305,6 +306,7 @@ export default function ManageApplicationTypes() {
               slug: '', 
               description: '', 
               requiredRole: [], 
+              blacklistedRole: [], 
               roleAddAccepted: [], 
               roleRemoveAccepted: [], 
               roleAddDenied: [], 
@@ -359,6 +361,15 @@ export default function ManageApplicationTypes() {
                 value={form.requiredRole}
                 onChange={val => setForm({...form, requiredRole: val})}
                 placeholder="+ Add Required Role"
+              />
+            </div>
+
+            <div className="md:col-span-2">
+              <RoleSelector 
+                label="Blacklisted Roles"
+                value={form.blacklistedRole}
+                onChange={val => setForm({...form, blacklistedRole: val})}
+                placeholder="+ Add Blacklisted Role"
               />
             </div>
 
