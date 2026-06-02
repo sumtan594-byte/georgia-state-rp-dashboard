@@ -1,13 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import { useSession } from 'next-auth/react';
-import { Users, Search, Filter, Calendar, ChevronRight, Loader2, Trash2 } from 'lucide-react';
+import { Users, Search, Calendar, ChevronRight, ChevronLeft, Loader2, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
 import LoginScreen from '../../components/auth/LoginScreen';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import AccessDenied from '../../components/auth/AccessDenied';
 import { createPortal } from 'react-dom';
+
+const PAGE_SIZE = 10;
 
 export default function ApplicationsList() {
   const { data: session, status } = useSession();
@@ -21,18 +23,24 @@ export default function ApplicationsList() {
   const [search, setSearch] = useState('');
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [counts, setCounts] = useState({});
 
-  useEffect(() => {
-    if (status !== 'authenticated') return;
-    if (!hasRefreshed || !canReviewApplications(effectiveSession)) return;
+  const fetchPage = (p, type) => {
+    setLoading(true);
+    const params = new URLSearchParams({ page: p, limit: PAGE_SIZE });
+    if (type) params.set('type', type);
     Promise.all([
-      fetch('/api/applications/list').then(r => r.ok ? r.json() : []),
+      fetch(`/api/applications/list?${params}`).then(r => r.ok ? r.json() : { applications: [], total: 0, page: 1, totalPages: 1, counts: {} }),
       fetch('/api/applications/types').then(r => r.ok ? r.json() : [])
     ])
-    .then(([apps, appTypes]) => {
-      setApplications(apps);
-      
-      // Ensure staff exists in types
+    .then(([data, appTypes]) => {
+      setApplications(data.applications);
+      setPage(data.page);
+      setTotalPages(data.totalPages);
+      setCounts(data.counts);
+
       const hasStaff = appTypes.find(t => t.slug === 'staff');
       if (!hasStaff) {
         appTypes.unshift({ name: 'Staff Application', slug: 'staff' });
@@ -44,6 +52,12 @@ export default function ApplicationsList() {
       setError(err.message);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    if (status !== 'authenticated') return;
+    if (!hasRefreshed || !canReviewApplications(effectiveSession)) return;
+    fetchPage(1, activeTab);
   }, [status, hasRefreshed, effectiveSession]);
 
   const handleDelete = async (appId) => {
@@ -69,8 +83,7 @@ export default function ApplicationsList() {
 
   const filtered = applications.filter(app => {
     const matchesSearch = app.username.toLowerCase().includes(search.toLowerCase()) || app.userId.includes(search);
-    const matchesTab = app.type === activeTab || (!app.type && activeTab === 'staff');
-    return matchesSearch && matchesTab;
+    return matchesSearch;
   });
 
   return (
@@ -107,11 +120,11 @@ export default function ApplicationsList() {
       {/* Tabs */}
       <div className="flex flex-wrap gap-2 mb-6">
         {types.map(type => {
-          const count = applications.filter(app => (app.type === type.slug) || (!app.type && type.slug === 'staff')).length;
+          const count = counts[type.slug] || 0;
           return (
             <button
               key={type.slug}
-              onClick={() => setActiveTab(type.slug)}
+              onClick={() => { setActiveTab(type.slug); fetchPage(1, type.slug); }}
               className={`px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border
                 ${activeTab === type.slug 
                   ? 'bg-gsrp-orange text-white border-gsrp-orange shadow-lg shadow-gsrp-orange/20 scale-105' 
@@ -253,6 +266,28 @@ export default function ApplicationsList() {
           </>
         )}
       </div>
+
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-3 mt-6 pb-2">
+          <button
+            onClick={() => fetchPage(page - 1, activeTab)}
+            disabled={page <= 1}
+            className="p-2 rounded-lg bg-gsrp-dark-card border border-gsrp-dark-border/50 text-gsrp-teal-light/60 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronLeft size={18} />
+          </button>
+          <span className="text-xs font-mono text-gsrp-teal-light/50">
+            {page} / {totalPages}
+          </span>
+          <button
+            onClick={() => fetchPage(page + 1, activeTab)}
+            disabled={page >= totalPages}
+            className="p-2 rounded-lg bg-gsrp-dark-card border border-gsrp-dark-border/50 text-gsrp-teal-light/60 hover:text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+          >
+            <ChevronRight size={18} />
+          </button>
+        </div>
+      )}
 
       {deleteTarget && typeof document !== 'undefined' && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ position: 'fixed' }}>
