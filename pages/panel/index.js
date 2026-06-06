@@ -110,14 +110,28 @@ export default function PanelPage() {
 
   /* ── Auto-expire roleplays ──────────────────────────────────────────── */
   useEffect(() => {
-    const t = setInterval(() => {
+    const t = setInterval(async () => {
       const now = Date.now();
-      setRoleplays(prev => prev.map(rp =>
-        rp.active && new Date(rp.expiresAt) < now ? { ...rp, active: false } : rp
-      ));
+      const expiredRps = roleplays.filter(rp => rp.active && new Date(rp.expiresAt) < now);
+      
+      if (expiredRps.length > 0) {
+        // Remove expired roleplays completely from the active list
+        setRoleplays(prev => prev.filter(rp => !(rp.active && new Date(rp.expiresAt) < now)));
+
+        // Notify server/discord for each expired RP
+        for (const rp of expiredRps) {
+          try {
+            await fetch(`/api/panel/roleplays/${rp.rpId}`, {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'expire' }),
+            });
+          } catch (e) { console.error(`Failed to expire RP ${rp.rpId}:`, e); }
+        }
+      }
     }, 5000);
     return () => clearInterval(t);
-  }, []);
+  }, [roleplays]);
 
   /* ── ERLC alerts ─────────────────────────────────────────────────────── */
   const alerts = [];

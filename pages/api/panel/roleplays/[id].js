@@ -63,6 +63,25 @@ export default async function handler(req, res) {
       return res.status(200).json({ success: true });
     }
 
+    if (action === 'expire') {
+      await col.updateOne({ rpId: id }, { $set: { active: false, endedAt: new Date(), status: 'expired' } });
+      if (log.discordMessageId) {
+        await editDiscordMessage(log.discordMessageId, RP_LOG_CHANNEL, [
+          {
+            type: 17,
+            accent_color: 0x6B7280,
+            components: [
+              {
+                type: 10,
+                content: `## ⌛ Roleplay Expired\n**Player:** ${log.robloxUsername}\n**Type:** ${log.roleplayType}\n**Status:** Naturally expired`,
+              },
+            ],
+          },
+        ]);
+      }
+      return res.status(200).json({ success: true });
+    }
+
     if (action === 'extend' && durationMs) {
       const currentExpiry = new Date(log.expiresAt);
       const base = currentExpiry > new Date() ? currentExpiry : new Date();
