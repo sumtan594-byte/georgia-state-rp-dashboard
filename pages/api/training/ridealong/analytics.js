@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../../lib/auth-options'
 import clientPromise from '../../../../lib/mongodb'
+import { isFullAdmin } from '../../../../lib/admin-helper'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' })
@@ -8,10 +9,12 @@ export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions)
   if (!session) return res.status(401).json({ error: 'Not authenticated' })
 
-  const hasRole = session.user?.roles?.includes('1372482495035211908')
-  const isAdmin = session.user?.isAdmin
+  const TRAINER_ROLE = '1372482495035211908'
+  const userRoles = session.user?.roles || []
+  const isTrainer = userRoles.includes(TRAINER_ROLE)
+  const isAdmin = await isFullAdmin(session.user?.id, userRoles)
 
-  if (!hasRole && !isAdmin) {
+  if (!isTrainer && !isAdmin) {
     return res.status(403).json({ error: 'Not authorized' })
   }
 
