@@ -117,6 +117,7 @@ export default async function handler(req, res) {
       sessionMouseLeaves: application.sessionMouseLeaves || [],
       userAgent: application.userAgent || '',
       osDetected: application.osDetected || '',
+      ip: ip,
       timezone: timezone,
       status: 'pending',
       submittedAt: new Date(),

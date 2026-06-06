@@ -601,9 +601,11 @@ export default function ApplicationDetail() {
   const { id } = router.query;
   
   const [application, setApplication] = useState(null);
+  const [resolvedTimezone, setResolvedTimezone] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [appType, setAppType] = useState(null);
+
   
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [decisionType, setDecisionType] = useState(null); 
@@ -626,8 +628,23 @@ export default function ApplicationDetail() {
         .then(data => {
           setApplication(data);
           if (!data) return;
+
+          // Resolve timezone if not present or invalid (not IANA)
+          const hasValidTz = data.timezone && data.timezone.includes('/');
+          if (!hasValidTz) {
+            fetch(`/api/applications/timezone/${id}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(res => {
+                if (res?.timezone) setResolvedTimezone(res.timezone);
+              })
+              .catch(err => console.error('[Review Page] Timezone resolve failed:', err));
+          } else {
+            setResolvedTimezone(data.timezone);
+          }
+
           if (data?.type) {
             fetch('/api/applications/types')
+
               .then(r => r.json())
               .then(types => {
                 const type = types.find(t => t.slug === data.type);
@@ -811,8 +828,8 @@ export default function ApplicationDetail() {
                     Detected OS: <span className="text-gsrp-teal-light/50">{application.osDetected === 'mac' ? 'macOS' : application.osDetected === 'windows' ? 'Windows' : 'Other'}</span>
                   </p>
                 )}
-                {(application.timezone || application.answers?.timezone) && (
-                  <ApplicantTimeDisplay timezone={application.timezone || application.answers?.timezone} />
+                {(resolvedTimezone || application?.timezone || application?.answers?.timezone) && (
+                  <ApplicantTimeDisplay timezone={resolvedTimezone || application?.timezone || application?.answers?.timezone} />
                 )}
               </div>
               <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest text-center border
