@@ -186,10 +186,10 @@ export default function PanelPage() {
 
   /* ── Map mode: location select (create or move) ────────────────────────── */
   const handleRequestLocationSelect = useCallback((rpId = null) => {
-    console.log('[Panel] Request Location Select rpId:', rpId);
+    const actualId = (rpId && typeof rpId === 'string') ? rpId : null;
     setLocationSelectMode(true);
     setPlayerSelectMode(false);
-    setMovingRpId(rpId || null);
+    setMovingRpId(actualId);
   }, []);
 
   const handleLocationSelected = useCallback(async ({ location, pinX, pinY }) => {

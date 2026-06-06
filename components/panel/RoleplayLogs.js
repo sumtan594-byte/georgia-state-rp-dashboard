@@ -245,11 +245,12 @@ export default function RoleplayLogs({
                         onChange={e => setForm(f => ({ ...f, robloxUsername: e.target.value }))}
                         className="flex-1 bg-black/40 border border-gsrp-dark-border/50 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-gsrp-orange/40 transition-colors"
                       />
-                      <button
-                        onClick={onRequestPlayerSelect}
-                        className="px-3 py-2 rounded-xl bg-white/5 border border-gsrp-dark-border/50 text-white/40 hover:text-white hover:bg-white/10 text-xs font-bold transition-all cursor-pointer whitespace-nowrap">
-                        <MapPin size={13} />
-                      </button>
+                       <button
+                         onClick={() => onRequestLocationSelect?.()}
+                         className="px-3 py-2 rounded-xl bg-white/5 border border-gsrp-dark-border/50 text-white/40 hover:text-white hover:bg-white/10 text-xs font-bold transition-all cursor-pointer whitespace-nowrap">
+                         <MapPin size={13} />
+                       </button>
+
                     </div>
                   )}
                 </div>
@@ -283,11 +284,12 @@ export default function RoleplayLogs({
                       className="w-full bg-black/40 border border-gsrp-dark-border/50 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-gsrp-orange/40 transition-colors"
                     />
                     <div className="flex gap-2">
-                      <button
-                        onClick={onRequestLocationSelect}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white/5 border border-gsrp-dark-border/50 text-white/40 hover:text-white hover:bg-white/10 text-xs font-bold transition-all cursor-pointer">
-                        <MapPin size={12} /> Select on Map
-                      </button>
+                       <button
+                         onClick={() => onRequestLocationSelect?.()}
+                         className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-white/5 border border-gsrp-dark-border/50 text-white/40 hover:text-white hover:bg-white/10 text-xs font-bold transition-all cursor-pointer">
+                         <MapPin size={12} /> Select on Map
+                       </button>
+
                       {myLocation && (
                         <button
                           onClick={useMyLocation}
