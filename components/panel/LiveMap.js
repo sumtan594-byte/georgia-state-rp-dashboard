@@ -255,7 +255,12 @@ export default function LiveMap({
 
       if (markers.current[id]) {
         const mkr = markers.current[id];
-        mkr.setIcon(avatarIcon(id, p.Team, isSelected || isLocked));
+        const wasSelected = mkr._lastSelected;
+        const nowSelected = isSelected || isLocked;
+        if (wasSelected !== nowSelected) {
+          mkr.setIcon(avatarIcon(id, p.Team, nowSelected));
+          mkr._lastSelected = nowSelected;
+        }
         mkr.setTooltipContent(name + (isLocked ? ' 🔒' : ''));
         const el = mkr.getElement();
         if (el) {
