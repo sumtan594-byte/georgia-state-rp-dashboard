@@ -246,10 +246,11 @@ export default function RoleplayLogs({
                         className="flex-1 bg-black/40 border border-gsrp-dark-border/50 rounded-xl px-3 py-2 text-sm text-white placeholder-white/20 outline-none focus:border-gsrp-orange/40 transition-colors"
                       />
                        <button
-                         onClick={() => onRequestLocationSelect?.()}
+                         onClick={() => onRequestPlayerSelect?.()}
                          className="px-3 py-2 rounded-xl bg-white/5 border border-gsrp-dark-border/50 text-white/40 hover:text-white hover:bg-white/10 text-xs font-bold transition-all cursor-pointer whitespace-nowrap">
                          <MapPin size={13} />
                        </button>
+
 
                     </div>
                   )}
