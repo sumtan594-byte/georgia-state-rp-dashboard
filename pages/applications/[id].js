@@ -559,6 +559,40 @@ const MonitoringTimeline = ({ application, fieldId, fieldLabel }) => {
   );
 };
 
+const ApplicantTimeDisplay = ({ timezone }) => {
+  const [time, setTime] = useState('');
+
+  useEffect(() => {
+    if (!timezone) return;
+
+    const updateTime = () => {
+      try {
+        const now = new Date();
+        const formatter = new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone,
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        });
+        setTime(formatter.format(now));
+      } catch (_) {}
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 30000);
+    return () => clearInterval(interval);
+  }, [timezone]);
+
+  if (!time) return null;
+
+  return (
+    <p className="text-[10px] font-bold text-gsrp-teal-light/30 mt-1 flex items-center gap-1.5">
+      <Clock size={10} className="text-gsrp-teal-light/40" />
+      Current time for applicant: <span className="text-gsrp-teal-light/50">{time}</span>
+    </p>
+  );
+};
+
 export default function ApplicationDetail() {
   const { data: session, status } = useSession();
   const { session: refreshedSession } = useRefreshedUser();
@@ -618,7 +652,7 @@ export default function ApplicationDetail() {
                       { id: 'scen_6', label: 'Scenario: Threats', type: 'textarea', subtitle: 'A player is threatening to jump off a building, what is this classified as and what would your first instinct be?', sentences: 2, required: true },
                       { id: 'scen_7', label: 'Scenario: Swearing', type: 'textarea', subtitle: 'A player is saying swear words bypassing the roblox filter. What is your decision?', sentences: 2, required: true },
                       { id: 'scen_8', label: 'Scenario: Exploiting', type: 'textarea', subtitle: 'You see a player exploiting. What would you do?', sentences: 2, required: true },
-                      { id: 'timezone', label: 'What is your Time zone?', type: 'textarea', required: true },
+      
                       { id: 'agree_tiring', label: 'Do you understand that moderation can become tiring and frustrating?', type: 'radio', options: ['Yes I do, and I am ready for it.', 'I don\'t think I can do that'], required: true },
                       { id: 'agree_spag', label: 'Do you understand that on shift, you are obliged to use utmost SPaG?', type: 'radio', options: ['I do', 'I cannot do that.'], required: true },
                       { id: 'agree_quota', label: 'Do you understand that you Have to meet a 4 hour quota per Week?', type: 'radio', options: ['Yes', 'No'], required: true },
@@ -776,6 +810,9 @@ export default function ApplicationDetail() {
                   <p className="text-[10px] font-bold text-gsrp-teal-light/30 mt-1">
                     Detected OS: <span className="text-gsrp-teal-light/50">{application.osDetected === 'mac' ? 'macOS' : application.osDetected === 'windows' ? 'Windows' : 'Other'}</span>
                   </p>
+                )}
+                {(application.timezone || application.answers?.timezone) && (
+                  <ApplicantTimeDisplay timezone={application.timezone || application.answers?.timezone} />
                 )}
               </div>
               <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest text-center border

@@ -85,6 +85,22 @@ export default async function handler(req, res) {
     invalidateAppListCache();
     console.log('[Application API] New submission:', session.user.name, '|', application.typeName, '|', Object.keys(application.answers).length, 'fields');
 
+    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
+      || req.headers['x-real-ip']
+      || req.socket?.remoteAddress
+      || 'unknown';
+
+    let timezone = '';
+    if (ip && ip !== 'unknown' && ip !== '::1' && !ip.startsWith('192.168.') && !ip.startsWith('10.') && !ip.startsWith('172.')) {
+      try {
+        const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,timezone`);
+        const geoData = await geoRes.json();
+        if (geoData.status === 'success' && geoData.timezone) {
+          timezone = geoData.timezone;
+        }
+      } catch (_) {}
+    }
+
     const sanitizedMonitoring = sanitizeMonitoringData(application.monitoringData);
 
     const result = await db.collection("applications").insertOne({
@@ -101,6 +117,7 @@ export default async function handler(req, res) {
       sessionMouseLeaves: application.sessionMouseLeaves || [],
       userAgent: application.userAgent || '',
       osDetected: application.osDetected || '',
+      timezone: timezone,
       status: 'pending',
       submittedAt: new Date(),
     });
