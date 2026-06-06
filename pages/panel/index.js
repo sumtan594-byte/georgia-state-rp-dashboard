@@ -195,9 +195,12 @@ export default function PanelPage() {
   const handleLocationSelected = useCallback(async ({ location, pinX, pinY }) => {
     console.log('[Panel] Location Selected. movingRpId:', movingRpId);
     setLocationSelectMode(false);
-    if (movingRpId) {
-      // Moving an existing RP pin
-      await fetch(`/api/panel/roleplays/${movingRpId}`, {
+      if (movingRpId) {
+        const rpIdString = typeof movingRpId === 'object' ? movingRpId.rpId : movingRpId;
+        if (!rpIdString) return;
+        // Moving an existing RP pin
+        await fetch(`/api/panel/roleplays/${rpIdString}`, {
+
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'move', pinX, pinY, location }),
