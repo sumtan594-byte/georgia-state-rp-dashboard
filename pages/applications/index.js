@@ -1,7 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useSession } from 'next-auth/react';
-import { Users, Search, Calendar, ChevronRight, ChevronLeft, Loader2, Trash2 } from 'lucide-react';
+import { Users, Search, Calendar, ChevronRight, ChevronLeft, Loader2, Trash2, CheckSquare, Square } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
 import LoginScreen from '../../components/auth/LoginScreen';
@@ -26,9 +26,13 @@ export default function ApplicationsList() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [counts, setCounts] = useState({});
+  const [selected, setSelected] = useState(new Set());
+  const [showBatchDelete, setShowBatchDelete] = useState(false);
+  const [isBatchDeleting, setIsBatchDeleting] = useState(false);
 
   const fetchPage = (p, type) => {
     setLoading(true);
+    setSelected(new Set());
     const params = new URLSearchParams({ page: p, limit: PAGE_SIZE });
     if (type) params.set('type', type);
     Promise.all([
@@ -67,10 +71,48 @@ export default function ApplicationsList() {
       if (!res.ok) throw new Error('Failed to delete');
       setApplications(prev => prev.filter(a => a._id !== appId));
       setDeleteTarget(null);
+      setSelected(prev => { const next = new Set(prev); next.delete(appId); return next; });
     } catch (err) {
       alert(err.message);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleBatchDelete = async () => {
+    setIsBatchDeleting(true);
+    try {
+      const ids = Array.from(selected);
+      const res = await fetch('/api/applications/batch-delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ids }),
+      });
+      if (!res.ok) throw new Error('Failed to delete applications');
+      setApplications(prev => prev.filter(a => !selected.has(a._id)));
+      setSelected(new Set());
+      setShowBatchDelete(false);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setIsBatchDeleting(false);
+    }
+  };
+
+  const toggleSelect = (id) => {
+    setSelected(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selected.size === filtered.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(filtered.map(a => a._id)));
     }
   };
 
@@ -138,6 +180,25 @@ export default function ApplicationsList() {
         })}
       </div>
 
+      {selected.size > 0 && (
+        <div className="mb-4 flex items-center gap-3 px-4 py-3 bg-red-500/10 border border-red-500/20 rounded-xl">
+          <span className="text-sm font-bold text-red-400">{selected.size} application{selected.size > 1 ? 's' : ''} selected</span>
+          <button
+            onClick={() => setShowBatchDelete(true)}
+            className="ml-auto flex items-center gap-2 px-4 py-2 bg-red-500 hover:bg-red-600 text-white font-black rounded-lg transition-all text-xs uppercase tracking-widest"
+          >
+            <Trash2 size={14} />
+            Delete Selected
+          </button>
+          <button
+            onClick={() => setSelected(new Set())}
+            className="px-3 py-2 text-gsrp-teal-light/40 hover:text-gsrp-teal-light text-xs font-bold transition-colors"
+          >
+            Clear Selection
+          </button>
+        </div>
+      )}
+
       <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 overflow-hidden">
         {loading ? (
           <div className="p-20 flex flex-col items-center justify-center">
@@ -158,6 +219,13 @@ export default function ApplicationsList() {
           <div className="block md:hidden divide-y divide-gsrp-dark-border/30">
             {filtered.map((app) => (
               <div key={app._id} className="p-4 flex items-center gap-3">
+                <button onClick={() => toggleSelect(app._id)} className="flex-shrink-0">
+                  {selected.has(app._id) ? (
+                    <CheckSquare size={18} className="text-gsrp-orange" />
+                  ) : (
+                    <Square size={18} className="text-gsrp-teal-light/20 hover:text-gsrp-teal-light/40 transition-colors" />
+                  )}
+                </button>
                 {app.userImage ? (
                   <img src={app.userImage} alt="" className="w-10 h-10 rounded-full border border-gsrp-dark-border/50 object-cover flex-shrink-0" />
                 ) : (
@@ -200,6 +268,15 @@ export default function ApplicationsList() {
             <table className="w-full text-left border-collapse">
               <thead>
                 <tr className="border-b border-gsrp-dark-border/50 bg-gsrp-dark-surface/30">
+                  <th className="px-4 py-4 w-12">
+                    <button onClick={toggleSelectAll} className="flex items-center justify-center">
+                      {selected.size === filtered.length && filtered.length > 0 ? (
+                        <CheckSquare size={16} className="text-gsrp-orange" />
+                      ) : (
+                        <Square size={16} className="text-gsrp-teal-light/20 hover:text-gsrp-teal-light/40 transition-colors" />
+                      )}
+                    </button>
+                  </th>
                   <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gsrp-teal-light/40">Applicant</th>
                   <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gsrp-teal-light/40">Submitted At</th>
                   <th className="px-6 py-4 text-[10px] font-black uppercase tracking-[0.2em] text-gsrp-teal-light/40 text-center">Status</th>
@@ -208,7 +285,16 @@ export default function ApplicationsList() {
               </thead>
               <tbody>
                 {filtered.map((app) => (
-                  <tr key={app._id} className="border-b border-gsrp-dark-border/30 hover:bg-white/5 transition-colors group">
+                  <tr key={app._id} className={`border-b border-gsrp-dark-border/30 hover:bg-white/5 transition-colors group ${selected.has(app._id) ? 'bg-gsrp-orange/5' : ''}`}>
+                    <td className="px-4 py-4">
+                      <button onClick={() => toggleSelect(app._id)} className="flex items-center justify-center">
+                        {selected.has(app._id) ? (
+                          <CheckSquare size={16} className="text-gsrp-orange" />
+                        ) : (
+                          <Square size={16} className="text-gsrp-teal-light/20 hover:text-gsrp-teal-light/40 transition-colors" />
+                        )}
+                      </button>
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
                         {app.userImage ? (
@@ -317,6 +403,41 @@ export default function ApplicationsList() {
                 className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl transition-colors disabled:opacity-50"
               >
                 {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showBatchDelete && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ position: 'fixed' }}>
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowBatchDelete(false)} />
+          <div className="relative bg-gsrp-dark-card border border-red-500/30 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                <Trash2 size={20} className="text-red-500" />
+              </div>
+              <h3 className="text-white font-black text-xl">Delete Applications</h3>
+            </div>
+            <p className="text-gsrp-teal-light/60 text-sm mb-2">
+              Permanently delete <span className="text-white font-bold">{selected.size}</span> selected application{selected.size > 1 ? 's' : ''}?
+            </p>
+            <p className="text-red-400/80 text-xs mb-6 font-medium">This cannot be undone.</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setShowBatchDelete(false)} 
+                disabled={isBatchDeleting}
+                className="flex-1 py-3 bg-gsrp-dark-surface border border-white/10 text-gsrp-teal-light font-bold rounded-xl hover:text-white transition-colors disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleBatchDelete}
+                disabled={isBatchDeleting}
+                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl transition-colors disabled:opacity-50"
+              >
+                {isBatchDeleting ? 'Deleting...' : `Delete ${selected.size}`}
               </button>
             </div>
           </div>

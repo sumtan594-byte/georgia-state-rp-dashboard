@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
@@ -10,21 +10,14 @@ import {
   XCircle, 
   Clock, 
   MousePointer2, 
-  Keyboard, 
-  MessageSquare, 
   Loader2, 
   AlertCircle,
-  User,
   Shield,
   Zap,
-  Info,
-  Play,
-  RotateCcw,
   Eye,
   AlertTriangle,
   Timer,
   Mouse,
-  Activity,
   ChevronDown,
   ChevronUp,
   ShieldAlert,
@@ -40,296 +33,36 @@ import LoginScreen from '../../components/auth/LoginScreen';
 
 const TAB_OUT_THRESHOLD = 3;
 
-const macKeyLayout = [
-  [
-    { id: 'Escape', label: 'esc', w: 1.2 },
-    { id: 'F1', label: 'F1', w: 1 }, { id: 'F2', label: 'F2', w: 1 }, { id: 'F3', label: 'F3', w: 1 }, { id: 'F4', label: 'F4', w: 1 },
-    { id: 'F5', label: 'F5', w: 1 }, { id: 'F6', label: 'F6', w: 1 }, { id: 'F7', label: 'F7', w: 1 }, { id: 'F8', label: 'F8', w: 1 },
-    { id: 'F9', label: 'F9', w: 1 }, { id: 'F10', label: 'F10', w: 1 }, { id: 'F11', label: 'F11', w: 1 }, { id: 'F12', label: 'F12', w: 1 },
-  ],
-  [
-    { id: 'Backquote', label: '`', w: 1 },
-    { id: 'Digit1', label: '1' }, { id: 'Digit2', label: '2' }, { id: 'Digit3', label: '3' }, { id: 'Digit4', label: '4' },
-    { id: 'Digit5', label: '5' }, { id: 'Digit6', label: '6' }, { id: 'Digit7', label: '7' }, { id: 'Digit8', label: '8' },
-    { id: 'Digit9', label: '9' }, { id: 'Digit0', label: '0' },
-    { id: 'Minus', label: '-' }, { id: 'Equal', label: '=' },
-    { id: 'Backspace', label: '⌫', w: 1.8 },
-  ],
-  [
-    { id: 'Tab', label: '⇥ Tab', w: 1.5 },
-    { id: 'KeyQ', label: 'Q' }, { id: 'KeyW', label: 'W' }, { id: 'KeyE', label: 'E' }, { id: 'KeyR', label: 'R' },
-    { id: 'KeyT', label: 'T' }, { id: 'KeyY', label: 'Y' }, { id: 'KeyU', label: 'U' }, { id: 'KeyI', label: 'I' },
-    { id: 'KeyO', label: 'O' }, { id: 'KeyP', label: 'P' },
-    { id: 'BracketLeft', label: '[' }, { id: 'BracketRight', label: ']' },
-    { id: 'Backslash', label: '\\', w: 1.5 },
-  ],
-  [
-    { id: 'CapsLock', label: '⇪ Caps', w: 1.8 },
-    { id: 'KeyA', label: 'A' }, { id: 'KeyS', label: 'S' }, { id: 'KeyD', label: 'D' }, { id: 'KeyF', label: 'F' },
-    { id: 'KeyG', label: 'G' }, { id: 'KeyH', label: 'H' }, { id: 'KeyJ', label: 'J' }, { id: 'KeyK', label: 'K' },
-    { id: 'KeyL', label: 'L' },
-    { id: 'Semicolon', label: ';' }, { id: 'Quote', label: "'" },
-    { id: 'Enter', label: 'Return', w: 2 },
-  ],
-  [
-    { id: 'ShiftLeft', label: '⇧ Shift', w: 2.3 },
-    { id: 'KeyZ', label: 'Z' }, { id: 'KeyX', label: 'X' }, { id: 'KeyC', label: 'C' }, { id: 'KeyV', label: 'V' },
-    { id: 'KeyB', label: 'B' }, { id: 'KeyN', label: 'N' }, { id: 'KeyM', label: 'M' },
-    { id: 'Comma', label: ',' }, { id: 'Period', label: '.' }, { id: 'Slash', label: '/' },
-    { id: 'ShiftRight', label: '⇧ Shift', w: 2.7 },
-  ],
-  [
-    { id: 'ControlLeft', label: '⌃ Ctrl', w: 1.3 },
-    { id: 'AltLeft', label: '⌥ Option', w: 1.3 },
-    { id: 'MetaLeft', label: '⌘ Cmd', w: 1.3 },
-    { id: 'Space', label: '', w: 6.5 },
-    { id: 'MetaRight', label: '⌘ Cmd', w: 1.3 },
-    { id: 'AltRight', label: '⌥ Option', w: 1.3 },
-    { id: 'ControlRight', label: '⌃ Ctrl', w: 1.3 },
-  ],
-];
-
-const winKeyLayout = [
-  [
-    { id: 'Escape', label: 'Esc', w: 1.2 },
-    { id: 'F1', label: 'F1', w: 1 }, { id: 'F2', label: 'F2', w: 1 }, { id: 'F3', label: 'F3', w: 1 }, { id: 'F4', label: 'F4', w: 1 },
-    { id: 'F5', label: 'F5', w: 1 }, { id: 'F6', label: 'F6', w: 1 }, { id: 'F7', label: 'F7', w: 1 }, { id: 'F8', label: 'F8', w: 1 },
-    { id: 'F9', label: 'F9', w: 1 }, { id: 'F10', label: 'F10', w: 1 }, { id: 'F11', label: 'F11', w: 1 }, { id: 'F12', label: 'F12', w: 1 },
-  ],
-  [
-    { id: 'Backquote', label: '`', w: 1 },
-    { id: 'Digit1', label: '1' }, { id: 'Digit2', label: '2' }, { id: 'Digit3', label: '3' }, { id: 'Digit4', label: '4' },
-    { id: 'Digit5', label: '5' }, { id: 'Digit6', label: '6' }, { id: 'Digit7', label: '7' }, { id: 'Digit8', label: '8' },
-    { id: 'Digit9', label: '9' }, { id: 'Digit0', label: '0' },
-    { id: 'Minus', label: '-' }, { id: 'Equal', label: '=' },
-    { id: 'Backspace', label: 'Backspace', w: 1.8 },
-  ],
-  [
-    { id: 'Tab', label: 'Tab', w: 1.5 },
-    { id: 'KeyQ', label: 'Q' }, { id: 'KeyW', label: 'W' }, { id: 'KeyE', label: 'E' }, { id: 'KeyR', label: 'R' },
-    { id: 'KeyT', label: 'T' }, { id: 'KeyY', label: 'Y' }, { id: 'KeyU', label: 'U' }, { id: 'KeyI', label: 'I' },
-    { id: 'KeyO', label: 'O' }, { id: 'KeyP', label: 'P' },
-    { id: 'BracketLeft', label: '[' }, { id: 'BracketRight', label: ']' },
-    { id: 'Backslash', label: '\\', w: 1.5 },
-  ],
-  [
-    { id: 'CapsLock', label: 'Caps Lock', w: 1.8 },
-    { id: 'KeyA', label: 'A' }, { id: 'KeyS', label: 'S' }, { id: 'KeyD', label: 'D' }, { id: 'KeyF', label: 'F' },
-    { id: 'KeyG', label: 'G' }, { id: 'KeyH', label: 'H' }, { id: 'KeyJ', label: 'J' }, { id: 'KeyK', label: 'K' },
-    { id: 'KeyL', label: 'L' },
-    { id: 'Semicolon', label: ';' }, { id: 'Quote', label: "'" },
-    { id: 'Enter', label: 'Enter', w: 2 },
-  ],
-  [
-    { id: 'ShiftLeft', label: 'Shift', w: 2.3 },
-    { id: 'KeyZ', label: 'Z' }, { id: 'KeyX', label: 'X' }, { id: 'KeyC', label: 'C' }, { id: 'KeyV', label: 'V' },
-    { id: 'KeyB', label: 'B' }, { id: 'KeyN', label: 'N' }, { id: 'KeyM', label: 'M' },
-    { id: 'Comma', label: ',' }, { id: 'Period', label: '.' }, { id: 'Slash', label: '/' },
-    { id: 'ShiftRight', label: 'Shift', w: 2.7 },
-  ],
-  [
-    { id: 'ControlLeft', label: 'Ctrl', w: 1.3 },
-    { id: 'MetaLeft', label: '⊞ Win', w: 1.3 },
-    { id: 'AltLeft', label: 'Alt', w: 1.3 },
-    { id: 'Space', label: '', w: 6.5 },
-    { id: 'AltRight', label: 'Alt', w: 1.3 },
-    { id: 'ControlRight', label: 'Ctrl', w: 1.3 },
-  ],
-];
-
-const codeToLabel = {
-  'Space': ' ', 'Enter': '↵', 'Backspace': '⌫', 'Tab': '⇥',
-  'ArrowUp': '↑', 'ArrowDown': '↓', 'ArrowLeft': '←', 'ArrowRight': '→',
-  'ShiftLeft': 'Shift', 'ShiftRight': 'Shift',
-  'ControlLeft': 'Ctrl', 'ControlRight': 'Ctrl',
-  'AltLeft': 'Alt', 'AltRight': 'Alt',
-  'MetaLeft': 'Cmd', 'MetaRight': 'Cmd',
-  'CapsLock': 'Caps', 'Escape': 'Esc',
-};
-
-const KeyboardVisualizer = ({ os, activeKeys, heldModifiers }) => {
-  const layout = os === 'mac' ? macKeyLayout : winKeyLayout;
-  const isMac = os === 'mac';
-
-  return (
-    <div className={`mt-4 p-4 rounded-2xl border ${isMac ? 'bg-gray-900/80 border-gray-700/50' : 'bg-gray-800/80 border-gray-600/50'}`}>
-      <div className="flex items-center gap-2 mb-3">
-        <Keyboard size={14} className="text-gsrp-teal-light/50" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/40">
-          {isMac ? 'macOS' : 'Windows'} Keyboard — Live Replay
-        </span>
-      </div>
-      <div className="space-y-1 select-none">
-        {layout.map((row, ri) => (
-          <div key={ri} className="flex gap-1 justify-center">
-            {row.map((key) => {
-              const isActive = activeKeys.has(key.id);
-              const isHeld = heldModifiers.has(key.id);
-              const isModifier = ['ShiftLeft', 'ShiftRight', 'ControlLeft', 'ControlRight', 'AltLeft', 'AltRight', 'MetaLeft', 'MetaRight', 'CapsLock'].includes(key.id);
-              return (
-                <div
-                  key={key.id}
-                  className={`
-                    flex items-center justify-center rounded-md font-bold text-[9px] uppercase tracking-wide
-                    transition-all duration-75
-                    ${isActive ? 'scale-95 bg-gsrp-orange text-white shadow-lg shadow-gsrp-orange/40' : 
-                      isHeld ? 'bg-gsrp-orange/60 text-white scale-[0.97]' :
-                      isModifier ? (isMac ? 'bg-gray-700/60 text-gray-400' : 'bg-gray-700/80 text-gray-400') :
-                      (isMac ? 'bg-gray-800/80 text-gray-300 border border-gray-700/40' : 'bg-gray-700/60 text-gray-300 border border-gray-600/30')}
-                  `}
-                  style={{
-                    width: `${(key.w || 1) * 38}px`,
-                    height: '30px',
-                  }}
-                >
-                  {key.label}
-                </div>
-              );
-            })}
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
-
-const KeystrokePlayer = ({ keystrokes, pastes, originalText, os }) => {
-  const [playing, setPlaying] = useState(false);
-  const [displayText, setDisplayText] = useState('');
-  const [pasteSegments, setPasteSegments] = useState([]);
-  const [progress, setProgress] = useState(0);
-  const stopRef = useRef(false);
-  const timerRef = useRef(null);
-
-  // Build a flat sorted timeline of keystroke + paste events
-  const buildTimeline = () => {
-    const keys = (keystrokes || []).map(k => ({ ...k, eventType: 'keystroke' }));
-    const pasteEvents = (pastes || []).map(p => ({ ...p, eventType: 'paste' }));
-    return [...keys, ...pasteEvents].sort((a, b) => a.timestamp - b.timestamp);
-  };
-
-  const stopReplay = () => {
-    stopRef.current = true;
-    if (timerRef.current) clearTimeout(timerRef.current);
-    setPlaying(false);
-    setDisplayText('');
-    setPasteSegments([]);
-    setProgress(0);
-  };
-
-  const startReplay = () => {
-    if (playing) return stopReplay();
-
-    const sorted = buildTimeline();
-    if (!sorted.length) return;
-
-    stopRef.current = false;
-    setPlaying(true);
-    setDisplayText('');
-    setPasteSegments([]);
-    setProgress(0);
-
-    // text accumulator — lives in a ref so the recursive closure always reads current value
-    const acc = { text: '' };
-
-    const step = (index) => {
-      if (stopRef.current || index >= sorted.length) {
-        if (!stopRef.current) {
-          setDisplayText(acc.text);
-          setProgress(100);
-          setPlaying(false);
-        }
-        return;
-      }
-
-      const event = sorted[index];
-      const prev = sorted[index - 1];
-      // Gap clamped to 10–300 ms so it always feels snappy and never hangs
-      const delay = index === 0 ? 0 : Math.min(Math.max(event.timestamp - prev.timestamp, 10), 300);
-
-      timerRef.current = setTimeout(() => {
-        if (stopRef.current) return;
-
-        if (event.eventType === 'paste') {
-          acc.text += (event.content || '');
-          setPasteSegments(ps => [...ps, { index: index, content: event.content || '', timestamp: event.timestamp }]);
-        } else {
-          const key = event.key;
-          if (!key) {
-            // skip empty/malformed
-          } else if (key === 'Backspace') {
-            acc.text = acc.text.slice(0, -1);
-          } else if (key === 'Enter') {
-            acc.text += '\n';
-          } else if (key === 'Tab') {
-            acc.text += '\t';
-          } else if (key.length === 1) {
-            // Regular printable character (already correct case from browser event)
-            acc.text += key;
-          }
-          // Ignore modifier-only keys, arrows, etc — they don't affect text output
-        }
-
-        setDisplayText(acc.text);
-        setProgress(Math.round(((index + 1) / sorted.length) * 100));
-        step(index + 1);
-      }, delay);
-    };
-
-    step(0);
-  };
-
-  useEffect(() => {
-    return () => {
-      stopRef.current = true;
-      if (timerRef.current) clearTimeout(timerRef.current);
-    };
-  }, []);
+const PasteDetector = ({ pastes }) => {
+  if (!pastes || pastes.length === 0) return null;
 
   return (
     <div className="mt-4 p-4 bg-black/40 rounded-2xl border border-white/5 overflow-hidden">
-      {/* Controls — wrap on small screens so buttons are always visible */}
-      <div className="flex flex-wrap items-center gap-2 mb-3">
-        <button
-          onClick={startReplay}
-          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all
-            ${playing ? 'bg-gsrp-orange text-white' : 'bg-gsrp-dark-surface text-gsrp-teal-light/40 hover:text-white border border-white/5'}
-          `}
-        >
-          {playing ? <RotateCcw size={12} /> : <Play size={12} />}
-          {playing ? 'Stop' : 'Replay Typing'}
-        </button>
-        {playing && (
-          <span className="text-[10px] font-bold text-gsrp-orange animate-pulse">Playing…</span>
-        )}
-        <span className="ml-auto text-[10px] font-mono text-white/20">{progress}%</span>
+      <div className="flex items-center gap-2 mb-3">
+        <AlertCircle size={14} className="text-amber-500/60" />
+        <span className="text-[10px] font-black uppercase tracking-widest text-amber-500/60">
+          Paste Events Detected ({pastes.length})
+        </span>
       </div>
-
-      {/* Text display */}
-      <div className="relative min-h-[60px] bg-gsrp-dark-surface/50 rounded-xl p-4 border border-white/5">
-        {playing || displayText ? (
-          <p className="text-sm font-medium text-gsrp-teal-light leading-relaxed whitespace-pre-wrap break-words">
-            {displayText}
-            {playing && (
-              <span className="inline-block w-1.5 h-4 bg-gsrp-orange ml-0.5 animate-pulse align-middle" />
-            )}
-          </p>
-        ) : (
-          <p className="text-sm text-gsrp-teal-light/20 italic">Click replay to see typing behaviour…</p>
-        )}
-      </div>
-
-      {/* Paste warnings */}
-      {pasteSegments.length > 0 && (
-        <div className="mt-3 space-y-1">
-          {pasteSegments.map((p, i) => (
-            <div key={i} className="flex items-start gap-2 text-[10px] text-amber-400/70 bg-amber-500/5 px-3 py-1.5 rounded-lg border border-amber-500/10">
-              <AlertTriangle size={10} className="mt-0.5 flex-shrink-0" />
-              <span>Paste #{i + 1}: {p.content.length} chars at {new Date(p.timestamp).toLocaleTimeString()}</span>
+      <div className="space-y-2">
+        {pastes.map((p, i) => (
+          <div key={i} className="flex items-start gap-2 text-[11px] text-amber-400/70 bg-amber-500/5 px-3 py-2 rounded-lg border border-amber-500/10">
+            <AlertTriangle size={12} className="mt-0.5 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="font-mono text-[9px] text-amber-500/40">#{i + 1}</span>
+                <span className="font-bold text-amber-400">{p.content.length} chars</span>
+                <span className="text-amber-500/40">at {new Date(p.timestamp).toLocaleTimeString()}</span>
+              </div>
+              {p.content.length > 0 && (
+                <p className="text-[10px] text-amber-300/50 line-clamp-2 font-mono break-all bg-amber-500/5 p-2 rounded border border-amber-500/5">
+                  {p.content.length > 100 ? p.content.slice(0, 100) + '...' : p.content}
+                </p>
+              )}
             </div>
-          ))}
-        </div>
-      )}
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -898,23 +631,7 @@ export default function ApplicationDetail() {
                       </p>
                     </div>
                     
-                    {(stats.count > 0 || fieldPastes.length > 0) && (
-                      <>
-                        <div className="mt-2 flex gap-4 text-[9px] font-bold text-gsrp-teal-light/20 uppercase tracking-widest">
-                          <span>{stats.count} Keystrokes</span>
-                          {stats.wpm > 0 && <span>{stats.wpm} WPM</span>}
-                          {fieldPastes.length > 0 && (
-                            <span className="text-amber-500/60">{fieldPastes.length} Paste{fieldPastes.length > 1 ? 's' : ''}</span>
-                          )}
-                        </div>
-                        <KeystrokePlayer 
-                          keystrokes={application.keystrokeData?.[field.id] || []} 
-                          pastes={fieldPastes}
-                          originalText={val} 
-                          os={application.osDetected || 'windows'}
-                        />
-                      </>
-                    )}
+                    <PasteDetector pastes={fieldPastes} />
 
                     <MonitoringTimeline 
                       application={application} 
@@ -1040,18 +757,6 @@ export default function ApplicationDetail() {
                   <span className="text-gsrp-teal-light/40">Mouse Leaves</span>
                   <span className={`font-bold ${totalSessionMouseLeaves > 0 ? 'text-pink-500' : 'text-green-500'}`}>
                     {totalSessionMouseLeaves}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center text-xs">
-                  <span className="text-gsrp-teal-light/40">Avg. Consistency</span>
-                  <span className={`font-bold ${
-                    Object.keys(application.pasteData || {}).length >= 10 ? 'text-red-500' :
-                    Object.keys(application.pasteData || {}).length > 5 ? 'text-gsrp-orange' :
-                    'text-green-500'
-                  }`}>
-                    {Object.keys(application.pasteData || {}).length >= 10 ? 'High chance of AI' :
-                     Object.keys(application.pasteData || {}).length > 5 ? 'Poor' :
-                     'Good'}
                   </span>
                 </div>
               </div>
