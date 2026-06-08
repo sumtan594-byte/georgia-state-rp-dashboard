@@ -1,5 +1,4 @@
-import clientPromise from '../../../lib/mongodb';
-import { ObjectId } from 'mongodb';
+import { getPool, rowToApplication } from '../../../lib/appdb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
 import { canReviewApplications } from "../../../lib/auth";
@@ -13,21 +12,22 @@ export default async function handler(req, res) {
   const { id } = req.query;
 
   try {
-    const client = await clientPromise;
-    const db = client.db("gsrp_staff");
+    const pool = getPool();
+    if (!pool) return res.status(500).json({ message: 'Database connection failed' });
 
     if (req.method === 'GET') {
-      const application = await db.collection("applications").findOne({ _id: new ObjectId(id) });
-      if (!application) {
+      const [rows] = await pool.execute('SELECT * FROM applications WHERE id = ?', [id]);
+      if (rows.length === 0) {
         return res.status(404).json({ message: 'Application not found' });
       }
+      const application = rowToApplication(rows[0]);
       console.log('[Application] GET:', id, '|', application.typeName, '| by', session.user.name);
       return res.status(200).json(application);
     }
 
     if (req.method === 'DELETE') {
-      const result = await db.collection("applications").deleteOne({ _id: new ObjectId(id) });
-      if (result.deletedCount === 0) {
+      const [result] = await pool.execute('DELETE FROM applications WHERE id = ?', [id]);
+      if (result.affectedRows === 0) {
         return res.status(404).json({ message: 'Application not found' });
       }
       console.log('[Application] DELETE:', id, 'by', session.user.name);

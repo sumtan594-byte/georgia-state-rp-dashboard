@@ -1,5 +1,4 @@
-import clientPromise from '../../../lib/mongodb';
-import { ObjectId } from 'mongodb';
+import { getPool } from '../../../lib/appdb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
 import { canReviewApplications } from "../../../lib/auth";
@@ -20,16 +19,17 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'No IDs provided' });
     }
 
-    const client = await clientPromise;
-    const db = client.db("gsrp_staff");
+    const pool = getPool();
+    if (!pool) return res.status(500).json({ message: 'Database connection failed' });
 
-    const objectIds = ids.map(id => new ObjectId(id));
-    const result = await db.collection("applications").deleteMany({
-      _id: { $in: objectIds }
-    });
+    const placeholders = ids.map(() => '?').join(',');
+    const [result] = await pool.execute(
+      `DELETE FROM applications WHERE id IN (${placeholders})`,
+      ids
+    );
 
-    console.log(`[Application Batch Delete] Deleted ${result.deletedCount} applications by ${session.user.name}`);
-    return res.status(200).json({ success: true, deletedCount: result.deletedCount });
+    console.log(`[Application Batch Delete] Deleted ${result.affectedRows} applications by ${session.user.name}`);
+    return res.status(200).json({ success: true, deletedCount: result.affectedRows });
   } catch (error) {
     console.error('[Application Batch Delete] Error:', error.message);
     return res.status(500).json({ message: 'Internal server error' });

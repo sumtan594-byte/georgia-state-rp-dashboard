@@ -1,5 +1,5 @@
+import { getPool, rowToApplication } from '../../../../lib/appdb';
 import clientPromise from '../../../../lib/mongodb';
-import { ObjectId } from 'mongodb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../../lib/auth-options";
 import { canReviewApplications } from "../../../../lib/auth";
@@ -20,23 +20,23 @@ export default async function handler(req, res) {
   }
 
   try {
-    const client = await clientPromise;
-    const db = client.db("gsrp_staff");
+    const pool = getPool();
+    if (!pool) return res.status(500).json({ message: 'Database connection failed' });
 
-    // 1. Get the application to find the userId or stored ip
-    const app = await db.collection("applications").findOne({ _id: new ObjectId(id) });
-    if (!app) {
+    const [rows] = await pool.execute('SELECT * FROM applications WHERE id = ?', [id]);
+    if (rows.length === 0) {
       return res.status(404).json({ message: 'Application not found' });
     }
+    const app = rowToApplication(rows[0]);
 
-    // If application already has a valid IANA timezone, return it
     if (app.timezone && app.timezone.includes('/')) {
       return res.status(200).json({ timezone: app.timezone });
     }
 
-    // 2. Try to find the IP from the application or user profile
     let ip = app.ip;
     if (!ip && app.userId) {
+      const client = await clientPromise;
+      const db = client.db("gsrp_staff");
       const profile = await db.collection("visitor_profiles").findOne({ _id: app.userId });
       if (profile && profile.ip) {
         ip = profile.ip;
@@ -49,7 +49,6 @@ export default async function handler(req, res) {
       return res.status(404).json({ message: 'No resolvable IP found for this applicant' });
     }
 
-    // 3. Resolve timezone from IP using ip-api.com
     const geoRes = await fetch(`http://ip-api.com/json/${ip}?fields=status,timezone`);
     const geoData = await geoRes.json();
 

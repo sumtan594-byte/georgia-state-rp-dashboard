@@ -1,4 +1,4 @@
-import clientPromise from '../../../lib/mongodb';
+import { getPool, rowToApplication } from '../../../lib/appdb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
 import { sendComponentsV2 } from "../../../lib/discord-v2";
@@ -69,17 +69,16 @@ export default async function handler(req, res) {
       return res.status(400).json({ message: 'No answers provided' });
     }
 
-    const client = await clientPromise;
-    const db = client.db("gsrp_staff");
+    const pool = getPool();
+    if (!pool) return res.status(500).json({ message: 'Database connection failed' });
 
-    const existingPending = await db.collection("applications").findOne({
-      userId: session.user.id,
-      type: application.type,
-      status: 'pending',
-    });
-    if (existingPending) {
-      console.log('[Application API] Replacing existing pending application:', existingPending._id, 'for', session.user.id);
-      await db.collection("applications").deleteOne({ _id: existingPending._id });
+    const [existing] = await pool.execute(
+      'SELECT id FROM applications WHERE user_id = ? AND type = ? AND status = ? LIMIT 1',
+      [session.user.id, application.type, 'pending']
+    );
+    if (existing.length > 0) {
+      console.log('[Application API] Replacing existing pending application:', existing[0].id, 'for', session.user.id);
+      await pool.execute('DELETE FROM applications WHERE id = ?', [existing[0].id]);
     }
 
     invalidateAppListCache();
@@ -103,27 +102,31 @@ export default async function handler(req, res) {
 
     const sanitizedMonitoring = sanitizeMonitoringData(application.monitoringData);
 
-    const result = await db.collection("applications").insertOne({
-      type: application.type,
-      typeName: application.typeName || "Staff Application",
-      username: application.username || session.user.name,
-      userId: session.user.id,
-      userImage: application.userImage || session.user.image,
-      answers: application.answers,
-      keystrokeData: application.keystrokeData || {},
-      pasteData: application.pasteData || {},
-      monitoringData: sanitizedMonitoring,
-      sessionTabOuts: application.sessionTabOuts || [],
-      sessionMouseLeaves: application.sessionMouseLeaves || [],
-      userAgent: application.userAgent || '',
-      osDetected: application.osDetected || '',
-      ip: ip,
-      timezone: timezone,
-      status: 'pending',
-      submittedAt: new Date(),
-    });
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-    console.log('[Application API] Saved to DB, ID:', result.insertedId);
+    await pool.execute(
+      `INSERT INTO applications (id, type, type_name, username, user_id, user_image, answers, keystroke_data, paste_data, monitoring_data, session_tab_outs, session_mouse_leaves, user_agent, os_detected, ip, timezone, status, submitted_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
+      [
+        id,
+        application.type,
+        application.typeName || "Staff Application",
+        application.username || session.user.name,
+        session.user.id,
+        application.userImage || session.user.image,
+        JSON.stringify(application.answers),
+        JSON.stringify(application.keystrokeData || {}),
+        JSON.stringify(application.pasteData || {}),
+        JSON.stringify(sanitizedMonitoring),
+        JSON.stringify(application.sessionTabOuts || []),
+        JSON.stringify(application.sessionMouseLeaves || []),
+        application.userAgent || '',
+        application.osDetected || '',
+        ip,
+        timezone,
+      ]
+    );
+
+    console.log('[Application API] Saved to DB, ID:', id);
 
     const notificationChannel = "1389202990555988071";
     const typeName = application.typeName || "Staff Application";
@@ -145,7 +148,7 @@ export default async function handler(req, res) {
                   type: 2,
                   style: 5,
                   label: "View Application",
-                  url: `https://join-gsrp.com/applications/${result.insertedId}`
+                  url: `https://join-gsrp.com/applications/${id}`
                 }
               ]
             }
@@ -155,7 +158,7 @@ export default async function handler(req, res) {
     });
 
     console.log('[Application API] Discord notification sent');
-    return res.status(200).json({ success: true, id: result.insertedId });
+    return res.status(200).json({ success: true, id });
   } catch (error) {
     console.error('[Application API] Submission error:', error.message);
     return res.status(500).json({ message: 'Failed to submit application. Please try again.' });

@@ -1,5 +1,5 @@
+import { getPool, rowToApplication } from '../../../lib/appdb';
 import clientPromise from '../../../lib/mongodb';
-import { ObjectId } from 'mongodb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
 import { canReviewApplications } from "../../../lib/auth";
@@ -18,23 +18,26 @@ export default async function handler(req, res) {
   console.log('[Application Decide] Staff', session.user.name, status, 'application', id);
 
   try {
+    const pool = getPool();
+    if (!pool) return res.status(500).json({ message: 'Database connection failed' });
+
+    const [rows] = await pool.execute('SELECT * FROM applications WHERE id = ?', [id]);
+    if (rows.length === 0) return res.status(404).json({ message: 'Application not found' });
+    const application = rowToApplication(rows[0]);
+
+    // Fetch type config for role automation (still in MongoDB)
     const client = await clientPromise;
     const db = client.db("gsrp_staff");
-    
-    const application = await db.collection("applications").findOne({ _id: new ObjectId(id) });
-    if (!application) return res.status(404).json({ message: 'Application not found' });
-
-    // Fetch type config for role automation
     const appType = await db.collection("application_types").findOne({ slug: application.type || 'staff' });
 
     // Update DB
-    await db.collection("applications").updateOne(
-      { _id: new ObjectId(id) },
-      { $set: { status, reason, reviewedBy: session.user.id, reviewedByName: session.user.name, reviewedAt: new Date() } }
+    await pool.execute(
+      'UPDATE applications SET status = ?, reason = ?, reviewed_by = ?, reviewed_by_name = ?, reviewed_at = NOW() WHERE id = ?',
+      [status, reason, session.user.id, session.user.name, id]
     );
 
     const isAccepted = status === 'accepted';
-    const color = isAccepted ? 0x22C55E : 0xEF4444; // Green vs Red
+    const color = isAccepted ? 0x22C55E : 0xEF4444;
     const outcomeText = isAccepted ? 'accepted' : 'denied';
     const informingText = isAccepted ? 'are pleased' : 'regret';
     const guildId = process.env.ALLOWED_GUILD_ID || "1251347648351506485";
@@ -58,8 +61,7 @@ export default async function handler(req, res) {
       if (isAccepted) {
         await helper('add', appType.roleAddAccepted);
         await helper('remove', appType.roleRemoveAccepted);
-        
-        // Legacy fallback for main staff app
+
         if (appType.slug === 'staff') {
           console.log(`[Role Sync] Applying legacy staff roles...`);
           await addMemberRole(guildId, application.userId, "1372480733234593812");
@@ -79,18 +81,18 @@ export default async function handler(req, res) {
       console.warn(`[Role Sync] No application type configuration found for slug: ${application.type}`);
     }
 
-    // 1. Send Outcome notification in 1372508850602905621
+    // 1. Send Outcome notification
     const outcomeChannel = "1372508850602905621";
     const appName = application.typeName || 'Staff Application';
-    
+
     const outcomeEmbed = {
       components: [
         {
-          type: 17, // CONTAINER
+          type: 17,
           accent_color: color,
           components: [
             {
-              type: 10, // TEXT_DISPLAY
+              type: 10,
               content: `# ${appName} Outcome\nDear <@${application.userId}>,\n\nWe ${informingText} to inform you that your **${appName}** has been **${outcomeText}** by <@${session.user.id}>.\n\n**Reason:**\n${reason}`
             }
           ]
@@ -121,7 +123,7 @@ export default async function handler(req, res) {
       console.error('Failed to DM user', e);
     }
 
-    // 3. Log in 1389202990555988071
+    // 3. Log to channel
     const logChannel = "1389202990555988071";
     await sendComponentsV2(logChannel, {
       components: [
@@ -158,4 +160,3 @@ export default async function handler(req, res) {
     return res.status(500).json({ message: 'Internal server error' });
   }
 }
-

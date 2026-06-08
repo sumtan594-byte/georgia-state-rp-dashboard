@@ -1,4 +1,4 @@
-import clientPromise from '../../../lib/mongodb';
+import { getPool } from '../../../lib/appdb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
 import { canReviewApplications } from "../../../lib/auth";
@@ -14,21 +14,17 @@ export default async function handler(req, res) {
   }
 
   try {
-    const client = await clientPromise;
-    const db = client.db("gsrp_staff");
+    const pool = getPool();
+    if (!pool) return res.status(500).json({ message: 'Database connection failed' });
 
-    const oneWeekAgo = new Date();
-    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+    const [result] = await pool.execute(
+      `DELETE FROM applications WHERE submitted_at < DATE_SUB(NOW(), INTERVAL 7 DAY) AND status != 'pending'`
+    );
 
-    const result = await db.collection("applications").deleteMany({
-      submittedAt: { $lt: oneWeekAgo },
-      status: { $ne: 'pending' },
-    });
-
-    console.log(`[Application Cleanup] Deleted ${result.deletedCount} old non-pending applications`);
-    return res.status(200).json({ 
-      success: true, 
-      deletedCount: result.deletedCount 
+    console.log(`[Application Cleanup] Deleted ${result.affectedRows} old non-pending applications`);
+    return res.status(200).json({
+      success: true,
+      deletedCount: result.affectedRows
     });
   } catch (error) {
     console.error('[Application Cleanup] Error:', error.message);
