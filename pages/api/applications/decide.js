@@ -100,8 +100,23 @@ export default async function handler(req, res) {
     await sendComponentsV2(outcomeChannel, outcomeEmbed);
 
     // 2. DM the user
+    const dmContent = `# ${appName} Outcome\nDear <@${application.userId}>,\n\nWe ${informingText} to inform you that your **${appName}** has been **${outcomeText}** by <@${session.user.id}>.\n\n**Reason:**\n${reason}${isAccepted ? `\n\n> Please read <https://discord.com/channels/1366688107788894280/1391349500941041807> before asking any questions. If you ask very obvious questions your rank will be taken away.` : ''}`;
+    const dmEmbed = {
+      components: [
+        {
+          type: 17,
+          accent_color: color,
+          components: [
+            {
+              type: 10,
+              content: dmContent
+            }
+          ]
+        }
+      ]
+    };
     try {
-      await sendDM(application.userId, outcomeEmbed);
+      await sendDM(application.userId, dmEmbed);
     } catch (e) {
       console.error('Failed to DM user', e);
     }
