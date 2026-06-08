@@ -17,12 +17,6 @@ function getPool() {
   return pool;
 }
 
-function statusEmoji(status) {
-  if (status === 'accepted') return '✅';
-  if (status === 'denied') return '❌';
-  return '⏳';
-}
-
 function formatDate(d) {
   if (!d) return 'N/A';
   const date = new Date(d);
@@ -41,11 +35,7 @@ function accentColor(status) {
 }
 
 function container(color, ...children) {
-  return {
-    type: 17,
-    accent_color: color,
-    components: children,
-  };
+  return { type: 17, accent_color: color, components: children };
 }
 
 function textDisplay(content) {
@@ -65,7 +55,7 @@ function viewButton(app) {
 
 async function fetchApplicationById(id) {
   const p = getPool();
-  const [rows] = await p.execute('SELECT * FROM applications WHERE id = ?', [id]);
+  const [rows] = await p.query('SELECT * FROM applications WHERE id = ?', [id]);
   if (rows.length === 0) return null;
   const r = rows[0];
   return {
@@ -81,7 +71,7 @@ async function fetchApplicationById(id) {
 
 async function updateApplicationStatus(id, status, reason, reviewerId, reviewerName) {
   const p = getPool();
-  await p.execute(
+  await p.query(
     'UPDATE applications SET status = ?, reason = ?, reviewed_by = ?, reviewed_by_name = ?, reviewed_at = NOW() WHERE id = ?',
     [status, reason || null, reviewerId, reviewerName, id]
   );
@@ -89,7 +79,7 @@ async function updateApplicationStatus(id, status, reason, reviewerId, reviewerN
 
 async function deleteApplication(id) {
   const p = getPool();
-  await p.execute('DELETE FROM applications WHERE id = ?', [id]);
+  await p.query('DELETE FROM applications WHERE id = ?', [id]);
 }
 
 function buildListReply(applications, targetUserId) {
@@ -102,14 +92,10 @@ function buildListReply(applications, targetUserId) {
     text += `\n### ${name}`;
     text += `\n-# Submitted: ${formatDate(a.submitted_at)}`;
     text += `\n-# Status: ${cap(a.status)}`;
-    if (a.reason) {
-      text += `\n-# Reason: ${a.reason}`;
-    }
+    if (a.reason) text += `\n-# Reason: ${a.reason}`;
   }
 
-  if (applications.length > 5) {
-    text += `\n\n*+${applications.length - 5} more*`;
-  }
+  if (applications.length > 5) text += `\n\n*+${applications.length - 5} more*`;
 
   const btns = shown.map(a => viewButton(a));
 
@@ -121,9 +107,6 @@ function buildListReply(applications, targetUserId) {
 
 function buildDetailReply(app) {
   const color = accentColor(app.status);
-  const icon = statusEmoji(app.status);
-  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
-
   const name = app.type_name || app.type;
   let text = `## <@${app.user_id}>'s ${name}\n`;
 
@@ -137,82 +120,54 @@ function buildDetailReply(app) {
   const children = [textDisplay(text)];
 
   if (app.status === 'pending') {
-    const acceptBtn = new ButtonBuilder()
-      .setCustomId(`app_accept_${app.id}`)
-      .setLabel('Accept')
-      .setStyle(ButtonStyle.Success);
-
-    const denyBtn = new ButtonBuilder()
-      .setCustomId(`app_deny_${app.id}`)
-      .setLabel('Deny')
-      .setStyle(ButtonStyle.Danger);
-
-    children.push(actionRow(acceptBtn, denyBtn));
+    children.push(actionRow(
+      new ButtonBuilder().setCustomId(`app_accept_${app.id}`).setLabel('Accept').setStyle(ButtonStyle.Success),
+      new ButtonBuilder().setCustomId(`app_deny_${app.id}`).setLabel('Deny').setStyle(ButtonStyle.Danger),
+    ));
   }
 
-  const deleteBtn = new ButtonBuilder()
-    .setCustomId(`app_delete_${app.id}`)
-    .setLabel('Delete')
-    .setStyle(ButtonStyle.Danger);
+  children.push(actionRow(
+    new ButtonBuilder().setCustomId(`app_back_${app.user_id}`).setLabel('Back').setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`app_delete_${app.id}`).setLabel('Delete').setStyle(ButtonStyle.Danger),
+  ));
 
-  const backBtn = new ButtonBuilder()
-    .setCustomId(`app_back_${app.user_id}`)
-    .setLabel('Back')
-    .setStyle(ButtonStyle.Secondary);
-
-  children.push(actionRow(backBtn, deleteBtn));
-
-  return {
-    components: [container(color, ...children)],
-    flags: C2,
-  };
+  return { components: [container(color, ...children)], flags: C2 };
 }
 
 module.exports = {
   data: new SlashCommandBuilder()
-    .setName('application')
-    .setDescription('Manage applications')
+    .setName('applications')
+    .setDescription('Manage user applications')
     .addSubcommand(sub => sub
       .setName('fetch')
-      .setDescription('Fetch all applications for a user')
-      .addStringOption(opt => opt
-        .setName('userid')
-        .setDescription('The Discord user ID')
-        .setRequired(true)
-      )
-      .addBooleanOption(opt => opt
-        .setName('hidden')
-        .setDescription('Show only to you (ephemeral)')
-        .setRequired(false)
-      )
+      .setDescription("Fetch a user's applications")
+      .addUserOption(opt => opt.setName('user').setDescription('The user').setRequired(true))
+      .addBooleanOption(opt => opt.setName('hidden').setDescription('Show only to you').setRequired(false))
     ),
 
   async execute(interaction) {
     const subcommand = interaction.options.getSubcommand();
 
     if (subcommand === 'fetch') {
-      const targetUserId = interaction.options.getString('userid', true);
+      const targetUser = interaction.options.getUser('user', true);
       const hidden = interaction.options.getBoolean('hidden') ?? true;
 
       await interaction.deferReply({ ephemeral: hidden });
 
       try {
-        const pool = getPool();
-        const [rows] = await pool.execute(
+        const p = getPool();
+        const [rows] = await p.query(
           'SELECT id, type, type_name, user_id, username, status, submitted_at, reviewed_at, reviewed_by_name, reason FROM applications WHERE user_id = ? ORDER BY submitted_at DESC',
-          [targetUserId]
+          [targetUser.id]
         );
 
         if (rows.length === 0) {
-          return interaction.editReply({
-            content: `No applications found for <@${targetUserId}> (\`${targetUserId}\`).`,
-            flags: C2,
-          });
+          return interaction.editReply({ content: `No applications found for <@${targetUser.id}>.`, flags: C2 });
         }
 
-        return interaction.editReply(buildListReply(rows, targetUserId));
+        return interaction.editReply(buildListReply(rows, targetUser.id));
       } catch (err) {
-        console.error('[Application Fetch]', err);
+        console.error('[Applications Fetch]', err);
         return interaction.editReply({ content: 'An error occurred while fetching applications.', flags: C2 });
       }
     }
@@ -222,86 +177,58 @@ module.exports = {
     const customId = interaction.customId;
 
     try {
-      // Back to list
       if (customId.startsWith('app_back_')) {
         await interaction.deferUpdate();
         const userId = customId.replace('app_back_', '');
-        const pool = getPool();
-        const [rows] = await pool.execute(
+        const p = getPool();
+        const [rows] = await p.query(
           'SELECT id, type, type_name, user_id, username, status, submitted_at, reviewed_at, reviewed_by_name, reason FROM applications WHERE user_id = ? ORDER BY submitted_at DESC',
           [userId]
         );
-
         if (rows.length === 0) {
-          return interaction.editReply({
-            content: `No applications found for <@${userId}> (\`${userId}\`).`,
-            components: [],
-            flags: C2,
-          });
+          return interaction.editReply({ content: `No applications found for <@${userId}>.`, components: [], flags: C2 });
         }
-
         return interaction.editReply(buildListReply(rows, userId));
       }
 
-      // View detail
       if (customId.startsWith('app_detail_')) {
         await interaction.deferUpdate();
         const appId = customId.replace('app_detail_', '');
         const app = await fetchApplicationById(appId);
         if (!app) return interaction.editReply({ content: 'Application not found.', components: [], flags: C2 });
-
         return interaction.editReply(buildDetailReply(app));
       }
 
-      // Show accept modal
       if (customId.startsWith('app_accept_')) {
         const appId = customId.replace('app_accept_', '');
         const app = await fetchApplicationById(appId);
         if (!app) return interaction.reply({ content: 'Application not found.', flags: C2, ephemeral: true });
-        if (app.status !== 'pending') return interaction.reply({ content: 'This application has already been reviewed.', flags: C2, ephemeral: true });
+        if (app.status !== 'pending') return interaction.reply({ content: 'Already reviewed.', flags: C2, ephemeral: true });
 
-        const modal = new ModalBuilder()
+        return interaction.showModal(new ModalBuilder()
           .setCustomId(`app_accept_modal_${appId}`)
           .setTitle('Accept Application')
-          .addComponents(
-            new ActionRowBuilder().addComponents(
-              new TextInputBuilder()
-                .setCustomId('reason')
-                .setLabel('Reason for acceptance')
-                .setStyle(TextInputStyle.Paragraph)
-                .setMaxLength(1000)
-                .setRequired(true)
-            )
-          );
-
-        return interaction.showModal(modal);
+          .addComponents(new ActionRowBuilder().addComponents(
+            new TextInputBuilder().setCustomId('reason').setLabel('Reason').setStyle(TextInputStyle.Paragraph).setMaxLength(1000).setRequired(true)
+          ))
+        );
       }
 
-      // Show deny modal
       if (customId.startsWith('app_deny_')) {
         const appId = customId.replace('app_deny_', '');
         const app = await fetchApplicationById(appId);
         if (!app) return interaction.reply({ content: 'Application not found.', flags: C2, ephemeral: true });
-        if (app.status !== 'pending') return interaction.reply({ content: 'This application has already been reviewed.', flags: C2, ephemeral: true });
+        if (app.status !== 'pending') return interaction.reply({ content: 'Already reviewed.', flags: C2, ephemeral: true });
 
-        const modal = new ModalBuilder()
+        return interaction.showModal(new ModalBuilder()
           .setCustomId(`app_deny_modal_${appId}`)
           .setTitle('Deny Application')
-          .addComponents(
-            new ActionRowBuilder().addComponents(
-              new TextInputBuilder()
-                .setCustomId('reason')
-                .setLabel('Reason for denial')
-                .setStyle(TextInputStyle.Paragraph)
-                .setMaxLength(1000)
-                .setRequired(true)
-            )
-          );
-
-        return interaction.showModal(modal);
+          .addComponents(new ActionRowBuilder().addComponents(
+            new TextInputBuilder().setCustomId('reason').setLabel('Reason').setStyle(TextInputStyle.Paragraph).setMaxLength(1000).setRequired(true)
+          ))
+        );
       }
 
-      // Delete
       if (customId.startsWith('app_delete_')) {
         await interaction.deferUpdate();
         const appId = customId.replace('app_delete_', '');
@@ -310,11 +237,10 @@ module.exports = {
       }
 
     } catch (err) {
-      console.error('[Application Button]', err);
-      if (interaction.deferred) {
-        return interaction.editReply({ content: 'An error occurred.', flags: C2 });
-      }
-      return interaction.reply({ content: 'An error occurred.', flags: C2, ephemeral: true });
+      console.error('[Applications Button]', err);
+      return interaction.deferred
+        ? interaction.editReply({ content: 'An error occurred.', flags: C2 })
+        : interaction.reply({ content: 'An error occurred.', flags: C2, ephemeral: true });
     }
   },
 
@@ -322,46 +248,26 @@ module.exports = {
     const customId = interaction.customId;
 
     try {
-      if (customId.startsWith('app_accept_modal_')) {
-        const appId = customId.replace('app_accept_modal_', '');
+      const isAccept = customId.startsWith('app_accept_modal_');
+      const isDeny = customId.startsWith('app_deny_modal_');
+
+      if (isAccept || isDeny) {
+        const appId = customId.replace(isAccept ? 'app_accept_modal_' : 'app_deny_modal_', '');
         const reason = interaction.fields.getTextInputValue('reason');
+        const status = isAccept ? 'accepted' : 'denied';
 
         const app = await fetchApplicationById(appId);
         if (!app) return interaction.reply({ content: 'Application not found.', flags: C2, ephemeral: true });
-        if (app.status !== 'pending') return interaction.reply({ content: 'This application has already been reviewed.', flags: C2, ephemeral: true });
+        if (app.status !== 'pending') return interaction.reply({ content: 'Already reviewed.', flags: C2, ephemeral: true });
 
-        await updateApplicationStatus(appId, 'accepted', reason, interaction.user.id, interaction.user.username);
-
-        const updated = await fetchApplicationById(appId);
-        return interaction.update({
-          flags: C2,
-          embeds: [],
-          content: null,
-          ...buildDetailReply(updated),
-        });
-      }
-
-      if (customId.startsWith('app_deny_modal_')) {
-        const appId = customId.replace('app_deny_modal_', '');
-        const reason = interaction.fields.getTextInputValue('reason');
-
-        const app = await fetchApplicationById(appId);
-        if (!app) return interaction.reply({ content: 'Application not found.', flags: C2, ephemeral: true });
-        if (app.status !== 'pending') return interaction.reply({ content: 'This application has already been reviewed.', flags: C2, ephemeral: true });
-
-        await updateApplicationStatus(appId, 'denied', reason, interaction.user.id, interaction.user.username);
+        await updateApplicationStatus(appId, status, reason, interaction.user.id, interaction.user.username);
 
         const updated = await fetchApplicationById(appId);
-        return interaction.update({
-          flags: C2,
-          embeds: [],
-          content: null,
-          ...buildDetailReply(updated),
-        });
+        return interaction.update({ flags: C2, embeds: [], content: null, ...buildDetailReply(updated) });
       }
 
     } catch (err) {
-      console.error('[Application Modal]', err);
+      console.error('[Applications Modal]', err);
       return interaction.reply({ content: 'An error occurred.', flags: C2, ephemeral: true });
     }
   },
