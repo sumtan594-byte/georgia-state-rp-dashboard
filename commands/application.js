@@ -53,6 +53,10 @@ function viewButton(app) {
     .setStyle(ButtonStyle.Secondary);
 }
 
+function textReply(text, color = 0x5865F2) {
+  return { components: [container(color, textDisplay(text))], flags: C2 };
+}
+
 async function fetchApplicationById(id) {
   const p = getPool();
   const [rows] = await p.query('SELECT * FROM applications WHERE id = ?', [id]);
@@ -162,13 +166,13 @@ module.exports = {
         );
 
         if (rows.length === 0) {
-          return interaction.editReply({ content: `No applications found for <@${targetUser.id}>.`, flags: C2 });
+          return interaction.editReply(textReply(`No applications found for <@${targetUser.id}>.`));
         }
 
         return interaction.editReply(buildListReply(rows, targetUser.id));
       } catch (err) {
         console.error('[Applications Fetch]', err);
-        return interaction.editReply({ content: 'An error occurred while fetching applications.', flags: C2 });
+        return interaction.editReply(textReply('An error occurred while fetching applications.', 0xEF4444));
       }
     }
   },
@@ -186,7 +190,7 @@ module.exports = {
           [userId]
         );
         if (rows.length === 0) {
-          return interaction.editReply({ content: `No applications found for <@${userId}>.`, components: [], flags: C2 });
+          return interaction.editReply({ ...textReply(`No applications found for <@${userId}>.`), components: [] });
         }
         return interaction.editReply(buildListReply(rows, userId));
       }
@@ -195,15 +199,15 @@ module.exports = {
         await interaction.deferUpdate();
         const appId = customId.replace('app_detail_', '');
         const app = await fetchApplicationById(appId);
-        if (!app) return interaction.editReply({ content: 'Application not found.', components: [], flags: C2 });
+        if (!app) return interaction.editReply(textReply('Application not found.', 0xEF4444));
         return interaction.editReply(buildDetailReply(app));
       }
 
       if (customId.startsWith('app_accept_')) {
         const appId = customId.replace('app_accept_', '');
         const app = await fetchApplicationById(appId);
-        if (!app) return interaction.reply({ content: 'Application not found.', flags: C2, ephemeral: true });
-        if (app.status !== 'pending') return interaction.reply({ content: 'Already reviewed.', flags: C2, ephemeral: true });
+        if (!app) return interaction.reply({ ...textReply('Application not found.', 0xEF4444), ephemeral: true });
+        if (app.status !== 'pending') return interaction.reply({ ...textReply('Already reviewed.', 0xEF4444), ephemeral: true });
 
         return interaction.showModal(new ModalBuilder()
           .setCustomId(`app_accept_modal_${appId}`)
@@ -217,8 +221,8 @@ module.exports = {
       if (customId.startsWith('app_deny_')) {
         const appId = customId.replace('app_deny_', '');
         const app = await fetchApplicationById(appId);
-        if (!app) return interaction.reply({ content: 'Application not found.', flags: C2, ephemeral: true });
-        if (app.status !== 'pending') return interaction.reply({ content: 'Already reviewed.', flags: C2, ephemeral: true });
+        if (!app) return interaction.reply({ ...textReply('Application not found.', 0xEF4444), ephemeral: true });
+        if (app.status !== 'pending') return interaction.reply({ ...textReply('Already reviewed.', 0xEF4444), ephemeral: true });
 
         return interaction.showModal(new ModalBuilder()
           .setCustomId(`app_deny_modal_${appId}`)
@@ -233,14 +237,14 @@ module.exports = {
         await interaction.deferUpdate();
         const appId = customId.replace('app_delete_', '');
         await deleteApplication(appId);
-        return interaction.editReply({ content: 'Application deleted.', components: [], flags: C2 });
+        return interaction.editReply(textReply('Application deleted.', 0x22C55E));
       }
 
     } catch (err) {
       console.error('[Applications Button]', err);
       return interaction.deferred
-        ? interaction.editReply({ content: 'An error occurred.', flags: C2 })
-        : interaction.reply({ content: 'An error occurred.', flags: C2, ephemeral: true });
+        ? interaction.editReply(textReply('An error occurred.', 0xEF4444))
+        : interaction.reply({ ...textReply('An error occurred.', 0xEF4444), ephemeral: true });
     }
   },
 
@@ -257,8 +261,8 @@ module.exports = {
         const status = isAccept ? 'accepted' : 'denied';
 
         const app = await fetchApplicationById(appId);
-        if (!app) return interaction.reply({ content: 'Application not found.', flags: C2, ephemeral: true });
-        if (app.status !== 'pending') return interaction.reply({ content: 'Already reviewed.', flags: C2, ephemeral: true });
+        if (!app) return interaction.reply({ ...textReply('Application not found.', 0xEF4444), ephemeral: true });
+        if (app.status !== 'pending') return interaction.reply({ ...textReply('Already reviewed.', 0xEF4444), ephemeral: true });
 
         await updateApplicationStatus(appId, status, reason, interaction.user.id, interaction.user.username);
 
@@ -268,7 +272,7 @@ module.exports = {
 
     } catch (err) {
       console.error('[Applications Modal]', err);
-      return interaction.reply({ content: 'An error occurred.', flags: C2, ephemeral: true });
+      return interaction.reply({ ...textReply('An error occurred.', 0xEF4444), ephemeral: true });
     }
   },
 };
