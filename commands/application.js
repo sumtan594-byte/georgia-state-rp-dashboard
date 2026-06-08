@@ -1,6 +1,7 @@
-const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ComponentType } = require('discord.js');
+const { SlashCommandBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle, ModalBuilder, TextInputBuilder, TextInputStyle } = require('discord.js');
 const mysql = require('mysql2/promise');
 
+const C2 = 1 << 15;
 const DB_CONFIG = {
   host: process.env.DB_HOST || 'db0.fps.ms',
   user: process.env.DB_USER,
@@ -33,6 +34,35 @@ function truncate(str, len) {
   return str.length > len ? str.slice(0, len) + '...' : str;
 }
 
+function accentColor(status) {
+  if (status === 'accepted') return 0x22C55E;
+  if (status === 'denied') return 0xEF4444;
+  return 0xF97316;
+}
+
+function container(color, ...children) {
+  return {
+    type: 17,
+    accent_color: color,
+    components: children,
+  };
+}
+
+function textDisplay(content) {
+  return { type: 10, content };
+}
+
+function actionRow(...buttons) {
+  return new ActionRowBuilder().addComponents(...buttons).toJSON();
+}
+
+function viewButton(app) {
+  return new ButtonBuilder()
+    .setCustomId(`app_detail_${app.id}`)
+    .setLabel('View Application')
+    .setStyle(ButtonStyle.Secondary);
+}
+
 async function fetchApplicationById(id) {
   const p = getPool();
   const [rows] = await p.execute('SELECT * FROM applications WHERE id = ?', [id]);
@@ -62,124 +92,50 @@ async function deleteApplication(id) {
   await p.execute('DELETE FROM applications WHERE id = ?', [id]);
 }
 
-function buildListEmbed(applications, targetUserId) {
-  const embed = new EmbedBuilder()
-    .setColor(0x5865F2)
-    .setTitle(`Applications for <@${targetUserId}>`)
-    .setDescription(`Found **${applications.length}** application(s)`);
+function buildListReply(applications, targetUserId) {
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
+  const shown = applications.slice(0, 5);
+  let text = `## <@${targetUserId}>'s Applications\n`;
 
-  const fields = applications.slice(0, 5).map((a, i) => {
-    const statusIcon = statusEmoji(a.status);
-    return {
-      name: `${statusIcon} ${a.type_name || a.type} — ${a.status.charAt(0).toUpperCase() + a.status.slice(1)}`,
-      value: [
-        `> **Submitted:** ${formatDate(a.submitted_at)}`,
-        `> **Reviewed:** ${a.reviewed_at ? formatDate(a.reviewed_at) : 'Not yet'}`,
-        `> **Reviewer:** ${a.reviewed_by_name || 'N/A'}`,
-      ].join('\n'),
-    };
-  });
+  for (const a of shown) {
+    const name = a.type_name || a.type;
+    text += `\n### ${name}`;
+    text += `\n-# Submitted: ${formatDate(a.submitted_at)}`;
+    text += `\n-# Status: ${cap(a.status)}`;
+    if (a.reason) {
+      text += `\n-# Reason: ${a.reason}`;
+    }
+  }
 
   if (applications.length > 5) {
-    fields.push({
-      name: `And ${applications.length - 5} more...`,
-      value: 'Use the buttons below to view details.',
-    });
+    text += `\n\n*+${applications.length - 5} more*`;
   }
 
-  embed.addFields(fields);
-  return embed;
+  const btns = shown.map(a => viewButton(a));
+
+  return {
+    components: [container(0x5865F2, textDisplay(text), actionRow(...btns))],
+    flags: C2,
+  };
 }
 
-function buildListComponents(applications) {
-  const rows = [];
-  let currentRow = new ActionRowBuilder();
-  let countInRow = 0;
+function buildDetailReply(app) {
+  const color = accentColor(app.status);
+  const icon = statusEmoji(app.status);
+  const cap = s => s.charAt(0).toUpperCase() + s.slice(1);
 
-  for (const app of applications.slice(0, 5)) {
-    const btn = new ButtonBuilder()
-      .setCustomId(`app_detail_${app.id}`)
-      .setLabel(`${app.type_name || app.type}`)
-      .setStyle(ButtonStyle.Secondary);
+  const name = app.type_name || app.type;
+  let text = `## <@${app.user_id}>'s ${name}\n`;
 
-    if (countInRow === 5) {
-      rows.push(currentRow);
-      currentRow = new ActionRowBuilder();
-      countInRow = 0;
-    }
-    currentRow.addComponents(btn);
-    countInRow++;
-  }
-
-  if (countInRow > 0) rows.push(currentRow);
-  return rows;
-}
-
-function buildDetailEmbed(app) {
-  const statusIcon = statusEmoji(app.status);
-  const embed = new EmbedBuilder()
-    .setColor(app.status === 'accepted' ? 0x22C55E : app.status === 'denied' ? 0xEF4444 : 0xF97316)
-    .setTitle(`${app.type_name || app.type} — ${app.status.charAt(0).toUpperCase() + app.status.slice(1)}`)
-    .setDescription(`Submitted by <@${app.user_id}> | **${app.user_id}**`)
-    .addFields(
-      { name: 'Status', value: `${statusIcon} ${app.status.charAt(0).toUpperCase() + app.status.slice(1)}`, inline: true },
-      { name: 'Submitted', value: formatDate(app.submitted_at), inline: true },
-    );
-
-  if (app.reviewed_at) {
-    embed.addFields(
-      { name: 'Reviewed', value: formatDate(app.reviewed_at), inline: true },
-      { name: 'Reviewer', value: app.reviewed_by_name ? `<@${app.reviewed_by}>` : 'N/A', inline: true },
-    );
-  }
-
-  if (app.reason) {
-    embed.addFields({ name: 'Reason', value: app.reason });
-  }
-
-  // Application answers
   if (app.answers && typeof app.answers === 'object') {
-    const answerEntries = Object.entries(app.answers);
-    const MAX_ANSWER_FIELDS = 8;
-    const sliced = answerEntries.slice(0, MAX_ANSWER_FIELDS);
-    for (const [fieldId, value] of sliced) {
-      const label = fieldId.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
-      const display = typeof value === 'string' ? truncate(value, 500) : JSON.stringify(value);
-      embed.addFields({ name: label, value: display || '*empty*' });
-    }
-    if (answerEntries.length > MAX_ANSWER_FIELDS) {
-      embed.addFields({ name: `+${answerEntries.length - MAX_ANSWER_FIELDS} more fields`, value: 'Hidden for brevity' });
+    for (const [q, a] of Object.entries(app.answers)) {
+      const display = typeof a === 'string' ? truncate(a, 1000) : JSON.stringify(a);
+      text += `\n**${q}**\n> ${display || '*empty*'}`;
     }
   }
 
-  // Monitoring summary
-  const mon = app.monitoring_data;
-  if (mon && typeof mon === 'object') {
-    let monSummary = '';
-    const totalTabOuts = Object.values(mon).reduce((s, f) => s + (f.tabOuts?.length || 0), 0);
-    const totalRightClicks = Object.values(mon).reduce((s, f) => s + (f.rightClicks?.length || 0), 0);
-    const totalWpmSpikes = Object.values(mon).reduce((s, f) => s + (f.wpmSpikes?.length || 0), 0);
-    monSummary += `Tab-outs: ${totalTabOuts} | Right-clicks: ${totalRightClicks} | WPM spikes: ${totalWpmSpikes}`;
-    embed.addFields({ name: 'Monitoring', value: monSummary || 'None' });
-  }
+  const children = [textDisplay(text)];
 
-  // Integrity info
-  if (app.os_detected || app.timezone || app.ip) {
-    embed.addFields({ name: 'Device & Location', value: [
-      app.os_detected ? `OS: ${app.os_detected}` : null,
-      app.timezone ? `TZ: ${app.timezone}` : null,
-      app.ip ? `IP: ${app.ip}` : null,
-    ].filter(Boolean).join(' | '), inline: false });
-  }
-
-  embed.setFooter({ text: `ID: ${app.id}` });
-  return embed;
-}
-
-function buildDetailComponents(app, interactionUserId) {
-  const rows = [];
-
-  // Top row — accept/deny only if pending
   if (app.status === 'pending') {
     const acceptBtn = new ButtonBuilder()
       .setCustomId(`app_accept_${app.id}`)
@@ -191,33 +147,25 @@ function buildDetailComponents(app, interactionUserId) {
       .setLabel('Deny')
       .setStyle(ButtonStyle.Danger);
 
-    rows.push(new ActionRowBuilder().addComponents(acceptBtn, denyBtn));
-  } else {
-    const statusLabel = app.status === 'accepted' ? 'Accepted' : 'Denied';
-    const reviewerMention = app.reviewed_by ? `<@${app.reviewed_by}>` : 'Unknown';
-    const statusBtn = new ButtonBuilder()
-      .setCustomId('app_status_info')
-      .setLabel(`${statusLabel} by ${app.reviewed_by_name || 'Unknown'}`)
-      .setStyle(app.status === 'accepted' ? ButtonStyle.Success : ButtonStyle.Danger)
-      .setDisabled(true);
-
-    rows.push(new ActionRowBuilder().addComponents(statusBtn));
+    children.push(actionRow(acceptBtn, denyBtn));
   }
 
-  // Bottom row — delete
   const deleteBtn = new ButtonBuilder()
     .setCustomId(`app_delete_${app.id}`)
-    .setLabel('Delete Application')
+    .setLabel('Delete')
     .setStyle(ButtonStyle.Danger);
 
   const backBtn = new ButtonBuilder()
     .setCustomId(`app_back_${app.user_id}`)
-    .setLabel('Back to List')
+    .setLabel('Back')
     .setStyle(ButtonStyle.Secondary);
 
-  rows.push(new ActionRowBuilder().addComponents(backBtn, deleteBtn));
+  children.push(actionRow(backBtn, deleteBtn));
 
-  return rows;
+  return {
+    components: [container(color, ...children)],
+    flags: C2,
+  };
 }
 
 module.exports = {
@@ -251,111 +199,170 @@ module.exports = {
       try {
         const pool = getPool();
         const [rows] = await pool.execute(
-          'SELECT id, type, type_name, user_id, username, status, submitted_at, reviewed_at, reviewed_by_name FROM applications WHERE user_id = ? ORDER BY submitted_at DESC',
+          'SELECT id, type, type_name, user_id, username, status, submitted_at, reviewed_at, reviewed_by_name, reason FROM applications WHERE user_id = ? ORDER BY submitted_at DESC',
           [targetUserId]
         );
 
         if (rows.length === 0) {
           return interaction.editReply({
             content: `No applications found for <@${targetUserId}> (\`${targetUserId}\`).`,
+            flags: C2,
           });
         }
 
-        const embed = buildListEmbed(rows, targetUserId);
-        const components = buildListComponents(rows);
-
-        return interaction.editReply({ embeds: [embed], components });
+        return interaction.editReply(buildListReply(rows, targetUserId));
       } catch (err) {
         console.error('[Application Fetch]', err);
-        return interaction.editReply({ content: 'An error occurred while fetching applications.' });
+        return interaction.editReply({ content: 'An error occurred while fetching applications.', flags: C2 });
       }
     }
   },
 
   async handleButton(interaction) {
     const customId = interaction.customId;
-    await interaction.deferUpdate();
 
     try {
       // Back to list
       if (customId.startsWith('app_back_')) {
+        await interaction.deferUpdate();
         const userId = customId.replace('app_back_', '');
         const pool = getPool();
         const [rows] = await pool.execute(
-          'SELECT id, type, type_name, user_id, username, status, submitted_at, reviewed_at, reviewed_by_name FROM applications WHERE user_id = ? ORDER BY submitted_at DESC',
+          'SELECT id, type, type_name, user_id, username, status, submitted_at, reviewed_at, reviewed_by_name, reason FROM applications WHERE user_id = ? ORDER BY submitted_at DESC',
           [userId]
         );
 
         if (rows.length === 0) {
           return interaction.editReply({
             content: `No applications found for <@${userId}> (\`${userId}\`).`,
-            embeds: [],
             components: [],
+            flags: C2,
           });
         }
 
-        return interaction.editReply({
-          embeds: [buildListEmbed(rows, userId)],
-          components: buildListComponents(rows),
-        });
+        return interaction.editReply(buildListReply(rows, userId));
       }
 
       // View detail
       if (customId.startsWith('app_detail_')) {
+        await interaction.deferUpdate();
         const appId = customId.replace('app_detail_', '');
         const app = await fetchApplicationById(appId);
-        if (!app) return interaction.editReply({ content: 'Application not found.', embeds: [], components: [] });
+        if (!app) return interaction.editReply({ content: 'Application not found.', components: [], flags: C2 });
 
-        const embed = buildDetailEmbed(app);
-        const components = buildDetailComponents(app, interaction.user.id);
-
-        return interaction.editReply({ embeds: [embed], components });
+        return interaction.editReply(buildDetailReply(app));
       }
 
-      // Accept
+      // Show accept modal
       if (customId.startsWith('app_accept_')) {
         const appId = customId.replace('app_accept_', '');
         const app = await fetchApplicationById(appId);
-        if (!app) return interaction.editReply({ content: 'Application not found.', embeds: [], components: [] });
-        if (app.status !== 'pending') return interaction.editReply({ content: 'This application has already been reviewed.', embeds: [], components: [] });
+        if (!app) return interaction.reply({ content: 'Application not found.', flags: C2, ephemeral: true });
+        if (app.status !== 'pending') return interaction.reply({ content: 'This application has already been reviewed.', flags: C2, ephemeral: true });
 
-        const reason = 'Accepted via bot';
-        await updateApplicationStatus(appId, 'accepted', reason, interaction.user.id, interaction.user.username);
+        const modal = new ModalBuilder()
+          .setCustomId(`app_accept_modal_${appId}`)
+          .setTitle('Accept Application')
+          .addComponents(
+            new ActionRowBuilder().addComponents(
+              new TextInputBuilder()
+                .setCustomId('reason')
+                .setLabel('Reason for acceptance')
+                .setStyle(TextInputStyle.Paragraph)
+                .setMaxLength(1000)
+                .setRequired(true)
+            )
+          );
 
-        const updated = await fetchApplicationById(appId);
-        return interaction.editReply({
-          embeds: [buildDetailEmbed(updated)],
-          components: buildDetailComponents(updated, interaction.user.id),
-        });
+        return interaction.showModal(modal);
       }
 
-      // Deny
+      // Show deny modal
       if (customId.startsWith('app_deny_')) {
         const appId = customId.replace('app_deny_', '');
         const app = await fetchApplicationById(appId);
-        if (!app) return interaction.editReply({ content: 'Application not found.', embeds: [], components: [] });
-        if (app.status !== 'pending') return interaction.editReply({ content: 'This application has already been reviewed.', embeds: [], components: [] });
+        if (!app) return interaction.reply({ content: 'Application not found.', flags: C2, ephemeral: true });
+        if (app.status !== 'pending') return interaction.reply({ content: 'This application has already been reviewed.', flags: C2, ephemeral: true });
 
-        const reason = 'Denied via bot';
-        await updateApplicationStatus(appId, 'denied', reason, interaction.user.id, interaction.user.username);
+        const modal = new ModalBuilder()
+          .setCustomId(`app_deny_modal_${appId}`)
+          .setTitle('Deny Application')
+          .addComponents(
+            new ActionRowBuilder().addComponents(
+              new TextInputBuilder()
+                .setCustomId('reason')
+                .setLabel('Reason for denial')
+                .setStyle(TextInputStyle.Paragraph)
+                .setMaxLength(1000)
+                .setRequired(true)
+            )
+          );
 
-        const updated = await fetchApplicationById(appId);
-        return interaction.editReply({
-          embeds: [buildDetailEmbed(updated)],
-          components: buildDetailComponents(updated, interaction.user.id),
-        });
+        return interaction.showModal(modal);
       }
 
       // Delete
       if (customId.startsWith('app_delete_')) {
+        await interaction.deferUpdate();
         const appId = customId.replace('app_delete_', '');
         await deleteApplication(appId);
-        return interaction.editReply({ content: 'Application deleted.', embeds: [], components: [] });
+        return interaction.editReply({ content: 'Application deleted.', components: [], flags: C2 });
       }
 
     } catch (err) {
       console.error('[Application Button]', err);
-      return interaction.editReply({ content: 'An error occurred.' });
+      if (interaction.deferred) {
+        return interaction.editReply({ content: 'An error occurred.', flags: C2 });
+      }
+      return interaction.reply({ content: 'An error occurred.', flags: C2, ephemeral: true });
+    }
+  },
+
+  async handleModal(interaction) {
+    const customId = interaction.customId;
+
+    try {
+      if (customId.startsWith('app_accept_modal_')) {
+        const appId = customId.replace('app_accept_modal_', '');
+        const reason = interaction.fields.getTextInputValue('reason');
+
+        const app = await fetchApplicationById(appId);
+        if (!app) return interaction.reply({ content: 'Application not found.', flags: C2, ephemeral: true });
+        if (app.status !== 'pending') return interaction.reply({ content: 'This application has already been reviewed.', flags: C2, ephemeral: true });
+
+        await updateApplicationStatus(appId, 'accepted', reason, interaction.user.id, interaction.user.username);
+
+        const updated = await fetchApplicationById(appId);
+        return interaction.update({
+          flags: C2,
+          embeds: [],
+          content: null,
+          ...buildDetailReply(updated),
+        });
+      }
+
+      if (customId.startsWith('app_deny_modal_')) {
+        const appId = customId.replace('app_deny_modal_', '');
+        const reason = interaction.fields.getTextInputValue('reason');
+
+        const app = await fetchApplicationById(appId);
+        if (!app) return interaction.reply({ content: 'Application not found.', flags: C2, ephemeral: true });
+        if (app.status !== 'pending') return interaction.reply({ content: 'This application has already been reviewed.', flags: C2, ephemeral: true });
+
+        await updateApplicationStatus(appId, 'denied', reason, interaction.user.id, interaction.user.username);
+
+        const updated = await fetchApplicationById(appId);
+        return interaction.update({
+          flags: C2,
+          embeds: [],
+          content: null,
+          ...buildDetailReply(updated),
+        });
+      }
+
+    } catch (err) {
+      console.error('[Application Modal]', err);
+      return interaction.reply({ content: 'An error occurred.', flags: C2, ephemeral: true });
     }
   },
 };
