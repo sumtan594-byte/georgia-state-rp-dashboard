@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
-import { Lock, Unlock, Loader2 } from 'lucide-react';
+import { AlertTriangle, Crosshair, Flame, Layers, LocateFixed, Lock, MapPinned, Minus, PhoneCall, Plus, Radio, Shield, Siren, Unlock, Users, Loader2 } from 'lucide-react';
 
 export const MAP_PX = 3120;
 const OFFSET_X = 11;
@@ -83,6 +83,10 @@ export default function LiveMap({
   onLocationSelected,
   lockedPlayerId,
   onLockPlayer,
+  server,
+  live,
+  error,
+  rateLimitUntil,
 }) {
   const container = useRef(null);
   const mapRef = useRef(null);
@@ -101,6 +105,15 @@ export default function LiveMap({
   const playerSelectModeRef = useRef(playerSelectMode);
   playerSelectModeRef.current = playerSelectMode;
   const [ready, setReady] = useState(false);
+  const selectedInfo = selectedPlayer ? parseName(selectedPlayer.Player) : null;
+  const teamCounts = players.reduce((acc, player) => {
+    const team = player.Team || 'Unknown';
+    acc[team] = (acc[team] || 0) + 1;
+    return acc;
+  }, {});
+  const activeUnits = players.filter(player => player.Team && player.Team !== 'Civilian').length;
+  const wantedCount = players.filter(player => (player.WantedStars || 0) > 0).length;
+  const rateLimitSeconds = rateLimitUntil ? Math.max(0, Math.ceil((rateLimitUntil - Date.now()) / 1000)) : 0;
 
   /* Init map */
   useEffect(() => {
@@ -437,12 +450,105 @@ export default function LiveMap({
   }, [ready, isNkz]);
 
   const cursorStyle = locationSelectMode ? 'crosshair' : playerSelectMode ? 'cell' : 'grab';
+  const zoomIn = () => mapRef.current?.zoomIn();
+  const zoomOut = () => mapRef.current?.zoomOut();
+  const recenterMap = () => mapRef.current?.fitBounds([[0, 0], [MAP_PX, MAP_PX]], { animate: true, duration: 0.4 });
+  const locateSelected = () => {
+    if (!selectedPlayer?.Location || !mapRef.current) return;
+    const [py, px] = toPixel(selectedPlayer.Location.LocationX || 0, selectedPlayer.Location.LocationZ || 0);
+    mapRef.current.flyTo([py, px], Math.max(mapRef.current.getZoom(), 0), { duration: 0.5 });
+  };
 
   return (
-    <div ref={container} className="w-full h-full relative" style={{ background: '#000', cursor: cursorStyle }}>
+    <div className="relative h-full w-full overflow-hidden bg-black">
+      <div ref={container} className="w-full h-full relative" style={{ background: '#000', cursor: cursorStyle }} />
       {!ready && (
         <div className="absolute inset-0 flex items-center justify-center z-10 bg-gsrp-dark/80">
           <Loader2 className="w-6 h-6 text-gsrp-orange animate-spin" />
+        </div>
+      )}
+
+      <div className="pointer-events-none absolute left-3 top-3 z-[300] flex max-w-[calc(100%-1.5rem)] flex-col gap-2 sm:max-w-sm">
+        <div className="rounded-2xl border border-gsrp-dark-border/70 bg-gsrp-dark-card/90 p-3 shadow-2xl backdrop-blur-xl">
+          <div className="mb-2 flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-gsrp-orange/80">
+                <Radio size={12} /> Live Operations
+              </p>
+              <h2 className="truncate text-sm font-black text-white">{server?.Name || 'ER:LC Server'}</h2>
+            </div>
+            <span className={`rounded-full border px-2 py-1 text-[10px] font-bold ${live && !error ? 'border-green-400/20 bg-green-400/10 text-green-300' : 'border-gsrp-orange/20 bg-gsrp-orange/10 text-gsrp-orange'}`}>
+              {live && !error ? 'LIVE' : 'DEGRADED'}
+            </span>
+          </div>
+          <div className="grid grid-cols-4 gap-2">
+            <Metric icon={Users} label="Players" value={`${server?.CurrentPlayers ?? players.length}/${server?.MaxPlayers ?? '?'}`} />
+            <Metric icon={Shield} label="Units" value={activeUnits} />
+            <Metric icon={PhoneCall} label="911" value={emergencyCalls.length} hot={emergencyCalls.length > 0} />
+            <Metric icon={Siren} label="Wanted" value={wantedCount} hot={wantedCount > 0} />
+          </div>
+          {(error || rateLimitSeconds > 0) && (
+            <div className="mt-2 flex items-center gap-2 rounded-xl border border-gsrp-orange/20 bg-gsrp-orange/10 px-2.5 py-2 text-[11px] text-gsrp-orange/80">
+              <AlertTriangle size={13} className="flex-shrink-0" />
+              <span className="min-w-0 truncate">{rateLimitSeconds > 0 ? `Rate limited. Refresh resumes in ${rateLimitSeconds}s.` : error}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="hidden rounded-2xl border border-gsrp-dark-border/70 bg-gsrp-dark-card/85 p-3 backdrop-blur-xl sm:block">
+          <p className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+            <Layers size={12} /> Team Spread
+          </p>
+          <div className="space-y-1.5">
+            {Object.entries(teamCounts).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([team, count]) => (
+              <div key={team} className="flex items-center gap-2 text-[11px]">
+                <span className="h-2 w-2 rounded-full" style={{ backgroundColor: TEAM_BORDER[team] || TEAM_BORDER.Civilian }} />
+                <span className="flex-1 truncate text-white/55">{team}</span>
+                <span className="font-mono text-white/35">{count}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      <div className="absolute right-3 top-3 z-[300] flex flex-col gap-2">
+        <MapButton label="Zoom in" onClick={zoomIn} icon={Plus} />
+        <MapButton label="Zoom out" onClick={zoomOut} icon={Minus} />
+        <MapButton label="Recenter" onClick={recenterMap} icon={Crosshair} />
+        <MapButton label="Find selected" onClick={locateSelected} icon={LocateFixed} disabled={!selectedPlayer?.Location} />
+      </div>
+
+      {selectedPlayer && (
+        <div className="pointer-events-none absolute bottom-3 right-3 z-[300] w-[min(360px,calc(100%-1.5rem))] rounded-2xl border border-gsrp-dark-border/70 bg-gsrp-dark-card/90 p-4 shadow-2xl backdrop-blur-xl">
+          <div className="mb-3 flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gsrp-orange/70">Selected Unit</p>
+              <h3 className="truncate text-lg font-black text-white">{selectedInfo?.name || 'Unknown'}</h3>
+            </div>
+            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-white/45">{selectedPlayer.Team || 'Unknown'}</span>
+          </div>
+          <div className="grid grid-cols-2 gap-2 text-[11px]">
+            <InfoChip label="Callsign" value={selectedPlayer.Callsign || 'N/A'} />
+            <InfoChip label="Postal" value={selectedPlayer.Location?.PostalCode ? `#${selectedPlayer.Location.PostalCode}` : 'Unknown'} />
+            <InfoChip label="Street" value={selectedPlayer.Location?.StreetName || 'Unknown'} />
+            <InfoChip label="Wanted" value={selectedPlayer.WantedStars ? `${selectedPlayer.WantedStars} stars` : 'Clear'} hot={selectedPlayer.WantedStars > 0} />
+          </div>
+        </div>
+      )}
+
+      {(emergencyCalls.length > 0 || roleplays.length > 0) && (
+        <div className="pointer-events-none absolute bottom-3 left-3 z-[300] hidden max-w-xs rounded-2xl border border-gsrp-dark-border/70 bg-gsrp-dark-card/85 p-3 backdrop-blur-xl lg:block">
+          <p className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+            <MapPinned size={12} /> Active Incidents
+          </p>
+          <div className="space-y-2">
+            {emergencyCalls.slice(0, 3).map(call => (
+              <IncidentRow key={`call-${call.CallNumber || call.StartedAt}`} icon={PhoneCall} title={`911 #${call.CallNumber || 'N/A'}`} detail={call.Description || call.PositionDescriptor || call.Team || 'Emergency call'} hot />
+            ))}
+            {roleplays.slice(0, 3).map(rp => (
+              <IncidentRow key={rp.rpId} icon={Flame} title={rp.roleplayType || 'Roleplay'} detail={`${rp.robloxUsername || 'Unknown'} · ${rp.location || 'Pinned location'}`} />
+            ))}
+          </div>
         </div>
       )}
 
@@ -472,6 +578,50 @@ export default function LiveMap({
           </button>
         </div>
       )}
+    </div>
+  );
+}
+
+function Metric({ icon: Icon, label, value, hot = false }) {
+  return (
+    <div className={`rounded-xl border px-2 py-2 ${hot ? 'border-gsrp-sunset/25 bg-gsrp-sunset/10' : 'border-white/10 bg-black/25'}`}>
+      <Icon size={13} className={hot ? 'mb-1 text-gsrp-sunset' : 'mb-1 text-gsrp-orange/70'} />
+      <p className="text-sm font-black leading-none text-white">{value}</p>
+      <p className="mt-1 text-[9px] font-bold uppercase tracking-wider text-white/30">{label}</p>
+    </div>
+  );
+}
+
+function MapButton({ label, onClick, icon: Icon, disabled = false }) {
+  return (
+    <button
+      aria-label={label}
+      disabled={disabled}
+      onClick={onClick}
+      className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-xl border border-gsrp-dark-border/70 bg-gsrp-dark-card/90 text-white/50 shadow-xl backdrop-blur-xl transition-all hover:border-gsrp-orange/30 hover:text-gsrp-orange disabled:cursor-not-allowed disabled:opacity-35"
+    >
+      <Icon size={16} />
+    </button>
+  );
+}
+
+function InfoChip({ label, value, hot = false }) {
+  return (
+    <div className={`min-w-0 rounded-xl border px-3 py-2 ${hot ? 'border-gsrp-sunset/20 bg-gsrp-sunset/10' : 'border-white/10 bg-black/20'}`}>
+      <p className="text-[9px] font-bold uppercase tracking-wider text-white/30">{label}</p>
+      <p className={`truncate font-bold ${hot ? 'text-gsrp-sunset' : 'text-white/75'}`}>{value}</p>
+    </div>
+  );
+}
+
+function IncidentRow({ icon: Icon, title, detail, hot = false }) {
+  return (
+    <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-black/20 px-2.5 py-2">
+      <Icon size={13} className={hot ? 'mt-0.5 flex-shrink-0 text-gsrp-sunset' : 'mt-0.5 flex-shrink-0 text-gsrp-orange'} />
+      <div className="min-w-0">
+        <p className="truncate text-[11px] font-black text-white/75">{title}</p>
+        <p className="truncate text-[10px] text-white/35">{detail}</p>
+      </div>
     </div>
   );
 }

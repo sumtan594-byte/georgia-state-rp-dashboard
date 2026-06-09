@@ -14,6 +14,15 @@ const BOLO_PING = '1372479843677245520'; // role ping — use <@&ROLE_ID>
 
 const ERLC_API = 'https://api.erlc.gg';
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
+const ROBLOX_USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
+
+function cleanReason(value) {
+  return String(value || 'No reason provided')
+    .replace(/[\r\n\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 120) || 'No reason provided';
+}
 
 async function sendErlcCommand(command) {
   const ERLC_KEY = process.env.ERLC_API_KEY;
@@ -51,6 +60,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing action or targetUsername' });
   }
 
+  if (!ROBLOX_USERNAME_RE.test(targetUsername)) {
+    return res.status(400).json({ error: 'Invalid Roblox username' });
+  }
+
+  if (targetUserId && !/^\d{2,20}$/.test(String(targetUserId))) {
+    return res.status(400).json({ error: 'Invalid Roblox user ID' });
+  }
+
+  const safeReason = cleanReason(reason);
+
   const sessionRoles = session.user?.roles || [];
   const isSenior = SENIOR_ROLES.some(r => sessionRoles.includes(r)) || isAdmin(session);
   const isNkz = sessionRoles.includes(NKZ_ROLE_ID) || isAdmin(session);
@@ -59,7 +78,7 @@ export default async function handler(req, res) {
     switch (action) {
       case 'warn': {
         // Send in-game PM
-        const warnText = reason || 'No reason provided';
+        const warnText = safeReason;
         const pmCmd = `:pm ${targetUsername} You are being warned for ${warnText}`;
         const r = await sendErlcCommand(pmCmd);
 
@@ -83,7 +102,7 @@ export default async function handler(req, res) {
 
       case 'kick': {
         if (!isNkz) return res.status(403).json({ error: 'Insufficient permissions' });
-        const r = await sendErlcCommand(`:kick ${targetUsername} ${reason || 'No reason provided'}`);
+        const r = await sendErlcCommand(`:kick ${targetUsername} ${safeReason}`);
         return res.status(r.status === 204 ? 200 : r.status).json({ success: r.ok });
       }
 
@@ -111,7 +130,7 @@ export default async function handler(req, res) {
               components: [
                 {
                   type: 10,
-                  content: `## Ban BOLO by <@${session.user.id}>\n**Against:** ${targetUsername}\n**For:** ${reason || 'No reason provided'}`,
+                  content: `## Ban BOLO by <@${session.user.id}>\n**Against:** ${targetUsername}\n**For:** ${safeReason}`,
                 },
                 { type: 14, divider: true, spacing: 1 },
                 {
@@ -153,7 +172,7 @@ export default async function handler(req, res) {
                   components: [
                     {
                       type: 10,
-                      content: `## Ban BOLO by <@${session.user.id}>\n**Against:** ${targetUsername}\n**For:** ${reason || 'No reason provided'}`,
+                      content: `## Ban BOLO by <@${session.user.id}>\n**Against:** ${targetUsername}\n**For:** ${safeReason}`,
                     },
                     { type: 14, divider: true, spacing: 1 },
                     {
@@ -184,7 +203,7 @@ export default async function handler(req, res) {
       }
 
       case 'message': {
-        const r = await sendErlcCommand(`:m ${targetUsername} ${reason || ''}`);
+        const r = await sendErlcCommand(`:m ${targetUsername} ${safeReason}`);
         return res.status(r.status === 204 ? 200 : r.status).json({ success: r.ok });
       }
 
@@ -205,6 +224,6 @@ export default async function handler(req, res) {
     }
   } catch (err) {
     console.error('[ModAction]', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Failed to process moderation action' });
   }
 }

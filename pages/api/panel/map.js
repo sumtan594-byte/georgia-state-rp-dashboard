@@ -27,9 +27,7 @@ export default async function handler(req, res) {
     res.setHeader('Cache-Control', 'private, max-age=86400');
     return res.status(200).send(Buffer.from(buffer));
   } catch (error) {
-    return res.status(500).json({
-      error: 'Map proxy error',
-      detail: error.message
-    });
+    console.error('[Panel Map] Proxy error:', error.message);
+    return res.status(500).json({ error: 'Map proxy error' });
   }
 }

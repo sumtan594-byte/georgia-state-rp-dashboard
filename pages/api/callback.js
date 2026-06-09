@@ -68,7 +68,7 @@ export default async function handler(req, res) {
 
   } catch (err) {
     console.error('OAuth error:', err);
-    res.status(500).json({ error: 'Internal server error', detail: err.message });
+    res.status(500).json({ error: 'Internal server error' });
   }
 }
 

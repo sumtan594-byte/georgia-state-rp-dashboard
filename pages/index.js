@@ -72,27 +72,23 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <FeatureCard className="animate-fade-in-up stagger-1" href="/departments" icon={Building2} title="Departments" description="View and join GSRP's official departments" />
           <FeatureCard className="animate-fade-in-up stagger-2" href="/transcripts" icon={FileText} title="Transcripts" description="View and manage Discord ticket transcripts" badge={stats.transcripts > 0 ? `${stats.transcripts} records` : null} />
-          <FeatureCard className="animate-fade-in-up stagger-3" href="/panel" icon={Map} title="Live Panel" description="ERLC server map, player management, and commands" badge={stats.online ? `${stats.players} online` : null} locked={!hasPanel} />
+          <FeatureCard className="animate-fade-in-up stagger-3" href="/panel" icon={Map} title="Live Panel" description="ERLC server map, player management, and commands" badge={stats.online ? `${stats.players} online` : null} locked={!hasPanel} requiredRole="Panel" />
           <FeatureCard className="animate-fade-in-up stagger-4" href="/verify" icon={ShieldCheck} title="Verification" description="Link your Roblox account to Discord" />
           <FeatureCard className="animate-fade-in-up stagger-5" href="/shop" icon={ShoppingCart} title="Store" description="Purchase premium roles, pings, and donations" />
         </div>
       </div>
 
       {/* Staff Training Section */}
-      {(hasTraining || hasAttempts) && (
-        <div className="mb-12">
+      <div className="mb-12">
           <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-gsrp-orange mb-6 flex items-center gap-4">
             Staff Training
             <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <FeatureCard className="animate-fade-in-up stagger-1" href="/training" icon={BookOpen} title="Staff Training" description="SSD training quiz and staff handbook" locked={!hasTraining} />
-            {hasAttempts && (
-              <FeatureCard className="animate-fade-in-up stagger-2" href="/training/attempts" icon={Users} title="Quiz Attempts" description="View all staff training quiz attempts" />
-            )}
+            <FeatureCard className="animate-fade-in-up stagger-1" href="/training" icon={BookOpen} title="Staff Training" description="SSD training quiz and staff handbook" locked={!hasTraining} requiredRole="Trainee" />
+            <FeatureCard className="animate-fade-in-up stagger-2" href="/training/attempts" icon={Users} title="Quiz Attempts" description="View all staff training quiz attempts" locked={!hasAttempts} requiredRole="Trainer" />
           </div>
         </div>
-      )}
 
       {/* Applications Section */}
       <div className="mb-12">

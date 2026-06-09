@@ -47,6 +47,6 @@ export default async function handler(req, res) {
     res.status(200).json({ transcripts, isAdmin });
   } catch (e) {
     console.error('[Transcripts API] DB fetch error:', e.message);
-    res.status(500).json({ error: e.message, transcripts: [] });
+    res.status(500).json({ error: 'Failed to fetch transcripts', transcripts: [] });
   }
 }

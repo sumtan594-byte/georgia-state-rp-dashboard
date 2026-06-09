@@ -1,16 +1,25 @@
 import { useState, useEffect } from 'react';
 import Head from 'next/head';
+import { useRouter } from 'next/router';
 import { Loader2, MapPin, Clock, User, Radio, Calendar } from 'lucide-react';
 
 export default function RoleplayDetailPage() {
+  const router = useRouter();
   const [rp, setRp] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    if (!router.isReady) return;
+
     async function fetchRp() {
       try {
-        const id = window.location.pathname.split('/').pop();
+        const id = router.query.rpId;
+        if (!id || Array.isArray(id)) {
+          setError('Roleplay log not found');
+          setLoading(false);
+          return;
+        }
         const res = await fetch(`/api/panel/roleplays/${id}`);
         if (res.ok) {
           setRp(await res.json());
@@ -24,7 +33,7 @@ export default function RoleplayDetailPage() {
       }
     }
     fetchRp();
-  }, []);
+  }, [router.isReady, router.query.rpId]);
 
   if (loading) {
     return (

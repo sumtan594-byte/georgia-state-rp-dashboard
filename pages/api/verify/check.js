@@ -156,6 +156,6 @@ let banInfo = null;
 
   } catch (error) {
     console.error('Verification Check Error:', error);
-    return res.status(500).json({ error: 'Internal Server Error', detail: error.message });
+    return res.status(500).json({ error: 'Internal Server Error' });
   }
 }

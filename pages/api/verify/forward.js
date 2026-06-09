@@ -62,10 +62,18 @@ async function sendLog(fetchFn, logWebhookUrl, { type, discordId, ip, detail, ex
 // ─────────────────────────────────────────────────────────────────────────────
 
 export default async function handler(req, res) {
+    const allowedOrigins = (process.env.ALLOWED_ORIGINS || process.env.NEXTAUTH_URL || 'https://join-gsrp.com')
+        .split(',')
+        .map(origin => origin.trim())
+        .filter(Boolean);
+    const requestOrigin = req.headers.origin;
+    const allowOrigin = allowedOrigins.includes(requestOrigin) ? requestOrigin : allowedOrigins[0];
+
     // CORS Headers
-    res.setHeader('Access-Control-Allow-Origin', '*');
+    res.setHeader('Access-Control-Allow-Origin', allowOrigin);
+    res.setHeader('Vary', 'Origin');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept, Authorization');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Accept');
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
 

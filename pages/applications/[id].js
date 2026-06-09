@@ -30,6 +30,7 @@ import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import LoginScreen from '../../components/auth/LoginScreen';
+import AccessDenied from '../../components/auth/AccessDenied';
 
 const TAB_OUT_THRESHOLD = 3;
 
@@ -328,7 +329,7 @@ const ApplicantTimeDisplay = ({ timezone }) => {
 
 export default function ApplicationDetail() {
   const { data: session, status } = useSession();
-  const { session: refreshedSession } = useRefreshedUser();
+  const { session: refreshedSession, hasRefreshed, accessDenied } = useRefreshedUser();
   const effectiveSession = refreshedSession || session;
   const router = useRouter();
   const { id } = router.query;
@@ -478,9 +479,17 @@ export default function ApplicationDetail() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  if (status === 'loading') return null;
+  if (status === 'loading' || !hasRefreshed) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
+        <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Application Access</span>
+      </div>
+    );
+  }
   if (!session) return <LoginScreen />;
-  if (!canReviewApplications(effectiveSession)) return <div>Access Denied</div>;
+  if (accessDenied) return <AccessDenied roleId={accessDenied.roleId} />;
+  if (!canReviewApplications(effectiveSession)) return <AccessDenied roleId="1372491512709124106" />;
 
   if (loading) {
     return (

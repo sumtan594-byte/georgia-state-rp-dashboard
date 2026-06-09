@@ -16,13 +16,21 @@ export default function ApplicationList() {
   const { data: session, status } = useSession();
   const [types, setTypes] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (session) {
-      fetch('/api/applications/types')
+    if (!session) return;
+
+    setLoading(true);
+    setError(null);
+    fetch('/api/applications/types')
         .then(r => r.json())
         .then(data => {
-          if (!Array.isArray(data)) return;
+          if (!Array.isArray(data)) {
+            setTypes([]);
+            setError('Application types are temporarily unavailable.');
+            return;
+          }
           // If no staff app exists, add a placeholder
           const hasStaff = data.find(t => t.slug === 'staff');
           if (!hasStaff) {
@@ -49,12 +57,24 @@ export default function ApplicationList() {
           });
 
           setTypes(visibleTypes);
-          setLoading(false);
-        });
-    }
+        })
+        .catch(() => {
+          setTypes([]);
+          setError('Failed to load applications. Please try again.');
+        })
+        .finally(() => setLoading(false));
   }, [session]);
 
-  if (status === 'loading' || loading) return null;
+  if (status === 'loading' || loading) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-gsrp-orange" />
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-gsrp-teal-light/40">Loading Applications</p>
+        </div>
+      </div>
+    );
+  }
   if (!session) return <LoginScreen />;
 
   return (
@@ -70,6 +90,12 @@ export default function ApplicationList() {
         </h1>
         <p className="text-gsrp-teal-light/40 text-sm mt-1">Select an application type to begin the process.</p>
       </div>
+
+      {error && (
+        <div className="mb-6 rounded-2xl border border-gsrp-orange/20 bg-gsrp-orange/10 p-4 text-sm text-gsrp-orange/80">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {types.map(type => (
@@ -93,6 +119,13 @@ export default function ApplicationList() {
             </div>
           </Link>
         ))}
+        {!error && types.length === 0 && (
+          <div className="md:col-span-2 rounded-3xl border border-dashed border-gsrp-dark-border bg-gsrp-dark-card/50 p-10 text-center">
+            <FileText className="mx-auto mb-4 h-10 w-10 text-white/15" />
+            <h2 className="mb-2 text-lg font-black text-white/70">No Applications Open</h2>
+            <p className="text-sm text-gsrp-teal-light/35">There are no application forms available for your current Discord roles.</p>
+          </div>
+        )}
       </div>
     </div>
   );

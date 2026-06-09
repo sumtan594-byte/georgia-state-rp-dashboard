@@ -36,7 +36,13 @@ export default function PanelPage() {
   const [live, setLive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [rateLimitUntil, setRateLimitUntil] = useState(null);
   const intervalRef = useRef(null);
+  const dataRef = useRef(null);
+
+  useEffect(() => {
+    dataRef.current = data;
+  }, [data]);
 
   // Player selection
   const [selectedPlayer, setSelectedPlayer] = useState(null);
@@ -78,6 +84,11 @@ export default function PanelPage() {
       if (res.ok) {
         setData(await res.json());
         setError(null);
+        setRateLimitUntil(null);
+      } else if (res.status === 429) {
+        const retryAfter = Number(res.headers.get('Retry-After') || 5);
+        setRateLimitUntil(Date.now() + retryAfter * 1000);
+        setError(dataRef.current ? 'ER:LC API rate limited. Showing latest cached data.' : `ER:LC API rate limited. Retrying in ${retryAfter}s.`);
       } else if (res.status !== 429) {
         setError(`Server error: ${res.status}`);
       }
@@ -405,6 +416,10 @@ export default function PanelPage() {
                 onLocationSelected={handleLocationSelected}
                 lockedPlayerId={lockedPlayerId}
                 onLockPlayer={setLockedPlayerId}
+                server={data}
+                live={live}
+                error={error}
+                rateLimitUntil={rateLimitUntil}
               />
 
               {/* Player Action Panel — overlays on map */}

@@ -13,7 +13,8 @@ import {
   FileText,
   Shield,
   Eye,
-  ArrowLeft
+  ArrowLeft,
+  Loader2
 } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
@@ -57,6 +58,11 @@ export default function ManageApplicationTypes() {
     fetch('/api/applications/types')
       .then(r => r.json())
       .then(data => {
+          if (!Array.isArray(data)) {
+            setTypes([]);
+            setLoading(false);
+            return;
+          }
           // If no staff app exists, add the default one so it can be edited
           const hasStaff = data.find(t => t.slug === 'staff');
           if (!hasStaff) {
@@ -257,7 +263,16 @@ export default function ManageApplicationTypes() {
     });
   };
 
-  if (status === 'loading' || !hasRefreshed) return null;
+  if (status === 'loading' || !hasRefreshed) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-gsrp-orange" />
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-gsrp-teal-light/40">Loading Form Manager</p>
+        </div>
+      </div>
+    );
+  }
   if (!session) return <LoginScreen />;
   if (accessDenied) return <AccessDenied roleId={accessDenied.roleId} />;
   if (!canReviewApplications(effectiveSession)) return <AccessDenied roleId="1372491512709124106" />;

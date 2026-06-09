@@ -11,6 +11,9 @@ const TARGET_WEBHOOK_URL = process.env.ERLC_WEBHOOK_URL;
 
 const PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----\n${PRC_PUBLIC_KEY_BASE64}\n-----END PUBLIC KEY-----`;
 const DEV_MODE = process.env.NODE_ENV === 'development' || process.env.ERLC_WEBHOOK_DEV === 'true';
+const MAX_WEBHOOK_BODY_BYTES = 256 * 1024;
+const MAX_WEBHOOK_EVENTS = 50;
+const MAX_SIGNATURE_AGE_MS = 5 * 60 * 1000;
 
 let lastInvalidSigTime = 0;
 let invalidSigCount = 0;
@@ -32,6 +35,15 @@ async function getRobloxUsername(userId) {
   }
 }
 
+function isFreshTimestamp(timestamp) {
+  const timestampMs = Number(timestamp) * 1000;
+  return Number.isFinite(timestampMs) && Math.abs(Date.now() - timestampMs) <= MAX_SIGNATURE_AGE_MS;
+}
+
+function isValidSignature(signatureHex) {
+  return typeof signatureHex === 'string' && /^[a-f0-9]{128}$/i.test(signatureHex);
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -50,9 +62,19 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
+  if (!isValidSignature(signatureHex) || !isFreshTimestamp(timestamp)) {
+    console.error('[ERLC] Invalid signature metadata');
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   try {
     const chunks = [];
+    let bodySize = 0;
     for await (const chunk of req) {
+      bodySize += chunk.length;
+      if (bodySize > MAX_WEBHOOK_BODY_BYTES) {
+        return res.status(413).json({ error: 'Payload too large' });
+      }
       chunks.push(chunk);
     }
     const rawBody = Buffer.concat(chunks);
@@ -93,6 +115,10 @@ export default async function handler(req, res) {
 
     if (!events.length) {
       return res.status(200).json({ success: true });
+    }
+
+    if (!Array.isArray(events) || events.length > MAX_WEBHOOK_EVENTS) {
+      return res.status(400).json({ error: 'Invalid event batch' });
     }
 
     for (let i = 0; i < events.length; i++) {

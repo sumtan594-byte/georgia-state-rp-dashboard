@@ -19,6 +19,8 @@ function isBlocked(command) {
 }
 
 const CMD_INTERVAL_MS = 5500;
+const ROBLOX_USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
+const MAX_COMMAND_LENGTH = 180;
 
 globalThis.__gsrpCmdQueue ??= {
   lastSentAt: 0,
@@ -89,6 +91,22 @@ async function drainQueue() {
 
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
+function isSafeCommand(command) {
+  if (!command || typeof command !== 'string') return false;
+  if (command.length > MAX_COMMAND_LENGTH) return false;
+  if ([...command].some(char => {
+    const code = char.charCodeAt(0);
+    return code === 127 || code < 32;
+  })) return false;
+  const parts = command.trim().split(/\s+/);
+  if (!parts[0]?.startsWith(':')) return false;
+  const primary = parts[0].toLowerCase();
+  if ([':tp', ':bring', ':to', ':kick', ':ban', ':unban', ':jail', ':kill', ':down', ':refresh', ':respawn', ':load'].includes(primary)) {
+    return parts.slice(1, 3).every(value => !value || ROBLOX_USERNAME_RE.test(value) || /^\d{2,20}$/.test(value));
+  }
+  return true;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -124,6 +142,10 @@ export default async function handler(req, res) {
 
   const cmd = command.trim();
 
+  if (!isSafeCommand(cmd)) {
+    return res.status(400).json({ error: 'Command contains invalid or unsafe input', code: 3003 });
+  }
+
   if (isBlocked(cmd)) {
     return res.status(403).json({
       error: 'This command is restricted and cannot be executed via the panel.',
@@ -157,7 +179,16 @@ export default async function handler(req, res) {
       if (v) res.setHeader(h, v);
     }
 
-    if (erlcRes.status === 204) return res.status(204).end();
+    if (erlcRes.status === 204) {
+      logCommand({
+        command: cmd,
+        userId: session.user.id,
+        username: session.user.name,
+        success: true,
+        response: 'No content',
+      });
+      return res.status(204).end();
+    }
 
     if (erlcRes.status === 429) {
       const body = await erlcRes.json().catch(() => ({}));
@@ -197,6 +228,6 @@ export default async function handler(req, res) {
       response: err.message,
     });
 
-    return res.status(500).json({ error: 'Failed to reach ERLC API', detail: err.message });
+    return res.status(500).json({ error: 'Failed to reach ERLC API' });
   }
 }

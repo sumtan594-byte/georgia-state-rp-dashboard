@@ -3,12 +3,13 @@ import { authOptions } from '../../../lib/auth-options';
 import clientPromise from '../../../lib/mongodb';
 
 const dataCache = new Map();
-const CACHE_TTL_MS = 30000;
+const MEMBER_CACHE_TTL_MS = 5000;
+const GUILD_ROLES_CACHE_TTL_MS = 60000;
 
-function getCached(key) {
+function getCached(key, ttlMs) {
   const entry = dataCache.get(key);
   if (!entry) return null;
-  if (Date.now() - entry.ts > CACHE_TTL_MS) {
+  if (Date.now() - entry.ts > ttlMs) {
     dataCache.delete(key);
     return null;
   }
@@ -21,6 +22,15 @@ function setCached(key, data) {
     keys.forEach(k => dataCache.delete(k));
   }
   dataCache.set(key, { data, ts: Date.now() });
+}
+
+export function invalidateUserRefreshCache(userId, options = {}) {
+  if (userId) {
+    dataCache.delete(`member_${userId}`);
+  }
+  if (options.guildRoles) {
+    dataCache.delete('guild_roles');
+  }
 }
 
 function getRateLimit(res, status) {
@@ -52,7 +62,7 @@ async function getDbAdminIds() {
 
 async function fetchGuildRoles() {
   const cacheKey = 'guild_roles';
-  const cached = getCached(cacheKey);
+  const cached = getCached(cacheKey, GUILD_ROLES_CACHE_TTL_MS);
   if (cached) return { ...cached, cached: true, rateLimit: null };
 
   const res = await fetch(
@@ -70,7 +80,7 @@ async function fetchGuildRoles() {
 
 async function fetchMember(userId) {
   const cacheKey = `member_${userId}`;
-  const cached = getCached(cacheKey);
+  const cached = getCached(cacheKey, MEMBER_CACHE_TTL_MS);
   if (cached) return { ...cached, cached: true, rateLimit: null };
 
   const res = await fetch(

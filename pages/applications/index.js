@@ -116,7 +116,16 @@ export default function ApplicationsList() {
     }
   };
 
-  if (status === 'loading' || !hasRefreshed) return null;
+  if (status === 'loading' || !hasRefreshed) {
+    return (
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin text-gsrp-orange" />
+          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-gsrp-teal-light/40">Loading Applications</p>
+        </div>
+      </div>
+    );
+  }
   if (!session) return <LoginScreen />;
   if (accessDenied) return <AccessDenied roleId={accessDenied.roleId} />;
   if (!canReviewApplications(effectiveSession)) {

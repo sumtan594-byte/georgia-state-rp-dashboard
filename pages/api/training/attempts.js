@@ -52,7 +52,7 @@ export default async function handler(req, res) {
       }
     } catch (err) {
       console.error('[attempts/list] Error:', err.message);
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: 'Failed to fetch attempts' });
     }
   }
 
@@ -107,7 +107,7 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Invalid action' });
     } catch (err) {
       console.error('[attempts/post] Error:', err.message);
-      return res.status(500).json({ error: err.message });
+      return res.status(500).json({ error: 'Failed to update attempt' });
     }
   }
 

@@ -195,13 +195,11 @@ function RouteLoadingBar() {
 export default function App({ Component, pageProps: { session, ...pageProps } }) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [mounted, setMounted] = useState(false);
   const [showWelcome, setShowWelcome] = useState(false);
   const [animationFinished, setAnimationFinished] = useState(true);
   const [proxyBlocked, setProxyBlocked] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     const publicRoutes = ['/verify', '/privacy-policy', '/terms-of-service', '/login'];
     const isPublicPage = publicRoutes.includes(router.pathname);
 
@@ -219,8 +217,6 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
 
   const publicRoutes = ['/verify', '/privacy-policy', '/terms-of-service', '/login'];
   const isPublicPage = publicRoutes.includes(router.pathname);
-
-  if (!mounted) return null;
 
   return (
     <SessionProvider session={session}>
@@ -244,7 +240,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
             setSidebarOpen={setSidebarOpen}
             isPublicPage={isPublicPage}
             animationFinished={animationFinished}
-            isPanelPage={router.pathname === '/panel'}
+            isPanelPage={router.pathname.startsWith('/panel')}
             routerPath={router.pathname}
           />
         </ToastProvider>

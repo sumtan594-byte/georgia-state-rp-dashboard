@@ -34,7 +34,8 @@ export default async function handler(req, res) {
       const logs = await col.find({ active: true }).sort({ createdAt: -1 }).toArray();
       return res.status(200).json(logs.map(l => ({ ...l, _id: l._id.toString() })));
     } catch (err) {
-      return res.status(500).json({ error: err.message });
+      console.error('[RP] List error:', err.message);
+      return res.status(500).json({ error: 'Failed to fetch roleplay logs' });
     }
   }
 
@@ -107,7 +108,8 @@ export default async function handler(req, res) {
       const inserted = await col.findOne({ rpId });
       return res.status(201).json({ ...inserted, _id: inserted._id.toString() });
     } catch (err) {
-      return res.status(500).json({ error: err.message });
+      console.error('[RP] Create error:', err.message);
+      return res.status(500).json({ error: 'Failed to create roleplay log' });
     }
   }
 

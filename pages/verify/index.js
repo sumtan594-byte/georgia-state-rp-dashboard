@@ -72,12 +72,12 @@ export default function VerifyPage() {
 
     // Double-submit guard - store pending code to prevent race conditions
     const pendingKey = `verify_pending:${discordId}:${code}`;
-    if (global.pendingVerifications?.has(pendingKey)) {
+    globalThis.pendingVerifications ??= new Set();
+    if (globalThis.pendingVerifications.has(pendingKey)) {
       console.log('[verify] Duplicate request detected, ignoring');
       return;
     }
-    if (!global.pendingVerifications) global.pendingVerifications = new Set();
-    global.pendingVerifications.add(pendingKey);
+    globalThis.pendingVerifications.add(pendingKey);
 
     setStatus('loading');
 
@@ -113,7 +113,7 @@ export default function VerifyPage() {
         setTimeout(() => window.location.reload(), 2000);
         
         // Clear pending guard
-        global.pendingVerifications?.delete(pendingKey);
+        globalThis.pendingVerifications?.delete(pendingKey);
       } else {
         throw new Error(data?.error || 'An unexpected error occurred.');
       }
@@ -121,7 +121,7 @@ export default function VerifyPage() {
     .catch(err => {
       clearTimeout(timeout);
       // Clear pending guard on error too
-      global.pendingVerifications?.delete(pendingKey);
+      globalThis.pendingVerifications?.delete(pendingKey);
       if (err.name !== 'AbortError') {
         setStatus('error');
         setMessage(err.message || 'An unexpected error occurred.');
@@ -176,6 +176,9 @@ export default function VerifyPage() {
   // If we have verification data, show the dashboard
   if (verificationData && status === 'idle') {
     const { roblox, discord, erlc, melonly } = verificationData;
+    const wornAssets = Array.isArray(roblox?.currentlyWearing) ? roblox.currentlyWearing : [];
+    const discordRoles = Array.isArray(discord?.roles) ? discord.roles : [];
+    const melonlyLogs = Array.isArray(melonly?.logs) ? melonly.logs : [];
     const isBanned = erlc?.ban?.isBanned;
 
     return (
@@ -244,14 +247,19 @@ export default function VerifyPage() {
                 <div>
                   <h3 className="text-gsrp-teal-light/40 text-[10px] font-bold uppercase tracking-widest mb-3">Currently Wearing</h3>
                   <div className="flex flex-wrap gap-2">
-                    {roblox.currentlyWearing.slice(0, 8).map((asset, i) => (
+                    {wornAssets.slice(0, 8).map((asset, i) => (
                       <span key={i} className="px-3 py-1.5 bg-gsrp-dark-surface/60 border border-gsrp-dark-border/30 rounded-lg text-gsrp-teal-light/70 text-[11px] font-semibold">
                         {asset}
                       </span>
                     ))}
-                    {roblox.currentlyWearing.length > 8 && (
+                    {wornAssets.length > 8 && (
                       <span className="px-3 py-1.5 bg-gsrp-dark-surface/30 border border-gsrp-dark-border/20 rounded-lg text-gsrp-teal-light/30 text-[11px] font-semibold">
-                        +{roblox.currentlyWearing.length - 8} more
+                        +{wornAssets.length - 8} more
+                      </span>
+                    )}
+                    {wornAssets.length === 0 && (
+                      <span className="px-3 py-1.5 bg-gsrp-dark-surface/30 border border-gsrp-dark-border/20 rounded-lg text-gsrp-teal-light/30 text-[11px] font-semibold">
+                        No wearable assets returned
                       </span>
                     )}
                   </div>
@@ -311,11 +319,16 @@ export default function VerifyPage() {
                <div>
                  <h3 className="text-gsrp-teal-light/40 text-[10px] font-bold uppercase tracking-widest mb-4">Discord Server Roles</h3>
                  <div className="flex flex-wrap gap-2">
-                    {discord.roles.map((role, i) => (
+                     {discordRoles.map((role, i) => (
                       <span key={i} className="px-4 py-2 bg-gsrp-dark-surface/40 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/20 hover:border-gsrp-teal/30 transition-all rounded-xl text-gsrp-teal-light/80 text-xs font-bold shadow-sm">
                         {role}
                       </span>
-                    ))}
+                     ))}
+                     {discordRoles.length === 0 && (
+                       <span className="px-4 py-2 bg-gsrp-dark-surface/30 border border-gsrp-dark-border/20 rounded-xl text-gsrp-teal-light/30 text-xs font-bold">
+                         No roles returned
+                       </span>
+                     )}
                  </div>
                </div>
             </div>
@@ -328,8 +341,8 @@ export default function VerifyPage() {
                </h3>
 
                <div className="space-y-3">
-                 {melonly.logs.length > 0 ? (
-                   melonly.logs.map((log, i) => (
+                 {melonlyLogs.length > 0 ? (
+                   melonlyLogs.map((log, i) => (
                      <div key={i} className="group p-4 bg-gsrp-dark/30 hover:bg-gsrp-dark/50 border border-gsrp-dark-border/20 rounded-2xl transition-all">
                         <div className="flex items-center justify-between mb-2">
                            <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${

@@ -22,7 +22,7 @@ async function refreshFromErlc(cache, key) {
   if (cache.fetching) return cache.fetching;
 
   cache.fetching = (async () => {
-    const url = 'https://api.erlc.gg/v2/server?Players=true&Staff=true&JoinLogs=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true&EmergencyCalls=true';
+    const url = 'https://api.erlc.gg/v2/server?Players=true&Staff=true&JoinLogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true&EmergencyCalls=true';
     const response = await fetch(url, { headers: { 'server-key': key } });
 
     if (response.status === 429) {
@@ -52,6 +52,8 @@ async function refreshFromErlc(cache, key) {
 }
 
 export default async function handler(req, res) {
+  if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
+
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Not logged in' });
   if (!hasRole(session, ROLES.PANEL) && !isAdmin(session)) {
@@ -76,7 +78,8 @@ export default async function handler(req, res) {
       if (cache.data) {
         return res.status(200).json({ ...cache.data, _stale: true });
       }
-      return res.status(500).json({ error: 'Failed to fetch ER:LC data', detail: error.message });
+      console.error('[Panel Players] ERLC fetch error:', error.message);
+      return res.status(500).json({ error: 'Failed to fetch ER:LC data' });
     }
   }
 

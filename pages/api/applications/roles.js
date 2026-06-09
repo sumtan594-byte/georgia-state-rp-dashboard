@@ -20,7 +20,7 @@ export default async function handler(req, res) {
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('[Discord Roles API Error] Discord responded with:', response.status, errorData);
-      return res.status(response.status).json({ message: 'Failed to fetch roles from Discord', error: errorData });
+      return res.status(response.status).json({ message: 'Failed to fetch roles from Discord' });
     }
 
     const roles = await response.json();
@@ -34,6 +34,6 @@ export default async function handler(req, res) {
     return res.status(200).json(assignableRoles);
   } catch (error) {
     console.error('[Discord Roles API Error] Unexpected error:', error);
-    return res.status(500).json({ message: 'Internal server error', details: error.message });
+    return res.status(500).json({ message: 'Internal server error' });
   }
 }
