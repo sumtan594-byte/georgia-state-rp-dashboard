@@ -8,7 +8,7 @@ import {
 import LoginScreen from '../../components/auth/LoginScreen';
 import PanelLayout from '../../components/panel/PanelLayout';
 import PlayerList from '../../components/panel/PlayerList';
-import InfoPanel from '../../components/panel/InfoPanel';
+import OperationsPanel from '../../components/panel/OperationsPanel';
 import CommandBar from '../../components/panel/CommandBar';
 import PlayerActionPanel from '../../components/panel/PlayerActionPanel';
 import RoleplayLogs from '../../components/panel/RoleplayLogs';
@@ -474,11 +474,15 @@ export default function PanelPage() {
             </div>
           }
           infoPanel={
-            <InfoPanel
-              joinLogs={data.JoinLogs || []}
-              killLogs={data.KillLogs || []}
-              commandLogs={data.CommandLogs || []}
-              modCalls={data.ModCalls || []}
+            <OperationsPanel
+              players={data.Players || []}
+              emergencyCalls={data.EmergencyCalls || []}
+              roleplays={activeRoleplays}
+              server={data}
+              live={live}
+              error={error}
+              rateLimitUntil={rateLimitUntil}
+              loading={loading}
             />
           }
           logPanel={null}
