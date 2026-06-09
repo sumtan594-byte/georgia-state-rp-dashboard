@@ -26,17 +26,19 @@ async function refreshFromErlc(cache, key) {
     const url = 'https://api.erlc.gg/v2/server?Players=true&Staff=true&JoinLogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true&EmergencyCalls=true';
     const response = await fetch(url, { headers: { 'server-key': key } });
 
-    if (response.status === 429) {
-      const body = await response.json().catch(() => ({}));
-      throw Object.assign(new Error('ERLC rate limited'), { status: 429, body });
-    }
-
     if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      throw Object.assign(new Error(`ERLC error ${response.status}`), {
-        status: response.status,
-        body: { error: `ERLC error ${response.status}`, detail: text }
-      });
+      const body = await response.json().catch(() => ({}));
+      const err = new Error(`ERLC error ${response.status}`);
+      err.status = response.status;
+      err.body = body;
+      err.headers = {
+        'x-ratelimit-bucket': response.headers.get('x-ratelimit-bucket'),
+        'x-ratelimit-limit': response.headers.get('x-ratelimit-limit'),
+        'x-ratelimit-remaining': response.headers.get('x-ratelimit-remaining'),
+        'x-ratelimit-reset': response.headers.get('x-ratelimit-reset'),
+        'retry-after': response.headers.get('retry-after'),
+      };
+      throw err;
     }
 
     const data = await response.json();
@@ -74,8 +76,19 @@ export default async function handler(req, res) {
     try {
       await refreshFromErlc(cache, ERLC_KEY);
     } catch (error) {
+      // Forward rate limit headers from ERLC
+      if (error.headers) {
+        if (error.headers['x-ratelimit-bucket']) res.setHeader('X-RateLimit-Bucket', error.headers['x-ratelimit-bucket']);
+        if (error.headers['x-ratelimit-limit']) res.setHeader('X-RateLimit-Limit', error.headers['x-ratelimit-limit']);
+        if (error.headers['x-ratelimit-remaining']) res.setHeader('X-RateLimit-Remaining', error.headers['x-ratelimit-remaining']);
+        if (error.headers['x-ratelimit-reset']) res.setHeader('X-RateLimit-Reset', error.headers['x-ratelimit-reset']);
+        if (error.headers['retry-after']) res.setHeader('Retry-After', error.headers['retry-after']);
+      }
+
       if (error.status === 429) {
-        return res.status(429).json(error.body || { error: 'ERLC rate limited' });
+        const retryAfter = error.body?.retry_after ?? error.headers?.['retry-after'] ?? 5;
+        if (!res.getHeader('Retry-After')) res.setHeader('Retry-After', retryAfter);
+        return res.status(429).json({ error: 'ERLC rate limited', retry_after: Number(retryAfter), ...(error.body || {}) });
       }
       if (cache.data) {
         return res.status(200).json({ ...cache.data, _stale: true });
