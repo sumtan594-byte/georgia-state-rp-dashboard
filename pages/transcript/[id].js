@@ -2,7 +2,6 @@ import { useSession } from "next-auth/react";
 import { ArrowLeft, Lock, Download, Loader2, Clock, Tag, Sparkles, Users, X, Plus, Trash2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
-import { sanitizeHtml } from '../../lib/sanitize';
 
 const LOGO = "https://i.imgur.com/70GfmYd.gif";
 const BG_IMAGE = "https://i.imgur.com/QVVQSK2.png";
@@ -266,7 +265,7 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
   );
 }
 
-export default function Viewer({ htmlContent, chatHTML, styles, id, meta: serverMeta, canManage, error }) {
+export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, canManage, error }) {
   const { status } = useSession();
   const [accessOpen, setAccessOpen] = useState(false);
   const [accessRevoked, setAccessRevoked] = useState(false);
@@ -290,12 +289,7 @@ export default function Viewer({ htmlContent, chatHTML, styles, id, meta: server
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-    if (chatHTML) {
-      const styleBlock = (styles || []).map(s => `<style>${s}</style>`).join('');
-      printWindow.document.write(`<!DOCTYPE html><html><head><title>Transcript - ${meta.channelName}</title></head><body>${styleBlock}${chatHTML}</body></html>`);
-    } else {
-      printWindow.document.write(`<!DOCTYPE html><html><head><title>Transcript - ${meta.channelName}</title></head><body>${htmlContent || ''}</body></html>`);
-    }
+    printWindow.document.write(fullHtml || htmlContent || '');
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 500);
@@ -368,13 +362,18 @@ export default function Viewer({ htmlContent, chatHTML, styles, id, meta: server
 
       <div className="mb-6">
         <div className="card-glass rounded-[1.5rem] shadow-2xl shadow-black/40 overflow-hidden animate-fade-in-up">
-          {chatHTML ? (
-            <>
-              {(styles || []).map((css, i) => <style key={i}>{css}</style>)}
-              <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(chatHTML) }} />
-            </>
-          ) : htmlContent ? (
-            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }} />
+          {(fullHtml || htmlContent) ? (
+            <iframe
+              srcDoc={fullHtml || `<!DOCTYPE html><html><body>${htmlContent}</body></html>`}
+              sandbox="allow-scripts allow-same-origin"
+              style={{ width: '100%', minHeight: '600px', border: 'none', display: 'block' }}
+              onLoad={(e) => {
+                try {
+                  const doc = e.target.contentDocument;
+                  if (doc) e.target.style.height = doc.documentElement.scrollHeight + 'px';
+                } catch {}
+              }}
+            />
           ) : (
             <div className="flex items-center justify-center py-16">
               <div className="bg-gsrp-dark/80 backdrop-blur-sm rounded-2xl px-6 py-4 border border-gsrp-dark-border/50">
@@ -454,12 +453,12 @@ export async function getServerSideProps(context) {
       if (msgRows.length > 0) {
         const { generateTranscriptHTML } = require('../../lib/transcript-renderer');
         const messages = msgRows.map(r => JSON.parse(r.message_data));
-        const { bodyContent, styleTags } = await generateTranscriptHTML({
+        const { fullHtml } = await generateTranscriptHTML({
           messages,
           channelName: t.channel_name,
           guildName: 'GSRP',
         });
-        return { props: { chatHTML: bodyContent, styles: styleTags, id, meta, canManage } };
+        return { props: { fullHtml, id, meta, canManage } };
       }
     } catch (e) {
       if (e.code !== 'ER_NO_SUCH_TABLE') {
