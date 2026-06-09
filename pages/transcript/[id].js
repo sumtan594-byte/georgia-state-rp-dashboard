@@ -360,6 +360,45 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
         </div>
       </div>
 
+      {/* Ticket Details Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 animate-fade-in-up">
+        <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4">
+          <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Ticket Identifier</div>
+          <div className="text-white font-bold text-sm truncate">{meta.channelName}</div>
+        </div>
+        <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4">
+          <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Ticket Opener</div>
+          <div className="text-white font-bold text-sm truncate">{meta.openerTag}</div>
+        </div>
+        <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4">
+          <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Closed Timestamp</div>
+          <div className="text-white font-bold text-sm truncate">{meta.closedAt || 'Unknown'}</div>
+        </div>
+        <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4">
+          <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Close Reason</div>
+          <div className="text-white font-bold text-sm truncate">{meta.reason || 'No reason provided'}</div>
+        </div>
+        
+        {meta.claimedByTag && (
+          <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4">
+            <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Claimed By</div>
+            <div className="text-white font-bold text-sm truncate">{meta.claimedByTag}</div>
+          </div>
+        )}
+        {meta.openReason && meta.openReason !== 'No initial query provided' && (
+          <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4 sm:col-span-2 lg:col-span-4">
+            <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Initial Query</div>
+            <div className="text-white font-medium text-sm whitespace-pre-wrap">{meta.openReason}</div>
+          </div>
+        )}
+        {meta.staffRequestReason && (
+          <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4 sm:col-span-2 lg:col-span-4">
+            <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Staff Resolution Summary</div>
+            <div className="text-white font-medium text-sm whitespace-pre-wrap">{meta.staffRequestReason}</div>
+          </div>
+        )}
+      </div>
+
       <div className="mb-6">
         <div className="card-glass rounded-[1.5rem] shadow-2xl shadow-black/40 overflow-hidden animate-fade-in-up">
           {(fullHtml || htmlContent) ? (
@@ -439,6 +478,11 @@ export async function getServerSideProps(context) {
       channelName: t.channel_name || 'Unknown',
       date: t.closed_at ? (() => { const d = new Date(t.closed_at); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : '',
       reason: t.close_reason || '',
+      openerTag: t.opener_tag || 'Unknown User',
+      openReason: t.open_reason || null,
+      claimedByTag: t.claimed_by_tag || null,
+      staffRequestReason: t.staff_request_reason || null,
+      closedAt: t.closed_at ? new Date(t.closed_at).toLocaleString() : '',
     };
 
     const canManage = isAdmin || isOwner;
