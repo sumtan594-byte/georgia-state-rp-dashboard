@@ -262,6 +262,7 @@ export default function DynamicApplyPage() {
   const [lastSaved, setLastSaved] = useState(null);
   const submitSuccessRef = useRef(false);
   const [timezoneBlocked, setTimezoneBlocked] = useState(false);
+  const [checkingTimezone, setCheckingTimezone] = useState(true);
 
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({});
@@ -648,13 +649,27 @@ export default function DynamicApplyPage() {
   }, [typeSlug]);
 
   useEffect(() => {
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-      if (tz && (tz.startsWith('America/') || tz === 'Pacific/Honolulu')) {
-        setTimezoneBlocked(true);
-      }
-    } catch (_) {}
-  }, []);
+    if (!typeSlug || !session) return;
+    const browserTz = (() => {
+      try { return Intl.DateTimeFormat().resolvedOptions().timeZone; } catch (_) { return ''; }
+    })();
+    console.log('[TimezoneCheck] Browser timezone:', browserTz);
+    fetch(`/api/applications/check-timezone?type=${typeSlug}`, {
+      headers: { 'x-timezone': browserTz }
+    })
+      .then(r => r.json())
+      .then(data => {
+        console.log('[TimezoneCheck] Server response:', data);
+        if (data.blocked) {
+          setTimezoneBlocked(true);
+        }
+        setCheckingTimezone(false);
+      })
+      .catch(err => {
+        console.error('[TimezoneCheck] Error:', err.message);
+        setCheckingTimezone(false);
+      });
+  }, [typeSlug, session]);
 
   const handleNextStep = () => {
     const fieldChunks = [];
@@ -815,7 +830,7 @@ export default function DynamicApplyPage() {
     );
   }
 
-  if (status === 'loading' || loading) {
+  if (status === 'loading' || loading || checkingTimezone) {
     return (
       <div className="max-w-3xl mx-auto py-20 px-4 text-center">
         <Loader2 className="w-10 h-10 text-gsrp-orange animate-spin mx-auto" />

@@ -47,6 +47,7 @@ export default function ManageApplicationTypes() {
     roleRemoveAccepted: [],
     roleAddDenied: [],
     roleRemoveDenied: [],
+    blockedTimezones: [],
     fields: []
   });
 
@@ -311,6 +312,7 @@ export default function ManageApplicationTypes() {
               roleRemoveAccepted: [], 
               roleAddDenied: [], 
               roleRemoveDenied: [], 
+              blockedTimezones: [],
               fields: [] 
             };
             setEditingType('new');
@@ -397,6 +399,20 @@ export default function ManageApplicationTypes() {
               value={form.roleRemoveDenied}
               onChange={val => setForm({...form, roleRemoveDenied: val})}
               placeholder="+ Add Role"
+            />
+          </div>
+
+          <div className="mb-8 p-6 bg-gsrp-dark-surface/30 border border-white/5 rounded-2xl">
+            <label className="block text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-3">Timezone Block</label>
+            <p className="text-[10px] text-white/30 font-medium mb-3 leading-relaxed">
+              Block applicants from specific timezones. Enter one IANA timezone prefix per line (e.g. <span className="text-gsrp-orange/70 font-mono">America/</span>). Leave empty for no block.
+            </p>
+            <textarea
+              value={Array.isArray(form.blockedTimezones) ? form.blockedTimezones.join('\n') : ''}
+              onChange={e => setForm({...form, blockedTimezones: e.target.value.split('\n').map(s => s.trim()).filter(Boolean)})}
+              placeholder="America/"
+              rows={3}
+              className="w-full bg-gsrp-dark-surface border border-white/10 rounded-xl px-4 py-3 text-white text-sm font-mono focus:border-gsrp-orange focus:outline-none resize-none"
             />
           </div>
 

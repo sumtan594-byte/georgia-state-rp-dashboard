@@ -58,7 +58,7 @@ export default async function handler(req, res) {
       name, slug, description, requiredRole, blacklistedRole, 
       roleAddAccepted, roleRemoveAccepted, 
       roleAddDenied, roleRemoveDenied,
-      fields 
+      fields, blockedTimezones
     } = req.body;
     
     if (!name || !slug) return res.status(400).json({ message: 'Name and Slug are required' });
@@ -70,7 +70,7 @@ export default async function handler(req, res) {
           name, slug, description, requiredRole, blacklistedRole, 
           roleAddAccepted, roleRemoveAccepted, 
           roleAddDenied, roleRemoveDenied,
-          fields, 
+          fields, blockedTimezones: blockedTimezones || [],
           updatedAt: new Date() 
         } 
       },
