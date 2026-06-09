@@ -1,5 +1,5 @@
 import { useSession } from "next-auth/react";
-import { ArrowLeft, Lock, Download, Loader2, Clock, Tag, FileText, Sparkles, Sun, Sunset, Users, X, Plus, Trash2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Lock, Download, Loader2, Clock, Tag, Sparkles, Users, X, Plus, Trash2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState, useCallback } from "react";
 import { sanitizeHtml } from '../../lib/sanitize';
@@ -26,64 +26,6 @@ function parseMeta(id) {
     time:        p[5] ? p[5].replace(/-/g, ':') : '',
   };
 }
-
-function escHtml(str) {
-  return str
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;');
-}
-
-function renderDiscordMarkdown(text) {
-  let out = text;
-  out = out.replace(/```(?:\w+\n)?([\s\S]*?)```/g, (_, code) =>
-    `<span class="discord-md-codeblock">${escHtml(code.trim())}</span>`);
-  out = out.split('\n').map(line => {
-    if (/^### (.+)/.test(line)) return `<span class="discord-md-h3">${line.replace(/^### /, '')}</span>`;
-    if (/^## (.+)/.test(line))  return `<span class="discord-md-h2">${line.replace(/^## /, '')}</span>`;
-    if (/^# (.+)/.test(line))   return `<span class="discord-md-h1">${line.replace(/^# /, '')}</span>`;
-    if (/^> (.*)/.test(line))   return (
-      `<span class="discord-md-blockquote"><span class="discord-md-blockquote-bar"></span><span class="discord-md-blockquote-content">${line.replace(/^> /, '')}</span></span>`);
-    return line;
-  }).join('\n');
-  out = out.replace(/\*\*\*(.+?)\*\*\*/g, '<strong class="discord-md-bold"><em class="discord-md-italic">$1</em></strong>');
-  out = out.replace(/\*\*(.+?)\*\*/g, '<strong class="discord-md-bold">$1</strong>');
-  out = out.replace(/\*(.+?)\*/g, '<em class="discord-md-italic">$1</em>');
-  out = out.replace(/(?<!_)_([^_]+)_(?!_)/g, '<em class="discord-md-italic">$1</em>');
-  out = out.replace(/__(.+?)__/g, '<span class="discord-md-underline">$1</span>');
-  out = out.replace(/~~(.+?)~~/g, '<span class="discord-md-strikethrough">$1</span>');
-  out = out.replace(/`([^`]+)`/g, '<span class="discord-md-code">$1</span>');
-  out = out.replace(/\|\|(.+?)\|\|/g, '<span class="discord-md-spoiler">$1</span>');
-  return out;
-}
-
-function applyDiscordMarkdown(html) {
-  if (!html) return html;
-  return html.replace(/(>)([^<]+)(<)/g, (_, open, text, close) => {
-    if (!text.trim()) return _;
-    return `${open}${renderDiscordMarkdown(text)}${close}`;
-  });
-}
-
-const DISCORD_MD_STYLES = `
-  discord-messages { background: #0F1629 !important; --discord-background-primary: #0F1629 !important; }
-  discord-message { --discord-background-message-hover: rgba(249, 115, 22, 0.03) !important; }
-  .transcript-meta-info { background: #0A0E1A !important; border-bottom: 1px solid rgba(30, 42, 74, 0.5) !important; }
-  .discord-md-h1 { font-size:1.75rem;font-weight:800;color:#f2f3f5;line-height:1.2;margin:0.5rem 0 0.25rem;display:block; }
-  .discord-md-h2 { font-size:1.375rem;font-weight:700;color:#f2f3f5;line-height:1.25;margin:0.4rem 0 0.2rem;display:block; }
-  .discord-md-h3 { font-size:1.125rem;font-weight:700;color:#f2f3f5;line-height:1.3;margin:0.3rem 0 0.15rem;display:block; }
-  .discord-md-blockquote { display:flex;align-items:stretch;margin:2px 0; }
-  .discord-md-blockquote-bar { width:4px;border-radius:4px;background:linear-gradient(180deg,#F97316,#0D9488);flex-shrink:0;margin-right:10px; }
-  .discord-md-blockquote-content { color:#dbdee1;padding:2px 0; }
-  .discord-md-bold { font-weight:700;color:#f2f3f5; }
-  .discord-md-italic { font-style:italic; }
-  .discord-md-underline { text-decoration:underline; }
-  .discord-md-strikethrough { text-decoration:line-through; }
-  .discord-md-code { background:#151D35;border-radius:3px;padding:0 4px;font-family:'Consolas','Courier New',monospace;font-size:0.85em;color:#f2f3f5; }
-  .discord-md-codeblock { background:#151D35;border-radius:6px;padding:8px 12px;font-family:'Consolas','Courier New',monospace;font-size:0.85em;color:#f2f3f5;white-space:pre-wrap;display:block;margin:4px 0;border:1px solid rgba(30,42,74,0.5); }
-  .discord-md-spoiler { background:#1E2A4A;border-radius:3px;padding:0 4px;cursor:pointer;color:transparent;transition:color 0.15s; }
-  .discord-md-spoiler:hover { color:#dbdee1; }
-`;
 
 function AccessModal({ transcriptId, isOpen, onClose }) {
   const [data, setData] = useState({ accesses: [], denies: [], admins: [], canManage: false, canRemoveAdmins: false });
@@ -324,9 +266,8 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
   );
 }
 
-export default function Viewer({ htmlContent, id, meta: serverMeta, canManage, error }) {
+export default function Viewer({ htmlContent, chatHTML, styles, id, meta: serverMeta, canManage, error }) {
   const { status } = useSession();
-  const [loaded, setLoaded] = useState(false);
   const [accessOpen, setAccessOpen] = useState(false);
   const [accessRevoked, setAccessRevoked] = useState(false);
   const meta = serverMeta || parseMeta(id);
@@ -346,26 +287,15 @@ export default function Viewer({ htmlContent, id, meta: serverMeta, canManage, e
     return () => clearInterval(interval);
   }, [id, error]);
 
-  useEffect(() => {
-    if (!htmlContent) return;
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(htmlContent, 'text/html');
-    const profilesData = doc.getElementById('discord-profiles-data');
-    if (profilesData) {
-      try { window.$discordMessage = { profiles: JSON.parse(profilesData.textContent) }; } catch (_) {}
-    }
-    const script = document.createElement("script");
-    script.type = "module";
-    script.src = "https://cdn.jsdelivr.net/npm/@derockdev/discord-components-core@^3.6.1/dist/derockdev-discord-components-core/derockdev-discord-components-core.esm.js";
-    script.onload = () => setLoaded(true);
-    document.body.appendChild(script);
-    return () => { if (document.body.contains(script)) document.body.removeChild(script); };
-  }, [htmlContent]);
-
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-    printWindow.document.write(`<!DOCTYPE html><html><head><title>Transcript - ${meta.channelName}</title></head><body>${htmlContent}</body></html>`);
+    if (chatHTML) {
+      const styleBlock = (styles || []).map(s => `<style>${s}</style>`).join('');
+      printWindow.document.write(`<!DOCTYPE html><html><head><title>Transcript - ${meta.channelName}</title></head><body>${styleBlock}${chatHTML}</body></html>`);
+    } else {
+      printWindow.document.write(`<!DOCTYPE html><html><head><title>Transcript - ${meta.channelName}</title></head><body>${htmlContent || ''}</body></html>`);
+    }
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 500);
@@ -437,16 +367,21 @@ export default function Viewer({ htmlContent, id, meta: serverMeta, canManage, e
       </div>
 
       <div className="mb-6">
-        {!loaded && htmlContent && (
-          <div className="flex items-center justify-center py-10">
-            <div className="bg-gsrp-dark/80 backdrop-blur-sm rounded-2xl px-6 py-4 flex items-center gap-3 border border-gsrp-dark-border/50 animate-scale-in">
-              <Loader2 size={14} className="text-gsrp-orange animate-spin" /><span className="text-gsrp-teal-light/50 text-[10px] font-bold uppercase tracking-wider">Rendering messages…</span>
-            </div>
-          </div>
-        )}
         <div className="card-glass rounded-[1.5rem] shadow-2xl shadow-black/40 overflow-hidden animate-fade-in-up">
-          <style dangerouslySetInnerHTML={{ __html: DISCORD_MD_STYLES }} />
-          <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }} />
+          {chatHTML ? (
+            <>
+              {(styles || []).map((css, i) => <style key={i}>{css}</style>)}
+              <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(chatHTML) }} />
+            </>
+          ) : htmlContent ? (
+            <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }} />
+          ) : (
+            <div className="flex items-center justify-center py-16">
+              <div className="bg-gsrp-dark/80 backdrop-blur-sm rounded-2xl px-6 py-4 border border-gsrp-dark-border/50">
+                <span className="text-gsrp-teal-light/40 text-[10px] font-bold uppercase tracking-wider">No messages to display</span>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -509,7 +444,7 @@ export async function getServerSideProps(context) {
 
     const canManage = isAdmin || isOwner;
 
-    // Try rendering from transcript_messages (new format)
+    // Render from transcript_messages using discord-html-transcripts
     try {
       const [msgRows] = await pool.query(
         'SELECT message_data, author_id, created_timestamp FROM transcript_messages WHERE transcript_id = ? ORDER BY sort_order ASC',
@@ -519,21 +454,16 @@ export async function getServerSideProps(context) {
       if (msgRows.length > 0) {
         const { generateTranscriptHTML } = require('../../lib/transcript-renderer');
         const messages = msgRows.map(r => JSON.parse(r.message_data));
-        const htmlContent = generateTranscriptHTML({
+        const { bodyContent, styleTags } = await generateTranscriptHTML({
           messages,
           channelName: t.channel_name,
-          closedAt: t.closed_at,
-          reason: t.close_reason,
-          openerTag: t.opener_tag || meta.ownerId,
-          openReason: t.open_reason || null,
-          staffRequestReason: t.staff_request_reason || null,
           guildName: 'GSRP',
         });
-        return { props: { htmlContent, id, meta, canManage } };
+        return { props: { chatHTML: bodyContent, styles: styleTags, id, meta, canManage } };
       }
     } catch (e) {
       if (e.code !== 'ER_NO_SUCH_TABLE') {
-        console.error("[Viewer] transcript_messages query error:", e.message);
+        console.error("[Viewer] transcript_messages render error:", e.message);
       }
     }
 
