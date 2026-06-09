@@ -39,11 +39,14 @@ function parseName(raw) {
   return { name: raw.slice(0, ci), id: raw.slice(ci + 1) };
 }
 
+const AVATAR_FALLBACK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%23333'/%3E%3Ccircle cx='24' cy='18' r='7' fill='%23666'/%3E%3Cellipse cx='24' cy='38' rx='14' ry='9' fill='%23666'/%3E%3C/svg%3E";
+
 function avatarIcon(rbxId, team, selected) {
   const border = TEAM_BORDER[team] || TEAM_BORDER.Civilian;
   const size = selected ? 48 : 40;
   return L.divIcon({
     html: `<img src="/api/panel/avatar?id=${rbxId}"
+      onerror="this.src='${AVATAR_FALLBACK}'"
       style="width:${size}px;height:${size}px;border-radius:50%;border:3px solid ${border};
       box-shadow:${selected ? `0 0 14px ${border}` : '0 2px 8px rgba(0,0,0,0.6)'};
       object-fit:cover;" alt="" loading="lazy" crossorigin="anonymous" />`,
@@ -58,7 +61,7 @@ function rpPinIcon(rbxId, color) {
   return L.divIcon({
     html: `<div style="position:relative;width:36px;height:46px;">
       <div style="width:36px;height:36px;border-radius:50% 50% 50% 0;background:${color};transform:rotate(-45deg);border:2px solid rgba(255,255,255,0.3);box-shadow:0 4px 12px rgba(0,0,0,0.5);position:absolute;top:0;left:0;"></div>
-      ${rbxId ? `<img src="${avatarUrl}" onerror="this.style.display='none'"
+      ${rbxId ? `<img src="${avatarUrl}" onerror="this.src='${AVATAR_FALLBACK}'"
         style="width:24px;height:24px;border-radius:50%;position:absolute;top:6px;left:6px;object-fit:cover;pointer-events:none;" />` : ''}
     </div>`,
     className: '',

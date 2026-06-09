@@ -3,12 +3,15 @@ import { authOptions } from "../../../lib/auth-options";
 import { ROLES } from '../../../lib/auth';
 import { requireAccess } from '../../../lib/access-check';
 
+const POLL_INTERVAL_MS = 5000;
+
 globalThis.__gsrpErlcCache ??= {
   data: null,
   fetchedAt: 0,
   fetching: null,
   nextAllowedFetch: 0,
   subscribers: new Set(),
+  pollTimer: null,
 };
 
 export function getCache() {
@@ -74,6 +77,12 @@ export async function refreshFromErlc(cache, key) {
         'x-ratelimit-reset': response.headers.get('x-ratelimit-reset'),
         'retry-after': response.headers.get('retry-after'),
       };
+
+      if (response.status === 429) {
+        const retryAfter = body.retry_after ?? err.headers['retry-after'] ?? 5;
+        updateRateLimitFromError(cache, err.headers, retryAfter);
+      }
+
       throw err;
     }
 
@@ -91,6 +100,60 @@ export async function refreshFromErlc(cache, key) {
     cache.fetching = null;
   }
 }
+
+/* ── SSE subscriber lifecycle ────────────────────────────────── */
+
+export function addSubscriber(res) {
+  const cache = getCache();
+  cache.subscribers.add(res);
+
+  if (cache.data) {
+    const msg = JSON.stringify({ type: 'players', data: cache.data });
+    try { res.write(`data: ${msg}\n\n`); } catch { cache.subscribers.delete(res); }
+  }
+
+  ensurePoller(cache);
+}
+
+export function removeSubscriber(res) {
+  const cache = getCache();
+  cache.subscribers.delete(res);
+
+  if (cache.subscribers.size === 0 && cache.pollTimer) {
+    clearInterval(cache.pollTimer);
+    cache.pollTimer = null;
+  }
+}
+
+function ensurePoller(cache) {
+  if (cache.pollTimer) return;
+
+  async function tick() {
+    if (cache.subscribers.size === 0) {
+      if (cache.pollTimer) {
+        clearInterval(cache.pollTimer);
+        cache.pollTimer = null;
+      }
+      return;
+    }
+
+    if (!canFetch(cache)) return;
+
+    const key = process.env.ERLC_API_KEY;
+    if (!key) return;
+
+    try {
+      await refreshFromErlc(cache, key);
+    } catch {
+      // rate-limit backoff handled inside refreshFromErlc
+    }
+  }
+
+  tick();
+  cache.pollTimer = setInterval(tick, POLL_INTERVAL_MS);
+}
+
+/* ── HTTP route handler ──────────────────────────────────────── */
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -111,21 +174,15 @@ export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
   // If we already have cached data, return it immediately — no ERLC call.
-  // The SSE poller (events.js) drives the refresh loop; individual HTTP GETs
-  // from the client, Sidebar, dashboard page, etc. should never trigger their
-  // own ERLC fetch. This is the key change that prevents multi-browser rate limits.
   if (cache.data) {
     return res.status(200).json(cache.data);
   }
 
-  // No cache at all yet — this is the very first request ever (cold start).
-  // Only in this case do we go to ERLC directly.
+  // No cache at all yet — cold start.
   if (cache.fetching) {
-    // Another request already kicked off a fetch; wait for it instead of doubling up.
     try {
       await cache.fetching;
     } catch {
-      // If the in-flight fetch failed, fall through to the error below.
     }
     if (cache.data) return res.status(200).json(cache.data);
     return res.status(503).json({ error: 'Initial ERLC fetch failed. Please retry.' });
@@ -134,7 +191,6 @@ export default async function handler(req, res) {
   try {
     await refreshFromErlc(cache, ERLC_KEY);
   } catch (error) {
-    // Forward rate limit headers from ERLC
     if (error.headers) {
       if (error.headers['x-ratelimit-bucket']) res.setHeader('X-RateLimit-Bucket', error.headers['x-ratelimit-bucket']);
       if (error.headers['x-ratelimit-limit']) res.setHeader('X-RateLimit-Limit', error.headers['x-ratelimit-limit']);
