@@ -53,23 +53,24 @@ export default async function handler(req, res) {
       return res.status(200).json({ blocked: false, browserTimezone: browserTz, ipTimezone, blockedPatterns: [] });
     }
 
-    // Check against blocked patterns — prefer IP timezone (can't be spoofed), fall back to browser TZ
+    // Block if EITHER IP timezone or browser timezone matches a blocked pattern
     let blocked = false;
     let blockedBy = '';
-    const effectiveTz = ipTimezone || browserTz;
-    const blockedSource = ipTimezone ? 'ip' : 'browser';
+    const blockedSource = [];
 
-    if (effectiveTz) {
+    for (const tz of [ipTimezone, browserTz]) {
+      if (!tz) continue;
       for (const pattern of blockedPatterns) {
-        if (effectiveTz.startsWith(pattern)) {
+        if (tz.startsWith(pattern)) {
           blocked = true;
           blockedBy = pattern;
+          blockedSource.push(tz === ipTimezone ? 'ip' : 'browser');
           break;
         }
       }
     }
 
-    console.log(`[TimezoneCheck] user=${session.user.id} type=${typeSlug} ip=${ip} browserTz=${browserTz} ipTz=${ipTimezone} src=${blockedSource} blocked=${blocked} pattern=${blockedBy}`);
+    console.log(`[TimezoneCheck] user=${session.user.id} type=${typeSlug} ip=${ip} browserTz=${browserTz} ipTz=${ipTimezone} src=[${blockedSource.join(',')}] blocked=${blocked} pattern=${blockedBy}`);
 
     return res.status(200).json({
       blocked,
