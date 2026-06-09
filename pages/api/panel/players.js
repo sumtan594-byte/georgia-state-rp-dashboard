@@ -3,20 +3,46 @@ import { authOptions } from "../../../lib/auth-options";
 import { ROLES } from '../../../lib/auth';
 import { requireAccess } from '../../../lib/access-check';
 
-const CACHE_TTL_MS = 2000;
-
 globalThis.__gsrpErlcCache ??= {
   data: null,
   fetchedAt: 0,
   fetching: null,
+  nextAllowedFetch: 0,
 };
 
 function getCache() {
   return globalThis.__gsrpErlcCache;
 }
 
-function isFresh(cache) {
-  return cache.data && (Date.now() - cache.fetchedAt) < CACHE_TTL_MS;
+function canFetch(cache) {
+  return Date.now() >= cache.nextAllowedFetch;
+}
+
+function updateRateLimit(cache, response) {
+  const remaining = parseInt(response.headers.get('x-ratelimit-remaining'));
+  const resetEpoch = parseFloat(response.headers.get('x-ratelimit-reset'));
+  const resetMs = resetEpoch ? resetEpoch * 1000 : 0;
+
+  if (remaining <= 1 && resetMs) {
+    cache.nextAllowedFetch = resetMs + 500;
+  } else {
+    cache.nextAllowedFetch = Date.now();
+  }
+}
+
+function updateRateLimitFromError(cache, headers, retryAfter) {
+  const now = Date.now();
+  const resetEpoch = headers?.['x-ratelimit-reset'];
+  const resetMs = resetEpoch ? parseFloat(resetEpoch) * 1000 : 0;
+  const raMs = retryAfter ? parseFloat(retryAfter) * 1000 : 0;
+
+  if (resetMs > now) {
+    cache.nextAllowedFetch = resetMs + 500;
+  } else if (raMs > 0) {
+    cache.nextAllowedFetch = now + raMs + 500;
+  } else {
+    cache.nextAllowedFetch = now + 5000;
+  }
 }
 
 async function refreshFromErlc(cache, key) {
@@ -44,6 +70,7 @@ async function refreshFromErlc(cache, key) {
     const data = await response.json();
     cache.data = data;
     cache.fetchedAt = Date.now();
+    updateRateLimit(cache, response);
     return data;
   })();
 
@@ -72,7 +99,7 @@ export default async function handler(req, res) {
   const cache = getCache();
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
-  if (!isFresh(cache)) {
+  if (!cache.data || canFetch(cache)) {
     try {
       await refreshFromErlc(cache, ERLC_KEY);
     } catch (error) {
@@ -87,6 +114,7 @@ export default async function handler(req, res) {
 
       if (error.status === 429) {
         const retryAfter = error.body?.retry_after ?? error.headers?.['retry-after'] ?? 5;
+        updateRateLimitFromError(cache, error.headers, retryAfter);
         if (!res.getHeader('Retry-After')) res.setHeader('Retry-After', retryAfter);
         return res.status(429).json({ error: 'ERLC rate limited', retry_after: Number(retryAfter), ...(error.body || {}) });
       }
