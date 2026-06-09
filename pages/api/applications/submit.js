@@ -100,13 +100,6 @@ export default async function handler(req, res) {
       } catch (_) {}
     }
 
-    if (timezone && (timezone.startsWith('America/') || timezone === 'Pacific/Honolulu')) {
-      console.log('[Application API] Denied USA timezone:', timezone, 'user:', session.user.id);
-      return res.status(403).json({
-        message: 'We truly appreciate your interest in joining our staff team! Unfortunately, we\'ve reached capacity for staff from USA timezones at this time. We\'re incredibly sorry for the inconvenience — please feel free to reapply in the future if our needs change. Thank you for understanding!'
-      });
-    }
-
     const sanitizedMonitoring = sanitizeMonitoringData(application.monitoringData);
 
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;

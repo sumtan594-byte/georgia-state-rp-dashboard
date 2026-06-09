@@ -261,7 +261,8 @@ export default function DynamicApplyPage() {
   const [draftRestored, setDraftRestored] = useState(false);
   const [lastSaved, setLastSaved] = useState(null);
   const submitSuccessRef = useRef(false);
-  
+  const [timezoneBlocked, setTimezoneBlocked] = useState(false);
+
   const [step, setStep] = useState(1);
   const [answers, setAnswers] = useState({});
   const [keystrokes, setKeystrokes] = useState({});
@@ -646,6 +647,15 @@ export default function DynamicApplyPage() {
     }
   }, [typeSlug]);
 
+  useEffect(() => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      if (tz && (tz.startsWith('America/') || tz === 'Pacific/Honolulu')) {
+        setTimezoneBlocked(true);
+      }
+    } catch (_) {}
+  }, []);
+
   const handleNextStep = () => {
     const fieldChunks = [];
     for (let i = 0; i < appType.fields.length; i += 4) {
@@ -788,6 +798,22 @@ export default function DynamicApplyPage() {
     setError(lastError?.message || 'Failed to submit application. Please try again.');
     setIsSubmitting(false);
   };
+
+  if (timezoneBlocked) {
+    return (
+      <div className="max-w-2xl mx-auto py-24 px-6 text-center animate-fade-in-up">
+        <div className="bg-gsrp-dark-card border border-gsrp-orange/20 rounded-3xl p-10">
+          <div className="w-16 h-16 rounded-full bg-gsrp-orange/10 flex items-center justify-center mx-auto mb-6">
+            <AlertCircle className="w-8 h-8 text-gsrp-orange" />
+          </div>
+          <h1 className="text-3xl font-black text-white mb-4">We Appreciate Your Interest!</h1>
+          <p className="text-white/70 text-base leading-relaxed max-w-lg mx-auto">
+            We truly appreciate your interest in joining our staff team! Unfortunately, we've reached capacity for staff from USA timezones at this time. We're incredibly sorry for the inconvenience — please feel free to reapply in the future if our needs change. Thank you for understanding!
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (status === 'loading' || loading) {
     return (
