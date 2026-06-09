@@ -101,7 +101,7 @@ export default function PanelPage() {
 
   useEffect(() => {
     fetchData();
-    if (live) intervalRef.current = setInterval(fetchData, 2500);
+    if (live) intervalRef.current = setInterval(fetchData, 8000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [live, fetchData]);
 
@@ -115,7 +115,7 @@ export default function PanelPage() {
 
   useEffect(() => {
     fetchRoleplays();
-    const t = setInterval(fetchRoleplays, 10000);
+    const t = setInterval(fetchRoleplays, 30000);
     return () => clearInterval(t);
   }, [fetchRoleplays]);
 
