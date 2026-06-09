@@ -40,6 +40,7 @@ export default function PanelPage() {
   const intervalRef = useRef(null);
   const dataRef = useRef(null);
   const rateLimitUntilRef = useRef(null);
+  const hasFetched = useRef(false);
 
   useEffect(() => {
     dataRef.current = data;
@@ -78,35 +79,70 @@ export default function PanelPage() {
   // Vehicles from data
   const vehicles = data?.Vehicles || [];
 
-  /* ── Fetch ERLC data ────────────────────────────────────────────────── */
+  /* ── Fetch ERLC data via SSE + polling fallback ──────────────────────── */
+  const evtSourceRef = useRef(null);
+
+  const handleData = useCallback((newData) => {
+    setData(newData);
+    setError(null);
+    setRateLimitUntil(null);
+    rateLimitUntilRef.current = null;
+    setLoading(false);
+  }, []);
+
+  const handleError = useCallback((errMsg, until) => {
+    setError(errMsg);
+    if (until) {
+      setRateLimitUntil(until);
+      rateLimitUntilRef.current = until;
+    }
+    setLoading(false);
+  }, []);
+
+  // SSE subscription
+  useEffect(() => {
+    if (!live) return;
+
+    const es = new EventSource('/api/panel/events');
+    evtSourceRef.current = es;
+
+    es.addEventListener('players', (e) => {
+      try {
+        handleData(JSON.parse(e.data));
+      } catch { /* ignore bad messages */ }
+    });
+
+    es.onerror = () => {};
+
+    return () => { es.close(); evtSourceRef.current = null; };
+  }, [live, handleData]);
+
+  // Polling fallback (runs alongside SSE, slow interval)
   const fetchData = useCallback(async () => {
     if (rateLimitUntilRef.current && Date.now() < rateLimitUntilRef.current) return;
     try {
       const res = await fetch('/api/panel/players');
       if (res.ok) {
-        setData(await res.json());
-        setError(null);
-        setRateLimitUntil(null);
-        rateLimitUntilRef.current = null;
+        const json = await res.json();
+        if (!json._stale) handleData(json);
       } else if (res.status === 429) {
         const retryAfter = Number(res.headers.get('Retry-After') || 5);
-        const until = Date.now() + retryAfter * 1000;
-        setRateLimitUntil(until);
-        rateLimitUntilRef.current = until;
-        setError(dataRef.current ? 'ER:LC API rate limited. Showing latest cached data.' : `ER:LC API rate limited. Retrying in ${retryAfter}s.`);
+        handleError(dataRef.current ? 'ER:LC API rate limited. Showing latest cached data.' : `ER:LC API rate limited. Retrying in ${retryAfter}s.`, Date.now() + retryAfter * 1000);
       } else {
-        setError(`Server error: ${res.status}`);
+        handleError(`Server error: ${res.status}`);
       }
     } catch {
-      setError('Network error — server may be offline');
+      handleError('Network error — server may be offline');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [handleData, handleError]);
 
+  // Initial fetch + polling interval
   useEffect(() => {
-    fetchData();
-    if (live) intervalRef.current = setInterval(fetchData, 3000);
+    if (!hasFetched.current) { hasFetched.current = true; fetchData(); }
+    if (!live) return;
+    intervalRef.current = setInterval(fetchData, 10000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [live, fetchData]);
 

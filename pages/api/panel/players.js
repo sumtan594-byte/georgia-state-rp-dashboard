@@ -8,6 +8,7 @@ globalThis.__gsrpErlcCache ??= {
   fetchedAt: 0,
   fetching: null,
   nextAllowedFetch: 0,
+  subscribers: new Set(),
 };
 
 function getCache() {
@@ -45,6 +46,13 @@ function updateRateLimitFromError(cache, headers, retryAfter) {
   }
 }
 
+function broadcastToSubscribers(data) {
+  const msg = JSON.stringify({ type: 'players', data });
+  for (const sub of globalThis.__gsrpErlcCache.subscribers) {
+    try { sub.write(`data: ${msg}\n\n`); } catch { globalThis.__gsrpErlcCache.subscribers.delete(sub); }
+  }
+}
+
 async function refreshFromErlc(cache, key) {
   if (cache.fetching) return cache.fetching;
 
@@ -71,6 +79,7 @@ async function refreshFromErlc(cache, key) {
     cache.data = data;
     cache.fetchedAt = Date.now();
     updateRateLimit(cache, response);
+    broadcastToSubscribers(data);
     return data;
   })();
 
