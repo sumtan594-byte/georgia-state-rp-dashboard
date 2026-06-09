@@ -3,7 +3,7 @@ import { authOptions } from "../../../lib/auth-options";
 import { ROLES } from '../../../lib/auth';
 import { requireAccess } from '../../../lib/access-check';
 
-const CACHE_TTL_MS = 30000;
+const CACHE_TTL_MS = 5000;
 
 globalThis.__gsrpErlcCache ??= {
   data: null,
