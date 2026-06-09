@@ -39,6 +39,7 @@ export default function PanelPage() {
   const [rateLimitUntil, setRateLimitUntil] = useState(null);
   const intervalRef = useRef(null);
   const dataRef = useRef(null);
+  const rateLimitUntilRef = useRef(null);
 
   useEffect(() => {
     dataRef.current = data;
@@ -79,17 +80,21 @@ export default function PanelPage() {
 
   /* ── Fetch ERLC data ────────────────────────────────────────────────── */
   const fetchData = useCallback(async () => {
+    if (rateLimitUntilRef.current && Date.now() < rateLimitUntilRef.current) return;
     try {
       const res = await fetch('/api/panel/players');
       if (res.ok) {
         setData(await res.json());
         setError(null);
         setRateLimitUntil(null);
+        rateLimitUntilRef.current = null;
       } else if (res.status === 429) {
         const retryAfter = Number(res.headers.get('Retry-After') || 5);
-        setRateLimitUntil(Date.now() + retryAfter * 1000);
+        const until = Date.now() + retryAfter * 1000;
+        setRateLimitUntil(until);
+        rateLimitUntilRef.current = until;
         setError(dataRef.current ? 'ER:LC API rate limited. Showing latest cached data.' : `ER:LC API rate limited. Retrying in ${retryAfter}s.`);
-      } else if (res.status !== 429) {
+      } else {
         setError(`Server error: ${res.status}`);
       }
     } catch {
@@ -101,7 +106,7 @@ export default function PanelPage() {
 
   useEffect(() => {
     fetchData();
-    if (live) intervalRef.current = setInterval(fetchData, 8000);
+    if (live) intervalRef.current = setInterval(fetchData, 3000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [live, fetchData]);
 
