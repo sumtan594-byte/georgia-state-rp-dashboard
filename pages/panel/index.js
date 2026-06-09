@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {
-  Loader2, Pause, Play, Users, AlertTriangle, WifiOff, ArrowLeft, Radio,
+  Loader2, Pause, Play, Users, AlertTriangle, WifiOff, ArrowLeft,
 } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
 import PanelLayout from '../../components/panel/PanelLayout';
@@ -11,7 +11,6 @@ import PlayerList from '../../components/panel/PlayerList';
 import OperationsPanel from '../../components/panel/OperationsPanel';
 import CommandBar from '../../components/panel/CommandBar';
 import PlayerActionPanel from '../../components/panel/PlayerActionPanel';
-import RoleplayLogs from '../../components/panel/RoleplayLogs';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import AccessDenied from '../../components/auth/AccessDenied';
 
@@ -61,18 +60,6 @@ export default function PanelPage() {
 
   // Camera lock
   const [lockedPlayerId, setLockedPlayerId] = useState(null);
-
-  // Roleplay logs state
-  const [roleplays, setRoleplays] = useState([]);
-  const [rpLogsOpen, setRpLogsOpen] = useState(false);
-
-  // Map interaction modes
-  const [playerSelectMode, setPlayerSelectMode] = useState(false);
-  const [locationSelectMode, setLocationSelectMode] = useState(false);
-  const [pendingPlayerSelect, setPendingPlayerSelect] = useState(null);
-  const [pendingLocationSelect, setPendingLocationSelect] = useState(null);
-  // For "move location" on an existing RP
-  const [movingRpId, setMovingRpId] = useState(null);
 
   const isNkz = effectiveSession?.user?.roles?.includes(NKZ_ROLE_ID) || effectiveSession?.user?.isAdmin;
 
@@ -150,45 +137,6 @@ export default function PanelPage() {
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
   }, [live, fetchData]);
 
-  /* ── Fetch active roleplays ─────────────────────────────────────────── */
-  const fetchRoleplays = useCallback(async () => {
-    try {
-      const res = await fetch('/api/panel/roleplays');
-      if (res.ok) setRoleplays(await res.json());
-    } catch { /* silent */ }
-  }, []);
-
-  useEffect(() => {
-    fetchRoleplays();
-    const t = setInterval(fetchRoleplays, 30000);
-    return () => clearInterval(t);
-  }, [fetchRoleplays]);
-
-  /* ── Auto-expire roleplays ──────────────────────────────────────────── */
-  useEffect(() => {
-    const t = setInterval(async () => {
-      const now = Date.now();
-      const expiredRps = roleplays.filter(rp => rp.active && new Date(rp.expiresAt) < now);
-      
-      if (expiredRps.length > 0) {
-        // Remove expired roleplays completely from the active list
-        setRoleplays(prev => prev.filter(rp => !(rp.active && new Date(rp.expiresAt) < now)));
-
-        // Notify server/discord for each expired RP
-        for (const rp of expiredRps) {
-          try {
-            await fetch(`/api/panel/roleplays/${rp.rpId}`, {
-              method: 'PATCH',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'expire' }),
-            });
-          } catch (e) { console.error(`Failed to expire RP ${rp.rpId}:`, e); }
-        }
-      }
-    }, 5000);
-    return () => clearInterval(t);
-  }, [roleplays]);
-
   /* ── ERLC alerts ─────────────────────────────────────────────────────── */
   const alerts = [];
   if (data) {
@@ -242,84 +190,6 @@ export default function PanelPage() {
     });
   }, []);
 
-  /* ── Map mode: player select ──────────────────────────────────────────── */
-  const handleRequestPlayerSelect = useCallback(() => {
-    setPlayerSelectMode(true);
-    setLocationSelectMode(false);
-  }, []);
-
-  const handlePlayerSelected = useCallback((info) => {
-    setPlayerSelectMode(false);
-    setPendingPlayerSelect(info);
-    setTimeout(() => setPendingPlayerSelect(null), 100);
-  }, []);
-
-  /* ── Map mode: location select (create or move) ────────────────────────── */
-  const handleRequestLocationSelect = useCallback((rpId = null) => {
-    const actualId = (rpId && typeof rpId === 'string') ? rpId : null;
-    setLocationSelectMode(true);
-    setPlayerSelectMode(false);
-    setMovingRpId(actualId);
-  }, []);
-
-  const handleLocationSelected = useCallback(async ({ location, pinX, pinY }) => {
-    console.log('[Panel] Location Selected. movingRpId:', movingRpId);
-    setLocationSelectMode(false);
-      if (movingRpId) {
-        const rpIdString = typeof movingRpId === 'object' ? movingRpId.rpId : movingRpId;
-        if (!rpIdString) return;
-        // Moving an existing RP pin
-        await fetch(`/api/panel/roleplays/${rpIdString}`, {
-
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'move', pinX, pinY, location }),
-      });
-      setRoleplays(prev => prev.map(rp =>
-        rp.rpId === movingRpId ? { ...rp, pinX, pinY, location } : rp
-      ));
-      setMovingRpId(null);
-    } else {
-      // New RP location select
-      setPendingLocationSelect({ location, pinX, pinY });
-      setTimeout(() => setPendingLocationSelect(null), 100);
-    }
-  }, [movingRpId]);
-
-  /* ── "Where I Am" location for current moderator ─────────────────────── */
-  const myLocationData = useCallback(() => {
-    if (!effectiveSession?.user?.name || !data?.Players) return null;
-    const me = data.Players.find(p => {
-      const ci = (p.Player || '').lastIndexOf(':');
-      const name = ci !== -1 ? p.Player.slice(0, ci) : p.Player;
-      return name.toLowerCase() === effectiveSession.user.name.toLowerCase();
-    });
-    if (!me?.Location) return null;
-    const { toPixel } = require('../../components/panel/LiveMap'); // We export these
-    // Inline pixel calc here instead of dynamic require:
-    const MAP_PX = 3120, OFFSET_X = 11, OFFSET_Z = -17, SPAN_X = 3142, SPAN_Z = 3089;
-    const lx = me.Location.LocationX || 0;
-    const lz = me.Location.LocationZ || 0;
-    const pinX = ((lx + OFFSET_X) / SPAN_X) * MAP_PX;
-    const pinY = MAP_PX - ((lz + OFFSET_Z) / SPAN_Z) * MAP_PX;
-    const loc = me.Location;
-    const location = [loc.StreetName, loc.PostalCode ? `Postal #${loc.PostalCode}` : ''].filter(Boolean).join(', ') || `${Math.round(lx)}, ${Math.round(lz)}`;
-    return { location, pinX, pinY };
-  }, [effectiveSession, data]);
-
-  /* ── Roleplay CRUD handlers ──────────────────────────────────────────── */
-  const handleRoleplayCreated = useCallback((rp) => {
-    setRoleplays(prev => [rp, ...prev]);
-  }, []);
-
-  const handleRoleplayUpdated = useCallback(({ rpId, expiresAt }) => {
-    setRoleplays(prev => prev.map(rp => rp.rpId === rpId ? { ...rp, expiresAt } : rp));
-  }, []);
-
-  const handleRoleplayEnded = useCallback((rpId) => {
-    setRoleplays(prev => prev.map(rp => rp.rpId === rpId ? { ...rp, active: false } : rp));
-  }, []);
-
   /* ── Loading / auth states ───────────────────────────────────────────── */
   if (status === 'loading' || !hasRefreshed) {
     return (
@@ -334,8 +204,6 @@ export default function PanelPage() {
 
   if (!session) return <LoginScreen />;
   if (accessDenied) return <AccessDenied roleId={accessDenied.roleId} />;
-
-  const activeRoleplays = roleplays.filter(r => r.active);
 
   return (
     <div className="h-full flex flex-col">
@@ -365,24 +233,6 @@ export default function PanelPage() {
         )}
 
         <div className="flex items-center gap-2 ml-auto">
-          {/* Roleplay Logs button */}
-          <button
-            onClick={() => setRpLogsOpen(v => !v)}
-            className={`hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer ${
-              rpLogsOpen
-                ? 'bg-gsrp-orange/15 text-gsrp-orange border-gsrp-orange/30'
-                : 'bg-white/5 text-white/40 border-gsrp-dark-border/50 hover:text-white/70 hover:border-white/20'
-            }`}
-          >
-            <Radio size={14} />
-            Roleplay Logs
-            {activeRoleplays.length > 0 && (
-              <span className="ml-1 px-1.5 py-0.5 rounded-full bg-gsrp-orange text-black text-[10px] font-bold leading-none">
-                {activeRoleplays.length}
-              </span>
-            )}
-          </button>
-
           <Link href="/"
             className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white/30 border border-gsrp-dark-border/50 hover:text-white/60 hover:border-white/20 transition-all cursor-pointer">
             <ArrowLeft size={14} />
@@ -454,11 +304,6 @@ export default function PanelPage() {
                 isNkz={isNkz}
                 onTeleport={handleTeleport}
                 teamFilter={teamFilter}
-                roleplays={activeRoleplays}
-                playerSelectMode={playerSelectMode}
-                onPlayerSelected={handlePlayerSelected}
-                locationSelectMode={locationSelectMode}
-                onLocationSelected={handleLocationSelected}
                 lockedPlayerId={lockedPlayerId}
                 onLockPlayer={setLockedPlayerId}
                 server={data}
@@ -472,52 +317,16 @@ export default function PanelPage() {
                 <PlayerActionPanel
                   player={selectedPlayer}
                   vehicles={vehicles}
-                  roleplays={activeRoleplays}
                   session={effectiveSession}
                   onClose={() => { setSelectedPlayer(null); setLockedPlayerId(null); }}
                 />
               )}
-
-              {/* Roleplay Logs overlay on map */}
-              <RoleplayLogs
-                open={rpLogsOpen}
-                onClose={() => setRpLogsOpen(false)}
-                players={data.Players || []}
-                roleplays={activeRoleplays}
-                onRolepayCreated={handleRoleplayCreated}
-                onRoleplayUpdated={handleRoleplayUpdated}
-                onRoleplayEnded={handleRoleplayEnded}
-                onRequestPlayerSelect={handleRequestPlayerSelect}
-                pendingPlayerSelect={pendingPlayerSelect}
-                onRequestLocationSelect={handleRequestLocationSelect}
-                pendingLocationSelect={pendingLocationSelect}
-                myLocation={myLocationData()}
-              />
-
-              {/* Roleplay Logs button on map (top-right) for mobile / always visible */}
-              <button
-                onClick={() => setRpLogsOpen(v => !v)}
-                className={`absolute top-3 right-3 z-[200] flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold shadow-lg transition-all border cursor-pointer sm:hidden ${
-                  rpLogsOpen
-                    ? 'bg-gsrp-orange/20 text-gsrp-orange border-gsrp-orange/30'
-                    : 'bg-gsrp-dark-card/90 text-white/50 border-gsrp-dark-border/50'
-                }`}
-              >
-                <Radio size={13} />
-                RP Logs
-                {activeRoleplays.length > 0 && (
-                  <span className="px-1.5 py-0.5 rounded-full bg-gsrp-orange text-black text-[10px] font-bold leading-none">
-                    {activeRoleplays.length}
-                  </span>
-                )}
-              </button>
             </div>
           }
           infoPanel={
             <OperationsPanel
               players={data.Players || []}
               emergencyCalls={data.EmergencyCalls || []}
-              roleplays={activeRoleplays}
               server={data}
               live={live}
               error={error}

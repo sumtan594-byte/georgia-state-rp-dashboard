@@ -11,7 +11,7 @@ globalThis.__gsrpErlcCache ??= {
   subscribers: new Set(),
 };
 
-function getCache() {
+export function getCache() {
   return globalThis.__gsrpErlcCache;
 }
 
@@ -55,7 +55,7 @@ function broadcastToSubscribers(data) {
   }
 }
 
-async function refreshFromErlc(cache, key) {
+export async function refreshFromErlc(cache, key) {
   if (cache.fetching) return cache.fetching;
 
   cache.fetching = (async () => {
