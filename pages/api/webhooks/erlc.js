@@ -12,6 +12,9 @@ const TARGET_WEBHOOK_URL = process.env.ERLC_WEBHOOK_URL;
 const PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----\n${PRC_PUBLIC_KEY_BASE64}\n-----END PUBLIC KEY-----`;
 const DEV_MODE = process.env.NODE_ENV === 'development' || process.env.ERLC_WEBHOOK_DEV === 'true';
 
+let lastInvalidSigTime = 0;
+let invalidSigCount = 0;
+
 async function getRobloxUsername(userId) {
   try {
     const response = await fetch(`https://users.roblox.com/v1/users/${userId}`, {
@@ -71,7 +74,15 @@ export default async function handler(req, res) {
     }
 
     if (!isVerified) {
-      console.error('[ERLC] Invalid signature');
+      const now = Date.now();
+      invalidSigCount++;
+      if (lastInvalidSigTime > 0) {
+        const interval = now - lastInvalidSigTime;
+        console.error(`[ERLC] Invalid signature (#${invalidSigCount}, +${interval}ms since last)`);
+      } else {
+        console.error(`[ERLC] Invalid signature (#${invalidSigCount}, first occurrence)`);
+      }
+      lastInvalidSigTime = now;
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
