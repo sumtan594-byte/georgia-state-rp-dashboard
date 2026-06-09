@@ -23,11 +23,13 @@ function updateRateLimit(cache, response) {
   const remaining = parseInt(response.headers.get('x-ratelimit-remaining'));
   const resetEpoch = parseFloat(response.headers.get('x-ratelimit-reset'));
   const resetMs = resetEpoch ? resetEpoch * 1000 : 0;
+  const now = Date.now();
+  const minimumNext = now + 2000;
 
   if (remaining <= 1 && resetMs) {
-    cache.nextAllowedFetch = resetMs + 500;
+    cache.nextAllowedFetch = Math.max(resetMs + 500, minimumNext);
   } else {
-    cache.nextAllowedFetch = Date.now();
+    cache.nextAllowedFetch = minimumNext;
   }
 }
 
@@ -108,31 +110,47 @@ export default async function handler(req, res) {
   const cache = getCache();
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
-  if (!cache.data || canFetch(cache)) {
-    try {
-      await refreshFromErlc(cache, ERLC_KEY);
-    } catch (error) {
-      // Forward rate limit headers from ERLC
-      if (error.headers) {
-        if (error.headers['x-ratelimit-bucket']) res.setHeader('X-RateLimit-Bucket', error.headers['x-ratelimit-bucket']);
-        if (error.headers['x-ratelimit-limit']) res.setHeader('X-RateLimit-Limit', error.headers['x-ratelimit-limit']);
-        if (error.headers['x-ratelimit-remaining']) res.setHeader('X-RateLimit-Remaining', error.headers['x-ratelimit-remaining']);
-        if (error.headers['x-ratelimit-reset']) res.setHeader('X-RateLimit-Reset', error.headers['x-ratelimit-reset']);
-        if (error.headers['retry-after']) res.setHeader('Retry-After', error.headers['retry-after']);
-      }
+  // If we already have cached data, return it immediately — no ERLC call.
+  // The SSE poller (events.js) drives the refresh loop; individual HTTP GETs
+  // from the client, Sidebar, dashboard page, etc. should never trigger their
+  // own ERLC fetch. This is the key change that prevents multi-browser rate limits.
+  if (cache.data) {
+    return res.status(200).json(cache.data);
+  }
 
-      if (error.status === 429) {
-        const retryAfter = error.body?.retry_after ?? error.headers?.['retry-after'] ?? 5;
-        updateRateLimitFromError(cache, error.headers, retryAfter);
-        if (!res.getHeader('Retry-After')) res.setHeader('Retry-After', retryAfter);
-        return res.status(429).json({ error: 'ERLC rate limited', retry_after: Number(retryAfter), ...(error.body || {}) });
-      }
-      if (cache.data) {
-        return res.status(200).json({ ...cache.data, _stale: true });
-      }
-      console.error('[Panel Players] ERLC fetch error:', error.message);
-      return res.status(500).json({ error: 'Failed to fetch ER:LC data' });
+  // No cache at all yet — this is the very first request ever (cold start).
+  // Only in this case do we go to ERLC directly.
+  if (cache.fetching) {
+    // Another request already kicked off a fetch; wait for it instead of doubling up.
+    try {
+      await cache.fetching;
+    } catch {
+      // If the in-flight fetch failed, fall through to the error below.
     }
+    if (cache.data) return res.status(200).json(cache.data);
+    return res.status(503).json({ error: 'Initial ERLC fetch failed. Please retry.' });
+  }
+
+  try {
+    await refreshFromErlc(cache, ERLC_KEY);
+  } catch (error) {
+    // Forward rate limit headers from ERLC
+    if (error.headers) {
+      if (error.headers['x-ratelimit-bucket']) res.setHeader('X-RateLimit-Bucket', error.headers['x-ratelimit-bucket']);
+      if (error.headers['x-ratelimit-limit']) res.setHeader('X-RateLimit-Limit', error.headers['x-ratelimit-limit']);
+      if (error.headers['x-ratelimit-remaining']) res.setHeader('X-RateLimit-Remaining', error.headers['x-ratelimit-remaining']);
+      if (error.headers['x-ratelimit-reset']) res.setHeader('X-RateLimit-Reset', error.headers['x-ratelimit-reset']);
+      if (error.headers['retry-after']) res.setHeader('Retry-After', error.headers['retry-after']);
+    }
+
+    if (error.status === 429) {
+      const retryAfter = error.body?.retry_after ?? error.headers?.['retry-after'] ?? 5;
+      updateRateLimitFromError(cache, error.headers, retryAfter);
+      if (!res.getHeader('Retry-After')) res.setHeader('Retry-After', retryAfter);
+      return res.status(429).json({ error: 'ERLC rate limited', retry_after: Number(retryAfter), ...(error.body || {}) });
+    }
+    console.error('[Panel Players] ERLC fetch error:', error.message);
+    return res.status(500).json({ error: 'Failed to fetch ER:LC data' });
   }
 
   return res.status(200).json(cache.data);

@@ -5,7 +5,7 @@ import { requireAccess } from '../../../lib/access-check';
 
 const cache = new Map();
 const fetching = new Map();
-const CACHE_TTL_MS = 300_000;
+const CACHE_TTL_MS = 86_400_000;
 const MAX_CACHE_SIZE = 500;
 
 export default async function handler(req, res) {

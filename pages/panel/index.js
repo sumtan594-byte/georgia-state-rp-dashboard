@@ -100,6 +100,8 @@ export default function PanelPage() {
   }, []);
 
   // SSE subscription
+  const lastSseRef = useRef(0);
+
   useEffect(() => {
     if (!live) return;
 
@@ -107,6 +109,7 @@ export default function PanelPage() {
     evtSourceRef.current = es;
 
     es.addEventListener('players', (e) => {
+      lastSseRef.current = Date.now();
       try {
         handleData(JSON.parse(e.data));
       } catch { /* ignore bad messages */ }
@@ -117,8 +120,9 @@ export default function PanelPage() {
     return () => { es.close(); evtSourceRef.current = null; };
   }, [live, handleData]);
 
-  // Polling fallback (runs alongside SSE, slow interval)
+  // Polling fallback — only fires if SSE has been quiet for 8+ seconds
   const fetchData = useCallback(async () => {
+    if (Date.now() - lastSseRef.current < 8000) return;
     if (rateLimitUntilRef.current && Date.now() < rateLimitUntilRef.current) return;
     try {
       const res = await fetch('/api/panel/players');
