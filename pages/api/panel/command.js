@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
-import { authOptions } from "../../../lib/auth-options";
-import { ROLES, hasRole, isAdmin } from '../../../lib/auth';
+import { authOptions } from '../../../lib/auth-options';
+import { ROLES } from '../../../lib/auth';
+import { requireAccess } from '../../../lib/access-check';
 import { rateLimit } from '../../../lib/rate-limiter';
 import { logCommand } from '../../../lib/command-history';
 
@@ -119,7 +120,8 @@ export default async function handler(req, res) {
 
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Not logged in' });
-  if (!hasRole(session, ROLES.PANEL) && !isAdmin(session)) {
+  const panelAccess = await requireAccess(session, ROLES.PANEL);
+  if (!panelAccess.allowed) {
     return res.status(403).json({ error: 'Missing required Discord role' });
   }
 
@@ -154,11 +156,14 @@ export default async function handler(req, res) {
   }
 
   const cmdPrefix = cmd.split(/\s+/)[0].toLowerCase();
-  if (NKZ_COMMANDS.includes(cmdPrefix) && !hasRole(session, NKZ_ROLE_ID) && !isAdmin(session)) {
-    return res.status(403).json({
-      error: 'This command requires NKZ administrator privileges.',
-      code: 4002,
-    });
+  if (NKZ_COMMANDS.includes(cmdPrefix)) {
+    const nkzAccess = await requireAccess(session, NKZ_ROLE_ID);
+    if (!nkzAccess.allowed) {
+      return res.status(403).json({
+        error: 'This command requires NKZ administrator privileges.',
+        code: 4002,
+      });
+    }
   }
 
   const q         = getQueue();

@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from "../../../lib/auth-options";
-import { ROLES, hasRole, isAdmin } from '../../../lib/auth';
+import { ROLES } from '../../../lib/auth';
+import { requireAccess } from '../../../lib/access-check';
 
 export const config = {
   api: {
@@ -11,7 +12,8 @@ export const config = {
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Not logged in' });
-  if (!hasRole(session, ROLES.PANEL) && !isAdmin(session)) {
+  const access = await requireAccess(session, ROLES.PANEL);
+  if (!access.allowed) {
     return res.status(403).json({ error: 'Missing required Discord role' });
   }
 

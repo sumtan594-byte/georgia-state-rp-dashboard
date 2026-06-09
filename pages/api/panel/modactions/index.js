@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth-options';
-import { ROLES, hasRole, isAdmin } from '../../../../lib/auth';
+import { ROLES, isAdmin } from '../../../../lib/auth';
+import { requireAccess } from '../../../../lib/access-check';
 import { sendComponentsV2 } from '../../../../lib/discord-v2';
 
 const NKZ_ROLE_ID = '1372468936867708988';
@@ -51,7 +52,8 @@ export default async function handler(req, res) {
 
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Not logged in' });
-  if (!hasRole(session, ROLES.PANEL) && !isAdmin(session)) {
+  const panelAccess = await requireAccess(session, ROLES.PANEL);
+  if (!panelAccess.allowed) {
     return res.status(403).json({ error: 'Missing required Discord role' });
   }
 
