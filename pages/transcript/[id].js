@@ -265,6 +265,63 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
   );
 }
 
+function escapeHtml(str) {
+  if (!str) return '';
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function formatFallbackHtml(text) {
+  if (!text) return '<!DOCTYPE html><html><head><meta charset="UTF-8"></head><body></body></html>';
+  const lines = text.split('\n');
+  const messagesHtml = lines.map(line => {
+    const trimmed = line.trim();
+    if (!trimmed) return '<div class="spacer"></div>';
+    return `<div class="message"><span class="text">${escapeHtml(line)}</span></div>`;
+  }).join('\n');
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background: #09090b;
+      color: #e5e7eb;
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 16px 20px;
+      line-height: 1.6;
+      font-size: 14px;
+    }
+    .message {
+      padding: 6px 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      border-radius: 4px;
+    }
+    .message:hover {
+      background: rgba(255,255,255,0.02);
+    }
+    .text { white-space: pre-wrap; word-wrap: break-word; }
+    .spacer { height: 8px; }
+    a { color: #6ee7b7; }
+    .header {
+      padding: 12px 10px;
+      margin-bottom: 8px;
+      border-bottom: 2px solid rgba(255,255,255,0.08);
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.2em;
+      font-weight: 800;
+      color: rgba(255,255,255,0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">Transcript Messages</div>
+  ${messagesHtml}
+</body>
+</html>`;
+}
+
 export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, canManage, error }) {
   const { status } = useSession();
   const [accessOpen, setAccessOpen] = useState(false);
@@ -289,7 +346,7 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
   const handlePrint = () => {
     const printWindow = window.open('', '_blank');
     if (!printWindow) return;
-    printWindow.document.write(fullHtml || htmlContent || '');
+    printWindow.document.write(fullHtml || formatFallbackHtml(htmlContent) || '');
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 500);
@@ -403,7 +460,7 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
         <div className="card-glass rounded-[1.5rem] shadow-2xl shadow-black/40 overflow-hidden animate-fade-in-up">
           {(fullHtml || htmlContent) ? (
             <iframe
-              srcDoc={fullHtml || `<!DOCTYPE html><html><body>${htmlContent}</body></html>`}
+              srcDoc={fullHtml || formatFallbackHtml(htmlContent)}
               sandbox="allow-scripts allow-same-origin"
               style={{ width: '100%', minHeight: '600px', border: 'none', display: 'block' }}
               onLoad={(e) => {
