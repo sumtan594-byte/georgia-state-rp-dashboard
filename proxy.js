@@ -101,8 +101,16 @@ function applyRateLimitHeaders(response, result) {
   response.headers.set('X-RateLimit-Reset', String(Math.ceil(result.resetAt / 1000)));
 }
 
+const ROLE_SYNC_PATH = '/api/user/invalidate';
+
 export function proxy(request) {
   const { pathname } = request.nextUrl;
+
+  if (pathname === ROLE_SYNC_PATH) {
+    const response = NextResponse.next();
+    applySecurityHeaders(response);
+    return response;
+  }
 
   if (pathname.startsWith('/api/')) {
     const result = checkRateLimit(request, pathname);
