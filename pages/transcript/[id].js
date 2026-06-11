@@ -547,7 +547,7 @@ export async function getServerSideProps(context) {
     // Prefer bot-generated html_content (rendered by discord2html at ticket close time).
     // Fall back to re-rendering from transcript_messages for older tickets that lack it.
     if (t.html_content) {
-      return { props: { htmlContent: t.html_content, id, meta, canManage } };
+      return { props: { fullHtml: t.html_content, id, meta, canManage } };
     }
 
     // Re-render from stored transcript_messages using discord2html worker
