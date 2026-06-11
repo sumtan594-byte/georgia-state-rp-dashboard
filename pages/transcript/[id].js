@@ -1,6 +1,7 @@
 import { useSession } from "next-auth/react";
-import { ArrowLeft, Lock, Download, Loader2, Clock, Tag, Sparkles, Users, X, Plus, Trash2, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Lock, Download, Loader2, Clock, Tag, Sparkles, Users, X, Plus, Trash2, ShieldCheck, RefreshCw } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/router";
 import { useEffect, useState, useCallback } from "react";
 
 const LOGO = "https://i.imgur.com/70GfmYd.gif";
@@ -322,10 +323,13 @@ function formatFallbackHtml(text) {
 </html>`;
 }
 
-export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, canManage, error }) {
+export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, canManage, error, isAdmin }) {
   const { status } = useSession();
+  const router = useRouter();
   const [accessOpen, setAccessOpen] = useState(false);
   const [accessRevoked, setAccessRevoked] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const meta = serverMeta || parseMeta(id);
   const typeColor = TYPE_COLORS[meta.type] || TYPE_COLORS.GENERAL;
 
@@ -350,6 +354,27 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 500);
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const res = await fetch('/api/transcripts/delete', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      });
+      if (res.ok) {
+        router.push('/transcripts');
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete');
+        setConfirmDelete(false);
+      }
+    } catch {
+      alert('Network error');
+    }
+    setDeleting(false);
   };
 
   if (status === "loading") return (
@@ -412,6 +437,9 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
           <div className="flex-1" />
           {canManage && (
             <button onClick={() => setAccessOpen(true)} className="flex items-center gap-1.5 bg-gsrp-dark-card/60 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 hover:border-gsrp-teal/30 px-3 py-1.5 rounded-lg text-gsrp-teal-light/70 hover:text-gsrp-teal-light transition-all duration-200 text-[9px] font-bold uppercase tracking-widest cursor-pointer"><Users size={11} /> Access</button>
+          )}
+          {isAdmin && (
+            <button onClick={() => setConfirmDelete(true)} className="flex items-center gap-1.5 bg-gsrp-sunset/10 hover:bg-gsrp-sunset/20 border border-gsrp-sunset/20 hover:border-gsrp-sunset/40 px-3 py-1.5 rounded-lg text-gsrp-sunset/70 hover:text-gsrp-sunset transition-all duration-200 text-[9px] font-bold uppercase tracking-widest cursor-pointer"><Trash2 size={11} /> Delete</button>
           )}
           <button onClick={handlePrint} className="flex items-center gap-1.5 bg-gsrp-dark-card/60 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 hover:border-gsrp-orange/30 px-3 py-1.5 rounded-lg text-gsrp-teal-light/70 hover:text-gsrp-orange-light transition-all duration-200 text-[9px] font-bold uppercase tracking-widest cursor-pointer"><Download size={11} /> Export PDF</button>
         </div>
@@ -481,6 +509,39 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
       </div>
 
       <AccessModal transcriptId={id} isOpen={accessOpen} onClose={() => setAccessOpen(false)} />
+
+      {confirmDelete && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={() => !deleting && setConfirmDelete(false)}>
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+          <div className="relative bg-gsrp-dark-card border border-gsrp-dark-border/60 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in p-6" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-xl bg-gsrp-sunset/10 border border-gsrp-sunset/20 flex items-center justify-center">
+                <Trash2 size={16} className="text-gsrp-sunset" />
+              </div>
+              <div>
+                <h3 className="text-white font-black text-sm">Delete Transcript</h3>
+                <p className="text-gsrp-teal-light/40 text-[10px] font-bold uppercase tracking-widest mt-0.5">This action cannot be undone.</p>
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 text-gsrp-teal-light/70 text-[10px] font-bold uppercase tracking-wider hover:bg-gsrp-dark-surface transition-all cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gsrp-sunset to-red-700 text-white text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+              >
+                {deleting ? <><RefreshCw size={10} className="animate-spin" /> Deleting</> : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -491,7 +552,7 @@ export async function getServerSideProps(context) {
   const session = await getServerSession(context.req, context.res, authOptions);
   const { id } = context.params;
 
-  if (!session) return { props: { error: true } };
+  if (!session) return { props: { error: true, isAdmin: false } };
 
   const currentUserId = String(session.user?.id || "").trim();
   const { isFullAdmin } = require('../../lib/admin-helper');
@@ -508,7 +569,7 @@ export async function getServerSideProps(context) {
       [id]
     );
 
-    if (rows.length === 0) return { props: { error: true } };
+    if (rows.length === 0) return { props: { error: true, isAdmin } };
 
     const t = rows[0];
     const isOwner = String(t.owner_id) === currentUserId;
@@ -547,7 +608,7 @@ export async function getServerSideProps(context) {
     // Prefer bot-generated html_content (rendered by discord2html at ticket close time).
     // Fall back to re-rendering from transcript_messages for older tickets that lack it.
     if (t.html_content) {
-      return { props: { fullHtml: t.html_content, id, meta, canManage } };
+      return { props: { fullHtml: t.html_content, id, meta, canManage, isAdmin } };
     }
 
     // Re-render from stored transcript_messages using discord2html worker
@@ -565,7 +626,7 @@ export async function getServerSideProps(context) {
           channelName: t.channel_name,
           guildName: 'GSRP',
         });
-        return { props: { fullHtml, id, meta, canManage } };
+        return { props: { fullHtml, id, meta, canManage, isAdmin } };
       }
     } catch (e) {
       if (e.code !== 'ER_NO_SUCH_TABLE') {
@@ -574,9 +635,9 @@ export async function getServerSideProps(context) {
     }
 
     // Nothing available
-    return { props: { error: true } };
+    return { props: { error: true, isAdmin } };
   } catch (e) {
     console.error("[Viewer] DB Fetch Error:", e.message);
-    return { props: { error: true } };
+    return { props: { error: true, isAdmin } };
   }
 }

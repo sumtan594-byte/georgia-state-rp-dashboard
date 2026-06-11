@@ -5,7 +5,8 @@ import { useRouter } from "next/router";
 import {
   FileText, ChevronRight, Briefcase, Search, Calendar, Layers, Clock, Hash,
   Filter, ArrowUpRight, ChevronLeft, AlertTriangle, X,
-  Sun, Sunset, Users, FileCheck, BarChart3, Sparkles, ShieldCheck, RefreshCw
+  Sun, Sunset, Users, FileCheck, BarChart3, Sparkles, ShieldCheck, RefreshCw,
+  Trash2
 } from "lucide-react";
 
 const BG_IMAGE = "https://i.imgur.com/QVVQSK2.png";
@@ -38,8 +39,11 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
   const [query, setQuery] = useState("");
   const [date, setDate] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [confirmAction, setConfirmAction] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => { setCurrentPage(1); }, [activeTab, query, date]);
+  useEffect(() => { setCurrentPage(1); setSelectedIds(new Set()); }, [activeTab, query, date]);
 
   const fetchTranscripts = useCallback(async () => {
     setLoading(true);
@@ -59,6 +63,47 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
 
   const handleSortChange = (newSort) => {
     router.push({ pathname: router.pathname, query: { ...router.query, sort: newSort } });
+  };
+
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    const pageIds = paginatedTranscripts.map(t => t.rawName);
+    const allSelected = pageIds.every(id => selectedIds.has(id));
+    if (allSelected) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(pageIds));
+    }
+  };
+
+  const handleDelete = async (ids, clearAll = false) => {
+    setDeleting(true);
+    try {
+      const body = clearAll ? { clearAll: true } : { ids };
+      const res = await fetch('/api/transcripts/delete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (res.ok) {
+        setConfirmAction(null);
+        setSelectedIds(new Set());
+        await fetchTranscripts();
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to delete');
+      }
+    } catch (e) {
+      alert('Network error');
+    }
+    setDeleting(false);
   };
 
   useEffect(() => {
@@ -94,6 +139,41 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
   const totalPages = Math.ceil(filteredTranscripts.length / TICKETS_PER_PAGE);
   const startIndex = (currentPage - 1) * TICKETS_PER_PAGE;
   const paginatedTranscripts = filteredTranscripts.slice(startIndex, startIndex + TICKETS_PER_PAGE);
+
+  const ConfirmModal = () => {
+    if (!confirmAction) return null;
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" onClick={() => setConfirmAction(null)}>
+        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
+        <div className="relative bg-gsrp-dark-card border border-gsrp-dark-border/60 rounded-2xl w-full max-w-sm shadow-2xl animate-scale-in p-6" onClick={e => e.stopPropagation()}>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-xl bg-gsrp-sunset/10 border border-gsrp-sunset/20 flex items-center justify-center">
+              <Trash2 size={16} className="text-gsrp-sunset" />
+            </div>
+            <div>
+              <h3 className="text-white font-black text-sm">{confirmAction.title}</h3>
+              <p className="text-gsrp-teal-light/40 text-[10px] font-bold uppercase tracking-widest mt-0.5">{confirmAction.description}</p>
+            </div>
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setConfirmAction(null)}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 text-gsrp-teal-light/70 text-[10px] font-bold uppercase tracking-wider hover:bg-gsrp-dark-surface transition-all cursor-pointer"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={() => handleDelete(confirmAction.ids, confirmAction.clearAll)}
+              disabled={deleting}
+              className="flex-1 px-4 py-2.5 rounded-xl bg-gradient-to-r from-gsrp-sunset to-red-700 text-white text-[10px] font-bold uppercase tracking-wider hover:opacity-90 transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+            >
+              {deleting ? <><RefreshCw size={10} className="animate-spin" /> Deleting</> : <>Delete{confirmAction.clearAll ? ' All' : ''}</>}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const PaginationControls = () => {
     if (totalPages <= 1) return null;
@@ -167,6 +247,22 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
+            {selectedIds.size > 0 && (
+              <button
+                onClick={() => setConfirmAction({ title: 'Delete Selected', description: `${selectedIds.size} transcript(s) will be permanently deleted.`, ids: [...selectedIds] })}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gsrp-sunset/15 border border-gsrp-sunset/30 text-gsrp-sunset text-[10px] font-bold uppercase tracking-wider hover:bg-gsrp-sunset/25 transition-all duration-200 cursor-pointer"
+              >
+                <Trash2 size={12} /> Delete {selectedIds.size > 1 ? `(${selectedIds.size})` : ''}
+              </button>
+            )}
+            {isAdmin && (
+              <button
+                onClick={() => setConfirmAction({ title: 'Clear All Transcripts', description: 'ALL transcripts will be permanently deleted. This cannot be undone.', ids: [], clearAll: true })}
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gsrp-sunset/10 border border-gsrp-sunset/20 text-gsrp-sunset/70 text-[10px] font-bold uppercase tracking-wider hover:bg-gsrp-sunset/20 hover:text-gsrp-sunset transition-all duration-200 cursor-pointer"
+              >
+                <Trash2 size={12} /> Clear All
+              </button>
+            )}
             <button
               onClick={fetchTranscripts}
               disabled={loading}
@@ -259,6 +355,25 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
         ))}
       </div>
 
+      {paginatedTranscripts.length > 0 && selectedIds.size > 0 && (
+        <div className="flex items-center justify-between mb-3 px-1">
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 cursor-pointer" onClick={(e) => { e.preventDefault(); toggleSelectAll(); }}>
+              <input
+                type="checkbox"
+                checked={paginatedTranscripts.every(t => selectedIds.has(t.rawName)) && selectedIds.size > 0}
+                onChange={() => {}}
+                className="w-3.5 h-3.5 accent-gsrp-orange cursor-pointer"
+              />
+              <span className="text-[9px] font-bold text-gsrp-teal-light/60 uppercase tracking-widest">
+                {paginatedTranscripts.every(t => selectedIds.has(t.rawName)) ? 'Deselect All' : 'Select All Page'}
+              </span>
+            </label>
+          </div>
+          <span className="text-[9px] font-bold text-gsrp-teal-light/30 uppercase tracking-widest">{selectedIds.size} selected</span>
+        </div>
+      )}
+
       <div className="space-y-2">
         {paginatedTranscripts.length === 0 ? (
           <div className="py-24 text-center border border-dashed border-gsrp-dark-border/50 rounded-2xl animate-scale-in">
@@ -274,44 +389,56 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
             )}
           </div>
         ) : paginatedTranscripts.map((t, i) => (
-          <Link
-            href={`/transcript/${t.rawName}`}
-            key={t.rawName}
-            className="ticket-row group flex items-center justify-between bg-gsrp-dark-card/40 border border-gsrp-dark-border/50 hover:border-gsrp-orange/30 hover:bg-gsrp-dark-surface/60 p-4 rounded-xl transition-all duration-200 cursor-pointer"
-            style={{ animationDelay: `${i * 0.03}s` }}
-          >
-            <div className="flex items-center gap-4 min-w-0">
-              <div className="w-10 h-10 rounded-lg bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 group-hover:border-gsrp-orange/30 group-hover:bg-gsrp-orange/10 flex items-center justify-center text-gsrp-teal-light/30 group-hover:text-gsrp-orange-light transition-all duration-200 flex-shrink-0">
-                <FileText size={16} />
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2.5 flex-wrap">
-                  <span className="font-bold text-sm text-white group-hover:text-gsrp-orange-light transition-colors duration-200 truncate">
-                    {t.channelName}
-                  </span>
-                  <TypeBadge type={t.type} />
+          <div key={t.rawName} className="flex items-stretch gap-0" style={{ animationDelay: `${i * 0.03}s` }}>
+            <label
+              className="flex items-center justify-center w-10 flex-shrink-0 bg-gsrp-dark-card/40 border border-r-0 border-gsrp-dark-border/50 rounded-l-xl cursor-pointer hover:bg-gsrp-dark-surface/40 transition-colors"
+              onClick={(e) => { e.preventDefault(); toggleSelect(t.rawName); }}
+            >
+              <input
+                type="checkbox"
+                checked={selectedIds.has(t.rawName)}
+                onChange={() => {}}
+                className="w-3.5 h-3.5 accent-gsrp-orange cursor-pointer"
+              />
+            </label>
+            <Link
+              href={`/transcript/${t.rawName}`}
+              className="ticket-row group flex items-center justify-between flex-1 bg-gsrp-dark-card/40 border border-gsrp-dark-border/50 hover:border-gsrp-orange/30 hover:bg-gsrp-dark-surface/60 p-4 rounded-r-xl transition-all duration-200 cursor-pointer border-l-0"
+            >
+              <div className="flex items-center gap-4 min-w-0">
+                <div className="w-10 h-10 rounded-lg bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 group-hover:border-gsrp-orange/30 group-hover:bg-gsrp-orange/10 flex items-center justify-center text-gsrp-teal-light/30 group-hover:text-gsrp-orange-light transition-all duration-200 flex-shrink-0">
+                  <FileText size={16} />
                 </div>
-                <div className="flex items-center gap-4 mt-1">
-                  <span className="flex items-center gap-1 text-[9px] font-bold text-gsrp-teal-light/30 uppercase tracking-widest">
-                    <Calendar size={8} /> {t.date}
-                  </span>
-                  <span className="flex items-center gap-1 text-[9px] font-bold text-gsrp-teal-light/30 uppercase tracking-widest">
-                    <Hash size={8} /> {t.ownerId}
-                  </span>
-                  {t.reason && t.reason !== 'NoReason' && (
-                    <span className="hidden md:flex items-center gap-1 text-[9px] font-bold text-gsrp-teal-light/20 uppercase tracking-widest truncate max-w-[200px]">
-                      <Filter size={8} /> {t.reason}
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2.5 flex-wrap">
+                    <span className="font-bold text-sm text-white group-hover:text-gsrp-orange-light transition-colors duration-200 truncate">
+                      {t.channelName}
                     </span>
-                  )}
+                    <TypeBadge type={t.type} />
+                  </div>
+                  <div className="flex items-center gap-4 mt-1">
+                    <span className="flex items-center gap-1 text-[9px] font-bold text-gsrp-teal-light/30 uppercase tracking-widest">
+                      <Calendar size={8} /> {t.date}
+                    </span>
+                    <span className="flex items-center gap-1 text-[9px] font-bold text-gsrp-teal-light/30 uppercase tracking-widest">
+                      <Hash size={8} /> {t.ownerId}
+                    </span>
+                    {t.reason && t.reason !== 'NoReason' && (
+                      <span className="hidden md:flex items-center gap-1 text-[9px] font-bold text-gsrp-teal-light/20 uppercase tracking-widest truncate max-w-[200px]">
+                        <Filter size={8} /> {t.reason}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-            <ArrowUpRight size={14} className="text-gsrp-dark-border group-hover:text-gsrp-orange-light transition-all duration-200 flex-shrink-0 ml-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
-          </Link>
+              <ArrowUpRight size={14} className="text-gsrp-dark-border group-hover:text-gsrp-orange-light transition-all duration-200 flex-shrink-0 ml-3 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+            </Link>
+          </div>
         ))}
       </div>
 
       <PaginationControls />
+      <ConfirmModal />
     </div>
   );
 }
