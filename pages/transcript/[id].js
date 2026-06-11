@@ -544,7 +544,13 @@ export async function getServerSideProps(context) {
 
     const canManage = isAdmin || isOwner;
 
-    // Render from transcript_messages using discord-html-transcripts
+    // Prefer bot-generated html_content (rendered by discord2html at ticket close time).
+    // Fall back to re-rendering from transcript_messages for older tickets that lack it.
+    if (t.html_content) {
+      return { props: { htmlContent: t.html_content, id, meta, canManage } };
+    }
+
+    // Re-render from stored transcript_messages using discord2html worker
     try {
       const [msgRows] = await pool.query(
         'SELECT message_data, author_id, created_timestamp FROM transcript_messages WHERE transcript_id = ? ORDER BY sort_order ASC',
@@ -563,12 +569,12 @@ export async function getServerSideProps(context) {
       }
     } catch (e) {
       if (e.code !== 'ER_NO_SUCH_TABLE') {
-        console.error("[Viewer] transcript_messages render error:", e.message);
+        console.error('[Viewer] transcript_messages render error:', e.message);
       }
     }
 
-    // Fallback to stored HTML
-    return { props: { htmlContent: t.html_content, id, meta, canManage } };
+    // Nothing available
+    return { props: { error: true } };
   } catch (e) {
     console.error("[Viewer] DB Fetch Error:", e.message);
     return { props: { error: true } };
