@@ -489,7 +489,7 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
           {(fullHtml || htmlContent) ? (
             <iframe
               srcDoc={fullHtml || formatFallbackHtml(htmlContent)}
-              sandbox="allow-scripts allow-same-origin"
+              sandbox="allow-scripts"
               style={{ width: '100%', minHeight: '600px', border: 'none', display: 'block' }}
               onLoad={(e) => {
                 try {
@@ -605,13 +605,8 @@ export async function getServerSideProps(context) {
 
     const canManage = isAdmin || isOwner;
 
-    // Prefer bot-generated html_content (rendered by discord2html at ticket close time).
-    // Fall back to re-rendering from transcript_messages for older tickets that lack it.
-    if (t.html_content) {
-      return { props: { fullHtml: t.html_content, id, meta, canManage, isAdmin } };
-    }
-
-    // Re-render from stored transcript_messages using discord2html worker
+    // Always re-render from transcript_messages via the worker (hydrated, no external scripts).
+    // Fall back to stored html_content only if no message rows exist.
     try {
       const [msgRows] = await pool.query(
         'SELECT message_data, author_id, created_timestamp FROM transcript_messages WHERE transcript_id = ? ORDER BY sort_order ASC',
@@ -632,6 +627,11 @@ export async function getServerSideProps(context) {
       if (e.code !== 'ER_NO_SUCH_TABLE') {
         console.error('[Viewer] transcript_messages render error:', e.message);
       }
+    }
+
+    // Fall back to bot-generated html_content for tickets with no message rows
+    if (t.html_content) {
+      return { props: { fullHtml: t.html_content, id, meta, canManage, isAdmin } };
     }
 
     // Nothing available

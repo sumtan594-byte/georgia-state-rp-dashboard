@@ -449,41 +449,9 @@ export async function getServerSideProps(context) {
   const session = await getServerSession(context.req, context.res, authOptions);
   const { sort = 'latest' } = context.query;
 
+  // Only check auth server-side — the actual transcript list is fetched
+  // client-side via /api/transcripts/list to avoid the 210kB page data warning.
   if (!session) return { props: { transcripts: [], isAdmin: false, currentSort: sort } };
 
-  const currentUserId = String(session.user?.id || "");
-  const { isFullAdmin } = require('../../lib/admin-helper');
-  const isAdmin = await isFullAdmin(currentUserId, session.user?.roles || []);
-
-  const pool = (await import('../../lib/ticketdb')).default;
-  const { accessibleTranscriptsQuery } = (await import('../../lib/ticketdb'));
-
-  try {
-    const { where, params } = await accessibleTranscriptsQuery(isAdmin, currentUserId, session.user?.roles || []);
-
-    const [rows] = await pool.query(
-      `SELECT id, type, owner_id, channel_name, close_reason,
-              DATE_FORMAT(closed_at, '%Y-%m-%d') as date,
-              DATE_FORMAT(closed_at, '%H:%i:%s') as time
-       FROM transcripts
-       WHERE ${where}
-       ORDER BY closed_at ${sort === 'oldest' ? 'ASC' : 'DESC'}`,
-      params
-    );
-
-    const files = rows.map(r => ({
-      rawName: r.id,
-      type: r.type || 'UNKNOWN',
-      ownerId: r.owner_id || 'UNKNOWN',
-      channelName: r.channel_name || 'Unknown',
-      date: r.date || '1970-01-01',
-      reason: r.close_reason || 'NoReason',
-      time: r.time || '00:00:00',
-    }));
-
-    return { props: { transcripts: JSON.parse(JSON.stringify(files)), isAdmin, currentSort: sort } };
-  } catch (e) {
-    console.error('[Dashboard] DB fetch error:', e.message);
-    return { props: { transcripts: [], isAdmin, currentSort: sort } };
-  }
+  return { props: { transcripts: [], isAdmin: false, currentSort: sort } };
 }

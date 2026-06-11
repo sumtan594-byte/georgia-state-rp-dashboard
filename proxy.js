@@ -19,8 +19,8 @@ const DEFAULT_API_LIMIT = { key: 'api', max: 120, windowMs: WINDOW_MS };
 const WRITE_API_LIMIT = { key: 'api-write', max: 30, windowMs: WINDOW_MS };
 
 const scriptSrc = process.env.NODE_ENV === 'development'
-  ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-  : "script-src 'self' 'unsafe-inline'";
+? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net"
+: "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net";
 
 const SECURITY_HEADERS = {
   'Content-Security-Policy': [
@@ -30,7 +30,7 @@ const SECURITY_HEADERS = {
     "form-action 'self'",
     "object-src 'none'",
     scriptSrc,
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https:",
     "connect-src 'self' https://discord.com https://discordapp.com https://cdn.discordapp.com https://api.erlc.gg https://users.roblox.com https://thumbnails.roblox.com https://ip-api.com http://ip-api.com",
