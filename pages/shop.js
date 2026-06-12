@@ -1,45 +1,85 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Head from 'next/head';
-import { ShoppingCart, Star, Zap, Heart, Shield, Crown, Sparkles, ChevronRight } from 'lucide-react';
-
-const DONATION_PERKS = [
-  "Access to exclusive chats and giveaways",
-  "Respect from the community",
-  "Special donator color in Discord",
-  "Supporting server hosting and updates"
-];
-
-const PREMIUM_PERKS = [
-  "Permissions to send files in all channels",
-  "Access to exclusive chats and giveaways",
-  "Premium role in Discord server",
-  "Early access to new features for premium",
-  "Priority support tickets"
-];
-
-const PRODUCTS = {
-  premium: [
-    { name: "GSRP | Premium", price: 500, link: "https://www.roblox.com/game-pass/1288437153/GSRP-Premium", icon: Crown, featured: true, perks: PREMIUM_PERKS },
-  ],
-  advertisements: [
-    { name: "@Here Ping", price: 100, link: "https://www.roblox.com/game-pass/1288508785/Here-Ping", icon: Zap, perks: ["Ping all online users in a designated channel"] },
-    { name: "@everyone Ping", price: 500, link: "https://www.roblox.com/game-pass/1283601162/everyone-Ping", icon: Zap, featured: true, perks: ["Ping every member in the server with an announcement"] },
-  ],
-  donations: [
-    { name: "GSRP Donate 100", price: 100, link: "https://www.roblox.com/game-pass/1283365474/GSRP-Donate-100" },
-    { name: "Donate GSRP 150", price: 150, link: "https://www.roblox.com/game-pass/1241343193/Donate-GSRP-150" },
-    { name: "GSRP Donate 200", price: 200, link: "https://www.roblox.com/game-pass/1285163386/GSRP-Donate-200" },
-    { name: "GSRP Donate 300", price: 300, link: "https://www.roblox.com/game-pass/1283401426/GSRP-Donate-300" },
-    { name: "GSRP Donate 400", price: 400, link: "https://www.roblox.com/game-pass/1283831453/GSRP-Donate-400" },
-    { name: "Donate GSRP 500", price: 500, link: "https://www.roblox.com/game-pass/1285641030/Donate-GSRP-500" },
-    { name: "GSRP Donate 650", price: 650, link: "https://www.roblox.com/game-pass/1306588775/GSRP-Donate-650" },
-    { name: "GSRP Donate 700", price: 700, link: "https://www.roblox.com/game-pass/1304704857/GSRP-Donate-700" },
-    { name: "GSRP Donate 1000", price: 1000, link: "https://www.roblox.com/game-pass/1305958782/GSRP-Donate-1000" },
-  ]
-};
+import { AlertCircle, CheckCircle2, ChevronRight, Crown, ExternalLink, Heart, Loader2, RefreshCw, ShoppingCart } from 'lucide-react';
+import { DONATION_PERKS, PRODUCTS } from '../lib/shop-products';
 
 export default function Shop() {
   const [activeTab, setActiveTab] = useState('premium');
+  const [purchaseState, setPurchaseState] = useState({ loading: true, purchases: {}, roblox: null, message: '' });
+  const [claimingProductId, setClaimingProductId] = useState(null);
+  const [productMessages, setProductMessages] = useState({});
+
+  const loadPurchases = async () => {
+    setPurchaseState(prev => ({ ...prev, loading: true, message: '' }));
+    try {
+      const response = await fetch('/api/shop/purchases');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to check purchases');
+      setPurchaseState({
+        loading: false,
+        purchases: data.purchases || {},
+        roblox: data.roblox || (data.robloxUsername ? { username: data.robloxUsername } : null),
+        message: data.message || data.error || '',
+        linked: data.linked,
+      });
+    } catch (error) {
+      setPurchaseState(prev => ({
+        ...prev,
+        loading: false,
+        message: error.message || 'Failed to check purchases',
+      }));
+    }
+  };
+
+  useEffect(() => {
+    loadPurchases();
+  }, []);
+
+  const handleClaimPurchase = async (product) => {
+    setClaimingProductId(product.id);
+    setProductMessages(prev => ({ ...prev, [product.id]: null }));
+
+    try {
+      const response = await fetch('/api/shop/purchases', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId: product.id }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setProductMessages(prev => ({
+          ...prev,
+          [product.id]: { type: 'error', text: data.message || data.error || 'Purchase could not be verified.' },
+        }));
+        return;
+      }
+
+      setPurchaseState(prev => ({
+        ...prev,
+        roblox: data.roblox || prev.roblox,
+        purchases: {
+          ...prev.purchases,
+          [product.id]: { ...(prev.purchases?.[product.id] || {}), owned: true },
+        },
+      }));
+      setProductMessages(prev => ({
+        ...prev,
+        [product.id]: { type: 'success', text: data.message || 'Purchase verified. Thank you for purchasing!' },
+      }));
+
+      if (data.redirectUrl) {
+        window.open(data.redirectUrl, '_blank', 'noopener,noreferrer');
+      }
+    } catch (error) {
+      setProductMessages(prev => ({
+        ...prev,
+        [product.id]: { type: 'error', text: error.message || 'Failed to verify purchase.' },
+      }));
+    } finally {
+      setClaimingProductId(null);
+    }
+  };
 
   return (
     <div className="max-w-7xl mx-auto animate-fade-in-up">
@@ -61,6 +101,30 @@ export default function Shop() {
             <p className="text-gsrp-teal-light/60 text-lg max-w-2xl font-medium">
               Support the Georgia State Roleplay community and unlock exclusive perks, roles, and in-game advantages.
             </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+              <div className="inline-flex items-center gap-2 rounded-xl border border-gsrp-dark-border/60 bg-gsrp-dark/40 px-4 py-2 text-sm font-bold text-gsrp-teal-light/80">
+                {purchaseState.loading ? (
+                  <Loader2 className="w-4 h-4 animate-spin text-gsrp-orange" />
+                ) : purchaseState.roblox?.username ? (
+                  <CheckCircle2 className="w-4 h-4 text-gsrp-teal" />
+                ) : (
+                  <AlertCircle className="w-4 h-4 text-gsrp-orange" />
+                )}
+                {purchaseState.roblox?.username ? `Logged in as ${purchaseState.roblox.username}` : purchaseState.loading ? 'Checking linked Roblox account' : 'No Roblox account linked'}
+              </div>
+              <button
+                onClick={loadPurchases}
+                disabled={purchaseState.loading}
+                className="inline-flex items-center gap-2 rounded-xl border border-gsrp-dark-border/60 bg-gsrp-dark/40 px-3 py-2 text-xs font-black uppercase tracking-wider text-gsrp-teal-light/50 hover:text-white hover:border-gsrp-teal/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                title="Refresh purchase status"
+              >
+                <RefreshCw className={`w-4 h-4 ${purchaseState.loading ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
+            {purchaseState.message && (
+              <p className="mt-3 text-sm font-semibold text-gsrp-orange/90">{purchaseState.message}</p>
+            )}
           </div>
           <div className="hidden md:block">
             <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-gsrp-orange to-gsrp-teal p-0.5 animate-float">
@@ -89,7 +153,12 @@ export default function Shop() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {PRODUCTS[activeTab].map((product, idx) => (
+        {PRODUCTS[activeTab].map((product, idx) => {
+          const owned = purchaseState.purchases?.[product.id]?.owned;
+          const productMessage = productMessages[product.id];
+          const isClaiming = claimingProductId === product.id;
+
+          return (
           <div 
             key={idx}
             className={`relative rounded-2xl border transition-all duration-300 flex flex-col h-full bg-gsrp-dark-card/60 backdrop-blur-md group hover:-translate-y-2
@@ -137,20 +206,39 @@ export default function Shop() {
 
             <div className="p-6 pt-0 mt-auto">
               {product.link && product.link !== "#" ? (
-                <a
-                  href={product.link}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className={`w-full py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 transition-all duration-300
-                    ${product.featured
-                      ? 'bg-gradient-to-r from-gsrp-orange to-gsrp-warm text-white hover:shadow-lg hover:shadow-gsrp-orange/20 hover:scale-[1.02]'
-                      : 'bg-gsrp-teal-light/10 text-gsrp-teal-light hover:bg-gsrp-teal-light hover:text-white hover:shadow-lg hover:shadow-gsrp-teal/20 hover:scale-[1.02]'
-                    }
-                  `}
-                >
-                  <ShoppingCart className="w-5 h-5" />
-                  Purchase Integration
-                </a>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <a
+                      href={product.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`w-full min-h-12 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-center transition-all duration-300
+                        ${owned
+                          ? 'bg-gsrp-teal/15 text-gsrp-teal-light border border-gsrp-teal/30'
+                          : product.featured
+                            ? 'bg-gradient-to-r from-gsrp-orange to-gsrp-warm text-white hover:shadow-lg hover:shadow-gsrp-orange/20 hover:scale-[1.02]'
+                            : 'bg-gsrp-teal-light/10 text-gsrp-teal-light hover:bg-gsrp-teal-light hover:text-white hover:shadow-lg hover:shadow-gsrp-teal/20 hover:scale-[1.02]'
+                        }
+                      `}
+                    >
+                      {owned ? <CheckCircle2 className="w-5 h-5" /> : <ShoppingCart className="w-5 h-5" />}
+                      {owned ? 'Thank you for purchasing!' : 'Purchase Integration'}
+                    </a>
+                    <button
+                      onClick={() => handleClaimPurchase(product)}
+                      disabled={isClaiming || purchaseState.loading || !purchaseState.roblox?.id}
+                      className="w-full min-h-12 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-center bg-gsrp-dark-surface text-gsrp-teal-light/70 hover:text-white hover:border-gsrp-teal/50 border border-gsrp-dark-border/70 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                    >
+                      {isClaiming ? <Loader2 className="w-5 h-5 animate-spin" /> : <ExternalLink className="w-5 h-5" />}
+                      Just bought it!
+                    </button>
+                  </div>
+                  {productMessage && (
+                    <p className={`text-xs font-semibold leading-relaxed ${productMessage.type === 'error' ? 'text-red-300' : 'text-gsrp-teal-light/80'}`}>
+                      {productMessage.text}
+                    </p>
+                  )}
+                </div>
               ) : (
                 <button
                   disabled
@@ -161,7 +249,8 @@ export default function Shop() {
               )}
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

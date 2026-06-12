@@ -1,5 +1,6 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from "../../../lib/auth-options";
+import { getLinkedRobloxUsername } from "../../../lib/linked-roblox-user";
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
@@ -28,17 +29,14 @@ export default async function handler(req, res) {
   };
 
   try {
-    const [usernamesData, rolesRes] = await Promise.all([
-      githubFetch('usernames.json'),
+    const [robloxUsername, rolesRes] = await Promise.all([
+      getLinkedRobloxUsername(discordId),
       githubFetch('roles.json')
     ]);
 
-    const userData = usernamesData[discordId];
-    if (!userData || !userData.verified) {
+    if (!robloxUsername) {
       return res.status(200).json({ linked: false });
     }
-
-    const robloxUsername = userData.robloxUsername;
 
     // 1. Fetch Roblox ID from username
     const robloxIdResponse = await fetch('https://users.roblox.com/v1/usernames/users', {

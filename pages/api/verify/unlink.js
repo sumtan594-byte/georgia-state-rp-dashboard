@@ -1,5 +1,6 @@
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
+import { deleteLinkedRobloxUser } from "../../../lib/linked-roblox-user";
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -12,56 +13,25 @@ export default async function handler(req, res) {
   }
 
   const discordId = session.user.id;
-  const githubToken = process.env.GITHUB_ACCESS_TOKEN;
   const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
 
-  const githubApiRequest = async (path, method = 'GET', body = null) => {
-    const url = `https://api.github.com/repos/sumtan594-byte/gsrp-management/contents/${path}`;
-    const headers = {
-      'Accept': 'application/vnd.github.v3+json',
-      'User-Agent': 'GSRP-Dashboard-App',
-      'Authorization': `token ${githubToken}`
-    };
-    
-    const options = { method, headers };
-    if (body) options.body = JSON.stringify(body);
-    
-    const response = await fetch(url, options);
-    if (!response.ok) {
-      throw new Error(`GitHub API error: ${response.statusText} (${response.status})`);
-    }
-    return response.json();
-  };
-
   try {
-    // 1. Get current usernames.json to find the entry and its SHA
-    const fileData = await githubApiRequest('usernames.json');
-    const content = Buffer.from(fileData.content, 'base64').toString('utf-8');
-    const db = JSON.parse(content);
+    const deleted = await deleteLinkedRobloxUser(discordId);
 
-    if (!db[discordId]) {
+    if (!deleted) {
       return res.status(404).json({ error: 'No linked account found to unlink.' });
     }
 
-    // 2. Remove the entry
-    delete db[discordId];
-
-    // 3. Update usernames.json on GitHub
-    await githubApiRequest('usernames.json', 'PUT', {
-      message: `unlink: remove roblox link for discord user ${discordId}`,
-      content: Buffer.from(JSON.stringify(db, null, 2)).toString('base64'),
-      sha: fileData.sha
-    });
-
-    // 4. Send signal to Discord bot via webhook
-    await fetch(webhookUrl, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        content: `UNLINK_DATA:${discordId}`,
-        allowed_mentions: { parse: [] }
-      })
-    });
+    if (webhookUrl) {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content: `UNLINK_DATA:${discordId}`,
+          allowed_mentions: { parse: [] }
+        })
+      });
+    }
 
     return res.status(200).json({ success: true, message: 'Successfully unlinked account.' });
 
