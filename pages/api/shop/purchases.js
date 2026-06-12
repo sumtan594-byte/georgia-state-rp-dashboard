@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../lib/auth-options';
 import { addMemberRole } from '../../../lib/discord-v2';
+import { getPool } from '../../../lib/appdb';
 import { getLinkedRobloxUser } from '../../../lib/linked-roblox-user';
 import { findShopProduct, PRODUCT_LIST, SHOP_SUPPORT_CHANNEL_URL } from '../../../lib/shop-catalog';
 
@@ -76,6 +77,29 @@ async function rewardProduct(product, discordUserId) {
   };
 }
 
+async function reserveRoleClaim(discordUserId, productId) {
+  const pool = getPool();
+  if (!pool) {
+    throw new Error('Database connection is not configured.');
+  }
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS shop_claims (
+      discord_id VARCHAR(255) NOT NULL,
+      product_id VARCHAR(255) NOT NULL,
+      claimed_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (discord_id, product_id)
+    )
+  `);
+
+  const [result] = await pool.query(
+    'INSERT IGNORE INTO shop_claims (discord_id, product_id) VALUES (?, ?)',
+    [discordUserId, productId]
+  );
+
+  return result.affectedRows === 1;
+}
+
 export default async function handler(req, res) {
   if (!['GET', 'POST'].includes(req.method)) {
     res.setHeader('Allow', 'GET, POST');
@@ -134,7 +158,22 @@ export default async function handler(req, res) {
       });
     }
 
-    const reward = await rewardProduct(product, session.user.id);
+    let reward;
+    if (product.rewardType === 'roles') {
+      const isFirstClaim = await reserveRoleClaim(session.user.id, product.id);
+      if (isFirstClaim) {
+        reward = await rewardProduct(product, session.user.id);
+      } else {
+        reward = {
+          action: 'roles',
+          alreadyClaimed: true,
+          message: 'Purchase verified. Your Discord roles are already unlocked.',
+          roleIds: product.roleIds || [],
+        };
+      }
+    } else {
+      reward = await rewardProduct(product, session.user.id);
+    }
 
     return res.status(200).json({
       owned: true,

@@ -10,6 +10,7 @@ export default function Shop() {
   const [claimingProductId, setClaimingProductId] = useState(null);
   const [productMessages, setProductMessages] = useState({});
   const [purchaseErrorModal, setPurchaseErrorModal] = useState(null);
+  const [confettiPieces, setConfettiPieces] = useState([]);
   const [mounted, setMounted] = useState(false);
 
   const loadPurchases = async () => {
@@ -38,6 +39,23 @@ export default function Shop() {
     setMounted(true);
     loadPurchases();
   }, []);
+
+  const fireConfetti = () => {
+    const colors = ['#f97316', '#14b8a6', '#facc15', '#ffffff', '#fb7185'];
+    const pieces = Array.from({ length: 90 }, (_, index) => ({
+      id: `${Date.now()}-${index}`,
+      left: 8 + Math.random() * 84,
+      delay: Math.random() * 0.25,
+      duration: 1.8 + Math.random() * 1.2,
+      size: 6 + Math.random() * 8,
+      rotate: Math.random() * 360,
+      drift: (Math.random() - 0.5) * 220,
+      color: colors[index % colors.length],
+    }));
+
+    setConfettiPieces(pieces);
+    window.setTimeout(() => setConfettiPieces([]), 3400);
+  };
 
   const handleClaimPurchase = async (product) => {
     setClaimingProductId(product.id);
@@ -79,6 +97,7 @@ export default function Shop() {
         ...prev,
         [product.id]: { type: 'success', text: data.message || 'Purchase verified. Thank you for purchasing!' },
       }));
+      fireConfetti();
 
       if (data.redirectUrl) {
         window.open(data.redirectUrl, '_blank', 'noopener,noreferrer');
@@ -98,6 +117,18 @@ export default function Shop() {
       <Head>
         <title>Shop | GSRP Dashboard</title>
       </Head>
+      <style jsx global>{`
+        @keyframes shop-confetti-fall {
+          0% {
+            opacity: 1;
+            transform: translate3d(0, -12vh, 0) rotate(0deg);
+          }
+          100% {
+            opacity: 0;
+            transform: translate3d(var(--confetti-drift), 108vh, 0) rotate(var(--confetti-rotate));
+          }
+        }
+      `}</style>
 
       <div className="mb-8 p-8 rounded-2xl bg-card-gradient border border-gsrp-dark-border/50 relative overflow-hidden group">
         <div className="absolute inset-0 bg-gradient-to-r from-gsrp-orange/10 to-gsrp-teal/10 opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
@@ -316,6 +347,27 @@ export default function Shop() {
               </button>
             </div>
           </div>
+        </div>,
+        document.body
+      )}
+
+      {mounted && confettiPieces.length > 0 && createPortal(
+        <div className="fixed inset-0 z-[120] pointer-events-none overflow-hidden">
+          {confettiPieces.map(piece => (
+            <span
+              key={piece.id}
+              className="absolute top-0 rounded-[2px]"
+              style={{
+                left: `${piece.left}%`,
+                width: `${piece.size}px`,
+                height: `${piece.size * 0.55}px`,
+                backgroundColor: piece.color,
+                '--confetti-drift': `${piece.drift}px`,
+                '--confetti-rotate': `${piece.rotate + 720}deg`,
+                animation: `shop-confetti-fall ${piece.duration}s ease-out ${piece.delay}s forwards`,
+              }}
+            />
+          ))}
         </div>,
         document.body
       )}
