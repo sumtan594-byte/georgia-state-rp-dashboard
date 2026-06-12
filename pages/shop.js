@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import Head from 'next/head';
 import { AlertCircle, CheckCircle2, ChevronRight, Crown, Heart, Loader2, RefreshCw, ShoppingCart } from 'lucide-react';
 import { DONATION_PERKS, PRODUCTS } from '../lib/shop-products';
@@ -9,6 +10,7 @@ export default function Shop() {
   const [claimingProductId, setClaimingProductId] = useState(null);
   const [productMessages, setProductMessages] = useState({});
   const [purchaseErrorModal, setPurchaseErrorModal] = useState(null);
+  const [mounted, setMounted] = useState(false);
 
   const loadPurchases = async () => {
     setPurchaseState(prev => ({ ...prev, loading: true, message: '' }));
@@ -33,6 +35,7 @@ export default function Shop() {
   };
 
   useEffect(() => {
+    setMounted(true);
     loadPurchases();
   }, []);
 
@@ -261,7 +264,7 @@ export default function Shop() {
         })}
       </div>
 
-      {purchaseErrorModal && (
+      {mounted && purchaseErrorModal && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
           <button
             type="button"
@@ -313,7 +316,8 @@ export default function Shop() {
               </button>
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
