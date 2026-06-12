@@ -14,9 +14,12 @@ const DEV_MODE = process.env.NODE_ENV === 'development' || process.env.ERLC_WEBH
 const MAX_WEBHOOK_BODY_BYTES = 256 * 1024;
 const MAX_WEBHOOK_EVENTS = 50;
 const MAX_SIGNATURE_AGE_MS = 5 * 60 * 1000;
+const PRC_PING_INTERVAL_MS = 5 * 60 * 1000;
+const PRC_PING_WARNING_LEAD_MS = 30 * 1000;
 
 let lastInvalidSigTime = 0;
 let invalidSigCount = 0;
+let prcPingWarningTimer = null;
 
 async function getRobloxUsername(userId) {
   try {
@@ -42,6 +45,21 @@ function isFreshTimestamp(timestamp) {
 
 function isValidSignature(signatureHex) {
   return typeof signatureHex === 'string' && /^[a-f0-9]{128}$/i.test(signatureHex);
+}
+
+function schedulePrcPingWarning() {
+  if (prcPingWarningTimer) {
+    clearTimeout(prcPingWarningTimer);
+  }
+
+  prcPingWarningTimer = setTimeout(() => {
+    console.log('PRC ping incoming, do not restart');
+    prcPingWarningTimer = null;
+  }, PRC_PING_INTERVAL_MS - PRC_PING_WARNING_LEAD_MS);
+
+  if (typeof prcPingWarningTimer.unref === 'function') {
+    prcPingWarningTimer.unref();
+  }
 }
 
 export default async function handler(req, res) {
@@ -105,6 +123,7 @@ export default async function handler(req, res) {
         console.error(`[ERLC] Invalid signature (#${invalidSigCount}, first occurrence)`);
       }
       lastInvalidSigTime = now;
+      schedulePrcPingWarning();
       return res.status(401).json({ error: 'Invalid signature' });
     }
 
