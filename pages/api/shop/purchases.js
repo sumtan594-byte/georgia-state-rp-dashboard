@@ -10,7 +10,13 @@ const NICE_TRY_MESSAGE = 'Nice try! But you have not actually purchased the game
 async function checkGamePassOwnership(robloxUserId, gamePassId) {
   const response = await fetch(
     `https://inventory.roblox.com/v1/users/${robloxUserId}/items/${ROBLOX_ITEM_TYPE_GAME_PASS}/${gamePassId}/is-owned`,
-    { headers: { accept: 'application/json' } }
+    {
+      cache: 'no-store',
+      headers: {
+        accept: 'application/json',
+        'cache-control': 'no-cache',
+      },
+    }
   );
 
   if (!response.ok) {
@@ -119,10 +125,12 @@ export default async function handler(req, res) {
 
     const owned = await checkGamePassOwnership(linkedUser.roblox.id, product.gamePassId);
     if (!owned) {
-      return res.status(403).json({
+      return res.status(200).json({
         owned: false,
-        message: NICE_TRY_MESSAGE,
+        message: `${NICE_TRY_MESSAGE} Checked ${linkedUser.roblox.username} (${linkedUser.roblox.id}) for ${product.name} gamepass ${product.gamePassId}.`,
         roblox: linkedUser.roblox,
+        productId: product.id,
+        gamePassId: product.gamePassId,
       });
     }
 

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import Head from 'next/head';
-import { AlertCircle, CheckCircle2, ChevronRight, Crown, ExternalLink, Heart, Loader2, RefreshCw, ShoppingCart } from 'lucide-react';
+import { AlertCircle, CheckCircle2, ChevronRight, Crown, Heart, Loader2, RefreshCw, ShoppingCart } from 'lucide-react';
 import { DONATION_PERKS, PRODUCTS } from '../lib/shop-products';
 
 export default function Shop() {
@@ -51,6 +51,14 @@ export default function Shop() {
         setProductMessages(prev => ({
           ...prev,
           [product.id]: { type: 'error', text: data.message || data.error || 'Purchase could not be verified.' },
+        }));
+        return;
+      }
+
+      if (!data.owned) {
+        setProductMessages(prev => ({
+          ...prev,
+          [product.id]: { type: 'error', text: data.message || 'Purchase could not be verified.' },
         }));
         return;
       }
@@ -207,12 +215,12 @@ export default function Shop() {
             <div className="p-6 pt-0 mt-auto">
               {product.link && product.link !== "#" ? (
                 <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-1 xl:grid-cols-2 gap-3">
                     <a
                       href={product.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`w-full min-h-12 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-center transition-all duration-300
+                      className={`w-full min-h-12 py-3 px-5 rounded-xl font-bold flex items-center justify-center gap-2 text-center text-sm transition-all duration-300
                         ${owned
                           ? 'bg-gsrp-teal/15 text-gsrp-teal-light border border-gsrp-teal/30'
                           : product.featured
@@ -222,15 +230,14 @@ export default function Shop() {
                       `}
                     >
                       {owned ? <CheckCircle2 className="w-5 h-5" /> : <ShoppingCart className="w-5 h-5" />}
-                      {owned ? 'Thank you for purchasing!' : 'Purchase Integration'}
+                      {owned ? 'Thank you for purchasing!' : 'Purchase'}
                     </a>
                     <button
                       onClick={() => handleClaimPurchase(product)}
                       disabled={isClaiming || purchaseState.loading || !purchaseState.roblox?.id}
-                      className="w-full min-h-12 py-3 px-4 rounded-xl font-bold flex items-center justify-center gap-2 text-center bg-gsrp-dark-surface text-gsrp-teal-light/70 hover:text-white hover:border-gsrp-teal/50 border border-gsrp-dark-border/70 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                      className="w-full min-h-12 py-3 px-5 rounded-xl font-bold flex items-center justify-center text-center text-sm bg-gsrp-dark-surface text-gsrp-teal-light/70 hover:text-white hover:border-gsrp-teal/50 border border-gsrp-dark-border/70 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
                     >
-                      {isClaiming ? <Loader2 className="w-5 h-5 animate-spin" /> : <ExternalLink className="w-5 h-5" />}
-                      Just bought it!
+                      {isClaiming ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Just bought it!'}
                     </button>
                   </div>
                   {productMessage && (
