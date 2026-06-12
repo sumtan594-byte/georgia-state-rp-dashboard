@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import { useSession } from 'next-auth/react';
 import { Users, Search, Calendar, ChevronRight, ChevronLeft, Loader2, Trash2, CheckSquare, Square } from 'lucide-react';
@@ -29,6 +29,7 @@ export default function ApplicationsList() {
   const [selected, setSelected] = useState(new Set());
   const [showBatchDelete, setShowBatchDelete] = useState(false);
   const [isBatchDeleting, setIsBatchDeleting] = useState(false);
+  const fetchedRef = useRef(false);
 
   const fetchPage = (p, type) => {
     setLoading(true);
@@ -61,7 +62,9 @@ export default function ApplicationsList() {
   useEffect(() => {
     if (status !== 'authenticated') return;
     if (!hasRefreshed || !canReviewApplications(effectiveSession)) return;
-    fetchPage(1, activeTab);
+    if (fetchedRef.current) return;
+    fetchedRef.current = true;
+    fetchPage(page, activeTab);
   }, [status, hasRefreshed, effectiveSession]);
 
   const handleDelete = async (appId) => {
