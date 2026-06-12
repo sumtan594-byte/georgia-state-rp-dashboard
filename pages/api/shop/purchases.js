@@ -4,7 +4,7 @@ import { addMemberRole } from '../../../lib/discord-v2';
 import { getLinkedRobloxUser } from '../../../lib/linked-roblox-user';
 import { findShopProduct, PRODUCT_LIST, SHOP_SUPPORT_CHANNEL_URL } from '../../../lib/shop-catalog';
 
-const ROBLOX_ITEM_TYPE_GAME_PASS = 2;
+const ROBLOX_ITEM_TYPE_GAME_PASS = 1;
 const NICE_TRY_MESSAGE = 'Nice try! But you have not actually purchased the gamepass. Please purchase it before pressing this button. Check your linked account at the top to ensure you are on the right account.';
 
 async function checkGamePassOwnership(robloxUserId, gamePassId) {
@@ -127,7 +127,7 @@ export default async function handler(req, res) {
     if (!owned) {
       return res.status(200).json({
         owned: false,
-        message: `${NICE_TRY_MESSAGE} Checked ${linkedUser.roblox.username} (${linkedUser.roblox.id}) for ${product.name} gamepass ${product.gamePassId}.`,
+        message: NICE_TRY_MESSAGE,
         roblox: linkedUser.roblox,
         productId: product.id,
         gamePassId: product.gamePassId,

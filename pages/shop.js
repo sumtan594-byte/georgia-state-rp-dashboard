@@ -8,6 +8,7 @@ export default function Shop() {
   const [purchaseState, setPurchaseState] = useState({ loading: true, purchases: {}, roblox: null, message: '' });
   const [claimingProductId, setClaimingProductId] = useState(null);
   const [productMessages, setProductMessages] = useState({});
+  const [purchaseErrorModal, setPurchaseErrorModal] = useState(null);
 
   const loadPurchases = async () => {
     setPurchaseState(prev => ({ ...prev, loading: true, message: '' }));
@@ -56,10 +57,10 @@ export default function Shop() {
       }
 
       if (!data.owned) {
-        setProductMessages(prev => ({
-          ...prev,
-          [product.id]: { type: 'error', text: data.message || 'Purchase could not be verified.' },
-        }));
+        setPurchaseErrorModal({
+          productName: product.name,
+          message: data.message || 'Purchase could not be verified.',
+        });
         return;
       }
 
@@ -241,7 +242,7 @@ export default function Shop() {
                     </button>
                   </div>
                   {productMessage && (
-                    <p className={`text-xs font-semibold leading-relaxed ${productMessage.type === 'error' ? 'text-red-300' : 'text-gsrp-teal-light/80'}`}>
+                    <p className="text-xs font-semibold leading-relaxed text-gsrp-teal-light/80">
                       {productMessage.text}
                     </p>
                   )}
@@ -259,6 +260,61 @@ export default function Shop() {
           );
         })}
       </div>
+
+      {purchaseErrorModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">
+          <button
+            type="button"
+            aria-label="Close purchase check message"
+            onClick={() => setPurchaseErrorModal(null)}
+            className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+          />
+          <div className="relative w-full max-w-lg rounded-2xl border border-gsrp-orange/30 bg-gsrp-dark-card shadow-2xl shadow-black/40 overflow-hidden">
+            <div className="p-6 border-b border-gsrp-dark-border/70 bg-gsrp-orange/10">
+              <div className="flex items-start gap-4">
+                <div className="w-11 h-11 rounded-xl bg-gsrp-orange/15 text-gsrp-orange flex items-center justify-center flex-shrink-0">
+                  <AlertCircle className="w-6 h-6" />
+                </div>
+                <div>
+                  <h2 className="text-white text-xl font-black">Purchase not verified</h2>
+                  <p className="mt-1 text-sm font-semibold text-gsrp-teal-light/60">{purchaseErrorModal.productName}</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-6">
+              <p className="text-sm leading-relaxed text-gsrp-teal-light/80">
+                {purchaseErrorModal.message}
+              </p>
+
+              <div className="mt-5 rounded-xl border border-gsrp-dark-border/70 bg-gsrp-dark-surface/70 p-4">
+                <p className="text-xs font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-3">Possible fixes</p>
+                <div className="space-y-3 text-sm text-gsrp-teal-light/70">
+                  <div className="flex gap-3">
+                    <ChevronRight className="w-4 h-4 mt-0.5 text-gsrp-orange flex-shrink-0" />
+                    <span>Confirm the Roblox account shown at the top is the account that bought the pass.</span>
+                  </div>
+                  <div className="flex gap-3">
+                    <ChevronRight className="w-4 h-4 mt-0.5 text-gsrp-orange flex-shrink-0" />
+                    <span>Wait a few seconds after purchasing, then press Refresh and try again.</span>
+                  </div>
+                  <div className="flex gap-3">
+                    <ChevronRight className="w-4 h-4 mt-0.5 text-gsrp-orange flex-shrink-0" />
+                    <span>If the wrong Roblox account is linked, unlink and verify the correct account in Discord.</span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setPurchaseErrorModal(null)}
+                className="mt-6 w-full min-h-12 rounded-xl bg-gsrp-orange px-5 py-3 text-sm font-black text-white hover:bg-gsrp-warm transition-colors"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
