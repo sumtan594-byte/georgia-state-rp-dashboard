@@ -70,12 +70,24 @@ export default async function handler(req, res) {
 
     // 4. Fetch Melonly Logs
     const melonlyKey = process.env.MELONLY_API_KEY;
-    const melonlyLogsPromise = melonlyKey ? fetch(`https://api.melonly.xyz/api/v1/server/logs/user/${actualRobloxUsername}?limit=100`, {
-      headers: { 'Authorization': `Bearer ${melonlyKey}` }
-    }).then(r => r.json()).catch(err => {
-      console.error('Melonly API Error:', err);
-      return null;
-    }) : Promise.resolve(null);
+    const melonlyLogsPromise = melonlyKey
+      ? Promise.race([
+          fetch(`https://api.melonly.xyz/api/v1/server/logs/user/${actualRobloxUsername}?limit=100`, {
+            headers: { 'Authorization': `Bearer ${melonlyKey}` },
+            signal: AbortSignal.timeout(8000)
+          }).then(r => {
+            if (!r.ok) {
+              console.error(`Melonly API Error: HTTP ${r.status} ${r.statusText}`);
+              return null;
+            }
+            return r.json();
+          }),
+          Promise.reject(new Error('Melonly API timed out'))
+        ]).catch(err => {
+          console.error('Melonly API Error:', err.message || err);
+          return null;
+        })
+      : Promise.resolve(null);
 
     const [profile, avatar, headshot, currentlyWearing, erlcPlayers, melonlyLogs] = await Promise.all([
       profilePromise,
