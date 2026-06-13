@@ -72,7 +72,7 @@ export default async function handler(req, res) {
         await helper('add', appType.roleAddDenied);
         await helper('remove', appType.roleRemoveDenied);
 
-        if (reason && /ai/i.test(reason)) {
+        if (reason && /\bai\b|\ba\.i\.\b/i.test(reason)) {
           console.log(`[Role Sync] AI detected in denial reason — blacklisting ${application.userId}`);
           await addMemberRole(guildId, application.userId, "1374326193536372756");
         }
