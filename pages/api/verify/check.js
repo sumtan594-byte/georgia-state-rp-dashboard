@@ -70,7 +70,6 @@ export default async function handler(req, res) {
 
     // 4. Fetch Melonly Logs (temporarily disabled — API returning 403/timeouts)
     const melonlyLogsPromise = Promise.resolve(null);
-      : Promise.resolve(null);
 
     const [profile, avatar, headshot, currentlyWearing, erlcPlayers, melonlyLogs] = await Promise.all([
       profilePromise,
