@@ -9,6 +9,10 @@ const ROBLOX_ITEM_TYPE_GAME_PASS = 1;
 const NICE_TRY_MESSAGE = 'Nice try! But you have not actually purchased the gamepass. Please purchase it before pressing this button. Check your linked account at the top to ensure you are on the right account.';
 
 async function checkGamePassOwnership(robloxUserId, gamePassId) {
+  if (!/^\d+$/.test(String(robloxUserId || ''))) {
+    throw new Error(`Invalid linked Roblox user ID: ${robloxUserId || 'missing'}`);
+  }
+
   const response = await fetch(
     `https://inventory.roblox.com/v1/users/${robloxUserId}/items/${ROBLOX_ITEM_TYPE_GAME_PASS}/${gamePassId}/is-owned`,
     {
@@ -22,7 +26,7 @@ async function checkGamePassOwnership(robloxUserId, gamePassId) {
 
   if (!response.ok) {
     const details = await response.text().catch(() => '');
-    throw new Error(`Roblox ownership check failed for ${gamePassId}: ${response.status} ${details}`);
+    throw new Error(`Roblox ownership check failed for user ${robloxUserId}, gamepass ${gamePassId}: ${response.status} ${details}`);
   }
 
   return response.json();
@@ -43,7 +47,7 @@ async function getUserPurchaseStatus(robloxUserId) {
         const owned = await checkGamePassOwnership(robloxUserId, product.gamePassId);
         return serializeProductStatus(product, owned);
       } catch (error) {
-        console.error('[Shop Ownership Check]', error);
+        console.warn('[Shop Ownership Check]', error.message);
         return { ...serializeProductStatus(product, false), error: 'Failed to check ownership' };
       }
     })
