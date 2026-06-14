@@ -278,7 +278,7 @@ export default function RidealongPage() {
           </div>
           <h2 className="text-3xl font-black text-white mb-2">Access Revoked</h2>
           <p className="text-gsrp-teal-light/50 text-sm mb-6">
-            Your access to the ridealong has been revoked, please redo the SSD training.
+            Your access to the ridealong has been revoked, please redo the Staff orientation quiz.
           </p>
           <button
             onClick={() => router.push('/training')}
@@ -417,7 +417,7 @@ export default function RidealongPage() {
         <div className="card-glass rounded-2xl border border-gsrp-sunset/30 p-6 text-center">
           <p className="text-gsrp-sunset text-sm font-bold mb-2">Quiz Required First</p>
           <p className="text-gsrp-teal-light/50 text-xs mb-4">
-            You must pass the SSD Training Quiz before attempting the ridealong simulation.
+            You must pass the Staff Orientation Quiz before attempting the ridealong simulation.
           </p>
           <button
             onClick={() => router.push('/training')}
@@ -495,7 +495,7 @@ export default function RidealongPage() {
             <ul className="text-xs text-gsrp-teal-light/50 space-y-1">
               <li className="flex items-center gap-2">
                 <CheckIcon />
-                SSD Training Quiz passed
+                Staff Orientation Quiz passed
               </li>
               <li className="flex items-center gap-2">
                 <CheckIcon />

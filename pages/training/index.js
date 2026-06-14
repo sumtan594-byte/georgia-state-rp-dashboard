@@ -246,7 +246,7 @@ export default function TrainingPage() {
           <p className="text-gsrp-teal-light/50 text-sm mb-6">
             {ridealongPassed
               ? 'You have completed both the quiz and the ridealong simulation. Your Discord roles have been updated.'
-              : 'You have passed the SSD Training Quiz. Complete the ridealong simulation to advance.'}
+              : 'You have passed the Staff Orientation Quiz. Complete the ridealong simulation to advance.'}
           </p>
           <div className="flex flex-col gap-3">
             <div className="flex gap-3">
@@ -355,7 +355,7 @@ export default function TrainingPage() {
           <Shield size={26} className="text-gsrp-orange" />
         </div>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white">SSD Training Quiz</h1>
+          <h1 className="text-2xl sm:text-3xl font-black text-white">Staff Orientation Quiz</h1>
           <p className="text-gsrp-teal-light/40 text-xs font-medium">Staff Standards & Development — Georgia State Roleplay</p>
         </div>
       </div>

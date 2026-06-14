@@ -108,7 +108,7 @@ export default async function handler(req, res) {
   try {
     const color = pass ? 0x22c55e : 0xef4444;
     const passMsg = pass
-      ? 'Congratulations! You have completed the SSD Training Quiz. You may now apply for staff positions.'
+      ? 'Congratulations! You have completed the Staff Orientation Quiz. You may now apply for staff positions.'
       : `You scored ${score}/${total}. A minimum of 17 correct answers is required. Try again in 6 hours.`;
 
     const webhookPayload = {
@@ -123,7 +123,7 @@ export default async function handler(req, res) {
             { name: 'Next Step', value: passMsg, inline: false },
           ],
           timestamp: new Date().toISOString(),
-          footer: { text: 'GSRP SSD Training Quiz' },
+          footer: { text: 'GSRP Staff Orientation Quiz' },
           thumbnail: avatar ? { url: `https://cdn.discordapp.com/avatars/${userId}/${avatar}.png` } : undefined,
         }
       ]

@@ -345,7 +345,7 @@ export default function HandbookPage() {
             <CheckCircle2 size={20} className="text-gsrp-teal-light" />
             <div>
               <p className="text-white font-bold text-sm">All sections completed!</p>
-              <p className="text-gsrp-teal-light/60 text-xs">You can now do the SSD quiz</p>
+              <p className="text-gsrp-teal-light/60 text-xs">You can now do the Staff orientation quiz</p>
             </div>
           </div>
           <button

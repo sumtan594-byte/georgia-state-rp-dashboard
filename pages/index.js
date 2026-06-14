@@ -100,7 +100,7 @@ export default function Dashboard() {
             <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <FeatureCard className="animate-fade-in-up stagger-1" href="/training" icon={BookOpen} title="Staff Training" description="SSD training quiz and staff handbook" locked={!hasTraining} requiredRole="Trainee" activeViewers={viewersFor('/training')} />
+            <FeatureCard className="animate-fade-in-up stagger-1" href="/training" icon={BookOpen} title="Staff Training" description="Staff orientation quiz and staff handbook" locked={!hasTraining} requiredRole="Trainee" activeViewers={viewersFor('/training')} />
             <FeatureCard className="animate-fade-in-up stagger-2" href="/training/attempts" icon={Users} title="Quiz Attempts" description="View all staff training quiz attempts" locked={!hasAttempts} requiredRole="Trainer" activeViewers={viewersFor('/training/attempts')} />
           </div>
         </div>
