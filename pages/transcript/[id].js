@@ -28,7 +28,7 @@ function parseMeta(id) {
 }
 
 function AccessModal({ transcriptId, isOpen, onClose }) {
-  const [data, setData] = useState({ accesses: [], denies: [], admins: [], canManage: false, canRemoveAdmins: false });
+  const [data, setData] = useState({ accesses: [], denies: [], admins: [], owner: null, canManage: false, canRemoveAdmins: false, isAdmin: false });
   const [loading, setLoading] = useState(true);
   const [newId, setNewId] = useState('');
   const [newType, setNewType] = useState('user');
@@ -128,6 +128,46 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
     }
   };
 
+  const handleDenyOwner = async () => {
+    if (!data.owner?.id) return;
+    setError('');
+    try {
+      const res = await fetch(`/api/transcripts/access?transcriptId=${transcriptId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ granteeId: data.owner.id }),
+      });
+      if (res.ok) {
+        await fetchAccesses();
+      } else {
+        const json = await res.json();
+        setError(json.error || 'Failed to revoke ticket owner access');
+      }
+    } catch {
+      setError('Network error');
+    }
+  };
+
+  const handleRestoreOwner = async () => {
+    if (!data.owner?.id) return;
+    setError('');
+    try {
+      const res = await fetch(`/api/transcripts/access?transcriptId=${transcriptId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ granteeId: data.owner.id, restore: true }),
+      });
+      if (res.ok) {
+        await fetchAccesses();
+      } else {
+        const json = await res.json();
+        setError(json.error || 'Failed to restore ticket owner access');
+      }
+    } catch {
+      setError('Network error');
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -151,6 +191,39 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
             </div>
           ) : (
             <>
+              {/* Ticket Owner */}
+              {data.owner && (
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-widest text-gsrp-orange mb-2 flex items-center gap-2">
+                    <Users size={11} /> Ticket Owner
+                  </p>
+                  <div className="flex items-center justify-between bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-xl px-3 py-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      {data.owner.avatarUrl ? (
+                        <img src={data.owner.avatarUrl} alt="" className="w-6 h-6 rounded-full flex-shrink-0" />
+                      ) : (
+                        <div className="w-6 h-6 rounded-full bg-gsrp-dark-border flex-shrink-0" />
+                      )}
+                      <span className="text-white text-sm font-bold truncate">{data.owner.name}</span>
+                      {data.owner.isDenied && (
+                        <span className="text-[8px] font-black uppercase tracking-widest text-gsrp-sunset bg-gsrp-sunset/10 px-1.5 py-0.5 rounded flex-shrink-0">Denied</span>
+                      )}
+                    </div>
+                    {data.isAdmin && (
+                      data.owner.isDenied ? (
+                        <button onClick={handleRestoreOwner} className="flex items-center gap-1 text-gsrp-teal-light/60 hover:text-gsrp-teal-light transition-colors text-[9px] font-bold uppercase tracking-widest cursor-pointer px-2 py-1 rounded-lg hover:bg-gsrp-teal/10 flex-shrink-0">
+                          <Plus size={10} /> Restore
+                        </button>
+                      ) : (
+                        <button onClick={handleDenyOwner} className="flex items-center gap-1 text-gsrp-sunset/60 hover:text-gsrp-sunset transition-colors text-[9px] font-bold uppercase tracking-widest cursor-pointer px-2 py-1 rounded-lg hover:bg-gsrp-sunset/10 flex-shrink-0">
+                          <Trash2 size={10} /> Revoke
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* System Administrators */}
               {data.admins.length > 0 && (
                 <div>
@@ -573,6 +646,23 @@ export async function getServerSideProps(context) {
 
     const t = rows[0];
     const isOwner = String(t.owner_id) === currentUserId;
+
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS transcript_deny (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        transcript_id VARCHAR(255) NOT NULL,
+        user_id VARCHAR(255) NOT NULL,
+        denied_by VARCHAR(255) NULL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_transcript_deny (transcript_id, user_id)
+      )
+    `);
+
+    const [denyRows] = await pool.query(
+      'SELECT 1 FROM transcript_deny WHERE transcript_id = ? AND user_id = ? LIMIT 1',
+      [id, currentUserId]
+    );
+    if (denyRows.length > 0) return { props: { error: true, isAdmin } };
 
     // Check access: admin, owner, or granted via transcript_access
     if (!isAdmin && !isOwner) {

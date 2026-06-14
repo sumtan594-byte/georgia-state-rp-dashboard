@@ -24,11 +24,29 @@ export default async function handler(req, res) {
       if (!id) return res.status(400).json({ error: 'Missing transcript id' });
 
       if (!isAdmin) {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS transcript_deny (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            transcript_id VARCHAR(255) NOT NULL,
+            user_id VARCHAR(255) NOT NULL,
+            denied_by VARCHAR(255) NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_transcript_deny (transcript_id, user_id)
+          )
+        `);
+
         const [rows] = await pool.query(
           'SELECT owner_id FROM transcripts WHERE id = ? LIMIT 1',
           [id]
         );
         if (rows.length === 0) return res.status(404).json({ error: 'Transcript not found' });
+        const [denyRows] = await pool.query(
+          'SELECT 1 FROM transcript_deny WHERE transcript_id = ? AND user_id = ? LIMIT 1',
+          [id, currentUserId]
+        );
+        if (denyRows.length > 0) {
+          return res.status(403).json({ error: 'Your access to this transcript has been revoked' });
+        }
         if (String(rows[0].owner_id) !== currentUserId) {
           return res.status(403).json({ error: 'You can only delete your own transcripts' });
         }
@@ -63,10 +81,31 @@ export default async function handler(req, res) {
       const placeholders = ids.map(() => '?').join(',');
 
       if (!isAdmin) {
+        await pool.query(`
+          CREATE TABLE IF NOT EXISTS transcript_deny (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            transcript_id VARCHAR(255) NOT NULL,
+            user_id VARCHAR(255) NOT NULL,
+            denied_by VARCHAR(255) NULL,
+            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            UNIQUE KEY unique_transcript_deny (transcript_id, user_id)
+          )
+        `);
+
         const [ownerRows] = await pool.query(
           `SELECT id, owner_id FROM transcripts WHERE id IN (${placeholders})`,
           ids
         );
+        const [denyRows] = await pool.query(
+          `SELECT transcript_id FROM transcript_deny WHERE user_id = ? AND transcript_id IN (${placeholders})`,
+          [currentUserId, ...ids]
+        );
+        if (denyRows.length > 0) {
+          return res.status(403).json({
+            error: 'Your access to one or more selected transcripts has been revoked',
+            offendingId: denyRows[0].transcript_id,
+          });
+        }
         for (const row of ownerRows) {
           if (String(row.owner_id) !== currentUserId) {
             return res.status(403).json({

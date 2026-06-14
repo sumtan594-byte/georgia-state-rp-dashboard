@@ -23,6 +23,17 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Database not configured' });
   }
 
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS transcript_deny (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      transcript_id VARCHAR(255) NOT NULL,
+      user_id VARCHAR(255) NOT NULL,
+      denied_by VARCHAR(255) NULL,
+      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_transcript_deny (transcript_id, user_id)
+    )
+  `);
+
   if (req.method === 'GET') {
     // Quick access check — used by the polling interval on the viewer page
     if (req.query.check === '1') {
@@ -72,6 +83,12 @@ export default async function handler(req, res) {
       [transcriptId]
     );
 
+    const [ticketRows] = await pool.query(
+      'SELECT owner_id FROM transcripts WHERE id = ? LIMIT 1',
+      [transcriptId]
+    );
+    const ownerId = ticketRows?.[0]?.owner_id ? String(ticketRows[0].owner_id) : null;
+
     let denyRows = [];
     try {
       [denyRows] = await pool.query(
@@ -98,6 +115,16 @@ export default async function handler(req, res) {
       return { ...d, name: user.username || d.user_id, avatarUrl: user.avatarUrl };
     }));
 
+    const owner = ownerId ? await (async () => {
+      const user = await enrichUserInfo(ownerId);
+      return {
+        id: ownerId,
+        name: user.username || ownerId,
+        avatarUrl: user.avatarUrl,
+        isDenied: enrichedDenies.some(d => String(d.user_id) === ownerId),
+      };
+    })() : null;
+
     // Enrich admins with Discord info
     const enrichedAdmins = await Promise.all(adminIds.map(async id => {
       const user = await enrichUserInfo(id);
@@ -108,6 +135,7 @@ export default async function handler(req, res) {
       accesses: enrichedAccesses,
       denies: enrichedDenies,
       admins: enrichedAdmins,
+      owner,
       isAdmin,
       canRemoveAdmins,
     });
@@ -138,6 +166,36 @@ export default async function handler(req, res) {
   // ── DELETE: revoke access ──
   if (req.method === 'DELETE') {
     if (!granteeId) return res.status(400).json({ error: 'Missing granteeId' });
+
+    const [ticketRows] = await pool.query(
+      'SELECT owner_id FROM transcripts WHERE id = ? LIMIT 1',
+      [transcriptId]
+    );
+    const ownerId = ticketRows?.[0]?.owner_id ? String(ticketRows[0].owner_id) : null;
+
+    if (ownerId && String(granteeId) === ownerId) {
+      if (!isAdmin) {
+        return res.status(403).json({ error: 'Only admins can remove or restore the ticket owner.' });
+      }
+
+      if (req.body.restore) {
+        await pool.query(
+          'DELETE FROM transcript_deny WHERE transcript_id = ? AND user_id = ?',
+          [transcriptId, ownerId]
+        );
+        return res.status(200).json({ success: true });
+      }
+
+      await pool.query(
+        'INSERT IGNORE INTO transcript_deny (transcript_id, user_id, denied_by) VALUES (?, ?, ?)',
+        [transcriptId, ownerId, currentUserId]
+      );
+      await pool.query(
+        'DELETE FROM transcript_access WHERE transcript_id = ? AND grantee_id = ?',
+        [transcriptId, ownerId]
+      );
+      return res.status(200).json({ success: true });
+    }
 
     // Admin restore: remove from transcript_deny
     if (adminIds.includes(granteeId) && req.body.restore) {
