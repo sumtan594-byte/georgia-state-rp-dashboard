@@ -1,12 +1,16 @@
 import clientPromise from '../../../lib/mongodb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
+import { rateLimit } from '../../../lib/rate-limiter';
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
+
+  const rl = rateLimit(req, res);
+  if (rl.limited) return res.status(429).json({ error: 'Rate limited', retryAfter: rl.retryAfter });
 
   const userId = session.user.id;
 

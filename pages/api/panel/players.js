@@ -165,6 +165,10 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Missing required Discord role' });
   }
 
+  const { rateLimit } = require('../../../lib/rate-limiter');
+  const rl = rateLimit(req, res);
+  if (rl.limited) return res.status(429).json({ error: 'Rate limited', retryAfter: rl.retryAfter });
+
   const ERLC_KEY = process.env.ERLC_API_KEY;
   if (!ERLC_KEY) {
     return res.status(500).json({ error: 'Missing ERLC_API_KEY env var' });

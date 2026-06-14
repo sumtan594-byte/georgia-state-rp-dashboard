@@ -120,6 +120,10 @@ export default function HandbookPage() {
     async function fetchProgress() {
       try {
         const res = await fetch('/api/training/progress');
+        if (!res.ok) {
+          setLoadingProgress(false);
+          return;
+        }
         const data = await res.json();
         setProgress(data);
         if (data.completedSections?.length) {
@@ -148,6 +152,7 @@ export default function HandbookPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sectionId })
       });
+      if (!res.ok) return;
       const data = await res.json();
       setProgress(data);
     } catch (e) {
@@ -255,13 +260,13 @@ export default function HandbookPage() {
               <div className="flex justify-between items-center mb-2">
                 <h3 className="text-[10px] font-black text-gsrp-teal-light/40 uppercase tracking-widest">Progress</h3>
                 <span className="text-[10px] font-mono text-gsrp-orange font-bold">
-                  {Math.round((progress.completedSections.length / ALL_SECTIONS.length) * 100)}%
+                  {Math.round(((progress.completedSections?.length || 0) / ALL_SECTIONS.length) * 100)}%
                 </span>
               </div>
               <div className="h-1 w-full bg-gsrp-dark-border rounded-full overflow-hidden">
                 <div
                   className="h-full bg-gsrp-orange transition-all duration-500"
-                  style={{ width: `${(progress.completedSections.length / ALL_SECTIONS.length) * 100}%` }}
+                  style={{ width: `${((progress.completedSections?.length || 0) / ALL_SECTIONS.length) * 100}%` }}
                 />
               </div>
             </div>
@@ -286,7 +291,7 @@ export default function HandbookPage() {
                           : 'text-gsrp-teal-light/40 hover:text-white hover:bg-gsrp-dark-surface/40'
                       }`}
                     >
-                      {progress.completedSections.includes(s.id) ? (
+                      {progress.completedSections?.includes(s.id) ? (
                         <CheckCircle2 size={10} className="text-gsrp-orange shrink-0" />
                       ) : (
                         <Circle size={10} className="text-gsrp-teal-light/20 shrink-0" />
@@ -311,13 +316,13 @@ export default function HandbookPage() {
                     <button
                       onClick={() => toggleSection(s.id)}
                       className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-2 ${
-                        progress.completedSections.includes(s.id)
+                         progress.completedSections?.includes(s.id)
                           ? 'bg-gsrp-teal/20 text-gsrp-teal-light border border-gsrp-teal/30'
                           : 'bg-gsrp-orange/20 text-gsrp-orange border border-gsrp-orange/30 hover:bg-gsrp-orange/30'
                       }`}
                     >
-                      {progress.completedSections.includes(s.id) ? <CheckCircle2 size={14} /> : <Circle size={14} />}
-                      {progress.completedSections.includes(s.id) ? 'Completed' : 'Mark as Read'}
+                      {progress.completedSections?.includes(s.id) ? <CheckCircle2 size={14} /> : <Circle size={14} />}
+                      {progress.completedSections?.includes(s.id) ? 'Completed' : 'Mark as Read'}
                     </button>
                   )}
                   <button

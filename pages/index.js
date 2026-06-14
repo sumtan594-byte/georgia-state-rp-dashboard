@@ -12,24 +12,20 @@ export default function Dashboard() {
   const { data: session, status } = useSession();
   const { session: refreshedSession, hasRefreshed } = useRefreshedUser();
   const effectiveSession = refreshedSession || session;
-  const [stats, setStats] = useState({ transcripts: 0, players: 0, online: false });
+  const [stats, setStats] = useState({ transcripts: 0 });
   const [statsLoading, setStatsLoading] = useState(true);
   const [activeViewers, setActiveViewers] = useState([]);
 
   useEffect(() => {
     if (!session) return;
 
-    Promise.allSettled([
-      fetch('/api/transcripts/count').then(r => r.ok ? r.json() : { count: 0 }),
-      fetch('/api/panel/players').then(r => r.ok ? r.json() : null),
-    ]).then(([transcriptResult, panelResult]) => {
-      setStats({
-        transcripts: transcriptResult.status === 'fulfilled' ? transcriptResult.value.count || 0 : 0,
-        players: panelResult.status === 'fulfilled' && panelResult.value ? panelResult.value.Players?.length || 0 : 0,
-        online: panelResult.status === 'fulfilled' && panelResult.value !== null,
-      });
-      setStatsLoading(false);
-    });
+    fetch('/api/transcripts/count')
+      .then(r => r.ok ? r.json() : { count: 0 })
+      .then(data => {
+        setStats({ transcripts: data.count || 0 });
+        setStatsLoading(false);
+      })
+      .catch(() => setStatsLoading(false));
   }, [session]);
 
   useEffect(() => {
@@ -87,7 +83,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <FeatureCard className="animate-fade-in-up stagger-1" href="/departments" icon={Building2} title="Departments" description="View and join GSRP's official departments" activeViewers={viewersFor('/departments')} />
           <FeatureCard className="animate-fade-in-up stagger-2" href="/transcripts" icon={FileText} title="Transcripts" description="View and manage Discord ticket transcripts" badge={stats.transcripts > 0 ? `${stats.transcripts} records` : null} activeViewers={viewersFor('/transcripts')} />
-          <FeatureCard className="animate-fade-in-up stagger-3" href="/panel" icon={Map} title="Live Panel" description="ERLC server map, player management, and commands" badge={stats.online ? `${stats.players} online` : null} locked={!hasPanel} requiredRole="Panel" activeViewers={viewersFor('/panel')} />
+          <FeatureCard className="animate-fade-in-up stagger-3" href="/panel" icon={Map} title="Live Panel" description="ERLC server map, player management, and commands" locked={!hasPanel} requiredRole="Panel" activeViewers={viewersFor('/panel')} />
           <FeatureCard className="animate-fade-in-up stagger-4" href="/verify" icon={ShieldCheck} title="Verification" description="Link your Roblox account to Discord" activeViewers={viewersFor('/verify')} />
           <FeatureCard className="animate-fade-in-up stagger-5" href="/shop" icon={ShoppingCart} title="Store" description="Purchase premium roles, pings, and donations" activeViewers={viewersFor('/shop')} />
         </div>

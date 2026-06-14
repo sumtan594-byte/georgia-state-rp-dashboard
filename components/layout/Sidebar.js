@@ -28,25 +28,11 @@ export default function Sidebar({ open, onToggle }) {
   const { data: session } = useSession();
   const { refreshedUser, session: refreshedSession, hasRefreshed } = useRefreshedUser();
   const effectiveSession = refreshedSession || session;
-  const [serverStatus, setServerStatus] = useState(null);
   const [transcriptCount, setTranscriptCount] = useState(0);
   const [activeViewers, setActiveViewers] = useState([]);
 
   useEffect(() => {
     if (!session || !open) return;
-
-    fetch('/api/panel/players')
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        if (data) {
-          setServerStatus({
-            online: true,
-            players: (data.Players || data.players)?.length || 0,
-            staff: data.staff?.length || 0,
-          });
-        }
-      })
-      .catch(() => setServerStatus({ online: false, players: 0, staff: 0 }));
 
     fetch('/api/transcripts/count')
       .then(r => r.ok ? r.json() : null)
@@ -85,7 +71,7 @@ export default function Sidebar({ open, onToggle }) {
     { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { href: '/departments', icon: Building2, label: 'Departments' },
     { href: '/transcripts', icon: FileText, label: 'Transcripts', badge: transcriptCount > 0 ? transcriptCount : null },
-    ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null }] : []),
+    ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel' }] : []),
     ...(hasHandbook ? [{ href: '/staff-handbook', icon: BookOpen, label: 'Staff Handbook' }] : []),
     ...(hasTraining ? [{ href: '/training', icon: BookOpen, label: 'Training' }] : []),
     ...(hasTraining ? [{ href: '/training/ridealong', icon: ShieldCheck, label: 'Ridealong' }] : []),
@@ -128,7 +114,7 @@ export default function Sidebar({ open, onToggle }) {
               { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
               { href: '/departments', icon: Building2, label: 'Departments' },
               { href: '/transcripts', icon: FileText, label: 'Transcripts', badge: transcriptCount > 0 ? transcriptCount : null },
-               ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel', badge: serverStatus?.online ? `${serverStatus.players} online` : null, external: true }] : []),
+               ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel' }] : []),
                ...(hasPanel ? [{ href: '/panel/stats', icon: Server, label: 'Server Stats' }] : []),
                { href: '/verify', icon: ShieldCheck, label: 'Verification' },
                { href: '/shop', icon: ShoppingCart, label: 'Store' },
@@ -231,20 +217,17 @@ className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/
         </div>
       </nav>
 
-      {open && serverStatus && (
+      {open && (
         <div className="p-4 border-t border-gsrp-dark-border/50">
-          <div className="flex items-center gap-2 mb-2">
-            <div className={`w-2 h-2 rounded-full ${serverStatus.online ? 'bg-green-500' : 'bg-red-500'}`} />
-            <span className="text-[10px] font-bold uppercase tracking-widest text-gsrp-teal-light/40">
-              {serverStatus.online ? 'Server Online' : 'Server Offline'}
-            </span>
-          </div>
-          {serverStatus.online && (
-            <div className="flex items-center gap-2">
-              <Users size={12} className="text-gsrp-teal-light/30" />
-              <span className="text-xs text-gsrp-teal-light/60">{serverStatus.players} players</span>
-            </div>
-          )}
+          <Link
+            href="https://discord.gg/gsrp"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-gsrp-teal-light/40 hover:text-gsrp-orange transition-colors"
+          >
+            <MessageCircle size={14} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">Join our Discord</span>
+          </Link>
         </div>
       )}
     </div>
