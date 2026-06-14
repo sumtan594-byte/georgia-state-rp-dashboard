@@ -213,8 +213,8 @@ export async function getServerSideProps(context) {
   const session = await getServerSession(context.req, context.res, authOptions);
   if (!session) return { redirect: { destination: '/login', permanent: false } };
 
-  const { isTrackingViewer } = await import('../../../lib/admin-helper');
-  const canAccess = isTrackingViewer(session.user?.id);
+  const { canViewTracking } = await import('../../../lib/admin-helper');
+  const canAccess = await canViewTracking(session);
 
   return { props: { canAccess } };
 }

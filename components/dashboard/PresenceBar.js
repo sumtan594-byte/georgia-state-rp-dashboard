@@ -6,6 +6,7 @@ const HEARTBEAT_MS = 30_000; // ping every 30s
 export default function PresenceBar({ page = '/' }) {
   const { data: session } = useSession();
   const [viewers, setViewers] = useState([]);
+  const [allViewers, setAllViewers] = useState([]);
   const [tooltip, setTooltip] = useState(null); // userId of hovered avatar
 
   const sendHeartbeat = useCallback(async () => {
@@ -17,6 +18,7 @@ export default function PresenceBar({ page = '/' }) {
       if (res.ok) {
         const data = await res.json();
         setViewers(data.viewers || []);
+        setAllViewers(data.allViewers || data.viewers || []);
       }
     } catch {}
   }, [session, page]);
@@ -46,8 +48,7 @@ export default function PresenceBar({ page = '/' }) {
   }, [session, sendHeartbeat, page]);
 
   // Don't render if nobody or only the current user
-  const others = viewers.filter(v => v.userId !== session?.user?.id);
-  const all = viewers; // include self for the full count
+  const all = allViewers.length ? allViewers : viewers;
 
   if (all.length === 0) return null;
 
@@ -55,7 +56,7 @@ export default function PresenceBar({ page = '/' }) {
     <div className="flex items-center gap-3 mb-6 animate-fade-in-up">
       {/* Label */}
       <span className="text-[10px] font-black uppercase tracking-[0.25em] text-gsrp-teal-light/30 whitespace-nowrap">
-        Online now
+        Active members
       </span>
 
       {/* Avatar stack */}
@@ -108,6 +109,7 @@ export default function PresenceBar({ page = '/' }) {
                         <span className="text-gsrp-orange ml-1 text-[9px] font-black uppercase tracking-wide">you</span>
                       )}
                     </p>
+                    <p className="mt-0.5 text-[10px] font-semibold text-gsrp-orange/80">{viewer.pageLabel || viewer.page || '/'}</p>
                   </div>
                   {/* Arrow */}
                   <div className="flex justify-center">
@@ -131,7 +133,7 @@ export default function PresenceBar({ page = '/' }) {
 
       {/* Count */}
       <span className="text-[10px] text-gsrp-teal-light/25 font-medium">
-        {all.length === 1 ? '1 person' : `${all.length} people`}
+        {all.length === 1 ? '1 person' : `${all.length} people`} across the site
       </span>
 
       {/* Pulse dot */}

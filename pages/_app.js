@@ -6,7 +6,8 @@ import { useRouter } from 'next/router';
 import Sidebar from "../components/layout/Sidebar";
 import TopBar from "../components/layout/TopBar";
 import WelcomeScreen from "../components/auth/WelcomeScreen";
-import { UserRefreshProvider } from "../lib/UserRefreshContext";
+import AccessDenied from "../components/auth/AccessDenied";
+import { UserRefreshProvider, useRefreshedUser } from "../lib/UserRefreshContext";
 import { ToastProvider } from "../lib/ToastContext";
 import { ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -18,6 +19,7 @@ function DebugSessionLogger() {
 
 function AuthGuard({ isPublicPage, children }) {
   const { data: session, status } = useSession();
+  const { accessDenied } = useRefreshedUser();
   const router = useRouter();
 
   useEffect(() => {
@@ -41,6 +43,10 @@ function AuthGuard({ isPublicPage, children }) {
     return null;
   }
 
+  if (!isPublicPage && accessDenied) {
+    return <AccessDenied {...accessDenied} />;
+  }
+
   return children;
 }
 
@@ -49,7 +55,7 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
     <AuthGuard isPublicPage={isPublicPage}>
       <div className="min-h-screen relative">
         <div className="fixed inset-0 z-0">
-          <img src="https://i.imgur.com/QVVQSK2.png" alt="" className="w-full h-full object-cover" aria-hidden="true" />
+          <img src="/media/Background.png" alt="" className="w-full h-full object-cover" aria-hidden="true" />
           <div className="absolute inset-0 bg-gsrp-dark/80" />
         </div>
 

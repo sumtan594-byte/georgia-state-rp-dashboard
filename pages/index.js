@@ -14,6 +14,7 @@ export default function Dashboard() {
   const effectiveSession = refreshedSession || session;
   const [stats, setStats] = useState({ transcripts: 0, players: 0, online: false });
   const [statsLoading, setStatsLoading] = useState(true);
+  const [activeViewers, setActiveViewers] = useState([]);
 
   useEffect(() => {
     if (!session) return;
@@ -29,6 +30,19 @@ export default function Dashboard() {
       });
       setStatsLoading(false);
     });
+  }, [session]);
+
+  useEffect(() => {
+    if (!session) return;
+    const loadPresence = () => {
+      fetch('/api/presence?page=/')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => setActiveViewers(data?.allViewers || []))
+        .catch(() => {});
+    };
+    loadPresence();
+    const interval = setInterval(loadPresence, 15000);
+    return () => clearInterval(interval);
   }, [session]);
 
 
@@ -51,6 +65,7 @@ export default function Dashboard() {
   const hasTraining = canAccessTraining(effectiveSession);
   const hasAttempts = canViewAttempts(effectiveSession);
   const canReviewApps = canReviewApplications(effectiveSession);
+  const viewersFor = (path) => activeViewers.filter(v => v.page === path || v.page?.startsWith(`${path}/`));
 
   return (
     <div className="max-w-5xl mx-auto animate-fade-in-up">
@@ -70,11 +85,11 @@ export default function Dashboard() {
           <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <FeatureCard className="animate-fade-in-up stagger-1" href="/departments" icon={Building2} title="Departments" description="View and join GSRP's official departments" />
-          <FeatureCard className="animate-fade-in-up stagger-2" href="/transcripts" icon={FileText} title="Transcripts" description="View and manage Discord ticket transcripts" badge={stats.transcripts > 0 ? `${stats.transcripts} records` : null} />
-          <FeatureCard className="animate-fade-in-up stagger-3" href="/panel" icon={Map} title="Live Panel" description="ERLC server map, player management, and commands" badge={stats.online ? `${stats.players} online` : null} locked={!hasPanel} requiredRole="Panel" />
-          <FeatureCard className="animate-fade-in-up stagger-4" href="/verify" icon={ShieldCheck} title="Verification" description="Link your Roblox account to Discord" />
-          <FeatureCard className="animate-fade-in-up stagger-5" href="/shop" icon={ShoppingCart} title="Store" description="Purchase premium roles, pings, and donations" />
+          <FeatureCard className="animate-fade-in-up stagger-1" href="/departments" icon={Building2} title="Departments" description="View and join GSRP's official departments" activeViewers={viewersFor('/departments')} />
+          <FeatureCard className="animate-fade-in-up stagger-2" href="/transcripts" icon={FileText} title="Transcripts" description="View and manage Discord ticket transcripts" badge={stats.transcripts > 0 ? `${stats.transcripts} records` : null} activeViewers={viewersFor('/transcripts')} />
+          <FeatureCard className="animate-fade-in-up stagger-3" href="/panel" icon={Map} title="Live Panel" description="ERLC server map, player management, and commands" badge={stats.online ? `${stats.players} online` : null} locked={!hasPanel} requiredRole="Panel" activeViewers={viewersFor('/panel')} />
+          <FeatureCard className="animate-fade-in-up stagger-4" href="/verify" icon={ShieldCheck} title="Verification" description="Link your Roblox account to Discord" activeViewers={viewersFor('/verify')} />
+          <FeatureCard className="animate-fade-in-up stagger-5" href="/shop" icon={ShoppingCart} title="Store" description="Purchase premium roles, pings, and donations" activeViewers={viewersFor('/shop')} />
         </div>
       </div>
 
@@ -85,8 +100,8 @@ export default function Dashboard() {
             <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
           </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            <FeatureCard className="animate-fade-in-up stagger-1" href="/training" icon={BookOpen} title="Staff Training" description="SSD training quiz and staff handbook" locked={!hasTraining} requiredRole="Trainee" />
-            <FeatureCard className="animate-fade-in-up stagger-2" href="/training/attempts" icon={Users} title="Quiz Attempts" description="View all staff training quiz attempts" locked={!hasAttempts} requiredRole="Trainer" />
+            <FeatureCard className="animate-fade-in-up stagger-1" href="/training" icon={BookOpen} title="Staff Training" description="SSD training quiz and staff handbook" locked={!hasTraining} requiredRole="Trainee" activeViewers={viewersFor('/training')} />
+            <FeatureCard className="animate-fade-in-up stagger-2" href="/training/attempts" icon={Users} title="Quiz Attempts" description="View all staff training quiz attempts" locked={!hasAttempts} requiredRole="Trainer" activeViewers={viewersFor('/training/attempts')} />
           </div>
         </div>
 
@@ -97,11 +112,11 @@ export default function Dashboard() {
           <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <FeatureCard className="animate-fade-in-up stagger-1" href="/apply" icon={UserPlus} title="Applications" description="Apply for staff, departments, or special roles" />
+          <FeatureCard className="animate-fade-in-up stagger-1" href="/apply" icon={UserPlus} title="Applications" description="Apply for staff, departments, or special roles" activeViewers={viewersFor('/apply')} />
           {canReviewApps && (
             <>
-              <FeatureCard className="animate-fade-in-up stagger-2" href="/applications" icon={Users} title="Review Apps" description="Manage and review incoming staff applications" />
-              <FeatureCard className="animate-fade-in-up stagger-3" href="/applications/manage" icon={Settings} title="Manage Forms" description="Create and edit application types and questions" />
+              <FeatureCard className="animate-fade-in-up stagger-2" href="/applications" icon={Users} title="Review Apps" description="Manage and review incoming staff applications" activeViewers={viewersFor('/applications')} />
+              <FeatureCard className="animate-fade-in-up stagger-3" href="/applications/manage" icon={Settings} title="Manage Forms" description="Create and edit application types and questions" activeViewers={viewersFor('/applications/manage')} />
             </>
           )}
         </div>

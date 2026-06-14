@@ -5,7 +5,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState, useCallback } from "react";
 
 const LOGO = "https://i.imgur.com/70GfmYd.gif";
-const BG_IMAGE = "https://i.imgur.com/QVVQSK2.png";
+const BG_IMAGE = "/media/Background.png";
 
 const TYPE_COLORS = {
   GENERAL:      "text-gsrp-teal-light bg-gsrp-teal/10 border-gsrp-teal/30",

@@ -21,15 +21,8 @@ import {
   UserCheck,
   Globe,
 } from 'lucide-react';
-import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications, canManageAdmins } from '../../lib/auth';
+import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications, canManageAdmins, canViewTracking, canManageAuthorization } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
-
-const TRACKING_VIEWER_IDS = [
-  '901075576943673416',
-  '1115966197100458107',
-  '654799559498661888',
-  '1258366303899619381',
-];
 
 export default function Sidebar({ open, onToggle }) {
   const { data: session } = useSession();
@@ -37,6 +30,7 @@ export default function Sidebar({ open, onToggle }) {
   const effectiveSession = refreshedSession || session;
   const [serverStatus, setServerStatus] = useState(null);
   const [transcriptCount, setTranscriptCount] = useState(0);
+  const [activeViewers, setActiveViewers] = useState([]);
 
   useEffect(() => {
     if (!session || !open) return;
@@ -62,6 +56,19 @@ export default function Sidebar({ open, onToggle }) {
       .catch(() => {});
   }, [session, open]);
 
+  useEffect(() => {
+    if (!session || !open) return;
+    const loadPresence = () => {
+      fetch('/api/presence?page=/')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => setActiveViewers(data?.allViewers || []))
+        .catch(() => {});
+    };
+    loadPresence();
+    const interval = setInterval(loadPresence, 15000);
+    return () => clearInterval(interval);
+  }, [session, open]);
+
   const hasPanel = hasRefreshed ? canAccessPanel(effectiveSession) : false;
   const hasHandbook = hasRefreshed ? canAccessHandbook(effectiveSession) : false;
   const hasTraining = hasRefreshed ? canAccessTraining(effectiveSession) : false;
@@ -70,9 +77,9 @@ export default function Sidebar({ open, onToggle }) {
   const canReviewApps = hasRefreshed ? canReviewApplications(effectiveSession) : false;
   const canManageAdminList = hasRefreshed ? canManageAdmins(effectiveSession) : false;
   const isFullAdminUser = hasRefreshed ? (effectiveSession?.user?.isAdmin) : false;
-  const canViewTracking = hasRefreshed
-    ? TRACKING_VIEWER_IDS.includes(String(effectiveSession?.user?.id))
-    : false;
+  const canViewVisitorTracking = hasRefreshed ? canViewTracking(effectiveSession) : false;
+  const canManageAuth = hasRefreshed ? canManageAuthorization(effectiveSession) : false;
+  const viewersFor = (href) => activeViewers.filter(v => v.page === href || v.page?.startsWith(`${href}/`));
 
   const navItems = [
     { href: '/', icon: LayoutDashboard, label: 'Dashboard' },
@@ -133,7 +140,12 @@ export default function Sidebar({ open, onToggle }) {
                 rel={item.external ? 'noopener noreferrer' : undefined}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/60 hover:text-white hover:bg-gsrp-dark-surface/60 transition-all duration-200 group animate-slide-left stagger-${idx+1}`}
               >
-                <item.icon size={18} className="flex-shrink-0 group-hover:text-gsrp-orange transition-colors" />
+                <span className="relative flex-shrink-0">
+                  <item.icon size={18} className="group-hover:text-gsrp-orange transition-colors" />
+                  {viewersFor(item.href)[0]?.image && (
+                    <img src={viewersFor(item.href)[0].image} alt="" className="absolute -right-2 -top-2 h-4 w-4 rounded-full border border-gsrp-dark object-cover" />
+                  )}
+                </span>
                 {open && (
                   <>
                     <span className="text-sm font-medium flex-1">{item.label}</span>
@@ -168,7 +180,12 @@ export default function Sidebar({ open, onToggle }) {
                   href={item.href}
 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/60 hover:text-white hover:bg-gsrp-dark-surface/60 hover:scale-105 transition-all duration-200 group animate-slide-left stagger-${idx+1}`}
                 >
-                  <item.icon size={18} className="flex-shrink-0 group-hover:text-gsrp-orange transition-colors" />
+                  <span className="relative flex-shrink-0">
+                    <item.icon size={18} className="group-hover:text-gsrp-orange transition-colors" />
+                    {viewersFor(item.href)[0]?.image && (
+                      <img src={viewersFor(item.href)[0].image} alt="" className="absolute -right-2 -top-2 h-4 w-4 rounded-full border border-gsrp-dark object-cover" />
+                    )}
+                  </span>
                   {open && <span className="text-sm font-medium flex-1">{item.label}</span>}
                 </Link>
               ))}
@@ -191,15 +208,22 @@ className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/
                ...(canManageAdminList ? [{ href: '/admins', icon: ShieldCheck, label: 'Edit Admins' }] : []),
                ...(isFullAdminUser ? [{ href: '/audit-logs', icon: ScrollText, label: 'Audit Logs' }] : []),
                ...(isFullAdminUser ? [{ href: '/admin/user-validations', icon: UserCheck, label: 'User Validations' }] : []),
-               ...(canViewTracking ? [{ href: '/admin/users', icon: Users, label: 'Users' }] : []),
-               ...(canViewTracking ? [{ href: '/admin/users/all-visits', icon: Globe, label: 'All Visits' }] : []),
+               ...(canViewVisitorTracking ? [{ href: '/admin/analytics', icon: BarChart3, label: 'Analytics' }] : []),
+               ...(canViewVisitorTracking ? [{ href: '/admin/users', icon: Users, label: 'Users' }] : []),
+               ...(canViewVisitorTracking ? [{ href: '/admin/users/all-visits', icon: Globe, label: 'All Visits' }] : []),
+               ...(canManageAuth ? [{ href: '/admin/authorization', icon: ShieldCheck, label: 'Authorisation' }] : []),
             ].map((item, idx) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/60 hover:text-white hover:bg-gsrp-dark-surface/60 transition-all duration-200 group animate-slide-left stagger-${idx+1}`}
               >
-                <item.icon size={18} className="flex-shrink-0 group-hover:text-gsrp-orange transition-colors" />
+                <span className="relative flex-shrink-0">
+                  <item.icon size={18} className="group-hover:text-gsrp-orange transition-colors" />
+                  {viewersFor(item.href)[0]?.image && (
+                    <img src={viewersFor(item.href)[0].image} alt="" className="absolute -right-2 -top-2 h-4 w-4 rounded-full border border-gsrp-dark object-cover" />
+                  )}
+                </span>
                 {open && <span className="text-sm font-medium flex-1">{item.label}</span>}
               </Link>
             ))}

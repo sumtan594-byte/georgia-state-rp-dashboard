@@ -26,6 +26,28 @@ function getActiveViewers(page) {
   return [...seen.values()].sort((a, b) => a.name.localeCompare(b.name));
 }
 
+function labelForPage(page) {
+  if (page === '/') return 'Dashboard';
+  if (page.startsWith('/panel')) return 'Live Panel';
+  if (page.startsWith('/training/ridealong')) return 'Ridealong';
+  if (page.startsWith('/training')) return 'Training';
+  if (page.startsWith('/staff-handbook')) return 'Handbook';
+  if (page.startsWith('/applications')) return 'Applications';
+  if (page.startsWith('/apply')) return 'Apply';
+  if (page.startsWith('/admin/analytics')) return 'Analytics';
+  if (page.startsWith('/admin/authorization')) return 'Authorisation';
+  if (page.startsWith('/admin/users')) return 'Users';
+  if (page.startsWith('/transcripts')) return 'Transcripts';
+  if (page.startsWith('/departments')) return 'Departments';
+  if (page.startsWith('/verify')) return 'Verification';
+  if (page.startsWith('/shop')) return 'Store';
+  return page;
+}
+
+function withLabels(viewers) {
+  return viewers.map(v => ({ ...v, pageLabel: labelForPage(v.page || '/') }));
+}
+
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Not logged in' });
@@ -43,11 +65,18 @@ export default async function handler(req, res) {
       page,
       ts: Date.now(),
     });
-    return res.status(200).json({ ok: true, viewers: getActiveViewers(page) });
+    return res.status(200).json({
+      ok: true,
+      viewers: withLabels(getActiveViewers(page)),
+      allViewers: withLabels(getActiveViewers()),
+    });
   }
 
   if (req.method === 'GET') {
-    return res.status(200).json({ viewers: getActiveViewers(page) });
+    return res.status(200).json({
+      viewers: withLabels(getActiveViewers(page)),
+      allViewers: withLabels(getActiveViewers()),
+    });
   }
 
   if (req.method === 'DELETE') {

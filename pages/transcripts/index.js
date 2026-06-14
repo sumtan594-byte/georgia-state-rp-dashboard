@@ -9,7 +9,7 @@ import {
   Trash2
 } from "lucide-react";
 
-const BG_IMAGE = "https://i.imgur.com/QVVQSK2.png";
+const BG_IMAGE = "/media/Background.png";
 const TICKETS_PER_PAGE = 15;
 
 const TYPE_CONFIG = {

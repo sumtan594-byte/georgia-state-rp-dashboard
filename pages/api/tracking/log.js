@@ -36,6 +36,10 @@ export default async function handler(req, res) {
       { timestamp: 1 },
       { expireAfterSeconds: 604800 },
     ).catch(() => {});
+    db.collection('visitor_profiles').createIndex(
+      { lastSeen: 1 },
+      { expireAfterSeconds: 604800 },
+    ).catch(() => {});
 
     const ua = userAgent || req.headers['user-agent'] || '';
     const dev = device || parseDevice(ua);

@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth-options';
 import clientPromise from '../../../lib/mongodb';
+import { getAuthConfig, roleMapFromConfig } from '../../../lib/auth-config';
 
 const dataCache = new Map();
 const MEMBER_CACHE_TTL_MS = 5000;
@@ -105,9 +106,10 @@ export default async function handler(req, res) {
   const userId = session.user.id;
 
   try {
-    const [memberResult, rolesResult] = await Promise.all([
+    const [memberResult, rolesResult, authConfig] = await Promise.all([
       fetchMember(userId),
       fetchGuildRoles(),
+      getAuthConfig(),
     ]);
 
     const member = memberResult?.data || null;
@@ -148,7 +150,12 @@ export default async function handler(req, res) {
         break;
       }
 
-      discordRoles = allRoles.filter(r => roles.includes(r.id)).map(r => ({ id: r.id, name: r.name }));
+      discordRoles = allRoles.filter(r => roles.includes(r.id)).map(r => ({
+        id: r.id,
+        name: r.name,
+        color: r.color || 0,
+        iconUrl: r.icon ? `https://cdn.discordapp.com/role-icons/${r.id}/${r.icon}.png?size=64` : null,
+      }));
     }
 
     res.setHeader('Cache-Control', 'no-store, max-age=0');
@@ -157,6 +164,20 @@ export default async function handler(req, res) {
     const dbAdminIds = await getDbAdminIds();
     const allAdminIds = [...new Set([...envAdminIds, ...dbAdminIds])];
     const isAdminUser = allAdminIds.includes(member.user?.id || userId);
+
+    const roleMap = roleMapFromConfig(authConfig);
+    if (allRoles) {
+      for (const role of allRoles) {
+        if (roleMap[role.id]) {
+          roleMap[role.id] = {
+            ...roleMap[role.id],
+            name: role.name,
+            color: role.color || 0,
+            iconUrl: role.icon ? `https://cdn.discordapp.com/role-icons/${role.id}/${role.icon}.png?size=64` : null,
+          };
+        }
+      }
+    }
 
     return res.status(200).json({
       id: member.user?.id || userId,
@@ -169,6 +190,8 @@ export default async function handler(req, res) {
       displayRole,
       isAdmin: isAdminUser,
       discordRoles,
+      authConfig,
+      roleMap,
       _ratelimit: mostStrict ? { remaining: mostStrict.remaining, resetAfter: mostStrict.resetAfter } : null,
     });
   } catch (err) {

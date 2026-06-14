@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-export default function FeatureCard({ href, icon: Icon, title, description, badge, locked, className = "" }) {
+export default function FeatureCard({ href, icon: Icon, title, description, badge, locked, activeViewers = [], className = "" }) {
   if (locked) return null;
 
   return (
@@ -12,7 +12,20 @@ export default function FeatureCard({ href, icon: Icon, title, description, badg
         <div className="w-12 h-12 rounded-xl border flex items-center justify-center transition-all duration-300 bg-gradient-to-br from-gsrp-orange/10 to-gsrp-teal/10 border-gsrp-orange/20 group-hover:from-gsrp-orange/20 group-hover:to-gsrp-teal/20">
           <Icon size={22} className="text-gsrp-orange group-hover:text-gsrp-orange-light transition-colors" />
         </div>
-        {badge ? (
+        {activeViewers.length > 0 ? (
+          <div className="flex items-center">
+            {activeViewers.slice(0, 3).map((viewer, i) => (
+              <img
+                key={viewer.userId}
+                src={viewer.image || 'https://cdn.discordapp.com/embed/avatars/0.png'}
+                alt={viewer.name || ''}
+                title={`${viewer.name || 'Member'} on ${viewer.pageLabel || viewer.page || href}`}
+                className="h-7 w-7 rounded-full border-2 border-gsrp-dark object-cover"
+                style={{ marginLeft: i === 0 ? 0 : '-8px' }}
+              />
+            ))}
+          </div>
+        ) : badge ? (
           <span className="text-[10px] font-bold uppercase tracking-wider text-gsrp-orange bg-gsrp-orange/10 px-2.5 py-1 rounded-full">
             {badge}
           </span>

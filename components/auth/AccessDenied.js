@@ -2,7 +2,7 @@ import { Shield, ArrowLeft, RefreshCw, Radio, LockKeyhole } from 'lucide-react';
 import Link from 'next/link';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 
-export default function AccessDenied({ roleId }) {
+export default function AccessDenied({ roleId, resourceLabel, revoked }) {
   const { roleMap, refreshedUser, refreshNow, isStale } = useRefreshedUser();
 
   let roleName = 'Access';
@@ -25,9 +25,11 @@ export default function AccessDenied({ roleId }) {
         <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.25em] text-white/40">
           <LockKeyhole size={12} /> Restricted Module
         </p>
-        <h2 className="mb-3 text-2xl font-black text-white">Access Locked</h2>
+        <h2 className="mb-3 text-2xl font-black text-white">{revoked ? 'Your access to this resource has been revoked' : 'Access Locked'}</h2>
         <p className="mx-auto max-w-md text-sm leading-relaxed text-gsrp-teal-light/45">
-          This page requires <span className="font-bold text-gsrp-orange">{roleName}</span>. Your access state updates automatically as Discord roles change.
+          {revoked
+            ? `${resourceLabel || 'This page'} is no longer available to your current Discord roles.`
+            : <>This page requires <span className="font-bold text-gsrp-orange">{roleName}</span>. Your access state updates automatically as Discord roles change.</>}
         </p>
         <div className="mt-5 flex items-center justify-center gap-2 text-xs text-white/30">
           <Radio size={13} className={isStale ? 'text-gsrp-orange' : 'text-green-400'} />
