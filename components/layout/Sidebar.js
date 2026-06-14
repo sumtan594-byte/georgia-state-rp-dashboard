@@ -20,7 +20,6 @@ import {
   ScrollText,
   UserCheck,
   Globe,
-  MessageCircle,
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications, canManageAdmins, canViewTracking, canManageAuthorization } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
@@ -217,20 +216,6 @@ className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/
           </div>
         </div>
       </nav>
-
-      {open && (
-        <div className="p-4 border-t border-gsrp-dark-border/50">
-          <Link
-            href="https://discord.gg/gsrp"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="flex items-center gap-2 text-gsrp-teal-light/40 hover:text-gsrp-orange transition-colors"
-          >
-            <MessageCircle size={14} />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Join our Discord</span>
-          </Link>
-        </div>
-      )}
     </div>
   );
 }
