@@ -1,5 +1,6 @@
 import '../styles/globals.css';
 import 'leaflet/dist/leaflet.css';
+import Head from 'next/head';
 import { SessionProvider, useSession } from "next-auth/react";
 import { useState, useEffect } from "react";
 import { useRouter } from 'next/router';
@@ -11,6 +12,7 @@ import { UserRefreshProvider, useRefreshedUser } from "../lib/UserRefreshContext
 import { ToastProvider } from "../lib/ToastContext";
 import { ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { EMBED_IMAGE, EMBED_THEME_COLOR, buildPageUrl, getRouteEmbed } from '../lib/discord-embeds';
 
 function DebugSessionLogger() {
   const { status, data } = useSession();
@@ -198,6 +200,32 @@ function RouteLoadingBar() {
   );
 }
 
+function DiscordEmbedHead({ asPath, pathname }) {
+  const embed = getRouteEmbed(pathname);
+
+  if (!embed) return null;
+
+  const title = `${embed.title} | GSRP`;
+  const url = buildPageUrl(asPath);
+
+  return (
+    <Head>
+      <title key="title">{title}</title>
+      <meta key="description" name="description" content={embed.description} />
+      <meta key="og-title" property="og:title" content={embed.title} />
+      <meta key="og-description" property="og:description" content={embed.description} />
+      <meta key="og-image" property="og:image" content={EMBED_IMAGE} />
+      <meta key="og-type" property="og:type" content="website" />
+      <meta key="og-url" property="og:url" content={url} />
+      <meta key="twitter-card" name="twitter:card" content="summary_large_image" />
+      <meta key="twitter-title" name="twitter:title" content={embed.title} />
+      <meta key="twitter-description" name="twitter:description" content={embed.description} />
+      <meta key="twitter-image" name="twitter:image" content={EMBED_IMAGE} />
+      <meta key="theme-color" name="theme-color" content={EMBED_THEME_COLOR} />
+    </Head>
+  );
+}
+
 export default function App({ Component, pageProps: { session, ...pageProps } }) {
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -228,6 +256,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
     <SessionProvider session={session}>
       <UserRefreshProvider>
         <ToastProvider>
+          <DiscordEmbedHead asPath={router.asPath} pathname={router.pathname} />
           <RouteLoadingBar />
           <VisitorTracker setProxyBlocked={setProxyBlocked} />
 

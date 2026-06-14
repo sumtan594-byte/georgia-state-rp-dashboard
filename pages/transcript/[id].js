@@ -1,8 +1,10 @@
 import { useSession } from "next-auth/react";
+import Head from "next/head";
 import { ArrowLeft, Lock, Download, Loader2, Clock, Tag, Sparkles, Users, X, Plus, Trash2, ShieldCheck, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState, useCallback } from "react";
+import { EMBED_IMAGE, EMBED_THEME_COLOR, SITE_URL, buildTranscriptEmbed } from "../../lib/discord-embeds";
 
 const LOGO = "https://i.imgur.com/70GfmYd.gif";
 const BG_IMAGE = "/media/Background.png";
@@ -14,6 +16,28 @@ const TYPE_COLORS = {
   DIRECTIVE:    "text-gsrp-gold bg-gsrp-gold/10 border-gsrp-gold/30",
 };
 
+function TranscriptEmbedHead({ id, meta }) {
+  const embed = buildTranscriptEmbed(meta);
+  const url = `${SITE_URL}/transcript/${encodeURIComponent(id || '')}`;
+
+  return (
+    <Head>
+      <title key="title">{embed.title}</title>
+      <meta key="description" name="description" content={embed.description} />
+      <meta key="og-title" property="og:title" content={embed.title} />
+      <meta key="og-description" property="og:description" content={embed.description} />
+      <meta key="og-image" property="og:image" content={EMBED_IMAGE} />
+      <meta key="og-type" property="og:type" content="website" />
+      <meta key="og-url" property="og:url" content={url} />
+      <meta key="twitter-card" name="twitter:card" content="summary_large_image" />
+      <meta key="twitter-title" name="twitter:title" content={embed.title} />
+      <meta key="twitter-description" name="twitter:description" content={embed.description} />
+      <meta key="twitter-image" name="twitter:image" content={EMBED_IMAGE} />
+      <meta key="theme-color" name="theme-color" content={EMBED_THEME_COLOR} />
+    </Head>
+  );
+}
+
 function parseMeta(id) {
   if (!id) return {};
   const p = id.split('__');
@@ -24,6 +48,21 @@ function parseMeta(id) {
     date:        p[3] || '',
     reason:      p[4] || '',
     time:        p[5] ? p[5].replace(/-/g, ':') : '',
+  };
+}
+
+function transcriptRowToMeta(t) {
+  return {
+    type: t.type || 'UNKNOWN',
+    ownerId: t.owner_id || 'UNKNOWN',
+    channelName: t.channel_name || 'Unknown',
+    date: t.closed_at ? (() => { const d = new Date(t.closed_at); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : '',
+    reason: t.close_reason || '',
+    openerTag: t.opener_tag || 'Unknown User',
+    openReason: t.open_reason || null,
+    claimedByTag: t.claimed_by_tag || null,
+    staffRequestReason: t.staff_request_reason || null,
+    closedAt: t.closed_at ? new Date(t.closed_at).toLocaleString() : '',
   };
 }
 
@@ -451,36 +490,46 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
   };
 
   if (status === "loading") return (
-    <div className="flex flex-col items-center justify-center py-20">
-      <Loader2 className="w-7 h-7 text-gsrp-orange animate-spin mb-4" />
-      <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Record</span>
-    </div>
+    <>
+      <TranscriptEmbedHead id={id} meta={meta} />
+      <div className="flex flex-col items-center justify-center py-20">
+        <Loader2 className="w-7 h-7 text-gsrp-orange animate-spin mb-4" />
+        <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Record</span>
+      </div>
+    </>
   );
 
   if (error) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="card-glass rounded-[2rem] p-12 max-w-sm w-full text-center shadow-2xl animate-scale-in">
-        <div className="w-14 h-14 rounded-2xl bg-gsrp-sunset/10 border border-gsrp-sunset/20 flex items-center justify-center mx-auto mb-6"><Lock size={24} className="text-gsrp-sunset" /></div>
-        <h1 className="text-white font-black text-lg mb-2 tracking-tight">Access Denied</h1>
-        <p className="text-gsrp-teal-light/40 text-sm mb-8">You do not have permission to view this transcript or it does not exist.</p>
-        <Link href="/" className="inline-flex items-center gap-2 bg-gsrp-dark-card/60 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 hover:border-gsrp-orange/30 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 cursor-pointer"><ArrowLeft size={14} /> Back to Dashboard</Link>
+    <>
+      <TranscriptEmbedHead id={id} meta={meta} />
+      <div className="flex items-center justify-center py-20">
+        <div className="card-glass rounded-[2rem] p-12 max-w-sm w-full text-center shadow-2xl animate-scale-in">
+          <div className="w-14 h-14 rounded-2xl bg-gsrp-sunset/10 border border-gsrp-sunset/20 flex items-center justify-center mx-auto mb-6"><Lock size={24} className="text-gsrp-sunset" /></div>
+          <h1 className="text-white font-black text-lg mb-2 tracking-tight">Access Denied</h1>
+          <p className="text-gsrp-teal-light/40 text-sm mb-8">You do not have permission to view this transcript or it does not exist.</p>
+          <Link href="/" className="inline-flex items-center gap-2 bg-gsrp-dark-card/60 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 hover:border-gsrp-orange/30 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 cursor-pointer"><ArrowLeft size={14} /> Back to Dashboard</Link>
+        </div>
       </div>
-    </div>
+    </>
   );
 
   if (accessRevoked) return (
-    <div className="flex items-center justify-center py-20">
-      <div className="card-glass rounded-[2rem] p-12 max-w-sm w-full text-center shadow-2xl animate-scale-in">
-        <div className="w-14 h-14 rounded-2xl bg-gsrp-sunset/10 border border-gsrp-sunset/20 flex items-center justify-center mx-auto mb-6"><Lock size={24} className="text-gsrp-sunset" /></div>
-        <h1 className="text-white font-black text-lg mb-2 tracking-tight">Access Revoked</h1>
-        <p className="text-gsrp-teal-light/40 text-sm mb-8">Your access to this transcript has been removed.</p>
-        <Link href="/" className="inline-flex items-center gap-2 bg-gsrp-dark-card/60 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 hover:border-gsrp-orange/30 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 cursor-pointer"><ArrowLeft size={14} /> Back to Dashboard</Link>
+    <>
+      <TranscriptEmbedHead id={id} meta={meta} />
+      <div className="flex items-center justify-center py-20">
+        <div className="card-glass rounded-[2rem] p-12 max-w-sm w-full text-center shadow-2xl animate-scale-in">
+          <div className="w-14 h-14 rounded-2xl bg-gsrp-sunset/10 border border-gsrp-sunset/20 flex items-center justify-center mx-auto mb-6"><Lock size={24} className="text-gsrp-sunset" /></div>
+          <h1 className="text-white font-black text-lg mb-2 tracking-tight">Access Revoked</h1>
+          <p className="text-gsrp-teal-light/40 text-sm mb-8">Your access to this transcript has been removed.</p>
+          <Link href="/" className="inline-flex items-center gap-2 bg-gsrp-dark-card/60 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 hover:border-gsrp-orange/30 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 cursor-pointer"><ArrowLeft size={14} /> Back to Dashboard</Link>
+        </div>
       </div>
-    </div>
+    </>
   );
 
   return (
     <div className="max-w-5xl mx-auto py-6">
+      <TranscriptEmbedHead id={id} meta={meta} />
       <div className="mb-6 animate-fade-in-down">
         <div className="flex items-center gap-3 mb-3">
           <Link href="/transcripts" className="flex items-center gap-1.5 text-gsrp-teal-light/40 hover:text-gsrp-orange-light text-[10px] font-bold uppercase tracking-widest transition-colors duration-200 cursor-pointer"><ArrowLeft size={12} /> Transcripts</Link>
@@ -624,15 +673,28 @@ export async function getServerSideProps(context) {
   const { authOptions } = require("../../lib/auth-options");
   const session = await getServerSession(context.req, context.res, authOptions);
   const { id } = context.params;
+  const pool = (await import('../../lib/ticketdb')).default;
 
-  if (!session) return { props: { error: true, isAdmin: false } };
+  if (!session) {
+    try {
+      const [rows] = await pool.query(
+        `SELECT id, type, owner_id, channel_name, closed_at, close_reason,
+                opener_tag, open_reason, claimed_by, claimed_by_tag, staff_request_reason
+         FROM transcripts WHERE id = ? LIMIT 1`,
+        [id]
+      );
+
+      return { props: { error: true, isAdmin: false, id, meta: rows[0] ? transcriptRowToMeta(rows[0]) : null } };
+    } catch (e) {
+      console.error("[Viewer] Metadata fetch error:", e.message);
+      return { props: { error: true, isAdmin: false, id } };
+    }
+  }
 
   const currentUserId = String(session.user?.id || "").trim();
   const { isFullAdmin } = require('../../lib/admin-helper');
   const isAdmin = await isFullAdmin(currentUserId, session.user?.roles || []);
   const userRoles = session.user?.roles || [];
-
-  const pool = (await import('../../lib/ticketdb')).default;
 
   try {
     const [rows] = await pool.query(
@@ -645,6 +707,7 @@ export async function getServerSideProps(context) {
     if (rows.length === 0) return { props: { error: true, isAdmin } };
 
     const t = rows[0];
+    const meta = transcriptRowToMeta(t);
     const isOwner = String(t.owner_id) === currentUserId;
 
     await pool.query(`
@@ -662,7 +725,7 @@ export async function getServerSideProps(context) {
       'SELECT 1 FROM transcript_deny WHERE transcript_id = ? AND user_id = ? LIMIT 1',
       [id, currentUserId]
     );
-    if (denyRows.length > 0) return { props: { error: true, isAdmin } };
+    if (denyRows.length > 0) return { props: { error: true, isAdmin, id, meta } };
 
     // Check access: admin, owner, or granted via transcript_access
     if (!isAdmin && !isOwner) {
@@ -677,21 +740,8 @@ export async function getServerSideProps(context) {
         accessParams = [id, currentUserId];
       }
       const [accessRows] = await pool.query(accessSql, accessParams);
-      if (accessRows.length === 0) return { props: { error: true } };
+      if (accessRows.length === 0) return { props: { error: true, isAdmin, id, meta } };
     }
-
-    const meta = {
-      type: t.type || 'UNKNOWN',
-      ownerId: t.owner_id || 'UNKNOWN',
-      channelName: t.channel_name || 'Unknown',
-      date: t.closed_at ? (() => { const d = new Date(t.closed_at); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })() : '',
-      reason: t.close_reason || '',
-      openerTag: t.opener_tag || 'Unknown User',
-      openReason: t.open_reason || null,
-      claimedByTag: t.claimed_by_tag || null,
-      staffRequestReason: t.staff_request_reason || null,
-      closedAt: t.closed_at ? new Date(t.closed_at).toLocaleString() : '',
-    };
 
     const canManage = isAdmin || isOwner;
 
