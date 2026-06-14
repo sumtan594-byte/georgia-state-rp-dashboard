@@ -187,17 +187,10 @@ className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/
           <div className="space-y-1">
             {[
               { href: '/apply', icon: UserPlus, label: 'Apply Now' },
-              ...(canReviewApps ? [
+               ...(canReviewApps ? [
                 { href: '/applications', icon: Users, label: 'Review Hub' },
                 { href: '/applications/manage', icon: Settings, label: 'Manage Forms' }
               ] : []),
-               ...(canManageAdminList ? [{ href: '/admins', icon: ShieldCheck, label: 'Edit Admins' }] : []),
-               ...(isFullAdminUser ? [{ href: '/audit-logs', icon: ScrollText, label: 'Audit Logs' }] : []),
-               ...(isFullAdminUser ? [{ href: '/admin/user-validations', icon: UserCheck, label: 'User Validations' }] : []),
-               ...(canViewVisitorTracking ? [{ href: '/admin/analytics', icon: BarChart3, label: 'Analytics' }] : []),
-               ...(canViewVisitorTracking ? [{ href: '/admin/users', icon: Users, label: 'Users' }] : []),
-               ...(canViewVisitorTracking ? [{ href: '/admin/users/all-visits', icon: Globe, label: 'All Visits' }] : []),
-               ...(canManageAuth ? [{ href: '/admin/authorization', icon: ShieldCheck, label: 'Authorisation' }] : []),
             ].map((item, idx) => (
               <Link
                 key={item.href}
@@ -215,6 +208,39 @@ className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/
             ))}
           </div>
         </div>
+
+        {(canManageAdminList || isFullAdminUser || canViewVisitorTracking || canManageAuth) && (
+          <div>
+            <p className={`text-[10px] font-black uppercase tracking-[0.2em] text-gsrp-teal-light/20 mb-3 px-4 transition-opacity duration-300 ${open ? 'opacity-100' : 'opacity-0'}`}>
+              Admin
+            </p>
+            <div className="space-y-1">
+              {[
+                ...(canManageAdminList ? [{ href: '/admins', icon: ShieldCheck, label: 'Edit Admins' }] : []),
+                ...(isFullAdminUser ? [{ href: '/audit-logs', icon: ScrollText, label: 'Audit Logs' }] : []),
+                ...(isFullAdminUser ? [{ href: '/admin/user-validations', icon: UserCheck, label: 'User Validations' }] : []),
+                ...(canViewVisitorTracking ? [{ href: '/admin/analytics', icon: BarChart3, label: 'Analytics' }] : []),
+                ...(canViewVisitorTracking ? [{ href: '/admin/users', icon: Users, label: 'Users' }] : []),
+                ...(canViewVisitorTracking ? [{ href: '/admin/users/all-visits', icon: Globe, label: 'All Visits' }] : []),
+                ...(canManageAuth ? [{ href: '/admin/authorization', icon: ShieldCheck, label: 'Authorisation' }] : []),
+              ].map((item, idx) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-gsrp-teal-light/60 hover:text-white hover:bg-gsrp-dark-surface/60 transition-all duration-200 group animate-slide-left stagger-${idx+1}`}
+                >
+                  <span className="relative flex-shrink-0">
+                    <item.icon size={18} className="group-hover:text-gsrp-orange transition-colors" />
+                    {viewersFor(item.href)[0]?.image && (
+                      <img src={viewersFor(item.href)[0].image} alt="" className="absolute -right-2 -top-2 h-4 w-4 rounded-full border border-gsrp-dark object-cover" />
+                    )}
+                  </span>
+                  {open && <span className="text-sm font-medium flex-1">{item.label}</span>}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </nav>
     </div>
   );

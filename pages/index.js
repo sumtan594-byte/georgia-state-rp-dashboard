@@ -1,11 +1,11 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2, ShoppingCart, Building2, UserPlus, Settings } from 'lucide-react';
+import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2, ShoppingCart, Building2, UserPlus, Settings, ScrollText, UserCheck, BarChart3, Globe } from 'lucide-react';
 import Link from 'next/link';
 import FeatureCard from '../components/dashboard/FeatureCard';
 import PresenceBar from '../components/dashboard/PresenceBar';
 import LoginScreen from '../components/auth/LoginScreen';
-import { canAccessPanel, canAccessTraining, canViewAttempts, canReviewApplications } from '../lib/auth';
+import { canAccessPanel, canAccessTraining, canViewAttempts, canReviewApplications, canManageAdmins, canViewTracking, canManageAuthorization } from '../lib/auth';
 import { useRefreshedUser } from '../lib/UserRefreshContext';
 
 export default function Dashboard() {
@@ -61,6 +61,11 @@ export default function Dashboard() {
   const hasTraining = canAccessTraining(effectiveSession);
   const hasAttempts = canViewAttempts(effectiveSession);
   const canReviewApps = canReviewApplications(effectiveSession);
+  const canManageAdminList = canManageAdmins(effectiveSession);
+  const isFullAdminUser = effectiveSession?.user?.isAdmin;
+  const canViewVisitorTracking = canViewTracking(effectiveSession);
+  const canManageAuth = canManageAuthorization(effectiveSession);
+  const hasAdminAccess = canManageAdminList || isFullAdminUser || canViewVisitorTracking || canManageAuth;
   const viewersFor = (path) => activeViewers.filter(v => v.page === path || v.page?.startsWith(`${path}/`));
 
   return (
@@ -117,6 +122,36 @@ export default function Dashboard() {
           )}
         </div>
       </div>
+
+      {hasAdminAccess && (
+        <div className="mb-12">
+          <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-gsrp-orange mb-6 flex items-center gap-4">
+            Admin
+            <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {canManageAdminList && (
+              <FeatureCard className="animate-fade-in-up stagger-1" href="/admins" icon={ShieldCheck} title="Edit Admins" description="Manage full server administrators" activeViewers={viewersFor('/admins')} />
+            )}
+            {isFullAdminUser && (
+              <>
+                <FeatureCard className="animate-fade-in-up stagger-2" href="/audit-logs" icon={ScrollText} title="Audit Logs" description="View audit trail of staff actions" activeViewers={viewersFor('/audit-logs')} />
+                <FeatureCard className="animate-fade-in-up stagger-3" href="/admin/user-validations" icon={UserCheck} title="User Validations" description="Validate and manage user verifications" activeViewers={viewersFor('/admin/user-validations')} />
+              </>
+            )}
+            {canViewVisitorTracking && (
+              <>
+                <FeatureCard className="animate-fade-in-up stagger-4" href="/admin/analytics" icon={BarChart3} title="Analytics" description="Visitor tracking and analytics" activeViewers={viewersFor('/admin/analytics')} />
+                <FeatureCard className="animate-fade-in-up stagger-5" href="/admin/users" icon={Users} title="Users" description="View and manage registered users" activeViewers={viewersFor('/admin/users')} />
+                <FeatureCard className="animate-fade-in-up stagger-6" href="/admin/users/all-visits" icon={Globe} title="All Visits" description="View all page visit history" activeViewers={viewersFor('/admin/users/all-visits')} />
+              </>
+            )}
+            {canManageAuth && (
+              <FeatureCard className="animate-fade-in-up stagger-7" href="/admin/authorization" icon={ShieldCheck} title="Authorisation" description="Manage route authorisation rules" activeViewers={viewersFor('/admin/authorization')} />
+            )}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-center gap-4 mt-8 text-xs text-gsrp-teal-light/30">
         <Link href="/privacy-policy" className="hover:text-gsrp-orange transition-colors">Privacy Policy</Link>
