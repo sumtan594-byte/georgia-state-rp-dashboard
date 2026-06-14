@@ -20,6 +20,7 @@ import {
   ScrollText,
   UserCheck,
   Globe,
+  MessageCircle,
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications, canManageAdmins, canViewTracking, canManageAuthorization } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
