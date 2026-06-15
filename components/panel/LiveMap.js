@@ -319,8 +319,6 @@ export default function LiveMap({
       const eventTime = new Date(event.at).getTime();
       if (Math.abs(eventTime - snapTime) > 2500) continue;
       const replayEventId = `replay:${event.id}:${replaySnapshot.sampledAt}`;
-      if (seenMapEvents.current.has(replayEventId)) continue;
-      seenMapEvents.current.add(replayEventId);
       showKillEffect({
         id: replayEventId,
         killerId: event.playerId,
@@ -564,15 +562,22 @@ export default function LiveMap({
   };
 
   return (
-    <div className="relative h-full w-full overflow-hidden bg-black">
+    <div className="gsrp-map-shell relative h-full w-full overflow-hidden bg-black">
       <div ref={container} className="w-full h-full relative" style={{ background: '#000', cursor: cursorStyle }} />
+      <div className="gsrp-map-vignette pointer-events-none absolute inset-0 z-[120]" />
       {!ready && (
-        <div className="absolute inset-0 flex items-center justify-center z-10 bg-gsrp-dark/80">
-          <Loader2 className="w-6 h-6 text-gsrp-orange animate-spin" />
+        <div className="gsrp-map-loading absolute inset-0 z-[700] flex items-center justify-center">
+          <div className="gsrp-map-loading-card">
+            <Loader2 className="h-6 w-6 animate-spin text-gsrp-orange" />
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.2em] text-white/70">Loading map</p>
+              <p className="text-[11px] font-semibold text-white/35">Preparing live blips</p>
+            </div>
+          </div>
         </div>
       )}
 
-      <div className="absolute left-3 top-3 z-[300] flex items-center gap-2 rounded-2xl border border-gsrp-dark-border/70 bg-gsrp-dark-card/90 px-3 py-2 text-xs font-bold text-white/70 shadow-xl backdrop-blur-xl">
+      <div className="gsrp-map-status-card absolute left-3 top-3 z-[300] flex items-center gap-2 px-3 py-2 text-xs font-bold text-white/75">
         <Radio size={13} className="text-green-300 animate-pulse" />
         <span className="text-green-300">Live</span>
         <span className="h-4 w-px bg-white/10" />
@@ -580,7 +585,7 @@ export default function LiveMap({
         <span>{players.length}</span>
       </div>
 
-      <div className="absolute right-3 top-3 z-[300] flex flex-col gap-2">
+      <div className="gsrp-map-toolbar absolute right-3 top-3 z-[300] flex flex-col gap-2">
         <MapButton label="Zoom in" onClick={zoomIn} icon={Plus} />
         <MapButton label="Zoom out" onClick={zoomOut} icon={Minus} />
         <MapButton label="Recenter" onClick={recenterMap} icon={Crosshair} />
@@ -588,21 +593,21 @@ export default function LiveMap({
       </div>
 
       {playerSelectMode && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[300] bg-gsrp-dark-card/95 border border-gsrp-orange/40 rounded-xl px-4 py-2 text-xs font-bold text-gsrp-orange flex items-center gap-2 pointer-events-none">
-          <div className="w-2 h-2 rounded-full bg-gsrp-orange animate-pulse" />
+        <div className="gsrp-map-banner absolute top-3 left-1/2 -translate-x-1/2 z-[300] text-gsrp-orange">
+          <div className="h-2 w-2 rounded-full bg-gsrp-orange animate-pulse" />
           Click a player blip to select
         </div>
       )}
 
       {locationSelectMode && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[300] bg-gsrp-dark-card/95 border border-gsrp-teal/40 rounded-xl px-4 py-2 text-xs font-bold text-gsrp-teal flex items-center gap-2 pointer-events-none">
-          <div className="w-2 h-2 rounded-full bg-gsrp-teal animate-pulse" />
+        <div className="gsrp-map-banner absolute top-3 left-1/2 -translate-x-1/2 z-[300] text-gsrp-teal">
+          <div className="h-2 w-2 rounded-full bg-gsrp-teal animate-pulse" />
           Click anywhere on map to drop pin
         </div>
       )}
 
       {lockedPlayerId && (
-        <div className="absolute bottom-3 left-3 z-[300] bg-gsrp-dark-card/90 border border-gsrp-orange/30 rounded-xl px-3 py-1.5 text-xs font-bold text-gsrp-orange flex items-center gap-1.5">
+        <div className="gsrp-map-status-card absolute bottom-3 left-3 z-[300] flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-gsrp-orange">
           <Lock size={11} />
           Camera locked
           <button
@@ -623,7 +628,7 @@ function MapButton({ label, onClick, icon: Icon, disabled = false }) {
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="pointer-events-auto flex h-10 w-10 items-center justify-center rounded-xl border border-gsrp-dark-border/70 bg-gsrp-dark-card/90 text-white/50 shadow-xl backdrop-blur-xl transition-all hover:border-gsrp-orange/30 hover:text-gsrp-orange disabled:cursor-not-allowed disabled:opacity-35"
+      className="gsrp-map-button pointer-events-auto flex h-10 w-10 items-center justify-center rounded-xl text-white/55 transition-all disabled:cursor-not-allowed disabled:opacity-35"
     >
       <Icon size={16} />
     </button>

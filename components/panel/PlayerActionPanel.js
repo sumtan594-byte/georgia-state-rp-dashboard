@@ -87,11 +87,10 @@ export default function PlayerActionPanel({ player, vehicles = [], roleplays = [
       className="absolute top-4 right-4 w-80 z-[500] animate-fade-up"
       style={{ maxHeight: 'calc(100% - 2rem)' }}
     >
-      <div className="bg-gsrp-dark-card border border-gsrp-dark-border/70 rounded-2xl shadow-2xl overflow-hidden flex flex-col"
-        style={{ backdropFilter: 'blur(20px)', background: 'rgba(15,22,41,0.97)' }}>
+      <div className="gsrp-player-panel overflow-hidden rounded-2xl flex flex-col">
 
         {/* Header */}
-        <div className="flex-shrink-0 p-4 border-b border-gsrp-dark-border/50"
+        <div className="gsrp-player-panel-header flex-shrink-0 p-4 border-b border-gsrp-dark-border/50"
           style={{ borderLeft: `3px solid ${teamColor}` }}>
           <div className="flex items-start gap-3">
             <div className="relative flex-shrink-0">
@@ -122,7 +121,7 @@ export default function PlayerActionPanel({ player, vehicles = [], roleplays = [
               )}
             </div>
             <button onClick={onClose}
-              className="text-white/30 hover:text-white/70 transition-colors cursor-pointer p-1 rounded-lg hover:bg-white/5">
+              className="gsrp-soft-icon-button text-white/35 hover:text-white/80 transition-colors cursor-pointer p-1 rounded-lg">
               <X size={16} />
             </button>
           </div>

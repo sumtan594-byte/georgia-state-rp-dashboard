@@ -163,6 +163,7 @@ export default function PanelPage() {
     const ci = player.Player.lastIndexOf(':');
     const id = ci !== -1 ? player.Player.slice(ci + 1) : player.Player;
     if (!/^\d+$/.test(id)) return;
+    setSelectedPlayer(null);
     setReplayLoading(true);
     try {
       const res = await fetch(`/api/panel/replay/${id}`);
@@ -173,6 +174,8 @@ export default function PanelPage() {
           player,
           playerId: id,
           snapshots,
+          snapshotsByPlayer: body.snapshotsByPlayer || {},
+          participants: body.participants || [id],
           events: body.events || [],
         });
         setReplayIndex(Math.max(0, snapshots.length - 1));
@@ -189,11 +192,10 @@ export default function PanelPage() {
   }, []);
 
   const replaySnapshot = replay?.snapshots?.[replayIndex] || null;
-  const replayPlayer = replaySnapshot?.player ? {
-    ...replaySnapshot.player,
-    AvatarUrl: replaySnapshot.avatarUrl || replaySnapshot.player.AvatarUrl,
-  } : null;
   const replayEvents = replay?.events || [];
+  const replayPlayers = replay && replaySnapshot
+    ? getReplayPlayersAt(replay, replaySnapshot.sampledAt)
+    : [];
   const poll = data?._poll || null;
   const nextPollMs = poll?.nextPollAt ? Math.max(0, poll.nextPollAt - nowMs) : null;
 
@@ -318,7 +320,7 @@ export default function PanelPage() {
                 />
               )}
               <LiveMap
-                players={replayPlayer ? [replayPlayer] : (data.Players || [])}
+                players={replay ? replayPlayers : (data.Players || [])}
                 emergencyCalls={data.EmergencyCalls || []}
                 selectedPlayer={selectedPlayer}
                 onSelectPlayer={handleSelectPlayer}
@@ -338,7 +340,7 @@ export default function PanelPage() {
               />
 
               {/* Player Action Panel — overlays on map */}
-              {selectedPlayer && (
+              {selectedPlayer && !replay && (
                 <PlayerActionPanel
                   player={selectedPlayer}
                   vehicles={vehicles}
@@ -383,13 +385,50 @@ function formatDuration(ms) {
   return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
 }
 
+function getReplayPlayersAt(replay, sampledAt) {
+  const target = new Date(sampledAt).getTime();
+  const players = [];
+  for (const id of replay.participants || []) {
+    const snapshots = replay.snapshotsByPlayer?.[id] || [];
+    let closest = null;
+    let bestDelta = Infinity;
+    for (const snapshot of snapshots) {
+      const delta = Math.abs(new Date(snapshot.sampledAt).getTime() - target);
+      if (delta < bestDelta) {
+        bestDelta = delta;
+        closest = snapshot;
+      }
+    }
+    if (closest?.player && bestDelta <= 20_000) {
+      players.push({
+        ...closest.player,
+        AvatarUrl: closest.avatarUrl || closest.player.AvatarUrl,
+      });
+    }
+  }
+  return players;
+}
+
+function eventTextForReplay(event, subjectId) {
+  if (event.type === 'kill') {
+    if (String(event.playerId) === String(subjectId)) return `Killed ${event.relatedPlayerName || 'player'}`;
+    if (String(event.relatedPlayerId) === String(subjectId)) return `Killed by ${event.playerName || 'player'}`;
+  }
+  if (event.type === 'command') {
+    if (String(event.relatedPlayerId) === String(subjectId)) return `${event.playerName || 'Staff'} ran ${event.summary}`;
+    return event.summary;
+  }
+  if (event.type === 'team_change') return event.summary;
+  return event.summary;
+}
+
 function ReplayBar({ replay, index, setIndex, snapshot, events, onClose }) {
   const nearbyEvents = events.filter(event => {
     if (!snapshot?.sampledAt) return true;
     return Math.abs(new Date(event.at).getTime() - new Date(snapshot.sampledAt).getTime()) <= 20_000;
   });
   return (
-    <div className="absolute left-3 right-3 top-3 z-[650] rounded-2xl border border-gsrp-orange/30 bg-gsrp-dark-card/95 p-3 shadow-2xl backdrop-blur-xl">
+    <div className="gsrp-replay-bar absolute left-3 right-3 top-3 z-[650] p-3">
       <div className="mb-2 flex items-start gap-3">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -399,15 +438,15 @@ function ReplayBar({ replay, index, setIndex, snapshot, events, onClose }) {
           </div>
           <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
             {nearbyEvents.length > 0 ? nearbyEvents.map(event => (
-              <span key={event.id} className="shrink-0 rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[11px] font-bold text-white/65">
-                {event.type === 'kill' ? 'Kill' : event.type === 'team_change' ? 'Team' : event.type}: {event.summary}
+              <span key={event.id} className="gsrp-replay-chip shrink-0 px-2.5 py-1 text-[11px] font-bold text-white/70">
+                {event.type === 'kill' ? 'Kill' : event.type === 'team_change' ? 'Team' : event.type}: {eventTextForReplay(event, replay.playerId)}
               </span>
             )) : (
               <span className="text-xs text-white/35">No logged events at this moment</span>
             )}
           </div>
         </div>
-        <button onClick={onClose} className="rounded-lg p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white">
+        <button onClick={onClose} className="gsrp-soft-icon-button rounded-lg p-1 text-white/45 transition-colors hover:text-white">
           <X size={16} />
         </button>
       </div>
@@ -417,7 +456,7 @@ function ReplayBar({ replay, index, setIndex, snapshot, events, onClose }) {
         max={Math.max(0, (replay.snapshots?.length || 1) - 1)}
         value={index}
         onChange={event => setIndex(Number(event.target.value))}
-        className="w-full accent-gsrp-orange"
+        className="gsrp-replay-range w-full accent-gsrp-orange"
       />
     </div>
   );

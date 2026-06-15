@@ -66,6 +66,100 @@ select option {
 }
 
 /* ===================== LIVE MAP ===================== */
+.gsrp-map-shell {
+  isolation: isolate;
+}
+
+.gsrp-map-shell::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 110;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(2, 6, 23, 0.42), transparent 18%, transparent 72%, rgba(2, 6, 23, 0.36)),
+    radial-gradient(circle at 18% 16%, rgba(249, 115, 22, 0.12), transparent 32%),
+    radial-gradient(circle at 86% 18%, rgba(20, 184, 166, 0.1), transparent 26%);
+  mix-blend-mode: screen;
+}
+
+.gsrp-map-vignette {
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.58), inset 0 0 22px rgba(0, 0, 0, 0.5);
+}
+
+.gsrp-map-status-card,
+.gsrp-map-button,
+.gsrp-map-banner,
+.gsrp-player-panel,
+.gsrp-replay-bar {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background:
+    linear-gradient(180deg, rgba(18, 27, 48, 0.86), rgba(8, 13, 25, 0.78)),
+    rgba(15, 23, 42, 0.76);
+  box-shadow: 0 20px 55px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(18px) saturate(1.25);
+}
+
+.gsrp-map-status-card,
+.gsrp-map-button,
+.gsrp-map-banner {
+  border-radius: 16px;
+}
+
+.gsrp-map-toolbar {
+  padding: 4px;
+  border-radius: 20px;
+  background: rgba(2, 6, 23, 0.24);
+  backdrop-filter: blur(10px);
+}
+
+.gsrp-map-button {
+  cursor: pointer;
+  transform: translateZ(0);
+}
+
+.gsrp-map-button:hover {
+  border-color: rgba(249, 115, 22, 0.42);
+  color: #fb923c;
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 22px 46px rgba(0, 0, 0, 0.42), 0 0 20px rgba(249, 115, 22, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.gsrp-map-button:active {
+  transform: translateY(0) scale(0.96);
+}
+
+.gsrp-map-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 14px;
+  font-size: 12px;
+  font-weight: 900;
+  pointer-events: none;
+  animation: map-panel-enter 240ms cubic-bezier(0.2, 0.9, 0.2, 1.1);
+}
+
+.gsrp-map-loading {
+  background:
+    radial-gradient(circle at center, rgba(15, 23, 42, 0.78), rgba(2, 6, 23, 0.94)),
+    linear-gradient(120deg, rgba(249, 115, 22, 0.08), rgba(20, 184, 166, 0.08));
+}
+
+.gsrp-map-loading-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 245px;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 18px;
+  background: rgba(8, 13, 25, 0.82);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  padding: 16px 18px;
+  backdrop-filter: blur(20px) saturate(1.2);
+  animation: map-panel-enter 260ms cubic-bezier(0.2, 0.9, 0.2, 1.1);
+}
+
 .leaflet-container {
   background: #02040a;
   outline: none;
@@ -105,16 +199,20 @@ select option {
   background:
     radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.22), transparent 30%),
     rgba(8, 13, 25, 0.94);
-  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.45);
+  box-shadow: 0 9px 18px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.12);
   color: rgba(255, 255, 255, 0.86);
   cursor: pointer;
-  transition: box-shadow 160ms ease, transform 160ms ease, border-color 160ms ease;
+  transition: box-shadow 180ms ease, transform 180ms cubic-bezier(0.2, 0.9, 0.2, 1.2), border-color 180ms ease, filter 180ms ease;
 }
 
 .gsrp-map-blip:hover,
 .gsrp-map-blip.is-selected {
   box-shadow: 0 0 0 4px rgba(255, 255, 255, 0.08), 0 0 18px var(--team), 0 10px 24px rgba(0, 0, 0, 0.55);
   transform: scale(1.08);
+}
+
+.gsrp-map-blip:active {
+  transform: scale(0.94);
 }
 
 .gsrp-map-blip.is-locked {
@@ -147,6 +245,54 @@ select option {
   border: 0;
 }
 
+.gsrp-player-panel {
+  box-shadow: 0 26px 80px rgba(0, 0, 0, 0.5), 0 0 26px rgba(249, 115, 22, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  animation: map-panel-enter 240ms cubic-bezier(0.2, 0.9, 0.2, 1.1);
+}
+
+.gsrp-player-panel-header {
+  background:
+    radial-gradient(circle at 12% 0%, rgba(249, 115, 22, 0.12), transparent 35%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent);
+}
+
+.gsrp-soft-icon-button {
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.035);
+}
+
+.gsrp-soft-icon-button:hover {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.075);
+}
+
+.gsrp-replay-bar {
+  border-radius: 20px;
+  animation: replay-drop 260ms cubic-bezier(0.2, 0.9, 0.2, 1.1);
+}
+
+.gsrp-replay-chip {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  background: rgba(2, 6, 23, 0.38);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045);
+}
+
+.gsrp-replay-range {
+  height: 4px;
+  cursor: pointer;
+}
+
+@keyframes map-panel-enter {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes replay-drop {
+  from { opacity: 0; transform: translateY(-12px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 .gsrp-kill-label {
   border: 1px solid rgba(239, 68, 68, 0.45);
   border-radius: 999px;
@@ -177,6 +323,20 @@ select option {
   20% { filter: saturate(1.5) drop-shadow(0 0 18px rgba(239, 68, 68, 0.9)); transform: scale(1.18); }
   45% { filter: grayscale(0.8) drop-shadow(0 0 12px rgba(239, 68, 68, 0.65)); transform: scale(0.92); }
   100% { filter: none; transform: scale(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gsrp-map-button,
+  .gsrp-map-blip,
+  .gsrp-map-banner,
+  .gsrp-map-loading-card,
+  .gsrp-player-panel,
+  .gsrp-replay-bar,
+  .gsrp-kill-label,
+  .gsrp-map-death .gsrp-map-blip {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 /* ===================== TRANSCRIPT VIEWER ===================== */
