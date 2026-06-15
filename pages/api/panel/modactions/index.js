@@ -269,7 +269,7 @@ export default async function handler(req, res) {
       }
 
       case 'message': {
-        const r = await sendErlcCommand(`:m ${targetUsername} ${safeReason}`);
+        const r = await sendErlcCommand(`:pm ${targetUsername} ${safeReason}`);
         await recordPanelModeration({ session, action, targetUsername, targetUserId, reason: safeReason, erlcOk: r.ok, erlcStatus: r.status });
         return res.status(r.status === 204 ? 200 : r.status).json({ success: r.ok });
       }
