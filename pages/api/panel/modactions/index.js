@@ -3,26 +3,33 @@ import { authOptions } from '../../../../lib/auth-options';
 import { ROLES, isAdmin } from '../../../../lib/auth';
 import { requireAccess } from '../../../../lib/access-check';
 import { sendComponentsV2 } from '../../../../lib/discord-v2';
+import { addPanelPlayerOffence } from '../../../../lib/sessions-offences-db';
 
 const NKZ_ROLE_ID = '1372468936867708988';
-const SENIOR_ROLES = ['1372491512709124106', '1372491512100950068', '1372479843677245520'];
+const BAN_ROLE_IDS = ['1372479843677245520', '1372491512100950068'];
 const BOLO_ROLE_ID = '1390835200145096734';
-// Channel for warn logs
-const WARN_LOG_CHANNEL = '1474893431686959205';
-// Channel for BOLO posts (confirm with user — using the RP log channel as placeholder)
-const BOLO_CHANNEL = '1374364814096207892';
-const BOLO_PING = '1372479843677245520'; // role ping — use <@&ROLE_ID>
+const MODERATION_LOG_CHANNEL = '1491721430876815400';
+const BOLO_CHANNEL = '1516048196944658432';
+const BOLO_PING = '1372479843677245520';
 
 const ERLC_API = 'https://api.erlc.gg';
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const ROBLOX_USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
 
 function cleanReason(value) {
-  return String(value || 'No reason provided')
+  return String(value || '')
     .replace(/[\r\n\u0000-\u001F\u007F]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
-    .slice(0, 120) || 'No reason provided';
+    .slice(0, 500);
+}
+
+function cleanDiscordText(value, fallback = 'Unknown') {
+  return String(value || fallback)
+    .replace(/[\r\n\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 300) || fallback;
 }
 
 async function sendErlcCommand(command) {
@@ -35,16 +42,71 @@ async function sendErlcCommand(command) {
   return res;
 }
 
-async function sendDiscordMessage(channelId, payload) {
-  const res = await fetch(`https://discord.com/api/v10/channels/${channelId}/messages`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bot ${DISCORD_BOT_TOKEN}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(payload),
+function staffDisplayName(session) {
+  return cleanDiscordText(
+    session.user?.global_name ||
+    session.user?.name ||
+    session.user?.username ||
+    session.user?.email ||
+    session.user?.id,
+    'Panel Staff'
+  );
+}
+
+const ACTION_LOG_META = {
+  warn: { key: 'panel_warn', name: 'Panel Warning', taken: 'Warning', color: 0xF59E0B },
+  kick: { key: 'panel_kick', name: 'Panel Kick', taken: 'Kick', color: 0xFBBF24 },
+  ban: { key: 'panel_ban', name: 'Panel Ban', taken: 'Ban', color: 0xEF4444 },
+  bolo: { key: 'panel_ban_bolo', name: 'Panel Ban BOLO', taken: 'Ban BOLO', color: 0xEF4444 },
+  message: { key: 'panel_message', name: 'Panel Message', taken: 'Message', color: 0x60A5FA },
+  load: { key: 'panel_load', name: 'Panel Load', taken: 'Load', color: 0x14B8A6 },
+  jail: { key: 'panel_jail', name: 'Panel Jail', taken: 'Jail', color: 0x8B5CF6 },
+};
+
+async function recordPanelModeration({ session, action, targetUsername, targetUserId, reason, erlcOk, erlcStatus, messageId }) {
+  const meta = ACTION_LOG_META[action];
+  if (!meta) return;
+
+  const staffName = staffDisplayName(session);
+  const evidence = [
+    reason ? `Reason: ${reason}` : null,
+    targetUserId ? `Roblox ID: ${targetUserId}` : null,
+    messageId ? `Discord message: ${messageId}` : null,
+    erlcStatus ? `ERLC status: ${erlcStatus}` : null,
+    erlcOk === false ? 'ERLC command failed' : null,
+  ].filter(Boolean).join(' | ');
+
+  await addPanelPlayerOffence({
+    playerName: targetUsername,
+    offenceKey: meta.key,
+    offenceName: meta.name,
+    actionTaken: meta.taken,
+    evidence,
+    issuedBy: staffName,
   });
-  return res.ok ? res.json() : null;
+
+  await sendComponentsV2(MODERATION_LOG_CHANNEL, {
+    allowed_mentions: { parse: [] },
+    components: [
+      {
+        type: 17,
+        accent_color: meta.color,
+        components: [
+          { type: 10, content: `## Player Moderation: ${meta.taken}` },
+          {
+            type: 10,
+            content: [
+              `**Player:** ${targetUsername}${targetUserId ? ` (${targetUserId})` : ''}`,
+              `**Staff:** ${staffName} (<@${session.user.id}>)`,
+              reason ? `**Reason:** ${reason}` : '**Reason:** Not required for this action',
+              `**Source:** Website panel`,
+              `**Time:** <t:${Math.floor(Date.now() / 1000)}:F>`,
+            ].join('\n'),
+          },
+        ],
+      },
+    ],
+  });
 }
 
 export default async function handler(req, res) {
@@ -71,9 +133,13 @@ export default async function handler(req, res) {
   }
 
   const safeReason = cleanReason(reason);
+  if (action !== 'message' && !safeReason) {
+    return res.status(400).json({ error: 'Reason required' });
+  }
 
   const sessionRoles = session.user?.roles || [];
-  const isSenior = SENIOR_ROLES.some(r => sessionRoles.includes(r)) || isAdmin(session);
+  const canBan = BAN_ROLE_IDS.some(r => sessionRoles.includes(r)) || isAdmin(session);
+  const canBolo = sessionRoles.includes(BOLO_ROLE_ID) || isAdmin(session);
   const isNkz = sessionRoles.includes(NKZ_ROLE_ID) || isAdmin(session);
 
   try {
@@ -83,21 +149,7 @@ export default async function handler(req, res) {
         const warnText = safeReason;
         const pmCmd = `:pm ${targetUsername} You are being warned for ${warnText}`;
         const r = await sendErlcCommand(pmCmd);
-
-        // Send warn log to Discord channel
-        try {
-          await sendDiscordMessage(WARN_LOG_CHANNEL, {
-            content: [
-              `**⚠️ Player Warning Issued**`,
-              `**Player:** ${targetUsername}${targetUserId ? ` (ID: ${targetUserId})` : ''}`,
-              `**Reason:** ${warnText}`,
-              `**Warned by:** <@${session.user.id}>`,
-              `**Time:** <t:${Math.floor(Date.now() / 1000)}:F>`,
-            ].join('\n'),
-          });
-        } catch (discordErr) {
-          console.error('[Warn] Discord log failed:', discordErr.message);
-        }
+        await recordPanelModeration({ session, action, targetUsername, targetUserId, reason: warnText, erlcOk: r.ok, erlcStatus: r.status });
 
         return res.status(r.status === 204 ? 200 : r.status).json({ success: r.ok });
       }
@@ -105,20 +157,20 @@ export default async function handler(req, res) {
       case 'kick': {
         if (!isNkz) return res.status(403).json({ error: 'Insufficient permissions' });
         const r = await sendErlcCommand(`:kick ${targetUsername} ${safeReason}`);
+        await recordPanelModeration({ session, action, targetUsername, targetUserId, reason: safeReason, erlcOk: r.ok, erlcStatus: r.status });
         return res.status(r.status === 204 ? 200 : r.status).json({ success: r.ok });
       }
 
       case 'ban': {
-        if (!isSenior) return res.status(403).json({ error: 'Senior role required for ban' });
+        if (!canBan) return res.status(403).json({ error: 'Ban role required' });
         const id = targetUserId || targetUsername;
         const r = await sendErlcCommand(`:ban ${id}`);
+        await recordPanelModeration({ session, action, targetUsername, targetUserId, reason: safeReason, erlcOk: r.ok, erlcStatus: r.status });
         return res.status(r.status === 204 ? 200 : r.status).json({ success: r.ok });
       }
 
       case 'bolo': {
-        // Only BOLO role holders who are NOT senior can submit BOLOs
-        const canBolo = sessionRoles.includes(BOLO_ROLE_ID) && !isSenior;
-        if (!canBolo && !isAdmin(session)) {
+        if (!canBolo) {
           return res.status(403).json({ error: 'BOLO role required' });
         }
 
@@ -201,23 +253,27 @@ export default async function handler(req, res) {
           });
         }
 
+        await recordPanelModeration({ session, action, targetUsername, targetUserId, reason: safeReason, messageId: boloMsg?.id });
         return res.status(200).json({ success: true, messageId: boloMsg?.id });
       }
 
       case 'message': {
         const r = await sendErlcCommand(`:m ${targetUsername} ${safeReason}`);
+        await recordPanelModeration({ session, action, targetUsername, targetUserId, reason: safeReason, erlcOk: r.ok, erlcStatus: r.status });
         return res.status(r.status === 204 ? 200 : r.status).json({ success: r.ok });
       }
 
       case 'load': {
         if (!isNkz) return res.status(403).json({ error: 'Insufficient permissions' });
         const r = await sendErlcCommand(`:load ${targetUsername}`);
+        await recordPanelModeration({ session, action, targetUsername, targetUserId, reason: safeReason, erlcOk: r.ok, erlcStatus: r.status });
         return res.status(r.status === 204 ? 200 : r.status).json({ success: r.ok });
       }
 
       case 'jail': {
         if (!isNkz) return res.status(403).json({ error: 'Insufficient permissions' });
         const r = await sendErlcCommand(`:jail ${targetUsername}`);
+        await recordPanelModeration({ session, action, targetUsername, targetUserId, reason: safeReason, erlcOk: r.ok, erlcStatus: r.status });
         return res.status(r.status === 204 ? 200 : r.status).json({ success: r.ok });
       }
 

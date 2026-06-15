@@ -7,7 +7,7 @@ import {
 
 const NKZ_ROLE_ID = '1372468936867708988';
 const BOLO_ROLE_ID = '1390835200145096734';
-const SENIOR_ROLES = ['1372491512709124106', '1372491512100950068', '1372479843677245520'];
+const BAN_ROLE_IDS = ['1372491512100950068', '1372479843677245520'];
 
 function parseName(raw) {
   if (!raw) return { name: 'Unknown', id: '' };
@@ -31,9 +31,9 @@ export default function PlayerActionPanel({ player, vehicles = [], roleplays = [
 
   const { name, id: robloxId } = parseName(player?.Player);
   const sessionRoles = session?.user?.roles || [];
-  const isSenior = SENIOR_ROLES.some(r => sessionRoles.includes(r)) || session?.user?.isAdmin;
+  const canBan = BAN_ROLE_IDS.some(r => sessionRoles.includes(r)) || session?.user?.isAdmin;
   const isNkz = sessionRoles.includes(NKZ_ROLE_ID) || session?.user?.isAdmin;
-  const isBolo = sessionRoles.includes(BOLO_ROLE_ID) && !isSenior;
+  const isBolo = sessionRoles.includes(BOLO_ROLE_ID) || session?.user?.isAdmin;
 
   const teamColor = TEAM_COLOR[player?.Team] || TEAM_COLOR.Civilian;
 
@@ -207,9 +207,9 @@ export default function PlayerActionPanel({ player, vehicles = [], roleplays = [
                     <ActionBtn label="Kick" icon={LogOut} color="yellow"
                       onClick={() => setView('kick')} />
                   )}
-                  {isSenior
+                  {canBan
                     ? <ActionBtn label="Ban" icon={Ban} color="red"
-                        onClick={() => sendAction('ban')} loading={loading} />
+                        onClick={() => setView('ban')} />
                     : isBolo
                       ? <ActionBtn label="Ban BOLO" icon={Ban} color="red"
                           onClick={() => setView('bolo')} />
@@ -217,11 +217,11 @@ export default function PlayerActionPanel({ player, vehicles = [], roleplays = [
                   }
                   {isNkz && (
                     <ActionBtn label="Load" icon={Package} color="teal"
-                      onClick={() => sendAction('load')} loading={loading} />
+                      onClick={() => setView('load')} />
                   )}
                   {isNkz && (
                     <ActionBtn label="Jail" icon={Lock} color="purple"
-                      onClick={() => sendAction('jail')} loading={loading} />
+                      onClick={() => setView('jail')} />
                   )}
                   <ActionBtn label="Message" icon={MessageSquare} color="blue"
                     onClick={() => setView('message')} />
@@ -267,6 +267,23 @@ export default function PlayerActionPanel({ player, vehicles = [], roleplays = [
             />
           )}
 
+          {/* ─── BAN VIEW ─── */}
+          {view === 'ban' && (
+            <ActionView
+              title="Ban Player"
+              subtitle={name}
+              color="#EF4444"
+              reason={reason}
+              onReasonChange={setReason}
+              onSubmit={() => sendAction('ban')}
+              onBack={() => { setView('main'); setReason(''); setFeedback(null); }}
+              loading={loading}
+              feedback={feedback}
+              submitLabel="Ban Player"
+              dangerWarning="This will run an in-game ban and record the action."
+            />
+          )}
+
           {/* ─── MESSAGE VIEW ─── */}
           {view === 'message' && (
             <ActionView
@@ -298,6 +315,38 @@ export default function PlayerActionPanel({ player, vehicles = [], roleplays = [
               feedback={feedback}
               submitLabel="Submit BOLO"
               dangerWarning="This will post a Ban BOLO in Discord for senior review."
+            />
+          )}
+
+          {/* ─── LOAD VIEW ─── */}
+          {view === 'load' && (
+            <ActionView
+              title="Load Player"
+              subtitle={name}
+              color="#14B8A6"
+              reason={reason}
+              onReasonChange={setReason}
+              onSubmit={() => sendAction('load')}
+              onBack={() => { setView('main'); setReason(''); setFeedback(null); }}
+              loading={loading}
+              feedback={feedback}
+              submitLabel="Load Player"
+            />
+          )}
+
+          {/* ─── JAIL VIEW ─── */}
+          {view === 'jail' && (
+            <ActionView
+              title="Jail Player"
+              subtitle={name}
+              color="#8B5CF6"
+              reason={reason}
+              onReasonChange={setReason}
+              onSubmit={() => sendAction('jail')}
+              onBack={() => { setView('main'); setReason(''); setFeedback(null); }}
+              loading={loading}
+              feedback={feedback}
+              submitLabel="Jail Player"
             />
           )}
         </div>
