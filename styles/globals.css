@@ -163,22 +163,7 @@ select option {
 .gsrp-panel-loading {
   position: relative;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 30% 20%, rgba(20, 184, 166, 0.12), transparent 34%),
-    radial-gradient(circle at 76% 72%, rgba(249, 115, 22, 0.14), transparent 34%),
-    linear-gradient(135deg, rgba(5, 12, 24, 0.92), rgba(7, 12, 22, 0.98));
-}
-
-.gsrp-panel-loading::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: radial-gradient(circle at center, black, transparent 78%);
-  pointer-events: none;
+  background-color: #05070A;
 }
 
 .gsrp-panel-loading-card {
@@ -191,9 +176,8 @@ select option {
   border: 1px solid rgba(148, 163, 184, 0.18);
   border-radius: 22px;
   background: rgba(8, 13, 25, 0.78);
-  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  box-shadow: 0 30px 90px rgba(0, 0, 0, 0.48);
   padding: 22px;
-  backdrop-filter: blur(24px) saturate(1.22);
   animation: map-panel-enter 280ms cubic-bezier(0.2, 0.9, 0.2, 1.08);
 }
 

@@ -386,18 +386,27 @@ function getInitialLoadProgress({ status, hasRefreshed, hasData, hasError, elaps
     return { percent: 100, title: 'Live map ready', detail: 'Rendering players and patrol data', icon: Radio };
   }
   if (status === 'loading' || !hasRefreshed) {
-    return { percent: 18, title: 'Checking access', detail: 'Refreshing Discord roles and panel permissions', icon: Shield };
+    return { percent: 10, title: 'Checking access', detail: 'Authentating session and refreshing Discord roles', icon: Shield };
   }
-  if (elapsedMs < 1800) {
-    return { percent: 38, title: 'Opening live stream', detail: 'Connecting to the shared server-side feed', icon: Radio };
+  if (elapsedMs < 1000) {
+    return { percent: 22, title: 'Opening live stream', detail: 'Establishing secure connection to the server feed', icon: Radio };
   }
-  if (elapsedMs < 5500) {
-    return { percent: 62, title: 'Fetching server frame', detail: 'Waiting for the next ER:LC rate-limit-safe poll', icon: Server };
+  if (elapsedMs < 2200) {
+    return { percent: 35, title: 'Authenticating stream', detail: 'Validating credentials and permissions with the feed service', icon: Shield };
+  }
+  if (elapsedMs < 4000) {
+    return { percent: 48, title: 'Queueing request', detail: 'Waiting for rate-limit window to open on ER:LC API', icon: Clock };
+  }
+  if (elapsedMs < 6500) {
+    return { percent: 60, title: 'Fetching server frame', detail: 'Requesting player list, kill logs, and command logs', icon: Server };
+  }
+  if (elapsedMs < 9000) {
+    return { percent: 72, title: 'Polling complete data', detail: 'Received server frame; scanning kill/command logs', icon: Server };
   }
   if (elapsedMs < 12000) {
-    return { percent: 82, title: 'Hydrating map data', detail: 'Loading players, avatars, vehicles, and logs', icon: MapPinned };
+    return { percent: 85, title: 'Hydrating map data', detail: 'Loading players, avatars, vehicles, and patrol routes', icon: MapPinned };
   }
-  return { percent: 92, title: 'Still connected', detail: 'The API is slow right now; staying queued instead of spamming requests', icon: Clock };
+  return { percent: 95, title: 'Still connected', detail: 'Server is taking longer than expected; staying queued instead of spamming requests', icon: Clock };
 }
 
 function PanelLoadingState({ progress, elapsedMs }) {
@@ -428,6 +437,10 @@ function PanelLoadingState({ progress, elapsedMs }) {
                 {step}
               </div>
             ))}
+            <div className="mt-1.5 flex justify-between text-[10px] font-mono text-white/20">
+              <span>{Math.floor(elapsedMs / 1000)}s elapsed</span>
+              <span>{Math.min(100, Math.floor(elapsedMs / 120))}%</span>
+            </div>
           </div>
         </div>
       </div>
