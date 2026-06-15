@@ -3,7 +3,9 @@ import { authOptions } from "../../../lib/auth-options";
 import { ROLES } from '../../../lib/auth';
 import { requireAccess } from '../../../lib/access-check';
 
-const POLL_INTERVAL_MS = 5000;
+const MIN_POLL_INTERVAL_MS = 1200;
+const DEFAULT_POLL_INTERVAL_MS = 2500;
+const MAX_POLL_INTERVAL_MS = 10000;
 
 globalThis.__gsrpErlcCache ??= {
   data: null,
@@ -27,12 +29,12 @@ function updateRateLimit(cache, response) {
   const resetEpoch = parseFloat(response.headers.get('x-ratelimit-reset'));
   const resetMs = resetEpoch ? resetEpoch * 1000 : 0;
   const now = Date.now();
-  const minimumNext = now + 2000;
+  const minimumNext = now + MIN_POLL_INTERVAL_MS;
 
-  if (remaining <= 1 && resetMs) {
+  if (Number.isFinite(remaining) && remaining <= 1 && resetMs) {
     cache.nextAllowedFetch = Math.max(resetMs + 500, minimumNext);
   } else {
-    cache.nextAllowedFetch = minimumNext;
+    cache.nextAllowedFetch = Math.max(minimumNext, now + DEFAULT_POLL_INTERVAL_MS);
   }
 }
 
@@ -120,7 +122,7 @@ export function removeSubscriber(res) {
   cache.subscribers.delete(res);
 
   if (cache.subscribers.size === 0 && cache.pollTimer) {
-    clearInterval(cache.pollTimer);
+    clearTimeout(cache.pollTimer);
     cache.pollTimer = null;
   }
 }
@@ -131,26 +133,32 @@ function ensurePoller(cache) {
   async function tick() {
     if (cache.subscribers.size === 0) {
       if (cache.pollTimer) {
-        clearInterval(cache.pollTimer);
+        clearTimeout(cache.pollTimer);
         cache.pollTimer = null;
       }
       return;
     }
 
-    if (!canFetch(cache)) return;
-
-    const key = process.env.ERLC_API_KEY;
-    if (!key) return;
-
-    try {
-      await refreshFromErlc(cache, key);
-    } catch {
-      // rate-limit backoff handled inside refreshFromErlc
+    if (canFetch(cache)) {
+      const key = process.env.ERLC_API_KEY;
+      if (key) {
+        try {
+          await refreshFromErlc(cache, key);
+        } catch {
+          // rate-limit backoff handled inside refreshFromErlc
+        }
+      }
     }
+
+    const now = Date.now();
+    const delay = Math.min(
+      MAX_POLL_INTERVAL_MS,
+      Math.max(MIN_POLL_INTERVAL_MS, cache.nextAllowedFetch > now ? cache.nextAllowedFetch - now : DEFAULT_POLL_INTERVAL_MS)
+    );
+    cache.pollTimer = setTimeout(tick, delay);
   }
 
-  tick();
-  cache.pollTimer = setInterval(tick, POLL_INTERVAL_MS);
+  cache.pollTimer = setTimeout(tick, 0);
 }
 
 /* ── HTTP route handler ──────────────────────────────────────── */

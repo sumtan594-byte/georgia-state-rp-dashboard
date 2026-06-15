@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {
-  Loader2, Pause, Play, Users, AlertTriangle, WifiOff, ArrowLeft,
+  Loader2, Radio, Users, AlertTriangle, WifiOff, ArrowLeft,
 } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
 import PanelLayout from '../../components/panel/PanelLayout';
@@ -32,7 +32,6 @@ export default function PanelPage() {
 
   // Core data
   const [data, setData] = useState(null);
-  const [live, setLive] = useState(true);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [rateLimitUntil, setRateLimitUntil] = useState(null);
@@ -90,8 +89,6 @@ export default function PanelPage() {
   const lastSseRef = useRef(0);
 
   useEffect(() => {
-    if (!live) return;
-
     const es = new EventSource('/api/panel/events');
     evtSourceRef.current = es;
 
@@ -105,11 +102,11 @@ export default function PanelPage() {
     es.onerror = () => {};
 
     return () => { es.close(); evtSourceRef.current = null; };
-  }, [live, handleData]);
+  }, [handleData]);
 
-  // Polling fallback — only fires if SSE has been quiet for 8+ seconds
+  // Polling fallback — only fires if SSE has been quiet for 5+ seconds
   const fetchData = useCallback(async () => {
-    if (Date.now() - lastSseRef.current < 8000) return;
+    if (Date.now() - lastSseRef.current < 5000) return;
     if (rateLimitUntilRef.current && Date.now() < rateLimitUntilRef.current) return;
     try {
       const res = await fetch('/api/panel/players');
@@ -132,10 +129,9 @@ export default function PanelPage() {
   // Initial fetch + polling interval
   useEffect(() => {
     if (!hasFetched.current) { hasFetched.current = true; fetchData(); }
-    if (!live) return;
-    intervalRef.current = setInterval(fetchData, 10000);
+    intervalRef.current = setInterval(fetchData, 4000);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [live, fetchData]);
+  }, [fetchData]);
 
   /* ── ERLC alerts ─────────────────────────────────────────────────────── */
   const alerts = [];
@@ -246,17 +242,10 @@ export default function PanelPage() {
             </div>
           )}
 
-          <button
-            onClick={() => setLive(!live)}
-            className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold tracking-wider transition-all border cursor-pointer ${
-              live
-                ? 'bg-gsrp-orange/15 text-gsrp-orange border-gsrp-orange/30'
-                : 'bg-white/5 text-white/30 border-gsrp-dark-border/50 hover:text-white/60 hover:border-white/20'
-            }`}
-          >
-            {live ? <Play size={14} /> : <Pause size={14} />}
-            <span className="hidden sm:inline">{live ? 'Live' : 'Paused'}</span>
-          </button>
+          <div className="flex items-center gap-1.5 rounded-lg border border-green-400/20 bg-green-400/10 px-3 py-2 text-xs font-semibold tracking-wider text-green-300">
+            <Radio size={14} className="animate-pulse" />
+            <span className="hidden sm:inline">Live</span>
+          </div>
         </div>
       </div>
 
@@ -307,7 +296,7 @@ export default function PanelPage() {
                 lockedPlayerId={lockedPlayerId}
                 onLockPlayer={setLockedPlayerId}
                 server={data}
-                live={live}
+                live
                 error={error}
                 rateLimitUntil={rateLimitUntil}
               />
@@ -328,7 +317,7 @@ export default function PanelPage() {
               players={data.Players || []}
               emergencyCalls={data.EmergencyCalls || []}
               server={data}
-              live={live}
+              live
               error={error}
               rateLimitUntil={rateLimitUntil}
               loading={loading}

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
-import { Crosshair, LocateFixed, Lock, Minus, Plus, Unlock, Loader2 } from 'lucide-react';
+import { Crosshair, LocateFixed, Lock, Minus, Plus, Unlock, Loader2, Radio, Users } from 'lucide-react';
 
 export const MAP_PX = 3120;
 const OFFSET_X = 11;
@@ -86,10 +86,6 @@ export default function LiveMap({
   onLocationSelected,
   lockedPlayerId,
   onLockPlayer,
-  server,
-  live,
-  error,
-  rateLimitUntil,
 }) {
   const container = useRef(null);
   const mapRef = useRef(null);
@@ -108,15 +104,19 @@ export default function LiveMap({
   const playerSelectModeRef = useRef(playerSelectMode);
   playerSelectModeRef.current = playerSelectMode;
   const [ready, setReady] = useState(false);
-  const selectedInfo = selectedPlayer ? parseName(selectedPlayer.Player) : null;
 
   /* Init map */
   useEffect(() => {
     if (mapRef.current || !container.current) return;
     const map = L.map(container.current, {
       crs: L.CRS.Simple, minZoom: -2, maxZoom: 3,
-      zoomControl: true, attributionControl: false,
-      zoomSnap: 0, zoomDelta: 4,
+      zoomControl: false, attributionControl: false,
+      zoomSnap: 0.25, zoomDelta: 0.5,
+      wheelPxPerZoomLevel: 160,
+      wheelDebounceTime: 20,
+      inertia: true,
+      inertiaDeceleration: 2500,
+      preferCanvas: true,
     });
     L.imageOverlay('/api/panel/map', [[0, 0], [MAP_PX, MAP_PX]]).addTo(map);
     map.fitBounds([[0, 0], [MAP_PX, MAP_PX]]);
@@ -161,12 +161,17 @@ export default function LiveMap({
       const t = performance.now();
       for (const [id, s] of Object.entries(anim.current)) {
         const mkr = markers.current[id];
-        if (!mkr || (ds.current?.playerId === id && ds.current?.isDragging)) continue;
+        if (!mkr || s.atRest || (ds.current?.playerId === id && ds.current?.isDragging)) continue;
         const raw = Math.min(1, (t - s.startedAt) / s.duration);
         const eased = raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2;
         s.currentX = s.startX + (s.targetX - s.startX) * eased;
         s.currentY = s.startY + (s.targetY - s.startY) * eased;
         mkr.setLatLng([s.currentY, s.currentX]);
+        if (raw >= 1) {
+          s.currentX = s.targetX;
+          s.currentY = s.targetY;
+          s.atRest = true;
+        }
       }
       raf.current = requestAnimationFrame(tick);
     }
@@ -178,14 +183,16 @@ export default function LiveMap({
     const t = performance.now();
     const prev = anim.current[id];
     if (!prev) {
-      anim.current[id] = { startX: px, startY: py, targetX: px, targetY: py, currentX: px, currentY: py, startedAt: t, duration: 900 };
+      anim.current[id] = { startX: px, startY: py, targetX: px, targetY: py, currentX: px, currentY: py, startedAt: t, duration: 900, atRest: true };
       return;
     }
+    if (Math.hypot((prev.targetX ?? px) - px, (prev.targetY ?? py) - py) < 1) return;
     anim.current[id] = {
       startX: prev.currentX, startY: prev.currentY,
       targetX: px, targetY: py,
       currentX: prev.currentX, currentY: prev.currentY,
-      startedAt: t, duration: 900,
+      startedAt: t, duration: 1100,
+      atRest: false,
     };
   }
 
@@ -429,7 +436,7 @@ export default function LiveMap({
             startX: ll2.lng, startY: ll2.lat,
             targetX: ds.current.origX, targetY: ds.current.origY,
             currentX: ll2.lng, currentY: ll2.lat,
-            startedAt: t, duration: 500,
+            startedAt: t, duration: 500, atRest: false,
           };
         }
       }
@@ -463,30 +470,20 @@ export default function LiveMap({
         </div>
       )}
 
+      <div className="absolute left-3 top-3 z-[300] flex items-center gap-2 rounded-2xl border border-gsrp-dark-border/70 bg-gsrp-dark-card/90 px-3 py-2 text-xs font-bold text-white/70 shadow-xl backdrop-blur-xl">
+        <Radio size={13} className="text-green-300 animate-pulse" />
+        <span className="text-green-300">Live</span>
+        <span className="h-4 w-px bg-white/10" />
+        <Users size={13} className="text-white/35" />
+        <span>{players.length}</span>
+      </div>
+
       <div className="absolute right-3 top-3 z-[300] flex flex-col gap-2">
         <MapButton label="Zoom in" onClick={zoomIn} icon={Plus} />
         <MapButton label="Zoom out" onClick={zoomOut} icon={Minus} />
         <MapButton label="Recenter" onClick={recenterMap} icon={Crosshair} />
         <MapButton label="Find selected" onClick={locateSelected} icon={LocateFixed} disabled={!selectedPlayer?.Location} />
       </div>
-
-      {selectedPlayer && (
-        <div className="pointer-events-none absolute bottom-3 right-3 z-[300] w-[min(360px,calc(100%-1.5rem))] rounded-2xl border border-gsrp-dark-border/70 bg-gsrp-dark-card/90 p-4 shadow-2xl backdrop-blur-xl">
-          <div className="mb-3 flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-[10px] font-black uppercase tracking-[0.24em] text-gsrp-orange/70">Selected Unit</p>
-              <h3 className="truncate text-lg font-black text-white">{selectedInfo?.name || 'Unknown'}</h3>
-            </div>
-            <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-bold text-white/45">{selectedPlayer.Team || 'Unknown'}</span>
-          </div>
-          <div className="grid grid-cols-2 gap-2 text-[11px]">
-            <InfoChip label="Callsign" value={selectedPlayer.Callsign || 'N/A'} />
-            <InfoChip label="Postal" value={selectedPlayer.Location?.PostalCode ? `#${selectedPlayer.Location.PostalCode}` : 'Unknown'} />
-            <InfoChip label="Street" value={selectedPlayer.Location?.StreetName || 'Unknown'} />
-            <InfoChip label="Wanted" value={selectedPlayer.WantedStars ? `${selectedPlayer.WantedStars} stars` : 'Clear'} hot={selectedPlayer.WantedStars > 0} />
-          </div>
-        </div>
-      )}
 
       {playerSelectMode && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-[300] bg-gsrp-dark-card/95 border border-gsrp-orange/40 rounded-xl px-4 py-2 text-xs font-bold text-gsrp-orange flex items-center gap-2 pointer-events-none">
@@ -528,14 +525,5 @@ function MapButton({ label, onClick, icon: Icon, disabled = false }) {
     >
       <Icon size={16} />
     </button>
-  );
-}
-
-function InfoChip({ label, value, hot = false }) {
-  return (
-    <div className={`min-w-0 rounded-xl border px-3 py-2 ${hot ? 'border-gsrp-sunset/20 bg-gsrp-sunset/10' : 'border-white/10 bg-black/20'}`}>
-      <p className="text-[9px] font-bold uppercase tracking-wider text-white/30">{label}</p>
-      <p className={`truncate font-bold ${hot ? 'text-gsrp-sunset' : 'text-white/75'}`}>{value}</p>
-    </div>
   );
 }

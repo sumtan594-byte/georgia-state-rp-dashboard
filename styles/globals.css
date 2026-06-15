@@ -65,6 +65,32 @@ select option {
   color: #fff;
 }
 
+/* ===================== LIVE MAP ===================== */
+.leaflet-container {
+  background: #02040a;
+  outline: none;
+  touch-action: pan-x pan-y;
+}
+
+.leaflet-pane,
+.leaflet-tile,
+.leaflet-marker-icon,
+.leaflet-marker-shadow,
+.leaflet-overlay-pane svg,
+.leaflet-zoom-animated {
+  will-change: transform;
+}
+
+.leaflet-image-layer {
+  image-rendering: auto;
+  user-select: none;
+}
+
+.leaflet-tooltip {
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(14px);
+}
+
 /* ===================== TRANSCRIPT VIEWER ===================== */
 discord-messages {
   --discord-background-primary: #0F1629 !important;
