@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {
-  Loader2, Radio, Users, AlertTriangle, WifiOff, ArrowLeft,
+  Loader2, Radio, Users, AlertTriangle, WifiOff, ArrowLeft, X, Clock,
 } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
 import PanelLayout from '../../components/panel/PanelLayout';
@@ -36,6 +36,10 @@ export default function PanelPage() {
   const [error, setError] = useState(null);
   const [rateLimitUntil, setRateLimitUntil] = useState(null);
   const hasConnected = useRef(false);
+  const [replay, setReplay] = useState(null);
+  const [replayLoading, setReplayLoading] = useState(false);
+  const [replayIndex, setReplayIndex] = useState(0);
+  const [nowMs, setNowMs] = useState(Date.now());
 
   // Player selection
   const [selectedPlayer, setSelectedPlayer] = useState(null);
@@ -96,6 +100,11 @@ export default function PanelPage() {
     return () => { es.close(); evtSourceRef.current = null; };
   }, [handleData, handleError]);
 
+  useEffect(() => {
+    const timer = setInterval(() => setNowMs(Date.now()), 500);
+    return () => clearInterval(timer);
+  }, []);
+
   /* ── ERLC alerts ─────────────────────────────────────────────────────── */
   const alerts = [];
   if (data) {
@@ -148,6 +157,45 @@ export default function PanelPage() {
       return p;
     });
   }, []);
+
+  const openReplay = useCallback(async (player) => {
+    if (!player?.Player) return;
+    const ci = player.Player.lastIndexOf(':');
+    const id = ci !== -1 ? player.Player.slice(ci + 1) : player.Player;
+    if (!/^\d+$/.test(id)) return;
+    setReplayLoading(true);
+    try {
+      const res = await fetch(`/api/panel/replay/${id}`);
+      const body = await res.json().catch(() => ({}));
+      if (res.ok) {
+        const snapshots = body.snapshots || [];
+        setReplay({
+          player,
+          playerId: id,
+          snapshots,
+          events: body.events || [],
+        });
+        setReplayIndex(Math.max(0, snapshots.length - 1));
+        setLockedPlayerId(id);
+      }
+    } finally {
+      setReplayLoading(false);
+    }
+  }, []);
+
+  const closeReplay = useCallback(() => {
+    setReplay(null);
+    setReplayIndex(0);
+  }, []);
+
+  const replaySnapshot = replay?.snapshots?.[replayIndex] || null;
+  const replayPlayer = replaySnapshot?.player ? {
+    ...replaySnapshot.player,
+    AvatarUrl: replaySnapshot.avatarUrl || replaySnapshot.player.AvatarUrl,
+  } : null;
+  const replayEvents = replay?.events || [];
+  const poll = data?._poll || null;
+  const nextPollMs = poll?.nextPollAt ? Math.max(0, poll.nextPollAt - nowMs) : null;
 
   /* ── Loading / auth states ───────────────────────────────────────────── */
   if (status === 'loading' || !hasRefreshed) {
@@ -209,6 +257,17 @@ export default function PanelPage() {
             <Radio size={14} className="animate-pulse" />
             <span className="hidden sm:inline">Live</span>
           </div>
+          {poll && (
+            <div className="hidden md:flex items-center gap-2 rounded-lg border border-gsrp-dark-border/60 bg-black/20 px-3 py-2 text-xs font-semibold text-white/45">
+              <Clock size={13} className="text-gsrp-orange/70" />
+              <span>Next poll {formatDuration(nextPollMs)}</span>
+              {poll.rateLimit && (
+                <span className="font-mono text-white/30">
+                  {poll.rateLimit.remaining ?? '?'}/{poll.rateLimit.limit ?? '?'} {poll.rateLimit.bucket || ''}
+                </span>
+              )}
+            </div>
+          )}
         </div>
       </div>
 
@@ -248,8 +307,18 @@ export default function PanelPage() {
           }
           liveMap={
             <div className="relative w-full h-full">
+              {replay && (
+                <ReplayBar
+                  replay={replay}
+                  index={replayIndex}
+                  setIndex={setReplayIndex}
+                  snapshot={replaySnapshot}
+                  events={replayEvents}
+                  onClose={closeReplay}
+                />
+              )}
               <LiveMap
-                players={data.Players || []}
+                players={replayPlayer ? [replayPlayer] : (data.Players || [])}
                 emergencyCalls={data.EmergencyCalls || []}
                 selectedPlayer={selectedPlayer}
                 onSelectPlayer={handleSelectPlayer}
@@ -262,6 +331,10 @@ export default function PanelPage() {
                 live
                 error={error}
                 rateLimitUntil={rateLimitUntil}
+                mapEvents={data.MapEvents || []}
+                replayMode={!!replay}
+                replaySnapshot={replaySnapshot}
+                replayEvents={replayEvents}
               />
 
               {/* Player Action Panel — overlays on map */}
@@ -270,6 +343,8 @@ export default function PanelPage() {
                   player={selectedPlayer}
                   vehicles={vehicles}
                   session={effectiveSession}
+                  onReplay={() => openReplay(selectedPlayer)}
+                  replayLoading={replayLoading}
                   onClose={() => { setSelectedPlayer(null); setLockedPlayerId(null); }}
                 />
               )}
@@ -290,6 +365,60 @@ export default function PanelPage() {
           commandBar={isNkz ? <CommandBar onSendCommand={handleSendCommand} recentCommands={recentCommands} /> : null}
         />
       )}
+    </div>
+  );
+}
+
+function formatAgo(value) {
+  if (!value) return 'now';
+  const seconds = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 1000));
+  if (seconds < 60) return `${seconds}s ago`;
+  return `${Math.floor(seconds / 60)}m ${seconds % 60}s ago`;
+}
+
+function formatDuration(ms) {
+  if (ms == null) return '--';
+  const seconds = Math.max(0, Math.ceil(ms / 1000));
+  if (seconds < 60) return `${seconds}s`;
+  return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
+}
+
+function ReplayBar({ replay, index, setIndex, snapshot, events, onClose }) {
+  const nearbyEvents = events.filter(event => {
+    if (!snapshot?.sampledAt) return true;
+    return Math.abs(new Date(event.at).getTime() - new Date(snapshot.sampledAt).getTime()) <= 20_000;
+  });
+  return (
+    <div className="absolute left-3 right-3 top-3 z-[650] rounded-2xl border border-gsrp-orange/30 bg-gsrp-dark-card/95 p-3 shadow-2xl backdrop-blur-xl">
+      <div className="mb-2 flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <Clock size={14} className="text-gsrp-orange" />
+            <p className="truncate text-sm font-black text-white">{replay.player?.Player?.split(':')?.[0] || 'Player'} replay</p>
+            <span className="text-xs font-bold text-white/35">{formatAgo(snapshot?.sampledAt)}</span>
+          </div>
+          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {nearbyEvents.length > 0 ? nearbyEvents.map(event => (
+              <span key={event.id} className="shrink-0 rounded-full border border-white/10 bg-black/20 px-2.5 py-1 text-[11px] font-bold text-white/65">
+                {event.type === 'kill' ? 'Kill' : event.type === 'team_change' ? 'Team' : event.type}: {event.summary}
+              </span>
+            )) : (
+              <span className="text-xs text-white/35">No logged events at this moment</span>
+            )}
+          </div>
+        </div>
+        <button onClick={onClose} className="rounded-lg p-1 text-white/40 transition-colors hover:bg-white/10 hover:text-white">
+          <X size={16} />
+        </button>
+      </div>
+      <input
+        type="range"
+        min="0"
+        max={Math.max(0, (replay.snapshots?.length || 1) - 1)}
+        value={index}
+        onChange={event => setIndex(Number(event.target.value))}
+        className="w-full accent-gsrp-orange"
+      />
     </div>
   );
 }

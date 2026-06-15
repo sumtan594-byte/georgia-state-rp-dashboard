@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from "../../../lib/auth-options";
 import { ROLES } from '../../../lib/auth';
 import { requireAccess } from '../../../lib/access-check';
+import { recordPanelFrame } from '../../../lib/panel-replay-store';
 
 const MIN_POLL_INTERVAL_MS = 1200;
 const DEFAULT_POLL_INTERVAL_MS = 2500;
@@ -32,7 +33,9 @@ function canFetch(cache) {
 
 function updateRateLimit(cache, response) {
   const remaining = parseInt(response.headers.get('x-ratelimit-remaining'));
+  const limit = parseInt(response.headers.get('x-ratelimit-limit'));
   const resetEpoch = parseFloat(response.headers.get('x-ratelimit-reset'));
+  const bucket = response.headers.get('x-ratelimit-bucket') || 'unknown';
   const resetMs = resetEpoch ? resetEpoch * 1000 : 0;
   const now = Date.now();
   const minimumNext = now + MIN_POLL_INTERVAL_MS;
@@ -42,6 +45,12 @@ function updateRateLimit(cache, response) {
   } else {
     cache.nextAllowedFetch = Math.max(minimumNext, now + DEFAULT_POLL_INTERVAL_MS);
   }
+  cache.lastRateLimit = {
+    bucket,
+    limit: Number.isFinite(limit) ? limit : null,
+    remaining: Number.isFinite(remaining) ? remaining : null,
+    resetAt: resetMs || null,
+  };
 }
 
 function updateRateLimitFromError(cache, headers, retryAfter) {
@@ -60,10 +69,24 @@ function updateRateLimitFromError(cache, headers, retryAfter) {
 }
 
 function broadcastToSubscribers(data) {
-  const msg = JSON.stringify(data);
+  const msg = JSON.stringify(withPollMetadata(globalThis.__gsrpErlcCache, data));
   for (const sub of globalThis.__gsrpErlcCache.subscribers) {
     try { sub.write(`event: players\ndata: ${msg}\n\n`); } catch { globalThis.__gsrpErlcCache.subscribers.delete(sub); }
   }
+}
+
+function withPollMetadata(cache, data) {
+  const now = Date.now();
+  const nextPollAt = cache.nextAllowedFetch || now;
+  return {
+    ...data,
+    _poll: {
+      fetchedAt: cache.fetchedAt || null,
+      nextPollAt,
+      intervalMs: Math.max(0, nextPollAt - now),
+      rateLimit: cache.lastRateLimit || null,
+    },
+  };
 }
 
 function parsePlayerId(raw) {
@@ -172,6 +195,8 @@ export async function refreshFromErlc(cache, key) {
     }
 
     const data = await hydratePlayerAvatars(cache, await response.json());
+    const mapEvents = await recordPanelFrame(cache, data);
+    if (mapEvents.length > 0) data.MapEvents = mapEvents;
     cache.data = data;
     cache.fetchedAt = Date.now();
     updateRateLimit(cache, response);
@@ -193,7 +218,7 @@ export function addSubscriber(res) {
   cache.subscribers.add(res);
 
   if (cache.data) {
-    const msg = JSON.stringify(cache.data);
+    const msg = JSON.stringify(withPollMetadata(cache, cache.data));
     try { res.write(`event: players\ndata: ${msg}\n\n`); } catch { cache.subscribers.delete(res); }
   }
 
@@ -270,7 +295,7 @@ export default async function handler(req, res) {
 
   // If we already have cached data, return it immediately — no ERLC call.
   if (cache.data) {
-    return res.status(200).json(cache.data);
+    return res.status(200).json(withPollMetadata(cache, cache.data));
   }
 
   // No cache at all yet — cold start.
@@ -279,7 +304,7 @@ export default async function handler(req, res) {
       await cache.fetching;
     } catch {
     }
-    if (cache.data) return res.status(200).json(cache.data);
+    if (cache.data) return res.status(200).json(withPollMetadata(cache, cache.data));
     return res.status(503).json({ error: 'Initial ERLC fetch failed. Please retry.' });
   }
 
@@ -304,5 +329,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Failed to fetch ER:LC data' });
   }
 
-  return res.status(200).json(cache.data);
+  return res.status(200).json(withPollMetadata(cache, cache.data));
 }
