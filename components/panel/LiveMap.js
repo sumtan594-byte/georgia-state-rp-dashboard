@@ -59,13 +59,16 @@ function initialsFor(name) {
     .toUpperCase() || '?';
 }
 
-function avatarIcon(name, team, selected, locked) {
+function avatarIcon(name, team, selected, locked, avatarUrl) {
   const border = TEAM_BORDER[team] || TEAM_BORDER.Civilian;
   const size = selected ? 48 : 40;
   const inner = Math.max(20, size - 14);
+  const content = avatarUrl
+    ? `<img class="gsrp-map-blip-avatar" src="${escapeHtml(avatarUrl)}" alt="" />`
+    : `<div class="gsrp-map-blip-inner" style="width:${inner}px;height:${inner}px;">${escapeHtml(initialsFor(name))}</div>`;
   return L.divIcon({
     html: `<div class="gsrp-map-blip${selected ? ' is-selected' : ''}${locked ? ' is-locked' : ''}" style="--team:${border};width:${size}px;height:${size}px;">
-      <div class="gsrp-map-blip-inner" style="width:${inner}px;height:${inner}px;">${escapeHtml(initialsFor(name))}</div>
+      ${content}
     </div>`,
     className: 'gsrp-map-marker',
     iconSize: [size, size],
@@ -286,9 +289,10 @@ export default function LiveMap({
         const mkr = markers.current[id];
         const wasSelected = mkr._lastSelected;
         const nowSelected = isSelected || isLocked;
-        if (wasSelected !== nowSelected) {
-          mkr.setIcon(avatarIcon(name, p.Team, nowSelected, isLocked));
+        if (wasSelected !== nowSelected || mkr._lastAvatarUrl !== (p.AvatarUrl || '')) {
+          mkr.setIcon(avatarIcon(name, p.Team, nowSelected, isLocked, p.AvatarUrl));
           mkr._lastSelected = nowSelected;
+          mkr._lastAvatarUrl = p.AvatarUrl || '';
         }
         mkr.setTooltipContent(name + (isLocked ? ' 🔒' : ''));
         const el = mkr.getElement();
@@ -297,13 +301,15 @@ export default function LiveMap({
         }
         buildClickHandler(mkr);
       } else {
-        const mkr = L.marker([py, px], { icon: avatarIcon(name, p.Team, isSelected || isLocked, isLocked) })
+        const mkr = L.marker([py, px], { icon: avatarIcon(name, p.Team, isSelected || isLocked, isLocked, p.AvatarUrl) })
           .addTo(map)
           .bindTooltip(name, {
             direction: 'top', offset: [0, -26],
             className: '!bg-gsrp-dark-card !border !border-gsrp-dark-border/50 !text-white !text-[11px] !px-2 !py-1 !rounded-lg',
           });
         buildClickHandler(mkr);
+        mkr._lastAvatarUrl = p.AvatarUrl || '';
+        mkr._lastSelected = isSelected || isLocked;
         markers.current[id] = mkr;
       }
     }

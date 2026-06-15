@@ -133,6 +133,15 @@ select option {
   line-height: 1;
 }
 
+.gsrp-map-blip-avatar {
+  display: block;
+  width: calc(100% - 8px);
+  height: calc(100% - 8px);
+  border-radius: 999px;
+  object-fit: cover;
+  background: rgba(255, 255, 255, 0.08);
+}
+
 /* ===================== TRANSCRIPT VIEWER ===================== */
 discord-messages {
   --discord-background-primary: #0F1629 !important;
