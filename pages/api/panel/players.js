@@ -103,6 +103,23 @@ function getCachedAvatar(cache, id) {
   return entry.url || null;
 }
 
+function getPlayerAvatarUrl(cache, id) {
+  if (!id) return '';
+  return getCachedAvatar(cache, id) || `/api/panel/avatar?id=${encodeURIComponent(id)}`;
+}
+
+function attachPlayerAvatarUrls(cache, data) {
+  if (!Array.isArray(data?.Players)) return data;
+
+  data.Players = data.Players.map(player => {
+    const id = parsePlayerId(player.Player);
+    const avatarUrl = getPlayerAvatarUrl(cache, id);
+    return avatarUrl ? { ...player, AvatarUrl: avatarUrl } : player;
+  });
+
+  return data;
+}
+
 async function hydratePlayerAvatars(cache, data) {
   if (!Array.isArray(data?.Players) || data.Players.length === 0) return data;
 
@@ -159,7 +176,7 @@ async function hydratePlayerAvatars(cache, data) {
 
   data.Players = data.Players.map(player => {
     const id = parsePlayerId(player.Player);
-    const avatarUrl = id ? getCachedAvatar(cache, id) : null;
+    const avatarUrl = getPlayerAvatarUrl(cache, id);
     return avatarUrl ? { ...player, AvatarUrl: avatarUrl } : player;
   });
 
@@ -194,7 +211,7 @@ export async function refreshFromErlc(cache, key) {
       throw err;
     }
 
-    const data = await response.json();
+    const data = attachPlayerAvatarUrls(cache, await response.json());
     const mapEvents = await recordPanelFrame(cache, data);
     if (mapEvents.length > 0) data.MapEvents = mapEvents;
     cache.data = data;

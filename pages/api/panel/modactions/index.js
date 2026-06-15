@@ -178,12 +178,16 @@ export default async function handler(req, res) {
 
         // Send Components V2 BOLO message — note: <@&ROLE_ID> for role pings
         const boloMsg = await sendComponentsV2(BOLO_CHANNEL, {
-          content: `<@&${BOLO_PING}>`,
+          allowed_mentions: { roles: [BOLO_PING] },
           components: [
             {
               type: 17,
               accent_color: 0xEF4444,
               components: [
+                {
+                  type: 10,
+                  content: `<@&${BOLO_PING}>`,
+                },
                 {
                   type: 10,
                   content: `## Ban BOLO by <@${session.user.id}>\n**Against:** ${targetUsername}\n**For:** ${safeReason}`,
@@ -221,11 +225,16 @@ export default async function handler(req, res) {
             },
             body: JSON.stringify({
               flags: 1 << 15,
+              allowed_mentions: { roles: [BOLO_PING] },
               components: [
                 {
                   type: 17,
                   accent_color: 0xEF4444,
                   components: [
+                    {
+                      type: 10,
+                      content: `<@&${BOLO_PING}>`,
+                    },
                     {
                       type: 10,
                       content: `## Ban BOLO by <@${session.user.id}>\n**Against:** ${targetUsername}\n**For:** ${safeReason}`,
