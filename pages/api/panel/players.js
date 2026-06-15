@@ -6,6 +6,9 @@ import { requireAccess } from '../../../lib/access-check';
 const MIN_POLL_INTERVAL_MS = 1200;
 const DEFAULT_POLL_INTERVAL_MS = 2500;
 const MAX_POLL_INTERVAL_MS = 10000;
+const AVATAR_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+const AVATAR_BATCH_SIZE = 100;
+const AVATAR_DATA_URI_MAX_BYTES = 80_000;
 
 globalThis.__gsrpErlcCache ??= {
   data: null,
@@ -14,6 +17,9 @@ globalThis.__gsrpErlcCache ??= {
   nextAllowedFetch: 0,
   subscribers: new Set(),
   pollTimer: null,
+  avatarCache: new Map(),
+  avatarFetching: null,
+  avatarRateLimitedUntil: 0,
 };
 
 export function getCache() {
@@ -54,10 +60,87 @@ function updateRateLimitFromError(cache, headers, retryAfter) {
 }
 
 function broadcastToSubscribers(data) {
-  const msg = JSON.stringify({ type: 'players', data });
+  const msg = JSON.stringify(data);
   for (const sub of globalThis.__gsrpErlcCache.subscribers) {
-    try { sub.write(`data: ${msg}\n\n`); } catch { globalThis.__gsrpErlcCache.subscribers.delete(sub); }
+    try { sub.write(`event: players\ndata: ${msg}\n\n`); } catch { globalThis.__gsrpErlcCache.subscribers.delete(sub); }
   }
+}
+
+function parsePlayerId(raw) {
+  if (!raw) return '';
+  const ci = String(raw).lastIndexOf(':');
+  const id = ci === -1 ? String(raw) : String(raw).slice(ci + 1);
+  return /^\d+$/.test(id) ? id : '';
+}
+
+function getCachedAvatar(cache, id) {
+  const entry = cache.avatarCache.get(id);
+  if (!entry) return null;
+  if (Date.now() - entry.at > AVATAR_CACHE_TTL_MS) return null;
+  return entry.url || null;
+}
+
+async function hydratePlayerAvatars(cache, data) {
+  if (!Array.isArray(data?.Players) || data.Players.length === 0) return data;
+
+  const now = Date.now();
+  const ids = [...new Set(data.Players.map(p => parsePlayerId(p.Player)).filter(Boolean))];
+  const missing = ids.filter(id => !getCachedAvatar(cache, id));
+
+  if (missing.length > 0 && now >= cache.avatarRateLimitedUntil) {
+    if (!cache.avatarFetching) {
+      cache.avatarFetching = (async () => {
+        for (let i = 0; i < missing.length; i += AVATAR_BATCH_SIZE) {
+          const batch = missing.slice(i, i + AVATAR_BATCH_SIZE);
+          const url = `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${batch.join(',')}&size=60x60&format=Png&isCircular=true`;
+          const response = await fetch(url, { headers: { Accept: 'application/json' } });
+
+          if (response.status === 429) {
+            const retryAfter = parseFloat(response.headers.get('retry-after') || '30');
+            cache.avatarRateLimitedUntil = Date.now() + retryAfter * 1000 + 1000;
+            return;
+          }
+
+          if (!response.ok) return;
+
+          const body = await response.json().catch(() => ({}));
+          for (const item of body?.data || []) {
+            if (item?.targetId) {
+              let dataUri = '';
+              if (item.imageUrl) {
+                try {
+                  const imageResponse = await fetch(item.imageUrl);
+                  const contentType = imageResponse.headers.get('content-type') || 'image/png';
+                  const bytes = await imageResponse.arrayBuffer();
+                  if (imageResponse.ok && bytes.byteLength <= AVATAR_DATA_URI_MAX_BYTES) {
+                    dataUri = `data:${contentType};base64,${Buffer.from(bytes).toString('base64')}`;
+                  }
+                } catch {
+                  dataUri = '';
+                }
+              }
+              cache.avatarCache.set(String(item.targetId), {
+                url: dataUri,
+                at: Date.now(),
+              });
+            }
+          }
+        }
+      })().finally(() => {
+        cache.avatarFetching = null;
+      });
+    }
+
+    await cache.avatarFetching.catch(() => {});
+  }
+
+  data.Players = data.Players.map(player => {
+    const id = parsePlayerId(player.Player);
+    const avatarUrl = id ? getCachedAvatar(cache, id) : null;
+    return avatarUrl ? { ...player, AvatarUrl: avatarUrl } : player;
+  });
+
+  return data;
 }
 
 export async function refreshFromErlc(cache, key) {
@@ -88,7 +171,7 @@ export async function refreshFromErlc(cache, key) {
       throw err;
     }
 
-    const data = await response.json();
+    const data = await hydratePlayerAvatars(cache, await response.json());
     cache.data = data;
     cache.fetchedAt = Date.now();
     updateRateLimit(cache, response);
@@ -110,8 +193,8 @@ export function addSubscriber(res) {
   cache.subscribers.add(res);
 
   if (cache.data) {
-    const msg = JSON.stringify({ type: 'players', data: cache.data });
-    try { res.write(`data: ${msg}\n\n`); } catch { cache.subscribers.delete(res); }
+    const msg = JSON.stringify(cache.data);
+    try { res.write(`event: players\ndata: ${msg}\n\n`); } catch { cache.subscribers.delete(res); }
   }
 
   ensurePoller(cache);

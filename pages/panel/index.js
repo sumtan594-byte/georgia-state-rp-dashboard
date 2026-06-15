@@ -35,14 +35,7 @@ export default function PanelPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [rateLimitUntil, setRateLimitUntil] = useState(null);
-  const intervalRef = useRef(null);
-  const dataRef = useRef(null);
-  const rateLimitUntilRef = useRef(null);
-  const hasFetched = useRef(false);
-
-  useEffect(() => {
-    dataRef.current = data;
-  }, [data]);
+  const hasConnected = useRef(false);
 
   // Player selection
   const [selectedPlayer, setSelectedPlayer] = useState(null);
@@ -65,14 +58,13 @@ export default function PanelPage() {
   // Vehicles from data
   const vehicles = data?.Vehicles || [];
 
-  /* ── Fetch ERLC data via SSE + polling fallback ──────────────────────── */
+  /* ── Shared ERLC data stream ─────────────────────────────────────────── */
   const evtSourceRef = useRef(null);
 
   const handleData = useCallback((newData) => {
     setData(newData);
     setError(null);
     setRateLimitUntil(null);
-    rateLimitUntilRef.current = null;
     setLoading(false);
   }, []);
 
@@ -80,58 +72,29 @@ export default function PanelPage() {
     setError(errMsg);
     if (until) {
       setRateLimitUntil(until);
-      rateLimitUntilRef.current = until;
     }
     setLoading(false);
   }, []);
-
-  // SSE subscription
-  const lastSseRef = useRef(0);
 
   useEffect(() => {
     const es = new EventSource('/api/panel/events');
     evtSourceRef.current = es;
 
     es.addEventListener('players', (e) => {
-      lastSseRef.current = Date.now();
+      hasConnected.current = true;
       try {
         handleData(JSON.parse(e.data));
       } catch { /* ignore bad messages */ }
     });
 
-    es.onerror = () => {};
+    es.onerror = () => {
+      if (!hasConnected.current) {
+        handleError('Live map stream unavailable. Please refresh in a moment.');
+      }
+    };
 
     return () => { es.close(); evtSourceRef.current = null; };
-  }, [handleData]);
-
-  // Polling fallback — only fires if SSE has been quiet for 5+ seconds
-  const fetchData = useCallback(async () => {
-    if (Date.now() - lastSseRef.current < 5000) return;
-    if (rateLimitUntilRef.current && Date.now() < rateLimitUntilRef.current) return;
-    try {
-      const res = await fetch('/api/panel/players');
-      if (res.ok) {
-        const json = await res.json();
-        if (!json._stale) handleData(json);
-      } else if (res.status === 429) {
-        const retryAfter = Number(res.headers.get('Retry-After') || 5);
-        handleError(dataRef.current ? 'ER:LC API rate limited. Showing latest cached data.' : `ER:LC API rate limited. Retrying in ${retryAfter}s.`, Date.now() + retryAfter * 1000);
-      } else {
-        handleError(`Server error: ${res.status}`);
-      }
-    } catch {
-      handleError('Network error — server may be offline');
-    } finally {
-      setLoading(false);
-    }
   }, [handleData, handleError]);
-
-  // Initial fetch + polling interval
-  useEffect(() => {
-    if (!hasFetched.current) { hasFetched.current = true; fetchData(); }
-    intervalRef.current = setInterval(fetchData, 4000);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [fetchData]);
 
   /* ── ERLC alerts ─────────────────────────────────────────────────────── */
   const alerts = [];
@@ -254,7 +217,7 @@ export default function PanelPage() {
           <div className="text-center">
             <WifiOff size={32} className="text-gsrp-sunset/30 mx-auto mb-3" />
             <p className="text-white/50 text-sm mb-3">{error}</p>
-            <button onClick={fetchData}
+            <button onClick={() => window.location.reload()}
               className="px-4 py-2 rounded-lg bg-gsrp-orange/20 text-gsrp-orange border border-gsrp-orange/30 text-xs font-semibold hover:bg-gsrp-orange/30 transition-all cursor-pointer">
               Retry
             </button>

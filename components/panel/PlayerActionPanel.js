@@ -39,7 +39,7 @@ export default function PlayerActionPanel({ player, vehicles = [], roleplays = [
 
   useEffect(() => {
     setAvatarFailed(false);
-  }, [robloxId]);
+  }, [robloxId, player?.AvatarUrl]);
 
   // Player's vehicles
   const playerVehicles = vehicles.filter(v =>
@@ -95,8 +95,8 @@ export default function PlayerActionPanel({ player, vehicles = [], roleplays = [
           style={{ borderLeft: `3px solid ${teamColor}` }}>
           <div className="flex items-start gap-3">
             <div className="relative flex-shrink-0">
-              {robloxId && !avatarFailed
-                ? <img src={`/api/panel/avatar?id=${robloxId}`} onError={() => setAvatarFailed(true)}
+              {player?.AvatarUrl && !avatarFailed
+                ? <img src={player.AvatarUrl} onError={() => setAvatarFailed(true)}
                     className="w-12 h-12 rounded-full object-cover border-2"
                     style={{ borderColor: teamColor }} alt={name} />
                 : <div className="w-12 h-12 rounded-full bg-gsrp-dark-surface border-2 flex items-center justify-center"

@@ -102,11 +102,12 @@ function applyRateLimitHeaders(response, result) {
 }
 
 const ROLE_SYNC_PATH = '/api/user/invalidate';
+const PANEL_STREAM_PATH = '/api/panel/events';
 
 export function proxy(request) {
   const { pathname } = request.nextUrl;
 
-  if (pathname === ROLE_SYNC_PATH) {
+  if (pathname === ROLE_SYNC_PATH || pathname === PANEL_STREAM_PATH) {
     const response = NextResponse.next();
     applySecurityHeaders(response);
     return response;

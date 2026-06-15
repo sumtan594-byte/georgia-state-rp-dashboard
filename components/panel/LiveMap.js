@@ -39,30 +39,45 @@ function parseName(raw) {
   return { name: raw.slice(0, ci), id: raw.slice(ci + 1) };
 }
 
-const AVATAR_FALLBACK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48'%3E%3Ccircle cx='24' cy='24' r='24' fill='%23333'/%3E%3Ccircle cx='24' cy='18' r='7' fill='%23666'/%3E%3Cellipse cx='24' cy='38' rx='14' ry='9' fill='%23666'/%3E%3C/svg%3E";
+function escapeHtml(value) {
+  return String(value || '').replace(/[&<>"']/g, ch => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  }[ch]));
+}
 
-function avatarIcon(rbxId, team, selected) {
+function initialsFor(name) {
+  return String(name || '?')
+    .split(/[\s_]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map(part => part[0])
+    .join('')
+    .toUpperCase() || '?';
+}
+
+function avatarIcon(name, team, selected, locked) {
   const border = TEAM_BORDER[team] || TEAM_BORDER.Civilian;
   const size = selected ? 48 : 40;
+  const inner = Math.max(20, size - 14);
   return L.divIcon({
-    html: `<img src="/api/panel/avatar?id=${rbxId}"
-      onerror="this.src='${AVATAR_FALLBACK}'"
-      style="width:${size}px;height:${size}px;border-radius:50%;border:3px solid ${border};
-      box-shadow:${selected ? `0 0 14px ${border}` : '0 2px 8px rgba(0,0,0,0.6)'};
-      object-fit:cover;" alt="" loading="lazy" crossorigin="anonymous" />`,
-    className: '',
+    html: `<div class="gsrp-map-blip${selected ? ' is-selected' : ''}${locked ? ' is-locked' : ''}" style="--team:${border};width:${size}px;height:${size}px;">
+      <div class="gsrp-map-blip-inner" style="width:${inner}px;height:${inner}px;">${escapeHtml(initialsFor(name))}</div>
+    </div>`,
+    className: 'gsrp-map-marker',
     iconSize: [size, size],
     iconAnchor: [size / 2, size / 2],
   });
 }
 
-function rpPinIcon(rbxId, color) {
-  const avatarUrl = rbxId ? `/api/panel/avatar?id=${rbxId}` : '';
+function rpPinIcon(color) {
   return L.divIcon({
     html: `<div style="position:relative;width:36px;height:46px;">
       <div style="width:36px;height:36px;border-radius:50% 50% 50% 0;background:${color};transform:rotate(-45deg);border:2px solid rgba(255,255,255,0.3);box-shadow:0 4px 12px rgba(0,0,0,0.5);position:absolute;top:0;left:0;"></div>
-      ${rbxId ? `<img src="${avatarUrl}" onerror="this.src='${AVATAR_FALLBACK}'"
-        style="width:24px;height:24px;border-radius:50%;position:absolute;top:6px;left:6px;object-fit:cover;pointer-events:none;" />` : ''}
+      <div style="width:16px;height:16px;border-radius:50%;position:absolute;top:10px;left:10px;background:rgba(255,255,255,0.86);box-shadow:inset 0 0 0 4px rgba(0,0,0,0.18);pointer-events:none;"></div>
     </div>`,
     className: '',
     iconSize: [36, 46],
@@ -259,12 +274,11 @@ export default function LiveMap({
         mkr.off('mousedown');
         if (playerSelectModeRef.current) {
           mkr.on('click', () => onPlayerSelected?.({
-            name, id, avatarUrl: `/api/panel/avatar?id=${id}`,
+            name, id, avatarUrl: p.AvatarUrl || '',
           }));
-        } else if (isNkz) {
-          mkr.on('mousedown', e => startDrag(e, id));
         } else {
           mkr.on('click', () => onSelectPlayer(p));
+          if (isNkz) mkr.on('mousedown', e => startDrag(e, id));
         }
       };
 
@@ -273,19 +287,17 @@ export default function LiveMap({
         const wasSelected = mkr._lastSelected;
         const nowSelected = isSelected || isLocked;
         if (wasSelected !== nowSelected) {
-          mkr.setIcon(avatarIcon(id, p.Team, nowSelected));
+          mkr.setIcon(avatarIcon(name, p.Team, nowSelected, isLocked));
           mkr._lastSelected = nowSelected;
         }
         mkr.setTooltipContent(name + (isLocked ? ' 🔒' : ''));
         const el = mkr.getElement();
         if (el) {
           el.style.display = '';
-          el.style.outline = isLocked ? '3px solid #F97316' : '';
-          el.style.borderRadius = '50%';
         }
         buildClickHandler(mkr);
       } else {
-        const mkr = L.marker([py, px], { icon: avatarIcon(id, p.Team, isSelected) })
+        const mkr = L.marker([py, px], { icon: avatarIcon(name, p.Team, isSelected || isLocked, isLocked) })
           .addTo(map)
           .bindTooltip(name, {
             direction: 'top', offset: [0, -26],
@@ -345,7 +357,7 @@ export default function LiveMap({
     for (const rp of roleplays) {
       if (!rp.active || rp.pinX == null || rp.pinY == null) continue;
       const color = RP_TYPE_COLORS[rp.roleplayType] || RP_TYPE_COLORS.default;
-      const icon = rpPinIcon(rp.robloxUserId, color);
+      const icon = rpPinIcon(color);
       const msLeft = new Date(rp.expiresAt) - Date.now();
       const timeStr = msLeft > 0
         ? `${Math.floor(msLeft / 60000)}m ${Math.floor((msLeft % 60000) / 1000)}s left`
