@@ -4,6 +4,7 @@ import { ROLES, isAdmin } from '../../../../lib/auth';
 import { requireAccess } from '../../../../lib/access-check';
 import { sendComponentsV2 } from '../../../../lib/discord-v2';
 import { addPanelPlayerOffence } from '../../../../lib/sessions-offences-db';
+import { enqueueErlcCommand, getErlcCommandQueueState } from '../../../../lib/erlc-command-queue';
 
 const NKZ_ROLE_ID = '1372468936867708988';
 const BAN_ROLE_IDS = ['1372479843677245520', '1372491512100950068'];
@@ -12,7 +13,6 @@ const MODERATION_LOG_CHANNEL = '1491721430876815400';
 const BOLO_CHANNEL = '1516048196944658432';
 const BOLO_PING = '1372479843677245520';
 
-const ERLC_API = 'https://api.erlc.gg';
 const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 const ROBLOX_USERNAME_RE = /^[A-Za-z0-9_]{3,20}$/;
 
@@ -34,12 +34,7 @@ function cleanDiscordText(value, fallback = 'Unknown') {
 
 async function sendErlcCommand(command) {
   const ERLC_KEY = process.env.ERLC_API_KEY;
-  const res = await fetch(`${ERLC_API}/v2/server/command`, {
-    method: 'POST',
-    headers: { 'server-key': ERLC_KEY, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ command }),
-  });
-  return res;
+  return enqueueErlcCommand(command, ERLC_KEY);
 }
 
 function staffDisplayName(session) {
@@ -141,6 +136,14 @@ export default async function handler(req, res) {
   const canBan = BAN_ROLE_IDS.some(r => sessionRoles.includes(r)) || isAdmin(session);
   const canBolo = sessionRoles.includes(BOLO_ROLE_ID) || isAdmin(session);
   const isNkz = sessionRoles.includes(NKZ_ROLE_ID) || isAdmin(session);
+  if (!process.env.ERLC_API_KEY) {
+    return res.status(500).json({ error: 'Missing ERLC_API_KEY env var' });
+  }
+
+  const queueState = getErlcCommandQueueState();
+  if (queueState.waitMs > 0) {
+    res.setHeader('X-Queue-Wait-Ms', String(Math.round(queueState.waitMs)));
+  }
 
   try {
     switch (action) {

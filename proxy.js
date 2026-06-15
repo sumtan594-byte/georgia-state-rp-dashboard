@@ -8,7 +8,7 @@ const RATE_LIMITS = [
   { pattern: /^\/api\/callback$/, key: 'oauth-callback', max: 20, windowMs: 5 * WINDOW_MS },
   { pattern: /^\/api\/verify\/forward$/, key: 'verify-forward', max: 10, windowMs: WINDOW_MS },
   { pattern: /^\/api\/webhooks\//, key: 'webhook', max: 120, windowMs: WINDOW_MS },
-  { pattern: /^\/api\/panel\/(command|modactions)/, key: 'panel-action', max: 8, windowMs: WINDOW_MS },
+  { pattern: /^\/api\/panel\/(command|modactions)/, key: 'panel-action', max: 120, windowMs: WINDOW_MS },
   { pattern: /^\/api\/applications\/submit$/, key: 'application-submit', max: 5, windowMs: 5 * WINDOW_MS },
   { pattern: /^\/api\/training\/.+\/submit$|^\/api\/training\/submit$/, key: 'training-submit', max: 5, windowMs: 5 * WINDOW_MS },
   { pattern: /^\/api\/tracking\/log$/, key: 'tracking-log', max: 20, windowMs: WINDOW_MS },
