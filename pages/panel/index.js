@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {
-  Loader2, Radio, Users, AlertTriangle, WifiOff, ArrowLeft, X, Clock,
+  Loader2, Radio, Users, AlertTriangle, WifiOff, ArrowLeft, X, Clock, Server, MapPinned, Shield,
 } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
 import PanelLayout from '../../components/panel/PanelLayout';
@@ -35,6 +35,7 @@ export default function PanelPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [rateLimitUntil, setRateLimitUntil] = useState(null);
+  const [loadStartedAt] = useState(() => Date.now());
   const hasConnected = useRef(false);
   const [replay, setReplay] = useState(null);
   const [replayLoading, setReplayLoading] = useState(false);
@@ -198,6 +199,14 @@ export default function PanelPage() {
     : [];
   const poll = data?._poll || null;
   const nextPollMs = poll?.nextPollAt ? Math.max(0, poll.nextPollAt - nowMs) : null;
+  const initialLoadMs = nowMs - loadStartedAt;
+  const initialLoadProgress = getInitialLoadProgress({
+    status,
+    hasRefreshed,
+    hasData: !!data,
+    hasError: !!error,
+    elapsedMs: initialLoadMs,
+  });
 
   /* ── Loading / auth states ───────────────────────────────────────────── */
   if (status === 'loading' || !hasRefreshed) {
@@ -287,9 +296,7 @@ export default function PanelPage() {
       )}
 
       {loading && !data && (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
-        </div>
+        <PanelLoadingState progress={initialLoadProgress} elapsedMs={initialLoadMs} />
       )}
 
       {data && (
@@ -367,6 +374,63 @@ export default function PanelPage() {
           commandBar={isNkz ? <CommandBar onSendCommand={handleSendCommand} recentCommands={recentCommands} /> : null}
         />
       )}
+    </div>
+  );
+}
+
+function getInitialLoadProgress({ status, hasRefreshed, hasData, hasError, elapsedMs }) {
+  if (hasError) {
+    return { percent: 100, title: 'Connection interrupted', detail: 'Waiting for the live stream to reconnect', icon: WifiOff };
+  }
+  if (hasData) {
+    return { percent: 100, title: 'Live map ready', detail: 'Rendering players and patrol data', icon: Radio };
+  }
+  if (status === 'loading' || !hasRefreshed) {
+    return { percent: 18, title: 'Checking access', detail: 'Refreshing Discord roles and panel permissions', icon: Shield };
+  }
+  if (elapsedMs < 1800) {
+    return { percent: 38, title: 'Opening live stream', detail: 'Connecting to the shared server-side feed', icon: Radio };
+  }
+  if (elapsedMs < 5500) {
+    return { percent: 62, title: 'Fetching server frame', detail: 'Waiting for the next ER:LC rate-limit-safe poll', icon: Server };
+  }
+  if (elapsedMs < 12000) {
+    return { percent: 82, title: 'Hydrating map data', detail: 'Loading players, avatars, vehicles, and logs', icon: MapPinned };
+  }
+  return { percent: 92, title: 'Still connected', detail: 'The API is slow right now; staying queued instead of spamming requests', icon: Clock };
+}
+
+function PanelLoadingState({ progress, elapsedMs }) {
+  const Icon = progress.icon || Loader2;
+  return (
+    <div className="gsrp-panel-loading flex-1 flex items-center justify-center px-4">
+      <div className="gsrp-panel-loading-card">
+        <div className="gsrp-panel-loading-orbit">
+          <div className="gsrp-panel-loading-ring" />
+          <Icon size={28} className="relative z-10 text-gsrp-orange" />
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="mb-3 flex items-center justify-between gap-4">
+            <div>
+              <p className="text-sm font-black uppercase tracking-[0.18em] text-white/75">{progress.title}</p>
+              <p className="mt-1 text-xs font-semibold text-white/35">{progress.detail}</p>
+            </div>
+            <span className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-2.5 py-1 text-[10px] font-black text-white/45">
+              {Math.floor(elapsedMs / 1000)}s
+            </span>
+          </div>
+          <div className="gsrp-panel-loading-track">
+            <div className="gsrp-panel-loading-fill" style={{ width: `${progress.percent}%` }} />
+          </div>
+          <div className="mt-3 grid grid-cols-4 gap-2">
+            {['Auth', 'Stream', 'Poll', 'Render'].map((step, index) => (
+              <div key={step} className={`gsrp-panel-loading-step ${progress.percent >= (index + 1) * 22 ? 'is-active' : ''}`}>
+                {step}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

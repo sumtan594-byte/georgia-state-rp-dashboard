@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth-options';
 import { ROLES, isAdmin } from '../../../../lib/auth';
-import { requireAccess } from '../../../../lib/access-check';
+import { requireAccess, requireAnyAccess } from '../../../../lib/access-check';
 import { sendComponentsV2 } from '../../../../lib/discord-v2';
 import { addPanelPlayerOffence } from '../../../../lib/sessions-offences-db';
 import { enqueueErlcCommand, getErlcCommandQueueState } from '../../../../lib/erlc-command-queue';
@@ -132,10 +132,9 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Reason required' });
   }
 
-  const sessionRoles = session.user?.roles || [];
-  const canBan = BAN_ROLE_IDS.some(r => sessionRoles.includes(r)) || isAdmin(session);
-  const canBolo = sessionRoles.includes(BOLO_ROLE_ID) || isAdmin(session);
-  const isNkz = sessionRoles.includes(NKZ_ROLE_ID) || isAdmin(session);
+  const canBan = isAdmin(session) || (await requireAnyAccess(session, BAN_ROLE_IDS)).allowed;
+  const canBolo = isAdmin(session) || (await requireAccess(session, BOLO_ROLE_ID)).allowed;
+  const isNkz = isAdmin(session) || (await requireAccess(session, NKZ_ROLE_ID)).allowed;
   if (!process.env.ERLC_API_KEY) {
     return res.status(500).json({ error: 'Missing ERLC_API_KEY env var' });
   }

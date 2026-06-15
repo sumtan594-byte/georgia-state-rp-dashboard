@@ -194,13 +194,24 @@ export async function refreshFromErlc(cache, key) {
       throw err;
     }
 
-    const data = await hydratePlayerAvatars(cache, await response.json());
+    const data = await response.json();
     const mapEvents = await recordPanelFrame(cache, data);
     if (mapEvents.length > 0) data.MapEvents = mapEvents;
     cache.data = data;
     cache.fetchedAt = Date.now();
     updateRateLimit(cache, response);
     broadcastToSubscribers(data);
+    hydratePlayerAvatars(cache, {
+      ...data,
+      Players: Array.isArray(data.Players) ? data.Players.map(player => ({ ...player })) : [],
+    }).then(hydrated => {
+      if (!Array.isArray(hydrated?.Players) || hydrated.Players.length === 0) return;
+      cache.data = {
+        ...cache.data,
+        Players: hydrated.Players,
+      };
+      broadcastToSubscribers(cache.data);
+    }).catch(() => {});
     return data;
   })();
 
