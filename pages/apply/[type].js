@@ -19,7 +19,43 @@ import {
 import LoginScreen from '../../components/auth/LoginScreen';
 import { hasRole } from '../../lib/auth';
 
-const QuestionLabel = ({ children, required = true, subtitle, sentences = 0 }) => (
+function countWords(value) {
+  return String(value || '').trim().split(/\s+/).filter(Boolean).length;
+}
+
+function getMinimumWords(field) {
+  const minimumWords = parseInt(field?.minimumWords, 10);
+  return Number.isFinite(minimumWords) && minimumWords > 0 ? minimumWords : 0;
+}
+
+function getFieldValidationError(field, answers) {
+  if (!field.required) return '';
+  const val = answers[field.id];
+  const isEmpty = Array.isArray(val) ? val.length === 0 : val === undefined || val === null || val === '';
+  if (isEmpty) return 'This field is required';
+
+  if ((field.type === 'textarea' || field.type === 'text') && getMinimumWords(field) > 0 && countWords(val) < getMinimumWords(field)) {
+    return 'You have not wrote enough';
+  }
+
+  if (field.type === 'textarea' && field.sentences > 0) {
+    const sentences = String(val || '').split(/[.!?]+/).filter(s => s.trim().length > 2);
+    if (sentences.length < field.sentences) return 'You have not wrote enough';
+  }
+
+  return '';
+}
+
+function validateFields(fields, answers) {
+  const errors = {};
+  for (const field of fields) {
+    const error = getFieldValidationError(field, answers);
+    if (error) errors[field.id] = error;
+  }
+  return errors;
+}
+
+const QuestionLabel = ({ children, required = true, subtitle, sentences = 0, minimumWords = 0 }) => (
   <label className="block mb-3">
     <div className="flex justify-between items-center">
       <span className="text-sm font-black uppercase tracking-widest text-white/90 ml-1">
@@ -31,49 +67,67 @@ const QuestionLabel = ({ children, required = true, subtitle, sentences = 0 }) =
     </div>
     {subtitle && <p className="text-xs text-gsrp-teal-light/70 ml-1 mt-1 font-medium">{subtitle}</p>}
     {sentences > 0 && <p className="text-[10px] text-gsrp-orange ml-1 mt-0.5 font-black uppercase tracking-widest">({sentences} Sentences Required)</p>}
+    {minimumWords > 0 && <p className="text-[10px] text-gsrp-orange ml-1 mt-0.5 font-black uppercase tracking-widest">({minimumWords} Words Required)</p>}
   </label>
 );
 
-const TextArea = ({ name, placeholder, trackEvent, value, onChange, error }) => (
-  <textarea 
-    name={name}
-    required 
-    rows={5}
-    value={value}
-    onChange={onChange}
-    onKeyDown={(e) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      trackEvent(name, 'keystroke', e.key);
-    }}
-    onPaste={(e) => {
-      const text = e.clipboardData.getData('text');
-      trackEvent(name, 'paste', text);
-    }}
-    onContextMenu={(e) => trackEvent(name, 'contextmenu', { x: e.clientX, y: e.clientY })}
-    placeholder={placeholder}
-    className={`w-full bg-gsrp-dark-surface border rounded-2xl px-5 py-4 text-white focus:border-gsrp-orange focus:outline-none transition-all font-medium resize-none mb-8 text-base placeholder:text-white/10 shadow-inner ${error ? 'border-red-500' : 'border-gsrp-dark-border'}`}
-  />
+const WordCounter = ({ value, minimumWords = 0 }) => {
+  if (!minimumWords) return null;
+  const words = countWords(value);
+  const complete = words >= minimumWords;
+  return (
+    <div className={`-mt-6 mb-6 ml-2 text-[10px] font-black uppercase tracking-widest ${complete ? 'text-gsrp-teal' : 'text-gsrp-orange'}`}>
+      {words} / {minimumWords} words
+    </div>
+  );
+};
+
+const TextArea = ({ name, placeholder, trackEvent, value, onChange, error, minimumWords = 0 }) => (
+  <>
+    <textarea 
+      name={name}
+      required 
+      rows={5}
+      value={value}
+      onChange={onChange}
+      onKeyDown={(e) => {
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        trackEvent(name, 'keystroke', e.key);
+      }}
+      onPaste={(e) => {
+        const text = e.clipboardData.getData('text');
+        trackEvent(name, 'paste', text);
+      }}
+      onContextMenu={(e) => trackEvent(name, 'contextmenu', { x: e.clientX, y: e.clientY })}
+      placeholder={placeholder}
+      className={`w-full bg-gsrp-dark-surface border rounded-2xl px-5 py-4 text-white focus:border-gsrp-orange focus:outline-none transition-all font-medium resize-none mb-8 text-base placeholder:text-white/10 shadow-inner ${error ? 'border-red-500' : 'border-gsrp-dark-border'}`}
+    />
+    <WordCounter value={value} minimumWords={minimumWords} />
+  </>
 );
 
-const Input = ({ name, type = "text", placeholder, trackEvent, required = true, value, onChange, error }) => (
-  <input 
-    name={name}
-    type={type}
-    required={required}
-    value={value}
-    onChange={onChange}
-    onKeyDown={(e) => {
-      if (e.ctrlKey || e.metaKey || e.altKey) return;
-      trackEvent(name, 'keystroke', e.key);
-    }}
-    onPaste={(e) => {
-      const text = e.clipboardData.getData('text');
-      trackEvent(name, 'paste', text);
-    }}
-    onContextMenu={(e) => trackEvent(name, 'contextmenu', { x: e.clientX, y: e.clientY })}
-    placeholder={placeholder}
-    className={`w-full bg-gsrp-dark-surface border rounded-2xl px-5 py-4 text-white focus:border-gsrp-orange focus:outline-none transition-all font-medium mb-8 text-base placeholder:text-white/10 shadow-inner ${error ? 'border-red-500' : 'border-gsrp-dark-border'}`}
-  />
+const Input = ({ name, type = "text", placeholder, trackEvent, required = true, value, onChange, error, minimumWords = 0 }) => (
+  <>
+    <input 
+      name={name}
+      type={type}
+      required={required}
+      value={value}
+      onChange={onChange}
+      onKeyDown={(e) => {
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        trackEvent(name, 'keystroke', e.key);
+      }}
+      onPaste={(e) => {
+        const text = e.clipboardData.getData('text');
+        trackEvent(name, 'paste', text);
+      }}
+      onContextMenu={(e) => trackEvent(name, 'contextmenu', { x: e.clientX, y: e.clientY })}
+      placeholder={placeholder}
+      className={`w-full bg-gsrp-dark-surface border rounded-2xl px-5 py-4 text-white focus:border-gsrp-orange focus:outline-none transition-all font-medium mb-8 text-base placeholder:text-white/10 shadow-inner ${error ? 'border-red-500' : 'border-gsrp-dark-border'}`}
+    />
+    <WordCounter value={value} minimumWords={minimumWords} />
+  </>
 );
 
 const RadioGroup = ({ name, options = ['Yes', 'No'], value, onChange }) => (
@@ -204,36 +258,6 @@ function clearDraft(userId, typeSlug) {
   } catch (e) {
     console.error('[Draft] clearDraft error:', e);
   }
-}
-
-function validateRequiredFields(fields, answers) {
-  const missing = [];
-  for (const field of fields) {
-    if (!field.required) continue;
-    const val = answers[field.id];
-    if (val === undefined || val === null || val === '') {
-      missing.push(field.id);
-    }
-    if (field.type === 'textarea' && field.sentences > 0) {
-      const sentences = String(val || '').split(/[.!?]+/).filter(s => s.trim().length > 2);
-      if (sentences.length < field.sentences) {
-        missing.push(field.id);
-      }
-    }
-  }
-  return missing;
-}
-
-function validateStepFields(fields, answers) {
-  const missing = [];
-  for (const field of fields) {
-    if (!field.required) continue;
-    const val = answers[field.id];
-    if (val === undefined || val === null || val === '') {
-      missing.push(field.id);
-    }
-  }
-  return missing;
 }
 
 function fetchWithTimeout(url, options, timeoutMs = 30000) {
@@ -678,13 +702,9 @@ export default function DynamicApplyPage() {
     }
     const currentFields = fieldChunks[step - 1] || [];
     const currentAnswers = answersRef.current;
-    const missing = validateStepFields(currentFields, currentAnswers);
-    if (missing.length > 0) {
-      setValidationErrors(prev => {
-        const next = { ...prev };
-        missing.forEach(id => { next[id] = 'This field is required'; });
-        return next;
-      });
+    const errors = validateFields(currentFields, currentAnswers);
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(prev => ({ ...prev, ...errors }));
       return;
     }
     setValidationErrors({});
@@ -695,7 +715,8 @@ export default function DynamicApplyPage() {
     setError(null);
     console.log('[Application] Submit started');
 
-    const missing = validateRequiredFields(appType.fields, answersRef.current);
+    const fieldErrors = validateFields(appType.fields, answersRef.current);
+    const missing = Object.keys(fieldErrors);
     if (missing.length > 0) {
       const fieldLabels = missing.map(id => {
         const f = appType.fields.find(x => x.id === id);
@@ -713,7 +734,7 @@ export default function DynamicApplyPage() {
       }
       setValidationErrors(prev => {
         const next = { ...prev };
-        missing.forEach(id => { next[id] = 'This field is required'; });
+        missing.forEach(id => { next[id] = fieldErrors[id]; });
         return next;
       });
       return;
@@ -921,7 +942,7 @@ export default function DynamicApplyPage() {
         <div className="space-y-2 animate-fade-in-right">
           {currentFields.map((field) => (
             <div key={field.id}>
-              <QuestionLabel subtitle={field.subtitle} required={field.required} sentences={field.sentences}>
+              <QuestionLabel subtitle={field.subtitle} required={field.required} sentences={field.sentences} minimumWords={getMinimumWords(field)}>
                 {field.label}
               </QuestionLabel>
               
@@ -930,6 +951,7 @@ export default function DynamicApplyPage() {
                   name={field.id} 
                   value={answers[field.id] || ''} 
                   trackEvent={trackEvent}
+                  minimumWords={getMinimumWords(field)}
                   onChange={(e) => {
                     const val = e.target.value;
                     answersRef.current = { ...answersRef.current, [field.id]: val };
@@ -996,6 +1018,7 @@ export default function DynamicApplyPage() {
                   required={field.required}
                   value={answers[field.id] || ''} 
                   trackEvent={trackEvent}
+                  minimumWords={getMinimumWords(field)}
                   onChange={(e) => {
                     const val = e.target.value;
                     answersRef.current = { ...answersRef.current, [field.id]: val };

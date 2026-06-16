@@ -76,6 +76,8 @@ export default async function handler(req, res) {
       },
       { upsert: true }
     );
+    typesCache.data = null;
+    typesCache.ts = 0;
     console.log('[Application Types] POST:', name, 'saved (upserted:', !!result.upsertedId, ')');
     return res.status(200).json({ success: true, id: result.upsertedId || slug });
   }
@@ -83,6 +85,8 @@ export default async function handler(req, res) {
   if (req.method === 'DELETE') {
     const { slug } = req.query;
     await db.collection("application_types").deleteOne({ slug });
+    typesCache.data = null;
+    typesCache.ts = 0;
     return res.status(200).json({ success: true });
   }
 

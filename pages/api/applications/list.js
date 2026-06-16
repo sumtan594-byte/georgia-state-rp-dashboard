@@ -58,6 +58,7 @@ export default async function handler(req, res) {
       userImage: a.user_image,
       status: a.status,
       type: a.type,
+      typeName: a.type_name,
       submittedAt: a.submitted_at,
     }));
 

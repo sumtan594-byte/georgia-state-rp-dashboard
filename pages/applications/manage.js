@@ -245,7 +245,7 @@ export default function ManageApplicationTypes() {
   const addField = () => {
     setForm({
       ...form,
-      fields: [...form.fields, { id: Date.now().toString(), label: '', type: 'text', subtitle: '', sentences: 0, required: true }]
+      fields: [...form.fields, { id: Date.now().toString(), label: '', type: 'text', subtitle: '', sentences: 0, minimumWords: 0, required: true }]
     });
   };
 
@@ -488,6 +488,19 @@ export default function ManageApplicationTypes() {
                         onChange={e => updateField(field.id, { options: e.target.value.split(',').map(s => s.trim()).filter(Boolean) })}
                         placeholder="Option 1, Option 2, Option 3"
                         className="w-full bg-gsrp-dark-surface border border-white/5 rounded-lg px-3 py-2 text-white text-sm"
+                      />
+                    </div>
+                  )}
+
+                  {(field.type === 'text' || field.type === 'textarea') && (
+                    <div>
+                      <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Minimum Words</label>
+                      <input
+                        type="number"
+                        min="0"
+                        value={field.minimumWords || 0}
+                        onChange={e => updateField(field.id, { minimumWords: Math.max(0, parseInt(e.target.value, 10) || 0) })}
+                        className="w-24 bg-gsrp-dark-surface border border-white/5 rounded-lg px-3 py-2 text-white text-sm"
                       />
                     </div>
                   )}

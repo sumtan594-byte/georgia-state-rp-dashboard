@@ -86,6 +86,7 @@ export default async function handler(req, res) {
     const appName = application.typeName || 'Staff Application';
 
     const outcomeEmbed = {
+      allowed_mentions: { parse: [] },
       components: [
         {
           type: 17,
@@ -126,6 +127,7 @@ export default async function handler(req, res) {
     // 3. Log to channel
     const logChannel = "1389202990555988071";
     await sendComponentsV2(logChannel, {
+      allowed_mentions: { parse: [] },
       components: [
         {
           type: 17,

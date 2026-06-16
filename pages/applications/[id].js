@@ -339,6 +339,7 @@ export default function ApplicationDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [appType, setAppType] = useState(null);
+  const [pendingApplications, setPendingApplications] = useState([]);
 
   
   const [showReasonModal, setShowReasonModal] = useState(false);
@@ -426,6 +427,17 @@ export default function ApplicationDetail() {
         });
     }
   }, [id, session]);
+
+  useEffect(() => {
+    if (!session || !canReviewApplications(effectiveSession)) return;
+    fetch('/api/applications/list?limit=100')
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        const apps = Array.isArray(data?.applications) ? data.applications : [];
+        setPendingApplications(apps.filter(app => app.status === 'pending'));
+      })
+      .catch(err => console.error('[Review Page] Pending list failed:', err));
+  }, [id, session, effectiveSession]);
 
   const handleDecision = async () => {
     if (!reason.trim()) return;
@@ -709,6 +721,46 @@ export default function ApplicationDetail() {
 
         <div className="space-y-6">
           <IntegrityScoreCard application={application} />
+
+          {application.status === 'pending' && (
+            <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-6">
+              <h3 className="text-white font-black text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+                <Clock size={14} className="text-gsrp-orange" />
+                Other Pending
+              </h3>
+              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+                {pendingApplications.filter(app => app._id !== application._id).length > 0 ? (
+                  pendingApplications
+                    .filter(app => app._id !== application._id)
+                    .map(app => (
+                      <Link
+                        key={app._id}
+                        href={`/applications/${app._id}`}
+                        className="block rounded-xl border border-white/5 bg-gsrp-dark-surface/40 px-3 py-3 hover:border-gsrp-orange/40 hover:bg-gsrp-dark-surface transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          {app.userImage ? (
+                            <img src={app.userImage} alt="" className="w-8 h-8 rounded-full object-cover border border-white/10" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gsrp-dark-card border border-white/10 flex items-center justify-center text-white/70 text-xs font-black">
+                              {(app.username || '?').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0">
+                            <p className="text-white text-xs font-black truncate">{app.username}</p>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/30 truncate">
+                              {app.typeName || app.type || 'Application'}
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))
+                ) : (
+                  <p className="text-gsrp-teal-light/30 text-xs font-medium">No other pending applications.</p>
+                )}
+              </div>
+            </div>
+          )}
 
           <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-6 sticky top-6">
             <h3 className="text-white font-black text-xs uppercase tracking-widest mb-6 flex items-center gap-2">
