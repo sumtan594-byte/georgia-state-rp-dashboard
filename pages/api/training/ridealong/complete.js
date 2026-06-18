@@ -47,17 +47,22 @@ export default async function handler(req, res) {
 
   try {
     for (const roleId of RIDEALONG_ROLES) {
-      await addMemberRole(guildId, userId, roleId)
+      const added = await addMemberRole(guildId, userId, roleId)
+      if (!added) throw new Error(`Failed to add role ${roleId}`)
     }
 
     const member = await getGuildMember(guildId, userId)
+    if (!member) throw new Error('Failed to fetch updated guild member')
+
     currentNick = member?.nick || member?.user?.global_name || member?.user?.username || currentNick
 
-    await modifyGuildMember(guildId, userId, {
+    const modifiedMember = await modifyGuildMember(guildId, userId, {
       nick: `${RIDEALONG_NICKNAME_PREFIX}${currentNick}`,
     })
+    if (!modifiedMember) throw new Error('Failed to update nickname')
 
-    await removeMemberRole(guildId, userId, TRAINEE_ROLE_ID)
+    const removedTraineeRole = await removeMemberRole(guildId, userId, TRAINEE_ROLE_ID)
+    if (!removedTraineeRole) throw new Error('Failed to remove trainee role')
 
     await attemptsCollection.updateOne(
       { userId },
