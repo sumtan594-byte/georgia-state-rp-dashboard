@@ -249,9 +249,12 @@ export default function RidealongPage() {
   }, [])
 
   const handlePendingCompletionDone = useCallback(() => {
-    setPendingRidealongCompletion(false)
-    setRidealongPassed(true)
-  }, [])
+    router.replace('/')
+  }, [router])
+
+  const handleRidealongComplete = useCallback(() => {
+    router.replace('/')
+  }, [router])
 
   if (status === 'loading' || checkingAccess || !hasRefreshed) {
     return (
@@ -394,6 +397,7 @@ export default function RidealongPage() {
           onSaveProgress={handleSaveProgress}
           onClearProgress={handleClearProgress}
           onCompleteRidealong={handleCompleteRidealong}
+          onRidealongComplete={handleRidealongComplete}
           robloxUsername={robloxUsername}
           discordDisplayName={effectiveSession.user.name}
           canSkipQuestions={canSkipRidealongQuestions}

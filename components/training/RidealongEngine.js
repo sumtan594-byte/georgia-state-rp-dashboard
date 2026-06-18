@@ -39,6 +39,7 @@ export default function RidealongEngine({
   onSaveProgress,
   onClearProgress,
   onCompleteRidealong,
+  onRidealongComplete,
   robloxUsername: propRobloxUsername,
   discordDisplayName: propDiscordDisplayName,
   canSkipQuestions = false,
@@ -315,9 +316,13 @@ export default function RidealongEngine({
 
 
   const handleOrientationComplete = useCallback(() => {
+    if (onRidealongComplete) {
+      onRidealongComplete()
+      return
+    }
     setOrientationStep(null)
     setShowResults(true)
-  }, [])
+  }, [onRidealongComplete])
 
   const moveToQuestion = useCallback((nextQ) => {
     setCurrentQ(nextQ)
