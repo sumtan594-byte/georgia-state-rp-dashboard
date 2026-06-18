@@ -38,6 +38,7 @@ export default function RidealongEngine({
   user,
   onSaveProgress,
   onClearProgress,
+  onCompleteRidealong,
   robloxUsername: propRobloxUsername,
   discordDisplayName: propDiscordDisplayName,
   canSkipQuestions = false,
@@ -688,6 +689,7 @@ export default function RidealongEngine({
         robloxUsername={robloxUsername}
         discordDisplayName={discordDisplayName}
         submitResolved={submitResolved}
+        onApplyRoles={onCompleteRidealong}
         onComplete={handleOrientationComplete}
       />
     )

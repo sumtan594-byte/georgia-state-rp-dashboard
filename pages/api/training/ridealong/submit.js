@@ -2,8 +2,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '../../../../lib/auth-options'
 import clientPromise from '../../../../lib/mongodb'
 import { rateLimit } from '../../../../lib/rate-limiter'
-import { RIDEALONG_CONFIG, RIDEALONG_ROLES, RIDEALONG_NICKNAME_PREFIX } from '../../../../lib/ridealong-config'
-import { getGuildMember, addMemberRole, removeMemberRole, modifyGuildMember } from '../../../../lib/discord-v2'
+import { RIDEALONG_CONFIG } from '../../../../lib/ridealong-config'
 async function sendRidealongWebhook({ webhookUrl, userId, username, score, total, pct, pass, results, discordRolesApplied, currentNick, timestamp }) {
   const passFail = pass ? 'PASSED' : 'FAILED'
   const accentColor = pass ? 0x22c55e : 0xef4444
@@ -51,8 +50,9 @@ async function sendRidealongWebhook({ webhookUrl, userId, username, score, total
           ...(pass ? [{
             name: 'Discord Actions',
             value: [
-              `**Roles Updated:** ${discordRolesApplied ? 'Yes' : 'No'}`,
-              `**Nickname Set:** ${discordRolesApplied ? `JM | ${currentNick}` : 'No'}`,
+              discordRolesApplied
+                ? `**Roles Updated:** Yes\n**Nickname Set:** JM | ${currentNick}`
+                : '**Pending:** Awaiting final orientation confirmation',
             ].join('\n'),
             inline: false,
           }] : []),
@@ -90,7 +90,6 @@ export default async function handler(req, res) {
     return res.status(429).json({ error: 'Rate limited', retryAfter: rl.retryAfter })
   }
 
-  const DISCORD_GUILD_ID = process.env.ALLOWED_GUILD_ID
   const WEBHOOK_URL = process.env.TRAINING_WEBHOOK_URL
 
   let body
@@ -156,7 +155,7 @@ export default async function handler(req, res) {
   let hasPassed = false
   let hasPassedAt = null
   let discordRolesApplied = false
-  let currentNick = resolvedUsername
+  const currentNick = resolvedUsername
 
   if (!pass) {
     const cooldownMs = RIDEALONG_CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000
@@ -184,31 +183,6 @@ export default async function handler(req, res) {
     updateDoc,
     { upsert: true }
   )
-
-  if (pass) {
-    try {
-      if (DISCORD_GUILD_ID) {
-        for (const roleId of RIDEALONG_ROLES) {
-          await addMemberRole(DISCORD_GUILD_ID, userId, roleId)
-        }
-        const member = await getGuildMember(DISCORD_GUILD_ID, userId)
-        currentNick = member?.nick || member?.user?.global_name || member?.user?.username || resolvedUsername
-        await modifyGuildMember(DISCORD_GUILD_ID, userId, {
-          nick: `${RIDEALONG_NICKNAME_PREFIX}${currentNick}`,
-        })
-        await removeMemberRole(DISCORD_GUILD_ID, userId, '1372476380096237609')
-        discordRolesApplied = true
-        await attemptsCollection.updateOne(
-          { userId },
-          { $set: { discordRolesApplied: true } }
-        )
-      } else {
-        console.warn('[Ridealong] No ALLOWED_GUILD_ID configured — skipping Discord role/nickname update')
-      }
-    } catch (err) {
-      console.error('[Ridealong] Discord API error:', err.message)
-    }
-  }
 
   // Send webhook for every attempt (pass AND fail)
   try {

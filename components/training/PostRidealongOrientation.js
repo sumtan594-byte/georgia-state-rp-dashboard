@@ -100,6 +100,7 @@ export default function PostRidealongOrientation({
   robloxUsername,
   discordDisplayName,
   submitResolved,
+  onApplyRoles,
   onComplete,
 }) {
   const router = useRouter()
@@ -110,6 +111,9 @@ export default function PostRidealongOrientation({
   const [step, setStep] = useState(0)
   const [chosenGreeting, setChosenGreeting] = useState(null) // 'a'|'b'|'c'
   const [btnReady, setBtnReady] = useState(false)
+  const [applyingRoles, setApplyingRoles] = useState(false)
+  const [rolesApplied, setRolesApplied] = useState(false)
+  const [applyError, setApplyError] = useState('')
   const visible = useFadeIn(step)
 
   const username = robloxUsername || 'Moderator'
@@ -153,6 +157,23 @@ export default function PostRidealongOrientation({
     setChosenGreeting(id)
     setBtnReady(true)
   }, [])
+
+  const handleReady = useCallback(async () => {
+    if (!btnReady || !submitResolved || applyingRoles) return
+
+    setApplyingRoles(true)
+    setApplyError('')
+
+    try {
+      await onApplyRoles?.()
+      setRolesApplied(true)
+      onComplete()
+    } catch (err) {
+      setApplyError(err.message || 'Could not update your Discord roles. Please try again.')
+    } finally {
+      setApplyingRoles(false)
+    }
+  }, [applyingRoles, btnReady, onApplyRoles, onComplete, submitResolved])
 
   const chosenText = GREETINGS.find(g => g.id === chosenGreeting)?.text || ''
 
@@ -345,7 +366,7 @@ export default function PostRidealongOrientation({
         </h2>
         <p className="text-gsrp-teal-light/50 text-center mb-10">
           Make sure to ask any questions you may have in staff chat. Congratulations on completing your training.
-          Your roles have been given to you — here's what to do next.
+          When you are ready, your roles will be updated and you can begin your first shift.
         </p>
 
         <div className="space-y-6 mb-10">
@@ -402,7 +423,7 @@ export default function PostRidealongOrientation({
 
           {/* Discord status */}
           <div className="grid grid-cols-2 gap-4">
-            {submitResolved ? (
+            {rolesApplied ? (
               <>
                 <div className="bg-gsrp-teal/10 rounded-xl p-4 border border-gsrp-teal/20 text-center">
                   <Check size={18} className="text-gsrp-teal-light mx-auto mb-1" />
@@ -415,26 +436,58 @@ export default function PostRidealongOrientation({
                   <p className="text-[10px] text-gsrp-teal-light/40">Your Discord nickname has been updated</p>
                 </div>
               </>
+            ) : applyingRoles ? (
+              <>
+                <div className="bg-gsrp-dark-surface/50 rounded-xl p-4 border border-gsrp-dark-border/50 text-center">
+                  <Loader2 size={16} className="text-gsrp-orange mx-auto mb-1 animate-spin" />
+                  <p className="text-[11px] font-bold text-gsrp-teal-light/40">Assigning Roles...</p>
+                </div>
+                <div className="bg-gsrp-dark-surface/50 rounded-xl p-4 border border-gsrp-dark-border/50 text-center">
+                  <Loader2 size={16} className="text-gsrp-orange mx-auto mb-1 animate-spin" />
+                  <p className="text-[11px] font-bold text-gsrp-teal-light/40">Setting Nickname...</p>
+                </div>
+              </>
+            ) : submitResolved ? (
+              <>
+                <div className="bg-gsrp-orange/10 rounded-xl p-4 border border-gsrp-orange/20 text-center">
+                  <Shield size={16} className="text-gsrp-orange mx-auto mb-1" />
+                  <p className="text-[11px] font-bold text-gsrp-orange">Ready to Apply</p>
+                  <p className="text-[10px] text-gsrp-teal-light/40">Roles update after you confirm</p>
+                </div>
+                <div className="bg-gsrp-orange/10 rounded-xl p-4 border border-gsrp-orange/20 text-center">
+                  <Shield size={16} className="text-gsrp-orange mx-auto mb-1" />
+                  <p className="text-[11px] font-bold text-gsrp-orange">Ready to Apply</p>
+                  <p className="text-[10px] text-gsrp-teal-light/40">Nickname updates after you confirm</p>
+                </div>
+              </>
             ) : (
               <>
                 <div className="bg-gsrp-dark-surface/50 rounded-xl p-4 border border-gsrp-dark-border/50 text-center">
                   <Loader2 size={16} className="text-gsrp-orange mx-auto mb-1 animate-spin" />
-                  <p className="text-[11px] font-bold text-gsrp-teal-light/40">Assigning Roles…</p>
+                  <p className="text-[11px] font-bold text-gsrp-teal-light/40">Saving Results...</p>
                 </div>
                 <div className="bg-gsrp-dark-surface/50 rounded-xl p-4 border border-gsrp-dark-border/50 text-center">
                   <Loader2 size={16} className="text-gsrp-orange mx-auto mb-1 animate-spin" />
-                  <p className="text-[11px] font-bold text-gsrp-teal-light/40">Setting Nickname…</p>
+                  <p className="text-[11px] font-bold text-gsrp-teal-light/40">Preparing Roles...</p>
                 </div>
               </>
             )}
           </div>
+
+          {applyError && (
+            <p className="text-xs text-gsrp-sunset bg-gsrp-sunset/8 border border-gsrp-sunset/20 rounded-xl p-3 text-center">
+              {applyError}
+            </p>
+          )}
         </div>
 
         <div className="flex justify-center">
           <ActionButton
-            ready={btnReady}
-            onClick={onComplete}
-            label="Done!"
+            ready={btnReady && submitResolved}
+            busy={applyingRoles}
+            onClick={handleReady}
+            label={applyingRoles ? 'Updating...' : "I'm ready!"}
+            pendingLabel={submitResolved ? 'Please read the info above...' : 'Saving results...'}
             color="teal"
           />
         </div>
@@ -480,7 +533,7 @@ export default function PostRidealongOrientation({
 }
 
 // ─── shared CTA button ────────────────────────────────────────────────────────
-function ActionButton({ ready, onClick, label, color = 'orange' }) {
+function ActionButton({ ready, busy = false, onClick, label, pendingLabel = 'Please read the info above...', color = 'orange' }) {
   const bg =
     color === 'teal'
       ? 'bg-gsrp-teal hover:bg-gsrp-teal/90 shadow-gsrp-teal/20 hover:shadow-gsrp-teal/30'
@@ -488,10 +541,10 @@ function ActionButton({ ready, onClick, label, color = 'orange' }) {
 
   return (
     <button
-      onClick={ready ? onClick : undefined}
-      disabled={!ready}
+      onClick={ready && !busy ? onClick : undefined}
+      disabled={!ready || busy}
       className={`flex items-center gap-3 px-10 py-4 rounded-2xl text-white font-black text-base shadow-lg transition-all duration-300 ${
-        ready
+        ready && !busy
           ? `${bg} cursor-pointer`
           : 'bg-gsrp-dark-surface border border-gsrp-dark-border text-gsrp-teal-light/20 cursor-not-allowed'
       }`}
@@ -499,10 +552,10 @@ function ActionButton({ ready, onClick, label, color = 'orange' }) {
       {ready ? (
         <>
           {label}
-          <ArrowRight size={18} />
+          {busy ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} />}
         </>
       ) : (
-        <span className="text-sm">Please read the info above…</span>
+        <span className="text-sm">{pendingLabel}</span>
       )}
     </button>
   )

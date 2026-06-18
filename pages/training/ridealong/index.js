@@ -8,6 +8,7 @@ import { authOptions } from '../../../lib/auth-options'
 import { useRefreshedUser } from '../../../lib/UserRefreshContext'
 import AccessDenied from '../../../components/auth/AccessDenied'
 import RidealongEngine from '../../../components/training/RidealongEngine'
+import PostRidealongOrientation from '../../../components/training/PostRidealongOrientation'
 import { SCENARIO_BANK, generateRpLogScenario, generatePLogScenario, RIDEALONG_POOL } from '../../../lib/ridealong-scenarios'
 import { RIDEALONG_CONFIG, RIDEALONG_TESTER_ROLE_ID } from '../../../lib/ridealong-config'
 
@@ -76,6 +77,7 @@ export default function RidealongPage() {
   const [checkingAccess, setCheckingAccess] = useState(true)
   const [quizPassed, setQuizPassed] = useState(false)
   const [ridealongPassed, setRidealongPassed] = useState(false)
+  const [pendingRidealongCompletion, setPendingRidealongCompletion] = useState(false)
   const [showStart, setShowStart] = useState(false)
   const [scenarios, setScenarios] = useState([])
   const [started, setStarted] = useState(false)
@@ -101,7 +103,9 @@ export default function RidealongPage() {
         const ridealongRes = await fetch(`/api/training/ridealong/progress?userId=${effectiveSession.user.id}`)
         const ridealongData = await ridealongRes.json()
 
-        if (ridealongData.hasPassed && !started) {
+        if (ridealongData.hasPassed && !ridealongData.discordRolesApplied && !started) {
+          setPendingRidealongCompletion(true)
+        } else if (ridealongData.hasPassed && !started) {
           setRidealongPassed(true)
         } else if (ridealongData.cooldownUntil) {
           const until = new Date(ridealongData.cooldownUntil)
@@ -129,7 +133,7 @@ export default function RidealongPage() {
       }
     }
     checkAccess()
-  }, [status, hasRefreshed, effectiveSession, accessDenied])
+  }, [status, hasRefreshed, effectiveSession, accessDenied, started])
 
   useEffect(() => {
     if (!cooldownUntil) {
@@ -232,6 +236,23 @@ export default function RidealongPage() {
     } catch {}
   }, [effectiveSession])
 
+  const handleCompleteRidealong = useCallback(async () => {
+    const res = await fetch('/api/training/ridealong/complete', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to update Discord roles')
+    }
+    return data
+  }, [])
+
+  const handlePendingCompletionDone = useCallback(() => {
+    setPendingRidealongCompletion(false)
+    setRidealongPassed(true)
+  }, [])
+
   if (status === 'loading' || checkingAccess || !hasRefreshed) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -245,6 +266,18 @@ export default function RidealongPage() {
 
   if (!session) return <LoginScreen />
   if (accessDenied) return <AccessDenied roleId={accessDenied.roleId} />
+
+  if (pendingRidealongCompletion && !started) {
+    return (
+      <PostRidealongOrientation
+        robloxUsername={robloxUsername}
+        discordDisplayName={effectiveSession.user.name}
+        submitResolved={true}
+        onApplyRoles={handleCompleteRidealong}
+        onComplete={handlePendingCompletionDone}
+      />
+    )
+  }
 
   if (ridealongPassed && !started) {
     return (
@@ -360,6 +393,7 @@ export default function RidealongPage() {
           user={effectiveSession.user}
           onSaveProgress={handleSaveProgress}
           onClearProgress={handleClearProgress}
+          onCompleteRidealong={handleCompleteRidealong}
           robloxUsername={robloxUsername}
           discordDisplayName={effectiveSession.user.name}
           canSkipQuestions={canSkipRidealongQuestions}
