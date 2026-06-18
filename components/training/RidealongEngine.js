@@ -3,7 +3,7 @@ import {
   Loader2, CheckCircle2, XCircle, ArrowRight, RotateCcw, Clock,
   Shield, ChevronDown, ChevronUp, BookOpen, AlertTriangle, Camera,
   FileText, Search, X,
-  Copy, Check,
+  Copy, Check, SkipForward,
 } from 'lucide-react'
 import Link from 'next/link'
 import ModCallPopup from './ModCallPopup'
@@ -40,6 +40,7 @@ export default function RidealongEngine({
   onClearProgress,
   robloxUsername: propRobloxUsername,
   discordDisplayName: propDiscordDisplayName,
+  canSkipQuestions = false,
 }) {
   const [currentQ, setCurrentQ] = useState(0)
   const [score, setScore] = useState(0)
@@ -94,6 +95,8 @@ export default function RidealongEngine({
 
 
   const scenario = scenarios[currentQ]
+  const isRplog = scenario.type === 'rp-log'
+  const isPlog = scenario.type === 'p-log'
   const progress = ((currentQ + (answered ? 1 : 0)) / total) * 100
 
   const handleRespond = useCallback(() => {
@@ -315,55 +318,124 @@ export default function RidealongEngine({
     setShowResults(true)
   }, [])
 
+  const moveToQuestion = useCallback((nextQ) => {
+    setCurrentQ(nextQ)
+    setEvidenceViewed(false)
+    setSelectedOption(null)
+    setAnswered(false)
+    setPhase('popup')
+    setRpLogOpen(false)
+    setRpLogsViewed(false)
+    setRpDecision(null)
+    setPFormData({ offender: '', punishment: '', reason: '' })
+    setPFormUserOpen(false)
+    setPFormError('')
+    setPFormHints({ offender: false, punishment: false, reason: false })
+    setPFormAttempts({ offender: 0, punishment: 0, reason: 0 })
+    setRpLogData({ location: '', duration: '', peopleCount: '' })
+    setRpLogFormOpen(false)
+    setRpLogError('')
+    setRpLogHints({ location: false, duration: false, peopleCount: false })
+    setRpLogAttempts({ location: 0, duration: 0, peopleCount: 0 })
+    containerRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [])
+
+  const finishAttempt = useCallback((finalScore, finalResults) => {
+    const passed = finalScore >= passScore
+    setHasPassed(passed)
+    if (onClearProgress) onClearProgress()
+
+    if (!passed) {
+      setShowResults(true)
+      const cooldownMs = cooldownHours * 60 * 60 * 1000
+      setCooldownUntil(new Date(Date.now() + cooldownMs).toISOString())
+    } else {
+      setOrientationStep(0)
+    }
+
+    setSubmitting(true)
+    onSubmit({
+      score: finalScore,
+      total,
+      pct: Math.round((finalScore / total) * 100),
+      pass: passed,
+      results: finalResults,
+    }).finally(() => {
+      setSubmitting(false)
+      setSubmitResolved(true)
+    })
+  }, [passScore, onClearProgress, cooldownHours, onSubmit, total])
+
+  const handleSkipQuestion = useCallback(() => {
+    if (!canSkipQuestions || !scenario || answered) return
+
+    const correctOption = Array.isArray(scenario.options)
+      ? scenario.options.find(o => o.correct)
+      : null
+
+    const result = {
+      scenarioId: scenario.id,
+      evidenceValid: scenario.evidenceValid !== false,
+      correct: true,
+      chosenOption: 'tester-skip',
+      chosenText: 'Skipped by tester',
+      correctAnswer: isPlog
+        ? `Offender: ${scenario.offender}, Punishment: ${scenario.correctPunishment}, Reason: ${scenario.correctReason}`
+        : isRplog
+        ? (scenario.hasOngoing
+            ? 'Inform the caller that this RP is already being handled'
+            : `Logged: ${scenario.location}, ${scenario.duration}, ${scenario.peopleCount} people`)
+        : correctOption?.text || '',
+      correctCommand: isPlog ? '' : isRplog ? (scenario.hasOngoing ? 'N/A' : ';log_rp') : correctOption?.command || '',
+      explanation: scenario.explanation,
+      wrongReason: null,
+      evidenceViewed: true,
+      type: scenario.type || 'standard',
+      skippedByTester: true,
+    }
+
+    const newScore = score + 1
+    const newResults = [...results, result]
+    setScore(newScore)
+    setResults(newResults)
+    setAnswered(true)
+
+    if (onSaveProgress) {
+      onSaveProgress({
+        currentQ,
+        score: newScore,
+        results: newResults,
+        phase: 'result',
+      })
+    }
+
+    if (currentQ + 1 >= total) {
+      finishAttempt(newScore, newResults)
+    } else {
+      moveToQuestion(currentQ + 1)
+    }
+  }, [
+    canSkipQuestions,
+    scenario,
+    answered,
+    isPlog,
+    isRplog,
+    score,
+    results,
+    onSaveProgress,
+    currentQ,
+    total,
+    finishAttempt,
+    moveToQuestion,
+  ])
+
   const handleNext = useCallback(() => {
     if (currentQ + 1 >= total) {
-      const finalScore = score
-      const passed = finalScore >= passScore
-      setHasPassed(passed)
-      if (onClearProgress) onClearProgress()
-
-      if (!passed) {
-        setShowResults(true)
-        const cooldownMs = cooldownHours * 60 * 60 * 1000
-        setCooldownUntil(new Date(Date.now() + cooldownMs).toISOString())
-      } else {
-        setOrientationStep(0)
-      }
-
-      setSubmitting(true)
-      onSubmit({
-        score: finalScore,
-        total,
-        pct: Math.round((finalScore / total) * 100),
-        pass: passed,
-        results,
-      }).finally(() => {
-        setSubmitting(false)
-        setSubmitResolved(true)
-      })
+      finishAttempt(score, results)
     } else {
-      const nextQ = currentQ + 1
-      setCurrentQ(nextQ)
-      setEvidenceViewed(false)
-      setSelectedOption(null)
-      setAnswered(false)
-      setPhase('popup')
-      setRpLogOpen(false)
-      setRpLogsViewed(false)
-      setRpDecision(null)
-      setPFormData({ offender: '', punishment: '', reason: '' })
-      setPFormUserOpen(false)
-      setPFormError('')
-      setPFormHints({ offender: false, punishment: false, reason: false })
-      setPFormAttempts({ offender: 0, punishment: 0, reason: 0 })
-      setRpLogData({ location: '', duration: '', peopleCount: '' })
-      setRpLogFormOpen(false)
-      setRpLogError('')
-      setRpLogHints({ location: false, duration: false, peopleCount: false })
-      setRpLogAttempts({ location: 0, duration: 0, peopleCount: 0 })
-      containerRef.current?.scrollIntoView({ behavior: 'smooth' })
+      moveToQuestion(currentQ + 1)
     }
-  }, [currentQ, total, score, passScore, cooldownHours, onSubmit, onClearProgress, results])
+  }, [currentQ, total, score, finishAttempt, results, moveToQuestion])
 
   const handleRetry = useCallback(() => {
     setCurrentQ(0)
@@ -621,9 +693,6 @@ export default function RidealongEngine({
     )
   }
 
-  const isRplog = scenario.type === 'rp-log'
-  const isPlog = scenario.type === 'p-log'
-
   return (
     <div className="max-w-3xl mx-auto" ref={containerRef}>
       <div className="mb-6">
@@ -633,9 +702,22 @@ export default function RidealongEngine({
             {isRplog && <span className="ml-2 text-gsrp-teal-light/30">— RP Logging</span>}
             {isPlog && <span className="ml-2 text-gsrp-teal-light/30">— Punishment Logging</span>}
           </span>
-          <span className="text-xs font-bold text-gsrp-orange">
-            Score: {score}
-          </span>
+          <div className="flex items-center gap-3">
+            {canSkipQuestions && !answered && (
+              <button
+                type="button"
+                onClick={handleSkipQuestion}
+                disabled={submitting}
+                className="px-3 py-1.5 rounded-lg border border-gsrp-orange/30 bg-gsrp-orange/10 text-gsrp-orange text-[10px] font-black uppercase tracking-wider hover:bg-gsrp-orange/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+              >
+                <SkipForward size={12} />
+                Skip question
+              </button>
+            )}
+            <span className="text-xs font-bold text-gsrp-orange">
+              Score: {score}
+            </span>
+          </div>
         </div>
         <div className="h-2 bg-gsrp-dark-surface rounded-full overflow-hidden">
           <div

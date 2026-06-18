@@ -9,7 +9,7 @@ import { useRefreshedUser } from '../../../lib/UserRefreshContext'
 import AccessDenied from '../../../components/auth/AccessDenied'
 import RidealongEngine from '../../../components/training/RidealongEngine'
 import { SCENARIO_BANK, generateRpLogScenario, generatePLogScenario, RIDEALONG_POOL } from '../../../lib/ridealong-scenarios'
-import { RIDEALONG_CONFIG } from '../../../lib/ridealong-config'
+import { RIDEALONG_CONFIG, RIDEALONG_TESTER_ROLE_ID } from '../../../lib/ridealong-config'
 
 function shuffleArray(arr) {
   const a = [...arr]
@@ -86,6 +86,7 @@ export default function RidealongPage() {
   const [cooldownRemaining, setCooldownRemaining] = useState(null)
   const [revoked, setRevoked] = useState(false)
   const [robloxUsername, setRobloxUsername] = useState(null)
+  const canSkipRidealongQuestions = effectiveSession?.user?.roles?.includes(RIDEALONG_TESTER_ROLE_ID)
 
   useEffect(() => {
     if (status === 'unauthenticated') return
@@ -361,6 +362,7 @@ export default function RidealongPage() {
           onClearProgress={handleClearProgress}
           robloxUsername={robloxUsername}
           discordDisplayName={effectiveSession.user.name}
+          canSkipQuestions={canSkipRidealongQuestions}
         />
       </div>
     )
