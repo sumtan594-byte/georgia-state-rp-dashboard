@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from "../../../lib/auth-options";
-import pool from '../../../lib/ticketdb';
+import pool, { ensureTranscriptDenyTable } from '../../../lib/ticketdb';
 import { enrichUserInfo, enrichRoleInfo } from '../../../lib/discord-api';
 
 const ADMIN_REMOVER_ROLE = '1486826723210428496';
@@ -23,16 +23,7 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Database not configured' });
   }
 
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS transcript_deny (
-      id INT AUTO_INCREMENT PRIMARY KEY,
-      transcript_id VARCHAR(255) NOT NULL,
-      user_id VARCHAR(255) NOT NULL,
-      denied_by VARCHAR(255) NULL,
-      created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-      UNIQUE KEY unique_transcript_deny (transcript_id, user_id)
-    )
-  `);
+  await ensureTranscriptDenyTable();
 
   if (req.method === 'GET') {
     // Quick access check — used by the polling interval on the viewer page

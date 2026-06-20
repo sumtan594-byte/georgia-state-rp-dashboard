@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from "../../../lib/auth-options";
-import pool from '../../../lib/ticketdb';
+import pool, { ensureTranscriptDenyTable } from '../../../lib/ticketdb';
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
@@ -24,16 +24,7 @@ export default async function handler(req, res) {
       if (!id) return res.status(400).json({ error: 'Missing transcript id' });
 
       if (!isAdmin) {
-        await pool.query(`
-          CREATE TABLE IF NOT EXISTS transcript_deny (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            transcript_id VARCHAR(255) NOT NULL,
-            user_id VARCHAR(255) NOT NULL,
-            denied_by VARCHAR(255) NULL,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY unique_transcript_deny (transcript_id, user_id)
-          )
-        `);
+        await ensureTranscriptDenyTable();
 
         const [rows] = await pool.query(
           'SELECT owner_id FROM transcripts WHERE id = ? LIMIT 1',
@@ -81,16 +72,7 @@ export default async function handler(req, res) {
       const placeholders = ids.map(() => '?').join(',');
 
       if (!isAdmin) {
-        await pool.query(`
-          CREATE TABLE IF NOT EXISTS transcript_deny (
-            id INT AUTO_INCREMENT PRIMARY KEY,
-            transcript_id VARCHAR(255) NOT NULL,
-            user_id VARCHAR(255) NOT NULL,
-            denied_by VARCHAR(255) NULL,
-            created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-            UNIQUE KEY unique_transcript_deny (transcript_id, user_id)
-          )
-        `);
+        await ensureTranscriptDenyTable();
 
         const [ownerRows] = await pool.query(
           `SELECT id, owner_id FROM transcripts WHERE id IN (${placeholders})`,
