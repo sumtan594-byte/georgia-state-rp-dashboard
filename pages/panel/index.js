@@ -4,7 +4,6 @@ import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {
   Loader2, Radio, Users, AlertTriangle, WifiOff, ArrowLeft, X, Clock, Server, MapPinned, Shield,
-  Briefcase,
 } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
 import PanelLayout from '../../components/panel/PanelLayout';
@@ -12,7 +11,6 @@ import PlayerList from '../../components/panel/PlayerList';
 import OperationsPanel from '../../components/panel/OperationsPanel';
 import CommandBar from '../../components/panel/CommandBar';
 import PlayerActionPanel from '../../components/panel/PlayerActionPanel';
-import StaffPanel from '../../components/panel/staff/StaffPanel';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import AccessDenied from '../../components/auth/AccessDenied';
 
@@ -53,7 +51,6 @@ export default function PanelPage() {
 
   // Mobile
   const [mobileView, setMobileView] = useState('map');
-  const [moduleView, setModuleView] = useState('live');
 
   // Command bar
   const [recentCommands, setRecentCommands] = useState([]);
@@ -271,20 +268,6 @@ export default function PanelPage() {
             <Radio size={14} className="animate-pulse" />
             <span className="hidden sm:inline">Live</span>
           </div>
-          <div className="hidden sm:flex rounded-lg border border-gsrp-dark-border/60 bg-black/20 p-1">
-            <button
-              onClick={() => setModuleView('live')}
-              className={`flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-black transition-colors ${moduleView === 'live' ? 'bg-gsrp-orange text-black' : 'text-white/45 hover:text-white'}`}
-            >
-              <MapPinned size={13} /> Live
-            </button>
-            <button
-              onClick={() => setModuleView('staff')}
-              className={`flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-black transition-colors ${moduleView === 'staff' ? 'bg-green-400 text-black' : 'text-white/45 hover:text-white'}`}
-            >
-              <Briefcase size={13} /> Staff
-            </button>
-          </div>
           {poll && (
             <div className="hidden md:flex items-center gap-2 rounded-lg border border-gsrp-dark-border/60 bg-black/20 px-3 py-2 text-xs font-semibold text-white/45">
               <Clock size={13} className="text-gsrp-orange/70" />
@@ -320,7 +303,6 @@ export default function PanelPage() {
         <PanelLayout
           mobileView={mobileView}
           setMobileView={setMobileView}
-          moduleView={moduleView}
           playerList={
             <PlayerList
               players={data.Players || []}
@@ -388,7 +370,6 @@ export default function PanelPage() {
               loading={loading}
             />
           }
-          staffPanel={<StaffPanel liveData={data} session={effectiveSession} />}
           logPanel={null}
           commandBar={isNkz ? <CommandBar onSendCommand={handleSendCommand} recentCommands={recentCommands} /> : null}
         />
