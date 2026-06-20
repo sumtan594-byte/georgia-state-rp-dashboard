@@ -63,7 +63,6 @@ export default function StaffPanel({ liveData, session }) {
 
   async function load() {
     setError('');
-    fetch('/api/panel/staff/health').catch(() => {});
     const res = await fetch('/api/panel/staff');
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(body.error || 'Failed to load staff panel');
