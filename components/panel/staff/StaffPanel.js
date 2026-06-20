@@ -144,21 +144,6 @@ export default function StaffPanel({ liveData, session }) {
     return <div className="p-5 text-sm font-bold text-white/45">Loading staff panel...</div>;
   }
 
-  if (!state && error) {
-    return (
-      <div className="staff-panel h-full min-h-0 overflow-y-auto p-3">
-        <div className="staff-card">
-          <p className="text-xs font-black uppercase tracking-[0.18em] text-red-300/70">Staff Panel Offline</p>
-          <h2 className="mt-2 text-xl font-black text-white">Oracle database connection failed</h2>
-          <p className="mt-2 text-sm font-semibold text-white/45">{error}</p>
-          <button className="staff-secondary mt-4 px-4" onClick={() => { setLoading(true); load().catch(err => setError(err.message)).finally(() => setLoading(false)); }}>
-            Retry
-          </button>
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="staff-panel h-full min-h-0 overflow-y-auto p-3">
       {error && (
