@@ -7,9 +7,5 @@ node_modules
 .env*.local
 .swarm/
 ruvector.db
-Wallet_*.zip
-Wallet_*/
-wallet/
-wallets/
 
 public/media/Bannerdash.png
