@@ -642,3 +642,112 @@ discord-messages {
   animation: shimmer 1.5s infinite;
   border-radius: 8px;
 }
+
+/* ===================== STAFF PANEL ===================== */
+.staff-panel {
+  background:
+    linear-gradient(180deg, rgba(2, 6, 23, 0.26), rgba(2, 6, 23, 0.1)),
+    radial-gradient(circle at 18% 0%, rgba(34, 197, 94, 0.08), transparent 34%),
+    radial-gradient(circle at 92% 12%, rgba(249, 115, 22, 0.08), transparent 32%);
+}
+
+.staff-card {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.72), rgba(8, 13, 25, 0.82));
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.055);
+  padding: 16px;
+}
+
+.staff-input {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 8px;
+  background: rgba(2, 6, 23, 0.38);
+  padding: 10px 12px;
+  color: rgba(255, 255, 255, 0.86);
+  font-size: 14px;
+  font-weight: 700;
+  outline: none;
+  transition: border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
+}
+
+.staff-input::placeholder {
+  color: rgba(255, 255, 255, 0.28);
+}
+
+.staff-input:focus {
+  border-color: rgba(34, 197, 94, 0.48);
+  background: rgba(2, 6, 23, 0.56);
+  box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.09);
+}
+
+.staff-primary,
+.staff-secondary,
+.staff-danger,
+.staff-action {
+  display: inline-flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1;
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease, color 180ms ease, opacity 180ms ease;
+}
+
+.staff-primary:disabled,
+.staff-secondary:disabled,
+.staff-danger:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.staff-primary {
+  border: 1px solid rgba(34, 197, 94, 0.46);
+  background: rgba(34, 197, 94, 0.88);
+  color: #03120a;
+}
+
+.staff-primary:hover:not(:disabled) {
+  background: rgba(74, 222, 128, 0.96);
+}
+
+.staff-secondary {
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.74);
+}
+
+.staff-secondary:hover:not(:disabled) {
+  border-color: rgba(34, 197, 94, 0.38);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.staff-danger {
+  border: 1px solid rgba(248, 113, 113, 0.36);
+  background: rgba(239, 68, 68, 0.16);
+  color: rgb(252, 165, 165);
+}
+
+.staff-danger:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.24);
+  color: rgb(254, 202, 202);
+}
+
+.staff-action {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: rgba(255, 255, 255, 0.045);
+  color: rgba(255, 255, 255, 0.54);
+}
+
+.staff-action:hover,
+.staff-action.is-active {
+  border-color: rgba(34, 197, 94, 0.42);
+  background: rgba(34, 197, 94, 0.13);
+  color: rgba(220, 252, 231, 0.95);
+}

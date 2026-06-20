@@ -1,12 +1,30 @@
-import { Map, Users2, Info } from 'lucide-react';
+import { Briefcase, Info, Map, Users2 } from 'lucide-react';
 
 const TABS = [
   { key: 'map', icon: Map, label: 'Map' },
   { key: 'players', icon: Users2, label: 'Players' },
   { key: 'info', icon: Info, label: 'Details' },
+  { key: 'staff', icon: Briefcase, label: 'Staff' },
 ];
 
-export default function PanelLayout({ playerList, liveMap, infoPanel, commandBar, mobileView, setMobileView }) {
+export default function PanelLayout({ playerList, liveMap, infoPanel, staffPanel, commandBar, mobileView, setMobileView, moduleView = 'live' }) {
+  if (moduleView === 'staff') {
+    return (
+      <>
+        <div className="hidden md:block flex-1 min-h-0 p-2">
+          <div className="h-full overflow-hidden rounded-lg card-glass">
+            {staffPanel}
+          </div>
+        </div>
+
+        <div className="md:hidden flex flex-col h-full">
+          <div className="flex-1 overflow-y-auto">{staffPanel}</div>
+          <MobileNav mobileView={mobileView} setMobileView={setMobileView} />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
       <div className="hidden md:grid md:grid-cols-[320px_1fr_340px] gap-2 flex-1 p-2 min-h-0">
@@ -36,25 +54,32 @@ export default function PanelLayout({ playerList, liveMap, infoPanel, commandBar
             <div className="p-3 h-full">{infoPanel}</div>
             {commandBar && <div className="p-3 pt-0">{commandBar}</div>}
           </div>
+          <div className={`absolute inset-0 overflow-y-auto ${mobileView === 'staff' ? 'z-10' : 'z-0 pointer-events-none opacity-0'}`}>{staffPanel}</div>
         </div>
 
-        <nav className="flex-shrink-0 flex bg-gsrp-dark-card/90 backdrop-blur-xl border-t border-gsrp-dark-border/50">
-          {TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setMobileView(tab.key)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-3 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                mobileView === tab.key
-                  ? 'text-gsrp-orange'
-                  : 'text-white/30 hover:text-white/60'
-              }`}
-            >
-              <tab.icon size={16} />
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+        <MobileNav mobileView={mobileView} setMobileView={setMobileView} />
       </div>
     </>
+  );
+}
+
+function MobileNav({ mobileView, setMobileView }) {
+  return (
+    <nav className="flex-shrink-0 flex bg-gsrp-dark-card/90 backdrop-blur-xl border-t border-gsrp-dark-border/50">
+      {TABS.map(tab => (
+        <button
+          key={tab.key}
+          onClick={() => setMobileView(tab.key)}
+          className={`flex-1 flex flex-col items-center gap-0.5 py-3 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+            mobileView === tab.key
+              ? 'text-gsrp-orange'
+              : 'text-white/30 hover:text-white/60'
+          }`}
+        >
+          <tab.icon size={16} />
+          {tab.label}
+        </button>
+      ))}
+    </nav>
   );
 }
