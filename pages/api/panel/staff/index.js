@@ -32,11 +32,13 @@ export default async function handler(req, res) {
     const config = await getStaffShiftConfig();
     const wave = await getCurrentWave(config);
     const discordId = session.user.id;
-    const activeShift = await getActiveShift(discordId);
-    const mySummary = await getUserShiftSummary(discordId, wave.number);
-    const activeShifts = await getAllActiveShifts();
-    const recentLogs = await getRecentStaffLogs({ minutes: 60, limit: 80 });
-    const leaderboard = await getLeaderboard({ waveNumber: wave.number, limit: 100 });
+    const [activeShift, mySummary, activeShifts, recentLogs, leaderboard] = await Promise.all([
+      getActiveShift(discordId),
+      getUserShiftSummary(discordId, wave.number),
+      getAllActiveShifts(),
+      getRecentStaffLogs({ minutes: 60, limit: 80 }),
+      getLeaderboard({ waveNumber: wave.number, limit: 100 }),
+    ]);
 
     return res.status(200).json({
       user: {
