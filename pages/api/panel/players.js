@@ -4,9 +4,8 @@ import { ROLES } from '../../../lib/auth';
 import { requireAccess } from '../../../lib/access-check';
 import { recordPanelFrame } from '../../../lib/panel-replay-store';
 
-const MIN_POLL_INTERVAL_MS = 1200;
-const DEFAULT_POLL_INTERVAL_MS = 2500;
-const MAX_POLL_INTERVAL_MS = 10000;
+const ABSOLUTE_MIN_MS = 200;
+const MAX_POLL_INTERVAL_MS = 60000;
 const AVATAR_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const AVATAR_BATCH_SIZE = 100;
 const AVATAR_DATA_URI_MAX_BYTES = 80_000;
@@ -38,13 +37,19 @@ function updateRateLimit(cache, response) {
   const bucket = response.headers.get('x-ratelimit-bucket') || 'unknown';
   const resetMs = resetEpoch ? resetEpoch * 1000 : 0;
   const now = Date.now();
-  const minimumNext = now + MIN_POLL_INTERVAL_MS;
 
-  if (Number.isFinite(remaining) && remaining <= 1 && resetMs) {
-    cache.nextAllowedFetch = Math.max(resetMs + 500, minimumNext);
+  if (Number.isFinite(remaining) && Number.isFinite(limit) && resetMs > now) {
+    const windowMs = resetMs - now;
+    if (remaining <= 1) {
+      cache.nextAllowedFetch = resetMs + 200;
+    } else {
+      const perRequestMs = windowMs / remaining;
+      cache.nextAllowedFetch = now + Math.max(perRequestMs, ABSOLUTE_MIN_MS);
+    }
   } else {
-    cache.nextAllowedFetch = Math.max(minimumNext, now + DEFAULT_POLL_INTERVAL_MS);
+    cache.nextAllowedFetch = now + ABSOLUTE_MIN_MS;
   }
+
   cache.lastRateLimit = {
     bucket,
     limit: Number.isFinite(limit) ? limit : null,
@@ -289,7 +294,7 @@ function ensurePoller(cache) {
     const now = Date.now();
     const delay = Math.min(
       MAX_POLL_INTERVAL_MS,
-      Math.max(MIN_POLL_INTERVAL_MS, cache.nextAllowedFetch > now ? cache.nextAllowedFetch - now : DEFAULT_POLL_INTERVAL_MS)
+      Math.max(ABSOLUTE_MIN_MS, cache.nextAllowedFetch > now ? cache.nextAllowedFetch - now : ABSOLUTE_MIN_MS)
     );
     cache.pollTimer = setTimeout(tick, delay);
   }
