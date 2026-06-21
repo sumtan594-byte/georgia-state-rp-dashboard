@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
-    "start": "node server.js"
+    "start": "next start -p ${SERVER_PORT:-${PORT:-3001}}"
   },
   "dependencies": {
     "discord2html": "^1.0.4",
