@@ -1,8 +1,49 @@
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300;400;500;600;700&family=Nunito:wght@300;400;500;600;700;800;900&family=Syne:wght@600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ===========================================================================
+   GSRP — Tactical command-console design foundation
+   Direction: professional-gaming / emergency-dispatch. Energetic but precise.
+   - Display:  Syne (athletic geometric) for headings & brand
+   - UI body:  Nunito (kept for warmth, weights dialed back from omnipresent 900)
+   - Data:     JetBrains Mono for callsigns, codes, stats, timestamps
+   =========================================================================== */
+
+:root {
+  /* Brand */
+  --gsrp-orange: #F97316;
+  --gsrp-orange-bright: #FB923C;
+  --gsrp-teal: #14B8A6;
+  --gsrp-sunset: #EF4444;
+
+  /* Ink / surfaces — cool tactical near-blacks */
+  --ink-0: #05070A;
+  --ink-1: #0A0E1A;
+  --ink-2: #0F1629;
+  --ink-3: #151D35;
+  --hairline: rgba(148, 163, 184, 0.12);
+  --hairline-strong: rgba(148, 163, 184, 0.20);
+
+  /* Text */
+  --text-hi: #F4F6FB;
+  --text-mid: rgba(226, 232, 240, 0.72);
+  --text-lo: rgba(148, 163, 184, 0.55);
+
+  /* Motion — tactical snap (decisive in, soft out) */
+  --ease-snap: cubic-bezier(0.2, 0.9, 0.2, 1.1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+
+  /* Elevation */
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-2: 0 8px 24px rgba(0, 0, 0, 0.35), 0 1px 0 rgba(255, 255, 255, 0.04) inset;
+  --shadow-3: 0 24px 60px rgba(0, 0, 0, 0.45), 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+  --glow-orange: 0 0 0 1px rgba(249, 115, 22, 0.35), 0 0 22px rgba(249, 115, 22, 0.18);
+}
 
 *, *::before, *::after {
   box-sizing: border-box;
@@ -12,32 +53,67 @@ html {
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 
 body {
-  background-color: #05070A;
-  color: #F9FAFB;
+  background-color: var(--ink-0);
+  color: var(--text-hi);
   font-family: 'Nunito', ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  font-feature-settings: 'cv11', 'ss01';
   min-height: 100vh;
   overflow-x: hidden;
-  font-size: 1.1rem;
-  line-height: 1.6;
+  font-size: 1rem;
+  line-height: 1.55;
+  letter-spacing: -0.006em;
+}
+
+/* Display typeface for headings — athletic, confident, tactical */
+h1, h2, h3, h4, .font-display {
+  font-family: 'Syne', 'Nunito', sans-serif;
+  letter-spacing: -0.02em;
+}
+
+/* Tactical data: callsigns, codes, stats, timestamps */
+.font-mono, .tabular {
+  font-family: 'JetBrains Mono', ui-monospace, 'SF Mono', monospace;
+  font-feature-settings: 'tnum', 'zero';
+  letter-spacing: -0.01em;
+}
+
+/* ===================== GLOBAL KEYBOARD FOCUS ===================== */
+/* Premium, accessible focus — only for keyboard users, never on mouse click. */
+:focus-visible {
+  outline: 2px solid rgba(249, 115, 22, 0.85);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+:focus:not(:focus-visible) {
+  outline: none;
 }
 
 /* ===================== SCROLLBAR ===================== */
+/* Restrained tactical accent — not a rainbow. */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 10px;
+  height: 10px;
 }
 ::-webkit-scrollbar-track {
-  background: rgba(15, 22, 41, 0.5);
+  background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #F97316, #0D9488);
-  border-radius: 4px;
+  background: rgba(148, 163, 184, 0.18);
+  border: 2px solid transparent;
+  background-clip: padding-box;
+  border-radius: 8px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: linear-gradient(180deg, #FB923C, #14B8A6);
+  background: rgba(249, 115, 22, 0.55);
+  background-clip: padding-box;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.22) transparent;
 }
 
 /* ===================== DATE INPUT ===================== */
@@ -590,9 +666,96 @@ discord-messages {
 
 /* ===================== CARD GLASS ===================== */
 .card-glass {
-  background: linear-gradient(145deg, rgba(15, 22, 41, 0.7) 0%, rgba(21, 29, 53, 0.5) 100%);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(30, 42, 74, 0.6);
+  background: linear-gradient(145deg, rgba(15, 22, 41, 0.72) 0%, rgba(21, 29, 53, 0.55) 100%);
+  backdrop-filter: blur(14px) saturate(1.1);
+  border: 1px solid var(--hairline);
+  box-shadow: var(--shadow-2);
+}
+
+/* ===================== TACTICAL CONSOLE UTILITIES ===================== */
+/* A consistent, premium "dispatch panel" language shared across the app. */
+.tac-panel {
+  position: relative;
+  border: 1px solid var(--hairline);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.022), transparent 42%),
+    linear-gradient(180deg, rgba(18, 27, 48, 0.72), rgba(10, 14, 26, 0.72));
+  box-shadow: var(--shadow-2);
+  backdrop-filter: blur(14px) saturate(1.15);
+}
+.tac-panel-hover {
+  transition: border-color var(--dur-base) var(--ease-snap),
+              box-shadow var(--dur-base) var(--ease-snap),
+              transform var(--dur-base) var(--ease-snap);
+}
+.tac-panel-hover:hover {
+  border-color: rgba(249, 115, 22, 0.34);
+  box-shadow: var(--shadow-3), 0 0 24px rgba(249, 115, 22, 0.08);
+  transform: translateY(-2px);
+}
+
+/* Hairline divider that reads as machined, not flat */
+.tac-hairline {
+  border-color: var(--hairline);
+}
+
+/* Left accent bar for active/selected states (nav, list rows) */
+.tac-accent::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  height: 60%;
+  width: 3px;
+  transform: translateY(-50%);
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(180deg, var(--gsrp-orange-bright), var(--gsrp-orange));
+  box-shadow: 0 0 14px rgba(249, 115, 22, 0.6);
+}
+
+/* Eyebrow / section label — tactical, restrained */
+.tac-eyebrow {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--text-lo);
+}
+
+/* Data chip — for codes, counts, statuses */
+.tac-chip {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  font-feature-settings: 'tnum';
+  border: 1px solid var(--hairline-strong);
+  border-radius: 999px;
+  padding: 2px 9px;
+  background: rgba(2, 6, 23, 0.4);
+}
+
+/* Live status dot with calm pulse */
+.tac-live-dot {
+  position: relative;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--gsrp-teal);
+  box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.55);
+  animation: tac-ping 2s var(--ease-out) infinite;
+}
+@keyframes tac-ping {
+  0% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.5); }
+  70% { box-shadow: 0 0 0 7px rgba(20, 184, 166, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tac-live-dot { animation: none; }
+  .tac-panel-hover:hover { transform: none; }
 }
 
 /* ===================== SHIMMER LOADER ===================== */

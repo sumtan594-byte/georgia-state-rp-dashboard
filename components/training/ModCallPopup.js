@@ -24,7 +24,7 @@ export default function ModCallPopup({ modCall, onRespond }) {
               <Phone size={14} className="text-gsrp-orange animate-pulse" />
             </div>
             <div>
-              <span className="text-xs font-black text-gsrp-orange uppercase tracking-wider">Mod Call</span>
+              <span className="text-xs font-bold text-gsrp-orange uppercase tracking-wider">Mod Call</span>
               <span className="text-[10px] text-gsrp-teal-light/30 ml-2">Incoming</span>
             </div>
           </div>

@@ -18,7 +18,7 @@ export default function DepartmentsPage() {
     <div className="max-w-5xl mx-auto animate-fade-in-up">
       <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-white font-black text-2xl md:text-3xl mb-2">
+          <h1 className="font-display text-white font-extrabold text-2xl md:text-3xl tracking-tight mb-2">
             Departments
           </h1>
           <p className="text-gsrp-teal-light/40 text-sm">Explore and join the various departments of Georgia State Roleplay</p>

@@ -30,19 +30,20 @@ export default function OperationsPanel({
 
   return (
     <div className="flex flex-col h-full overflow-y-auto">
-      {/* Live Operations */}
+      {/* Server status */}
       <div className="flex-shrink-0 border-b border-gsrp-dark-border/50">
         <div className="p-3">
           <div className="mb-2 flex items-center justify-between gap-3">
             <div className="min-w-0">
-              <p className="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.24em] text-gsrp-orange/80">
-                <Radio size={12} /> Live Operations
+              <p className="flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-gsrp-orange/80">
+                <Radio size={12} /> Server Status
               </p>
-              <h2 className="truncate text-sm font-black text-white">{server?.Name || 'ER:LC Server'}</h2>
+              <h2 className="font-display truncate text-sm font-bold text-white tracking-tight">{server?.Name || 'ER:LC Server'}</h2>
             </div>
-            <span className={`rounded-full border px-2 py-1 text-[10px] font-bold flex-shrink-0 ${
+            <span className={`rounded-full border px-2.5 py-1 font-mono text-[10px] font-semibold flex-shrink-0 inline-flex items-center gap-1.5 ${
               live && !error ? 'border-green-400/20 bg-green-400/10 text-green-300' : 'border-gsrp-orange/20 bg-gsrp-orange/10 text-gsrp-orange'
             }`}>
+              {live && !error && <span className="tac-live-dot" aria-hidden="true" />}
               {live && !error ? 'LIVE' : 'DEGRADED'}
             </span>
           </div>
@@ -64,7 +65,7 @@ export default function OperationsPanel({
 
         {/* Team Spread */}
         <div className="px-3 pb-3">
-          <p className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+          <p className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/35">
             <Layers size={12} /> Team Spread
           </p>
           <div className="space-y-1.5">
@@ -82,7 +83,7 @@ export default function OperationsPanel({
       {/* Active Incidents */}
       <div className="flex-1 min-h-0">
         <div className="p-3">
-          <p className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-white/35">
+          <p className="mb-2 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.22em] text-white/35">
             <MapPinned size={12} /> Active Incidents
           </p>
           {loading ? (
@@ -125,8 +126,8 @@ function Metric({ icon: Icon, label, value, hot = false }) {
   return (
     <div className={`rounded-xl border px-2 py-2 ${hot ? 'border-gsrp-sunset/25 bg-gsrp-sunset/10' : 'border-white/10 bg-black/25'}`}>
       <Icon size={13} className={hot ? 'mb-1 text-gsrp-sunset' : 'mb-1 text-gsrp-orange/70'} />
-      <p className="text-sm font-black leading-none text-white">{value}</p>
-      <p className="mt-1 text-[9px] font-bold uppercase tracking-wider text-white/30">{label}</p>
+      <p className="font-mono text-[15px] font-bold leading-none text-white tabular">{value}</p>
+      <p className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-white/35">{label}</p>
     </div>
   );
 }
@@ -136,7 +137,7 @@ function IncidentRow({ icon: Icon, title, detail, hot = false }) {
     <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-black/20 px-2.5 py-2">
       <Icon size={13} className={hot ? 'mt-0.5 flex-shrink-0 text-gsrp-sunset' : 'mt-0.5 flex-shrink-0 text-gsrp-orange'} />
       <div className="min-w-0">
-        <p className="truncate text-[11px] font-black text-white/75">{title}</p>
+        <p className="truncate text-[11px] font-bold text-white/75">{title}</p>
         <p className="truncate text-[10px] text-white/35">{detail}</p>
       </div>
     </div>

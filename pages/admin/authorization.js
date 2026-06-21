@@ -76,7 +76,7 @@ export default function AuthorizationPage({ canAccess }) {
     <div className="mx-auto max-w-7xl animate-fade-in-up">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="flex items-center gap-3 text-3xl font-black text-white">
+          <h1 className="flex items-center gap-3 text-3xl font-bold text-white">
             <ShieldCheck className="text-gsrp-orange" /> Authorisation Manager
           </h1>
           <p className="mt-1 text-sm text-gsrp-teal-light/40">Discord-backed website access rules. Changes sync to active users on the next live refresh.</p>
@@ -84,7 +84,7 @@ export default function AuthorizationPage({ canAccess }) {
         <button
           onClick={save}
           disabled={saving}
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-gsrp-orange px-5 py-3 text-sm font-black text-white transition hover:bg-gsrp-orange/90 disabled:opacity-50"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-gsrp-orange px-5 py-3 text-sm font-bold text-white transition hover:bg-gsrp-orange/90 disabled:opacity-50"
         >
           {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save Changes
         </button>
@@ -95,7 +95,7 @@ export default function AuthorizationPage({ canAccess }) {
           <div key={resource.key} className="rounded-xl border border-gsrp-dark-border/50 bg-gsrp-dark-card/70 p-5">
             <div className="mb-4 flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
               <div>
-                <h2 className="text-lg font-black text-white">{resource.label}</h2>
+                <h2 className="text-lg font-bold text-white">{resource.label}</h2>
                 <p className="mt-1 text-xs text-gsrp-teal-light/35">{resource.paths?.length ? resource.paths.join(', ') : 'Internal capability'}</p>
               </div>
               <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-gsrp-teal-light/40">

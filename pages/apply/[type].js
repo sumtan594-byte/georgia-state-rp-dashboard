@@ -58,7 +58,7 @@ function validateFields(fields, answers) {
 const QuestionLabel = ({ children, required = true, subtitle, sentences = 0, minimumWords = 0 }) => (
   <label className="block mb-3">
     <div className="flex justify-between items-center">
-      <span className="text-sm font-black uppercase tracking-widest text-white/90 ml-1">
+      <span className="text-sm font-bold uppercase tracking-widest text-white/90 ml-1">
         {children} {required && <span className="text-gsrp-orange">*</span>}
       </span>
       <span className="flex items-center gap-1 opacity-60 text-[10px] font-bold uppercase tracking-widest text-gsrp-teal-light">
@@ -66,8 +66,8 @@ const QuestionLabel = ({ children, required = true, subtitle, sentences = 0, min
       </span>
     </div>
     {subtitle && <p className="text-xs text-gsrp-teal-light/70 ml-1 mt-1 font-medium">{subtitle}</p>}
-    {sentences > 0 && <p className="text-[10px] text-gsrp-orange ml-1 mt-0.5 font-black uppercase tracking-widest">({sentences} Sentences Required)</p>}
-    {minimumWords > 0 && <p className="text-[10px] text-gsrp-orange ml-1 mt-0.5 font-black uppercase tracking-widest">({minimumWords} Words Required)</p>}
+    {sentences > 0 && <p className="text-[10px] text-gsrp-orange ml-1 mt-0.5 font-bold uppercase tracking-widest">({sentences} Sentences Required)</p>}
+    {minimumWords > 0 && <p className="text-[10px] text-gsrp-orange ml-1 mt-0.5 font-bold uppercase tracking-widest">({minimumWords} Words Required)</p>}
   </label>
 );
 
@@ -76,7 +76,7 @@ const WordCounter = ({ value, minimumWords = 0 }) => {
   const words = countWords(value);
   const complete = words >= minimumWords;
   return (
-    <div className={`-mt-6 mb-6 ml-2 text-[10px] font-black uppercase tracking-widest ${complete ? 'text-gsrp-teal' : 'text-gsrp-orange'}`}>
+    <div className={`-mt-6 mb-6 ml-2 text-[10px] font-bold uppercase tracking-widest ${complete ? 'text-gsrp-teal' : 'text-gsrp-orange'}`}>
       {words} / {minimumWords} words
     </div>
   );
@@ -175,14 +175,14 @@ const Slider = ({ name, min = 0, max = 10, value = min, onChange, cues = "" }) =
   return (
     <div className="mb-8 p-6 bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-2xl">
       <div className="flex justify-between items-center mb-4">
-        <span className="text-xs font-black text-white/40 uppercase tracking-widest">{min}</span>
+        <span className="text-xs font-bold text-white/40 uppercase tracking-widest">{min}</span>
         <div className="text-center">
-          <span className="text-2xl font-black text-gsrp-orange">{value}</span>
+          <span className="text-2xl font-bold text-gsrp-orange">{value}</span>
           {cueMap[value] && (
-            <p className="text-[10px] font-black text-gsrp-orange/60 uppercase tracking-widest mt-1 animate-fade-in">{cueMap[value]}</p>
+            <p className="text-[10px] font-bold text-gsrp-orange/60 uppercase tracking-widest mt-1 animate-fade-in">{cueMap[value]}</p>
           )}
         </div>
-        <span className="text-xs font-black text-white/40 uppercase tracking-widest">{max}</span>
+        <span className="text-xs font-bold text-white/40 uppercase tracking-widest">{max}</span>
       </div>
       <input 
         type="range" 
@@ -842,7 +842,7 @@ export default function DynamicApplyPage() {
           <div className="w-16 h-16 rounded-full bg-gsrp-orange/10 flex items-center justify-center mx-auto mb-6">
             <AlertCircle className="w-8 h-8 text-gsrp-orange" />
           </div>
-          <h1 className="text-3xl font-black text-white mb-4">We Appreciate Your Interest!</h1>
+          <h1 className="text-3xl font-bold text-white mb-4">We Appreciate Your Interest!</h1>
           <p className="text-white/70 text-base leading-relaxed max-w-lg mx-auto">
             We truly appreciate your interest in joining our staff team! Unfortunately, we've reached capacity for staff from USA timezones at this time. We're incredibly sorry for the inconvenience — please feel free to reapply in the future if our needs change. Thank you for understanding!
           </p>
@@ -872,7 +872,7 @@ export default function DynamicApplyPage() {
     return (
       <div className="max-w-2xl mx-auto py-24 px-6 text-center animate-fade-in-up">
         <div className="bg-gsrp-dark-card border border-red-500/20 rounded-3xl p-10">
-          <h1 className="text-3xl font-black text-white mb-4">You are blacklisted from this application</h1>
+          <h1 className="text-3xl font-bold text-white mb-4">You are blacklisted from this application</h1>
           <p className="text-white/50 text-sm leading-relaxed">
             Your current Discord roles prevent access to this application form.
           </p>
@@ -887,11 +887,11 @@ export default function DynamicApplyPage() {
         <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-gsrp-teal/10 mb-8 border border-gsrp-teal/20">
           <CheckCircle2 className="w-10 h-10 text-gsrp-teal" />
         </div>
-        <h1 className="text-3xl font-black text-white mb-4">Application Sent!</h1>
+        <h1 className="text-3xl font-bold text-white mb-4">Application Sent!</h1>
         <p className="text-gsrp-teal-light text-base mb-8 max-w-md mx-auto">
           Your {appType.name} has been successfully submitted and is being reviewed.
         </p>
-        <button onClick={() => window.location.href = '/'} className="px-8 py-3 bg-gsrp-orange text-white font-black rounded-xl">Return Home</button>
+        <button onClick={() => window.location.href = '/'} className="px-8 py-3 bg-gsrp-orange text-white font-bold rounded-xl">Return Home</button>
       </div>
     );
   }
@@ -911,12 +911,12 @@ export default function DynamicApplyPage() {
         <div className="absolute inset-0 bg-gradient-to-r from-gsrp-orange/10 to-gsrp-teal/10 opacity-50" />
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-white font-black text-2xl flex items-center gap-4">
+            <h1 className="text-white font-bold text-2xl flex items-center gap-4">
               <FileText className="text-gsrp-orange" />
               {appType.name}
             </h1>
             <div className="bg-gsrp-dark-surface px-4 py-1.5 rounded-xl border border-white/10">
-              <span className="text-gsrp-orange font-black text-sm">{step} / {totalSteps}</span>
+              <span className="text-gsrp-orange font-bold text-sm">{step} / {totalSteps}</span>
             </div>
           </div>
           <div className="w-full bg-gsrp-dark-surface h-1.5 rounded-full overflow-hidden">
@@ -1047,7 +1047,7 @@ export default function DynamicApplyPage() {
           )}
           <div className="flex-1" />
           {step < totalSteps ? (
-            <button onClick={handleNextStep} className="flex items-center gap-2 px-8 py-3 bg-gsrp-orange text-white font-black rounded-xl">Next <ArrowRight size={18} /></button>
+            <button onClick={handleNextStep} className="flex items-center gap-2 px-8 py-3 bg-gsrp-orange text-white font-bold rounded-xl">Next <ArrowRight size={18} /></button>
           ) : (
             <div className="flex flex-col items-end gap-4">
               {error && (
@@ -1059,7 +1059,7 @@ export default function DynamicApplyPage() {
               <button 
                 onClick={handleSubmit} 
                 disabled={isSubmitting}
-                className="px-10 py-3 bg-gradient-to-r from-gsrp-orange to-gsrp-warm text-white font-black rounded-xl shadow-lg shadow-gsrp-orange/20 disabled:opacity-50 flex items-center gap-2"
+                className="px-10 py-3 bg-gradient-to-r from-gsrp-orange to-gsrp-warm text-white font-bold rounded-xl shadow-lg shadow-gsrp-orange/20 disabled:opacity-50 flex items-center gap-2"
               >
                 {isSubmitting ? <><Loader2 className="animate-spin w-5 h-5" /> Submitting...</> : <><Send size={18} /> Submit Application</>}
               </button>

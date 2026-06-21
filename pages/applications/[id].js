@@ -41,7 +41,7 @@ const PasteDetector = ({ pastes }) => {
     <div className="mt-4 p-4 bg-black/40 rounded-2xl border border-white/5 overflow-hidden">
       <div className="flex items-center gap-2 mb-3">
         <AlertCircle size={14} className="text-amber-500/60" />
-        <span className="text-[10px] font-black uppercase tracking-widest text-amber-500/60">
+        <span className="text-[10px] font-bold uppercase tracking-widest text-amber-500/60">
           Paste Events Detected ({pastes.length})
         </span>
       </div>
@@ -112,7 +112,7 @@ const IntegrityScoreCard = ({ application }) => {
   return (
     <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-6">
       <div className="flex items-center justify-between mb-6">
-        <h3 className="text-white font-black text-xs uppercase tracking-widest flex items-center gap-2">
+        <h3 className="text-white font-bold text-xs uppercase tracking-widest flex items-center gap-2">
           <Shield size={14} className="text-gsrp-orange" />
           Session Integrity
         </h3>
@@ -122,7 +122,7 @@ const IntegrityScoreCard = ({ application }) => {
           'bg-red-500/10 border-red-500/20'
         }`}>
           {icon}
-          <span className={`text-sm font-black ${color}`}>{score}</span>
+          <span className={`text-sm font-bold ${color}`}>{score}</span>
           <span className={`text-[9px] font-bold ${color} uppercase tracking-wider`}>{grade}</span>
         </div>
       </div>
@@ -142,7 +142,7 @@ const IntegrityScoreCard = ({ application }) => {
             <AlertCircle size={12} className="text-red-400" />
             <span className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/30">Pastes</span>
           </div>
-          <span className={`text-lg font-black ${totalPastes > 0 ? 'text-red-500' : 'text-green-500'}`}>{totalPastes}</span>
+          <span className={`text-lg font-bold ${totalPastes > 0 ? 'text-red-500' : 'text-green-500'}`}>{totalPastes}</span>
         </div>
 
         <div className="bg-gsrp-dark-surface/50 rounded-xl p-3 border border-white/5">
@@ -150,7 +150,7 @@ const IntegrityScoreCard = ({ application }) => {
             <Eye size={12} className="text-amber-400" />
             <span className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/30">Tab-Outs</span>
           </div>
-          <span className={`text-lg font-black ${totalTabOuts > 0 ? 'text-amber-500' : 'text-green-500'}`}>
+          <span className={`text-lg font-bold ${totalTabOuts > 0 ? 'text-amber-500' : 'text-green-500'}`}>
             {totalTabOuts}
             {totalTabOutTime > 0 && <span className="text-[10px] font-bold text-gsrp-teal-light/30 ml-1">({formatDuration(totalTabOutTime)})</span>}
           </span>
@@ -161,7 +161,7 @@ const IntegrityScoreCard = ({ application }) => {
             <Zap size={12} className="text-orange-400" />
             <span className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/30">WPM Spikes</span>
           </div>
-          <span className={`text-lg font-black ${totalWpmSpikes > 0 ? 'text-orange-500' : 'text-green-500'}`}>{totalWpmSpikes}</span>
+          <span className={`text-lg font-bold ${totalWpmSpikes > 0 ? 'text-orange-500' : 'text-green-500'}`}>{totalWpmSpikes}</span>
         </div>
 
         <div className="bg-gsrp-dark-surface/50 rounded-xl p-3 border border-white/5">
@@ -169,7 +169,7 @@ const IntegrityScoreCard = ({ application }) => {
             <MousePointer2 size={12} className="text-purple-400" />
             <span className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/30">Right-Clicks</span>
           </div>
-          <span className={`text-lg font-black ${totalRightClicks > 0 ? 'text-purple-500' : 'text-green-500'}`}>{totalRightClicks}</span>
+          <span className={`text-lg font-bold ${totalRightClicks > 0 ? 'text-purple-500' : 'text-green-500'}`}>{totalRightClicks}</span>
         </div>
 
         <div className="bg-gsrp-dark-surface/50 rounded-xl p-3 border border-white/5">
@@ -177,7 +177,7 @@ const IntegrityScoreCard = ({ application }) => {
             <Timer size={12} className="text-cyan-400" />
             <span className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/30">Idle Periods</span>
           </div>
-          <span className={`text-lg font-black ${totalIdlePeriods > 0 ? 'text-cyan-500' : 'text-green-500'}`}>{totalIdlePeriods}</span>
+          <span className={`text-lg font-bold ${totalIdlePeriods > 0 ? 'text-cyan-500' : 'text-green-500'}`}>{totalIdlePeriods}</span>
         </div>
 
         <div className="bg-gsrp-dark-surface/50 rounded-xl p-3 border border-white/5">
@@ -185,7 +185,7 @@ const IntegrityScoreCard = ({ application }) => {
             <Mouse size={12} className="text-pink-400" />
             <span className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/30">Mouse Leaves</span>
           </div>
-          <span className={`text-lg font-black ${totalMouseLeaves > 0 ? 'text-pink-500' : 'text-green-500'}`}>{totalMouseLeaves}</span>
+          <span className={`text-lg font-bold ${totalMouseLeaves > 0 ? 'text-pink-500' : 'text-green-500'}`}>{totalMouseLeaves}</span>
         </div>
       </div>
 
@@ -226,7 +226,7 @@ const MonitoringTimeline = ({ application, fieldId, fieldLabel }) => {
         <div className="mt-2 space-y-2">
           {tabOuts.length > 0 && (
             <div>
-              <div className="text-[9px] font-black uppercase tracking-widest text-amber-500/60 mb-1 flex items-center gap-1">
+              <div className="text-[9px] font-bold uppercase tracking-widest text-amber-500/60 mb-1 flex items-center gap-1">
                 <Eye size={10} /> Tab-Outs ({tabOuts.length})
               </div>
               <div className="space-y-1">
@@ -242,7 +242,7 @@ const MonitoringTimeline = ({ application, fieldId, fieldLabel }) => {
 
           {rightClicks.length > 0 && (
             <div>
-              <div className="text-[9px] font-black uppercase tracking-widest text-purple-500/60 mb-1 flex items-center gap-1">
+              <div className="text-[9px] font-bold uppercase tracking-widest text-purple-500/60 mb-1 flex items-center gap-1">
                 <MousePointer2 size={10} /> Right-Clicks ({rightClicks.length})
               </div>
               <div className="space-y-1">
@@ -258,7 +258,7 @@ const MonitoringTimeline = ({ application, fieldId, fieldLabel }) => {
 
           {wpmSpikes.length > 0 && (
             <div>
-              <div className="text-[9px] font-black uppercase tracking-widest text-orange-500/60 mb-1 flex items-center gap-1">
+              <div className="text-[9px] font-bold uppercase tracking-widest text-orange-500/60 mb-1 flex items-center gap-1">
                 <Zap size={10} /> WPM Anomalies ({wpmSpikes.length})
               </div>
               <div className="space-y-1">
@@ -274,7 +274,7 @@ const MonitoringTimeline = ({ application, fieldId, fieldLabel }) => {
 
           {idlePeriods.length > 0 && (
             <div>
-              <div className="text-[9px] font-black uppercase tracking-widest text-cyan-500/60 mb-1 flex items-center gap-1">
+              <div className="text-[9px] font-bold uppercase tracking-widest text-cyan-500/60 mb-1 flex items-center gap-1">
                 <Timer size={10} /> Idle Periods ({idlePeriods.length})
               </div>
               <div className="space-y-1">
@@ -518,9 +518,9 @@ export default function ApplicationDetail() {
         <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-6">
           <Trash2 size={28} className="text-red-500/60" />
         </div>
-        <h1 className="text-2xl font-black text-white mb-2">Application Deleted</h1>
+        <h1 className="text-2xl font-bold text-white mb-2">Application Deleted</h1>
         <p className="text-gsrp-teal-light/40 mb-6">This application has been deleted and is no longer available.</p>
-        <Link href="/applications" className="inline-flex items-center gap-2 px-6 py-3 bg-gsrp-orange text-white font-black rounded-xl">
+        <Link href="/applications" className="inline-flex items-center gap-2 px-6 py-3 bg-gsrp-orange text-white font-bold rounded-xl">
           <ArrowLeft size={16} />
           Back to Applications
         </Link>
@@ -569,14 +569,14 @@ export default function ApplicationDetail() {
               {application.userImage ? (
                 <img src={application.userImage} alt="" className="w-20 h-20 rounded-full border border-gsrp-dark-border/50 shadow-xl object-cover" />
               ) : (
-                <div className="w-20 h-20 rounded-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 flex items-center justify-center text-gsrp-teal-light font-black text-3xl shadow-xl">
+                <div className="w-20 h-20 rounded-full bg-gsrp-dark-surface border border-gsrp-dark-border/50 flex items-center justify-center text-gsrp-teal-light font-bold text-3xl shadow-xl">
                   {application.username.charAt(0).toUpperCase()}
                 </div>
               )}
               <div className="text-center md:text-left flex-1">
-                <h1 className="text-2xl font-black text-white mb-1">{application.username}</h1>
+                <h1 className="text-2xl font-bold text-white mb-1">{application.username}</h1>
                 <p className="text-xs font-mono text-gsrp-teal-light/40 uppercase tracking-widest">{application.userId}</p>
-                <p className="text-[10px] font-black text-gsrp-orange uppercase tracking-widest mt-2">{application.typeName || "Application"}</p>
+                <p className="text-[10px] font-bold text-gsrp-orange uppercase tracking-widest mt-2">{application.typeName || "Application"}</p>
                 {application.osDetected && (
                   <p className="text-[10px] font-bold text-gsrp-teal-light/30 mt-1">
                     Detected OS: <span className="text-gsrp-teal-light/50">{application.osDetected === 'mac' ? 'macOS' : application.osDetected === 'windows' ? 'Windows' : 'Other'}</span>
@@ -586,7 +586,7 @@ export default function ApplicationDetail() {
                   <ApplicantTimeDisplay timezone={resolvedTimezone || application?.timezone || application?.answers?.timezone} />
                 )}
               </div>
-              <span className={`px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-widest text-center border
+              <span className={`px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest text-center border
                 ${application.status === 'pending' ? 'bg-gsrp-orange/10 text-gsrp-orange border-gsrp-orange/20' : 
                   application.status === 'accepted' ? 'bg-green-500/10 text-green-500 border-green-500/20' : 
                   'bg-red-500/10 text-red-500 border-red-500/20'}
@@ -598,7 +598,7 @@ export default function ApplicationDetail() {
 
           <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-8">
             <div className="flex items-center justify-between mb-8">
-              <h2 className="text-white font-black text-sm uppercase tracking-[0.2em] flex items-center gap-3">
+              <h2 className="text-white font-bold text-sm uppercase tracking-[0.2em] flex items-center gap-3">
                 <FileText size={18} className="text-gsrp-orange" />
                 Submission Details
               </h2>
@@ -622,11 +622,11 @@ export default function ApplicationDetail() {
                 return (
                   <div key={field.id} className="relative group">
                     <div className="flex justify-between items-start mb-2">
-                      <label className="text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/30">{field.label}</label>
+                      <label className="text-[10px] font-bold uppercase tracking-widest text-gsrp-teal-light/30">{field.label}</label>
                       <div className="flex items-center gap-2">
-                        {stats.hasPastes && <span className="text-[8px] font-black uppercase bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full border border-red-500/20">Paste Detected</span>}
+                        {stats.hasPastes && <span className="text-[8px] font-bold uppercase bg-red-500/10 text-red-500 px-2 py-0.5 rounded-full border border-red-500/20">Paste Detected</span>}
                         {fieldPastes.length > 0 && (
-                          <span className="text-[8px] font-black uppercase bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/20">
+                          <span className="text-[8px] font-bold uppercase bg-amber-500/10 text-amber-500 px-2 py-0.5 rounded-full border border-amber-500/20">
                             {fieldPastes.length} paste{fieldPastes.length > 1 ? 's' : ''}
                           </span>
                         )}
@@ -671,11 +671,11 @@ export default function ApplicationDetail() {
 
           {totalSessionTabOuts > 0 && (
             <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-8">
-              <h2 className="text-white font-black text-sm uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+              <h2 className="text-white font-bold text-sm uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
                 <Eye size={18} className="text-amber-500" />
                 Session Tab-Out Log
                 {totalSessionTabOuts > TAB_OUT_THRESHOLD && (
-                  <span className="ml-2 px-2 py-0.5 bg-red-500/10 text-red-500 text-[9px] font-black uppercase rounded-full border border-red-500/20">
+                  <span className="ml-2 px-2 py-0.5 bg-red-500/10 text-red-500 text-[9px] font-bold uppercase rounded-full border border-red-500/20">
                     Exceeds Threshold
                   </span>
                 )}
@@ -700,7 +700,7 @@ export default function ApplicationDetail() {
 
           {totalSessionMouseLeaves > 0 && (
             <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-8">
-              <h2 className="text-white font-black text-sm uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
+              <h2 className="text-white font-bold text-sm uppercase tracking-[0.2em] mb-6 flex items-center gap-3">
                 <Mouse size={18} className="text-pink-500" />
                 Mouse Leave Events
               </h2>
@@ -724,7 +724,7 @@ export default function ApplicationDetail() {
 
           {application.status === 'pending' && (
             <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-6">
-              <h3 className="text-white font-black text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+              <h3 className="text-white font-bold text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
                 <Clock size={14} className="text-gsrp-orange" />
                 Other Pending
               </h3>
@@ -742,12 +742,12 @@ export default function ApplicationDetail() {
                           {app.userImage ? (
                             <img src={app.userImage} alt="" className="w-8 h-8 rounded-full object-cover border border-white/10" />
                           ) : (
-                            <div className="w-8 h-8 rounded-full bg-gsrp-dark-card border border-white/10 flex items-center justify-center text-white/70 text-xs font-black">
+                            <div className="w-8 h-8 rounded-full bg-gsrp-dark-card border border-white/10 flex items-center justify-center text-white/70 text-xs font-bold">
                               {(app.username || '?').charAt(0).toUpperCase()}
                             </div>
                           )}
                           <div className="min-w-0">
-                            <p className="text-white text-xs font-black truncate">{app.username}</p>
+                            <p className="text-white text-xs font-bold truncate">{app.username}</p>
                             <p className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/30 truncate">
                               {app.typeName || app.type || 'Application'}
                             </p>
@@ -763,7 +763,7 @@ export default function ApplicationDetail() {
           )}
 
           <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-6 sticky top-6">
-            <h3 className="text-white font-black text-xs uppercase tracking-widest mb-6 flex items-center gap-2">
+            <h3 className="text-white font-bold text-xs uppercase tracking-widest mb-6 flex items-center gap-2">
               <CheckCircle size={14} className="text-gsrp-teal" />
               Decision Area
             </h3>
@@ -772,14 +772,14 @@ export default function ApplicationDetail() {
               <div className="space-y-3">
                 <button 
                   onClick={() => { setDecisionType('accepted'); setShowReasonModal(true); }}
-                  className="w-full py-3 bg-gsrp-teal hover:bg-gsrp-teal-light text-white font-black rounded-xl transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-gsrp-teal hover:bg-gsrp-teal-light text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
                 >
                   <CheckCircle size={16} />
                   Accept
                 </button>
                 <button 
                   onClick={() => { setDecisionType('denied'); setShowReasonModal(true); }}
-                  className="w-full py-3 bg-gsrp-dark-surface border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white font-black rounded-xl transition-all flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-gsrp-dark-surface border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
                 >
                   <XCircle size={16} />
                   Deny
@@ -788,7 +788,7 @@ export default function ApplicationDetail() {
             ) : (
               <div className="space-y-4">
                 <div className="p-4 rounded-xl bg-gsrp-dark-surface border border-gsrp-dark-border/50">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gsrp-teal-light/40 mb-2">Review Reason</p>
+                  <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gsrp-teal-light/40 mb-2">Review Reason</p>
                   <p className="text-white text-sm font-medium italic">"{application.decisionReason || application.reason}"</p>
                 </div>
                 <div className="text-center">
@@ -800,7 +800,7 @@ export default function ApplicationDetail() {
             )}
 
             <div className="mt-8 pt-8 border-t border-gsrp-dark-border/50">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-4">Typing Analysis</h4>
+              <h4 className="text-[10px] font-bold uppercase tracking-widest text-gsrp-teal-light/40 mb-4">Typing Analysis</h4>
               <div className="space-y-2">
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-gsrp-teal-light/40">Total Pastes</span>
@@ -826,7 +826,7 @@ export default function ApplicationDetail() {
             <div className="mt-6 pt-6 border-t border-gsrp-dark-border/50">
               <button 
                 onClick={() => setShowDeleteModal(true)}
-                className="w-full py-3 bg-red-500/5 border border-red-500/20 text-red-500/60 hover:bg-red-500 hover:text-white hover:border-red-500 font-black rounded-xl transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
+                className="w-full py-3 bg-red-500/5 border border-red-500/20 text-red-500/60 hover:bg-red-500 hover:text-white hover:border-red-500 font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
               >
                 <Trash2 size={14} />
                 Delete Application
@@ -840,7 +840,7 @@ export default function ApplicationDetail() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ position: 'fixed' }}>
           <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowReasonModal(false)} />
           <div className="relative bg-gsrp-dark-card border border-gsrp-dark-border rounded-2xl p-8 w-full max-w-lg shadow-2xl">
-            <h3 className="text-white font-black text-xl mb-4">
+            <h3 className="text-white font-bold text-xl mb-4">
               {decisionType === 'accepted' ? 'Accept' : 'Deny'} Application
             </h3>
             <p className="text-gsrp-teal-light/60 text-sm mb-6">
@@ -858,7 +858,7 @@ export default function ApplicationDetail() {
               <button 
                 onClick={handleDecision}
                 disabled={isProcessing || !reason.trim()}
-                className={`flex-1 py-3 font-black rounded-xl ${decisionType === 'accepted' ? 'bg-green-500' : 'bg-red-500'} text-white`}
+                className={`flex-1 py-3 font-bold rounded-xl ${decisionType === 'accepted' ? 'bg-green-500' : 'bg-red-500'} text-white`}
               >
                 {isProcessing ? 'Processing...' : 'Confirm'}
               </button>
@@ -876,7 +876,7 @@ export default function ApplicationDetail() {
               <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
                 <Trash2 size={20} className="text-red-500" />
               </div>
-              <h3 className="text-white font-black text-xl">Delete Application</h3>
+              <h3 className="text-white font-bold text-xl">Delete Application</h3>
             </div>
             <p className="text-gsrp-teal-light/60 text-sm mb-2">
               This will permanently delete <span className="text-white font-bold">{application.username}</span>'s application.
@@ -894,7 +894,7 @@ export default function ApplicationDetail() {
               <button 
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-black rounded-xl transition-colors"
+                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors"
               >
                 {isDeleting ? 'Deleting...' : 'Delete'}
               </button>

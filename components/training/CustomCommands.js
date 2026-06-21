@@ -74,7 +74,7 @@ export default function CustomCommandsSection({ isVisible }) {
           <Terminal size={22} className="text-gsrp-teal-light" />
         </div>
         <div>
-          <h2 className="text-2xl font-black text-white">Custom Commands</h2>
+          <h2 className="text-2xl font-bold text-white">Custom Commands</h2>
           <p className="text-gsrp-teal-light/40 text-xs font-medium">In-game moderation command reference — {COMMANDS.length} commands</p>
         </div>
       </div>

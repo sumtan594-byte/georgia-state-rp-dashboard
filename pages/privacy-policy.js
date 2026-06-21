@@ -16,7 +16,7 @@ export default function PrivacyPolicy() {
             <ArrowLeft size={12} /> Back to Dashboard
           </Link>
           <div className="card-glass rounded-2xl p-8 shadow-2xl">
-            <h1 className="text-white font-black text-2xl mb-6">Privacy Policy</h1>
+            <h1 className="text-white font-bold text-2xl mb-6">Privacy Policy</h1>
             <div className="text-gsrp-teal-light/60 text-sm space-y-4 leading-relaxed">
               <p><strong className="text-white">Last Updated:</strong> May 2026</p>
               <p>Georgia State Roleplay ("GSRP", "we", "our") operates this verification portal and associated services. This Privacy Policy explains how we collect, use, and protect your information.</p>

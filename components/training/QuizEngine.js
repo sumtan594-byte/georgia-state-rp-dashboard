@@ -155,7 +155,7 @@ export default function QuizEngine({ questions, passScore, cooldownHours, onSubm
           </div>
 
           {/* Verdict */}
-          <h2 className="text-3xl font-black text-white mb-2">
+          <h2 className="text-3xl font-bold text-white mb-2">
             {passed ? 'Quiz Passed!' : 'Quiz Failed'}
           </h2>
           <p className="text-gsrp-teal-light/50 text-sm mb-6">
@@ -179,7 +179,7 @@ export default function QuizEngine({ questions, passScore, cooldownHours, onSubm
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-black text-white">{pct}%</span>
+              <span className="text-3xl font-bold text-white">{pct}%</span>
               <span className="text-[10px] text-gsrp-teal-light/40 uppercase tracking-wider">Score</span>
             </div>
           </div>
@@ -187,15 +187,15 @@ export default function QuizEngine({ questions, passScore, cooldownHours, onSubm
           {/* Stats */}
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="bg-gsrp-dark-surface/50 rounded-xl p-3">
-              <div className="text-xl font-black text-gsrp-teal-light">{score}</div>
+              <div className="text-xl font-bold text-gsrp-teal-light">{score}</div>
               <div className="text-[10px] text-gsrp-teal-light/30 uppercase tracking-wider">Correct</div>
             </div>
             <div className="bg-gsrp-dark-surface/50 rounded-xl p-3">
-              <div className="text-xl font-black text-gsrp-sunset">{questions.length - score}</div>
+              <div className="text-xl font-bold text-gsrp-sunset">{questions.length - score}</div>
               <div className="text-[10px] text-gsrp-teal-light/30 uppercase tracking-wider">Wrong</div>
             </div>
             <div className="bg-gsrp-dark-surface/50 rounded-xl p-3">
-              <div className="text-xl font-black text-white">{questions.length}</div>
+              <div className="text-xl font-bold text-white">{questions.length}</div>
               <div className="text-[10px] text-gsrp-teal-light/30 uppercase tracking-wider">Total</div>
             </div>
           </div>
@@ -330,7 +330,7 @@ export default function QuizEngine({ questions, passScore, cooldownHours, onSubm
         </span>
 
         {/* Question text */}
-        <h3 className="text-lg sm:text-xl font-black text-white mb-6 leading-snug">
+        <h3 className="text-lg sm:text-xl font-bold text-white mb-6 leading-snug">
           {question.text}
         </h3>
 
@@ -357,7 +357,7 @@ export default function QuizEngine({ questions, passScore, cooldownHours, onSubm
                       : 'border-gsrp-dark-border/50 hover:border-gsrp-dark-border hover:bg-gsrp-dark-surface/40'
                   } ${answered ? 'cursor-default' : ''}`}
                 >
-                  <span className={`flex items-center justify-center w-8 h-8 rounded-lg text-xs font-black shrink-0 ${
+                  <span className={`flex items-center justify-center w-8 h-8 rounded-lg text-xs font-bold shrink-0 ${
                     isCorrect
                       ? 'bg-gsrp-teal text-white'
                       : isWrong
@@ -407,7 +407,7 @@ export default function QuizEngine({ questions, passScore, cooldownHours, onSubm
                   }`}>
                     {val ? '✓' : '✗'}
                   </span>
-                  <span className={`text-lg font-black ${
+                  <span className={`text-lg font-bold ${
                     isCorrect ? 'text-gsrp-teal-light' : isWrong ? 'text-gsrp-sunset' : isSelected ? 'text-white' : 'text-gsrp-teal-light/50'
                   }`}>
                     {val ? 'True' : 'False'}

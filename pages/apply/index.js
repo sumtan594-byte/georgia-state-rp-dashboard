@@ -84,7 +84,7 @@ export default function ApplicationList() {
       </Head>
 
       <div className="mb-10">
-        <h1 className="text-3xl font-black text-white flex items-center gap-4">
+        <h1 className="font-display text-3xl font-extrabold text-white tracking-tight flex items-center gap-4">
           <UserPlus className="text-gsrp-orange" />
           Applications
         </h1>
@@ -109,11 +109,11 @@ export default function ApplicationList() {
               <div className="w-12 h-12 rounded-2xl bg-gsrp-orange/10 flex items-center justify-center text-gsrp-orange mb-6 group-hover:scale-110 transition-transform">
                 <FileText />
               </div>
-              <h3 className="text-xl font-black text-white mb-2 group-hover:text-gsrp-orange transition-colors">{type.name}</h3>
+              <h3 className="text-xl font-bold text-white mb-2 group-hover:text-gsrp-orange transition-colors">{type.name}</h3>
               <p className="text-gsrp-teal-light/60 text-sm mb-6 leading-relaxed">
                 {type.description || `Apply for the ${type.name} department and help our community grow.`}
               </p>
-              <div className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-gsrp-orange">
+              <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-gsrp-orange">
                 Start Application <ChevronRight size={14} />
               </div>
             </div>
@@ -122,7 +122,7 @@ export default function ApplicationList() {
         {!error && types.length === 0 && (
           <div className="md:col-span-2 rounded-3xl border border-dashed border-gsrp-dark-border bg-gsrp-dark-card/50 p-10 text-center">
             <FileText className="mx-auto mb-4 h-10 w-10 text-white/15" />
-            <h2 className="mb-2 text-lg font-black text-white/70">No Applications Open</h2>
+            <h2 className="mb-2 text-lg font-bold text-white/70">No Applications Open</h2>
             <p className="text-sm text-gsrp-teal-light/35">There are no application forms available for your current Discord roles.</p>
           </div>
         )}

@@ -22,7 +22,7 @@ export default function VideoEvidencePanel({ evidence, evidenceValid, onView, re
               <Video size={14} className={viewed ? (evidenceValid ? 'text-gsrp-teal-light' : 'text-amber-400') : 'text-gsrp-orange'} />
             </div>
             <div>
-              <span className={`text-xs font-black uppercase tracking-wider ${
+              <span className={`text-xs font-bold uppercase tracking-wider ${
                 viewed ? (evidenceValid ? 'text-gsrp-teal-light' : 'text-amber-400') : 'text-gsrp-orange'
               }`}>
                 {viewed ? 'Evidence Reviewed' : requestLabel ? 'Details Available' : 'Evidence Available'}
@@ -55,7 +55,7 @@ export default function VideoEvidencePanel({ evidence, evidenceValid, onView, re
                 {requestLabel ? 'RP Request Context' : 'Player-submitted Clip'}
               </span>
               {!evidenceValid && (
-                <span className="ml-auto text-[9px] font-black uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
+                <span className="ml-auto text-[9px] font-bold uppercase tracking-wider text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-full">
                   Evidence Inconclusive
                 </span>
               )}

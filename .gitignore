@@ -9,3 +9,7 @@ node_modules
 ruvector.db
 
 public/media/Bannerdash.png
+
+# Oracle DB wallet — credentials, never commit
+Wallet_R66MNSDAHJLMHPIE/
+Wallet_R66MNSDAHJLMHPIE.zip

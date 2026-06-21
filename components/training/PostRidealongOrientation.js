@@ -52,7 +52,7 @@ function LoopVideo({ src, label, accent = 'teal' }) {
   return (
     <div className="space-y-2 flex-1">
       {label && (
-        <p className={`text-[11px] font-black uppercase tracking-widest ${labelColor}`}>{label}</p>
+        <p className={`text-[11px] font-bold uppercase tracking-widest ${labelColor}`}>{label}</p>
       )}
       <div className={`rounded-2xl overflow-hidden border ${borderColor} bg-black relative`}>
         {!loaded && (
@@ -185,7 +185,7 @@ export default function PostRidealongOrientation({
         <div className="w-20 h-20 rounded-full bg-gsrp-orange/10 border-2 border-gsrp-orange/30 flex items-center justify-center mb-8">
           <Shield size={36} className="text-gsrp-orange" />
         </div>
-        <h1 className="text-4xl sm:text-5xl font-black text-white leading-tight mb-4">
+        <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-4">
           Great job, you have completed<br />
           <span className="text-gsrp-orange">your orientation!</span>
         </h1>
@@ -200,7 +200,7 @@ export default function PostRidealongOrientation({
     if (step === 1) return (
       <div className="max-w-2xl mx-auto w-full">
         <p className="text-gsrp-orange text-xs font-bold uppercase tracking-widest mb-4 text-center">Greeting Setup</p>
-        <h2 className="text-3xl sm:text-4xl font-black text-white text-center mb-3 leading-tight">
+        <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-3 leading-tight">
           The most important thing is how you approach players.
         </h2>
         <p className="text-gsrp-teal-light/50 text-center mb-10 text-base">
@@ -217,7 +217,7 @@ export default function PostRidealongOrientation({
                   : 'border-gsrp-dark-border/50 hover:border-gsrp-teal/30 hover:bg-gsrp-dark-surface/40'
               }`}
             >
-              <span className={`flex items-center justify-center w-8 h-8 rounded-xl text-sm font-black shrink-0 mt-0.5 transition-all ${
+              <span className={`flex items-center justify-center w-8 h-8 rounded-xl text-sm font-bold shrink-0 mt-0.5 transition-all ${
                 chosenGreeting === g.id
                   ? 'bg-gsrp-teal text-white'
                   : 'bg-gsrp-dark-surface text-gsrp-teal-light/40 border border-gsrp-dark-border'
@@ -240,7 +240,7 @@ export default function PostRidealongOrientation({
     if (step === 2) return (
       <div className="max-w-2xl mx-auto w-full">
         <p className="text-gsrp-teal-light text-xs font-bold uppercase tracking-widest mb-4 text-center">Your Greeting</p>
-        <h2 className="text-3xl sm:text-4xl font-black text-white text-center mb-3 leading-tight">
+        <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-3 leading-tight">
           This will be your greeting every time<br />you respond to a mod call.
         </h2>
         <div className="mt-10 bg-gsrp-dark-surface/60 border border-gsrp-teal/30 rounded-2xl p-6 relative mb-10">
@@ -256,7 +256,7 @@ export default function PostRidealongOrientation({
     // ── 3: shift start via melonly ────────────────────────────────────────
     if (step === 3) return (
       <div className="max-w-2xl mx-auto w-full">
-        <h2 className="text-3xl sm:text-4xl font-black text-white text-center mb-3 leading-tight">
+        <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-3 leading-tight">
           Before starting to moderate, always ensure<br />
           <span className="text-gsrp-orange">you start your shift through Melonly first!</span>
         </h2>
@@ -270,7 +270,7 @@ export default function PostRidealongOrientation({
     // ── 4: uniforms / SPaG ───────────────────────────────────────────────
     if (step === 4) return (
       <div className="max-w-2xl mx-auto w-full">
-        <h2 className="text-3xl sm:text-4xl font-black text-white text-center mb-3 leading-tight">
+        <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-3 leading-tight">
           Always ensure you use proper uniforms, liveries,<br />
           and <span className="text-gsrp-orange">SPaG</span>
           <span className="text-gsrp-teal-light/50 text-xl font-semibold"> (Spelling, Punctuation & Grammar).</span>
@@ -288,7 +288,7 @@ export default function PostRidealongOrientation({
         <div className="w-16 h-16 rounded-2xl bg-gsrp-sunset/10 border border-gsrp-sunset/30 flex items-center justify-center mx-auto mb-8">
           <span className="text-3xl">⚠️</span>
         </div>
-        <h2 className="text-3xl sm:text-4xl font-black text-white mb-4 leading-tight">
+        <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
           When getting off, always make sure to{' '}
           <span className="text-gsrp-sunset">end your shift</span>{' '}
           or else you will be infracted!
@@ -302,7 +302,7 @@ export default function PostRidealongOrientation({
     // ── 6: driving examples ───────────────────────────────────────────────
     if (step === 6) return (
       <div className="max-w-3xl mx-auto w-full">
-        <h2 className="text-3xl sm:text-4xl font-black text-white text-center mb-3 leading-tight">
+        <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-3 leading-tight">
           Always make sure you are driving professionally and realistically.
         </h2>
         <p className="text-gsrp-teal-light/50 text-center text-base mb-10">No swerving or cutting corners.</p>
@@ -322,16 +322,16 @@ export default function PostRidealongOrientation({
         <div className="w-16 h-16 rounded-2xl bg-gsrp-orange/10 border border-gsrp-orange/30 flex items-center justify-center mx-auto mb-8">
           <span className="text-3xl">‼️</span>
         </div>
-        <h2 className="text-3xl sm:text-4xl font-black text-white text-center mb-3 leading-tight">
+        <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-3 leading-tight">
           This is the most important thing!
         </h2>
-        <p className="text-gsrp-orange text-center text-xl font-black mb-10">
+        <p className="text-gsrp-orange text-center text-xl font-bold mb-10">
           Always use 4 letters or more in usernames when using commands!
         </p>
         <div className="grid grid-cols-2 gap-6 mb-10">
           {/* Bad column */}
           <div className="space-y-3">
-            <p className="text-gsrp-sunset text-xs font-black uppercase tracking-widest text-center">NO 😞</p>
+            <p className="text-gsrp-sunset text-xs font-bold uppercase tracking-widest text-center">NO 😞</p>
             {[':to kol', ':to ko', ':to k'].map(cmd => (
               <div key={cmd} className="bg-gsrp-sunset/8 border border-gsrp-sunset/25 rounded-xl px-4 py-3 text-center">
                 <code className="text-gsrp-sunset font-mono text-base font-bold">{cmd}</code>
@@ -340,7 +340,7 @@ export default function PostRidealongOrientation({
           </div>
           {/* Good column */}
           <div className="space-y-3">
-            <p className="text-gsrp-teal-light text-xs font-black uppercase tracking-widest text-center">YES 😊</p>
+            <p className="text-gsrp-teal-light text-xs font-bold uppercase tracking-widest text-center">YES 😊</p>
             {[':to kolt', ':to koltboy', ':to koltboy123'].map(cmd => (
               <div key={cmd} className="bg-gsrp-teal/8 border border-gsrp-teal/25 rounded-xl px-4 py-3 text-center">
                 <code className="text-gsrp-teal-light font-mono text-base font-bold">{cmd}</code>
@@ -360,7 +360,7 @@ export default function PostRidealongOrientation({
         <div className="w-20 h-20 rounded-full bg-gsrp-teal/10 border-2 border-gsrp-teal/30 flex items-center justify-center mx-auto mb-8">
           <CheckCheck size={36} className="text-gsrp-teal-light" />
         </div>
-        <h2 className="text-3xl sm:text-4xl font-black text-white text-center mb-4 leading-tight">
+        <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-4 leading-tight">
           And that's it, you are (hopefully) ready to start moderating<br />
           <span className="text-gsrp-teal-light">for Georgia State Roleplay!</span>
         </h2>
@@ -374,9 +374,9 @@ export default function PostRidealongOrientation({
           <div className="bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 rounded-lg bg-gsrp-orange/10 border border-gsrp-orange/20 flex items-center justify-center shrink-0">
-                <span className="text-xs font-black text-gsrp-orange">1</span>
+                <span className="text-xs font-bold text-gsrp-orange">1</span>
               </div>
-              <h3 className="text-white font-black">Request to join the WL group</h3>
+              <h3 className="text-white font-bold">Request to join the WL group</h3>
             </div>
             <ol className="space-y-2">
               {[
@@ -402,9 +402,9 @@ export default function PostRidealongOrientation({
           <div className="bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 rounded-lg bg-gsrp-orange/10 border border-gsrp-orange/20 flex items-center justify-center shrink-0">
-                <span className="text-xs font-black text-gsrp-orange">2</span>
+                <span className="text-xs font-bold text-gsrp-orange">2</span>
               </div>
-              <h3 className="text-white font-black">Receiving your mod commands</h3>
+              <h3 className="text-white font-bold">Receiving your mod commands</h3>
             </div>
             <ol className="space-y-2">
               {[
@@ -543,7 +543,7 @@ function ActionButton({ ready, busy = false, onClick, label, pendingLabel = 'Ple
     <button
       onClick={ready && !busy ? onClick : undefined}
       disabled={!ready || busy}
-      className={`flex items-center gap-3 px-10 py-4 rounded-2xl text-white font-black text-base shadow-lg transition-all duration-300 ${
+      className={`flex items-center gap-3 px-10 py-4 rounded-2xl text-white font-bold text-base shadow-lg transition-all duration-300 ${
         ready && !busy
           ? `${bg} cursor-pointer`
           : 'bg-gsrp-dark-surface border border-gsrp-dark-border text-gsrp-teal-light/20 cursor-not-allowed'

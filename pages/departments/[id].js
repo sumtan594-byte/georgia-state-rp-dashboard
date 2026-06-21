@@ -62,7 +62,7 @@ export default function DepartmentDashboard() {
                 <span className="text-gsrp-orange font-bold text-[10px] uppercase tracking-[0.3em] mb-1 block">
                   {department.category} Department
                 </span>
-                <h1 className="text-white font-black text-3xl md:text-4xl">{department.name}</h1>
+                <h1 className="text-white font-bold text-3xl md:text-4xl">{department.name}</h1>
               </div>
             </div>
 

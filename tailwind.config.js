@@ -27,10 +27,22 @@ module.exports = {
       },
       fontFamily: {
         'syne': ['Syne', 'sans-serif'],
+        'display': ['Syne', 'Nunito', 'sans-serif'],
         'dm': ['DM Sans', 'sans-serif'],
         'inter': ['Inter', 'sans-serif'],
         'fredoka': ['Fredoka', 'sans-serif'],
         'nunito': ['Nunito', 'sans-serif'],
+        'mono': ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
+      transitionTimingFunction: {
+        'snap': 'cubic-bezier(0.2, 0.9, 0.2, 1.1)',
+        'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
+      },
+      boxShadow: {
+        'tac-1': '0 1px 2px rgba(0, 0, 0, 0.4)',
+        'tac-2': '0 8px 24px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.04)',
+        'tac-3': '0 24px 60px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.05)',
+        'glow-orange': '0 0 0 1px rgba(249, 115, 22, 0.35), 0 0 22px rgba(249, 115, 22, 0.18)',
       },
       animation: {
         'glow': 'glow 2s ease-in-out infinite alternate',

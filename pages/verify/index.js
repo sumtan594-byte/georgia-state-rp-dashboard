@@ -195,7 +195,7 @@ export default function VerifyPage() {
                 <ShieldCheck size={32} className="text-red-400" />
               </div>
               <div className="text-center md:text-left flex-1">
-                <h2 className="text-red-400 font-black text-xl mb-1">Account Banned from ER:LC</h2>
+                <h2 className="text-red-400 font-bold text-xl mb-1">Account Banned from ER:LC</h2>
                 <p className="text-gsrp-teal-light/60 text-sm mb-2">
                   You were banned by <span className="text-white font-bold">{erlc.ban.logger}</span> for:
                 </p>
@@ -224,7 +224,7 @@ export default function VerifyPage() {
                 </div>
 
                 <div className="mb-6">
-                  <h1 className="text-white font-black text-2xl mb-1 flex items-center gap-2">
+                  <h1 className="text-white font-bold text-2xl mb-1 flex items-center gap-2">
                     {roblox.displayName}
                     {roblox.displayName !== roblox.username && (
                       <span className="text-gsrp-teal-light/30 text-sm font-medium">@{roblox.username}</span>
@@ -269,7 +269,7 @@ export default function VerifyPage() {
                   <button
                     onClick={handleUnlink}
                     disabled={isUnlinking}
-                    className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-[11px] font-black uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group/btn"
+                    className="w-full py-3 bg-red-500/10 hover:bg-red-500/20 border border-red-500/30 text-red-400 rounded-xl text-[11px] font-bold uppercase tracking-wider transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 group/btn"
                   >
                     {isUnlinking ? (
                       <>
@@ -311,7 +311,7 @@ export default function VerifyPage() {
                     <img src={session.user.image} alt={session.user.name} className="w-full h-full object-cover" />
                  </div>
                  <div>
-                    <h2 className="text-white font-black text-2xl mb-1">{discord.name}</h2>
+                    <h2 className="text-white font-bold text-2xl mb-1">{discord.name}</h2>
                     <p className="text-gsrp-orange font-bold text-[10px] uppercase tracking-widest">{discord.id}</p>
                  </div>
                </div>
@@ -345,7 +345,7 @@ export default function VerifyPage() {
                    melonlyLogs.map((log, i) => (
                      <div key={i} className="group p-4 bg-gsrp-dark/30 hover:bg-gsrp-dark/50 border border-gsrp-dark-border/20 rounded-2xl transition-all">
                         <div className="flex items-center justify-between mb-2">
-                           <span className={`text-[10px] font-black uppercase px-2 py-0.5 rounded-md ${
+                           <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
                              log.typeId === 'ban' ? 'bg-red-500/20 text-red-400' : 
                              log.typeId === 'kick' ? 'bg-orange-500/20 text-orange-400' :
                              'bg-gsrp-teal/20 text-gsrp-teal-light'
@@ -387,7 +387,7 @@ export default function VerifyPage() {
 
           {status === 'idle' && (
             <>
-              <h1 className="text-white font-black text-xl mb-2">Roblox Verification</h1>
+              <h1 className="text-white font-bold text-xl mb-2">Roblox Verification</h1>
               <p className="text-gsrp-teal-light/40 text-sm mb-2">
                 Link your Roblox account to <span className="text-white font-medium">{session.user.name}</span>
               </p>
@@ -406,7 +406,7 @@ export default function VerifyPage() {
 
           {status === 'loading' && (
             <>
-              <h1 className="text-white font-black text-xl mb-2">Processing Verification</h1>
+              <h1 className="text-white font-bold text-xl mb-2">Processing Verification</h1>
               <div className="flex justify-center mb-4">
                 <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
               </div>
@@ -416,7 +416,7 @@ export default function VerifyPage() {
 
           {status === 'success' && (
             <>
-              <h1 className="text-green-400 font-black text-xl mb-2">Verification Complete</h1>
+              <h1 className="text-green-400 font-bold text-xl mb-2">Verification Complete</h1>
               <p className="text-gsrp-teal-light/40 text-sm mb-6">{message}</p>
               <Link href="/" className="inline-flex items-center gap-2 text-gsrp-orange hover:text-gsrp-orange-light text-sm font-bold transition-colors cursor-pointer">
                 <ArrowLeft size={14} /> Back to Dashboard
@@ -426,7 +426,7 @@ export default function VerifyPage() {
 
           {status === 'error' && (
             <>
-              <h1 className="text-red-400 font-black text-xl mb-2">Verification Failed</h1>
+              <h1 className="text-red-400 font-bold text-xl mb-2">Verification Failed</h1>
               <p className="text-gsrp-teal-light/40 text-sm mb-6">{message}</p>
               <a
                 href={robloxAuthUrl}

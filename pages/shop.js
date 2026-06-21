@@ -137,7 +137,7 @@ export default function Shop() {
         
         <div className="relative z-10 flex flex-col md:flex-row items-center md:justify-between gap-6">
           <div>
-            <h1 className="text-white font-black text-3xl md:text-5xl mb-4 tracking-tight flex items-center gap-4">
+            <h1 className="text-white font-bold text-3xl md:text-5xl mb-4 tracking-tight flex items-center gap-4">
               <ShoppingCart className="w-10 h-10 text-gsrp-orange" />
               GSRP Store
             </h1>
@@ -158,7 +158,7 @@ export default function Shop() {
               <button
                 onClick={loadPurchases}
                 disabled={purchaseState.loading}
-                className="inline-flex items-center gap-2 rounded-xl border border-gsrp-dark-border/60 bg-gsrp-dark/40 px-3 py-2 text-xs font-black uppercase tracking-wider text-gsrp-teal-light/50 hover:text-white hover:border-gsrp-teal/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-2 rounded-xl border border-gsrp-dark-border/60 bg-gsrp-dark/40 px-3 py-2 text-xs font-bold uppercase tracking-wider text-gsrp-teal-light/50 hover:text-white hover:border-gsrp-teal/50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 title="Refresh purchase status"
               >
                 <RefreshCw className={`w-4 h-4 ${purchaseState.loading ? 'animate-spin' : ''}`} />
@@ -212,14 +212,14 @@ export default function Shop() {
             `}
           >
             {product.featured && (
-              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-gsrp-orange to-gsrp-warm text-white text-[10px] font-black uppercase tracking-widest py-1 px-4 rounded-full shadow-lg z-10 whitespace-nowrap">
+              <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-gsrp-orange to-gsrp-warm text-white text-[10px] font-bold uppercase tracking-widest py-1 px-4 rounded-full shadow-lg z-10 whitespace-nowrap">
                 Most Popular
               </div>
             )}
             
             {product.overlay && (
               <div className="absolute inset-0 bg-gsrp-dark-card/80 backdrop-blur-[2px] z-20 flex items-center justify-center rounded-2xl border border-gsrp-dark-border/50">
-                <div className="bg-gsrp-dark-surface px-6 py-3 rounded-xl font-black text-xl text-gsrp-teal-light tracking-widest uppercase border border-gsrp-teal/30 shadow-[0_0_20px_rgba(20,184,166,0.2)] transform -rotate-12">
+                <div className="bg-gsrp-dark-surface px-6 py-3 rounded-xl font-bold text-xl text-gsrp-teal-light tracking-widest uppercase border border-gsrp-teal/30 shadow-[0_0_20px_rgba(20,184,166,0.2)] transform -rotate-12">
                   {product.overlay}
                 </div>
               </div>
@@ -231,7 +231,7 @@ export default function Shop() {
                   {product.icon ? <product.icon className="w-6 h-6" /> : <Heart className="w-6 h-6" />}
                 </div>
                 <div className="text-right">
-                  <span className="block text-2xl font-black text-white">R$ {product.price}</span>
+                  <span className="block text-2xl font-bold text-white">R$ {product.price}</span>
                 </div>
               </div>
               
@@ -310,7 +310,7 @@ export default function Shop() {
                   <AlertCircle className="w-6 h-6" />
                 </div>
                 <div>
-                  <h2 className="text-white text-xl font-black">Purchase not verified</h2>
+                  <h2 className="text-white text-xl font-bold">Purchase not verified</h2>
                   <p className="mt-1 text-sm font-semibold text-gsrp-teal-light/60">{purchaseErrorModal.productName}</p>
                 </div>
               </div>
@@ -322,7 +322,7 @@ export default function Shop() {
               </p>
 
               <div className="mt-5 rounded-xl border border-gsrp-dark-border/70 bg-gsrp-dark-surface/70 p-4">
-                <p className="text-xs font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-3">Possible fixes</p>
+                <p className="text-xs font-bold uppercase tracking-widest text-gsrp-teal-light/40 mb-3">Possible fixes</p>
                 <div className="space-y-3 text-sm text-gsrp-teal-light/70">
                   <div className="flex gap-3">
                     <ChevronRight className="w-4 h-4 mt-0.5 text-gsrp-orange flex-shrink-0" />
@@ -341,7 +341,7 @@ export default function Shop() {
 
               <button
                 onClick={() => setPurchaseErrorModal(null)}
-                className="mt-6 w-full min-h-12 rounded-xl bg-gsrp-orange px-5 py-3 text-sm font-black text-white hover:bg-gsrp-warm transition-colors"
+                className="mt-6 w-full min-h-12 rounded-xl bg-gsrp-orange px-5 py-3 text-sm font-bold text-white hover:bg-gsrp-warm transition-colors"
               >
                 Got it
               </button>

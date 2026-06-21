@@ -242,7 +242,7 @@ export default function TrainingPage() {
           <div className="flex items-center justify-center w-20 h-20 rounded-full mx-auto mb-6 bg-gsrp-teal/10 border-2 border-gsrp-teal/30">
             <Shield size={36} className="text-gsrp-teal-light" />
           </div>
-          <h2 className="text-3xl font-black text-white mb-2">Training Complete!</h2>
+          <h2 className="text-3xl font-bold text-white mb-2">Training Complete!</h2>
           <p className="text-gsrp-teal-light/50 text-sm mb-6">
             {ridealongPassed
               ? 'You have completed both the quiz and the ridealong simulation. Your Discord roles have been updated.'
@@ -296,11 +296,11 @@ export default function TrainingPage() {
           <div className="flex items-center justify-center w-20 h-20 rounded-full mx-auto mb-6 bg-gsrp-sunset/10 border-2 border-gsrp-sunset/30">
             <Clock size={36} className="text-gsrp-sunset" />
           </div>
-          <h2 className="text-3xl font-black text-white mb-2">Quiz on Cooldown</h2>
+          <h2 className="text-3xl font-bold text-white mb-2">Quiz on Cooldown</h2>
           <p className="text-gsrp-teal-light/50 text-sm mb-2">
             You must wait before retaking the quiz.
           </p>
-          <p className="text-gsrp-orange text-2xl font-black mb-6">
+          <p className="text-gsrp-orange text-2xl font-bold mb-6">
             {hours}h {mins}m
           </p>
           <div className="bg-gsrp-dark-surface/50 rounded-xl p-4 mb-6">
@@ -355,7 +355,7 @@ export default function TrainingPage() {
           <Shield size={26} className="text-gsrp-orange" />
         </div>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white">Staff Orientation Quiz</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Staff Orientation Quiz</h1>
           <p className="text-gsrp-teal-light/40 text-xs font-medium">Staff Standards & Development — Georgia State Roleplay</p>
         </div>
       </div>
@@ -367,9 +367,9 @@ export default function TrainingPage() {
             <div className="w-10 h-10 rounded-xl bg-gsrp-orange/10 flex items-center justify-center">
               <AlertTriangle size={18} className="text-gsrp-orange" />
             </div>
-            <h3 className="text-sm font-black text-white">Pass Score</h3>
+            <h3 className="text-sm font-bold text-white">Pass Score</h3>
           </div>
-          <p className="text-2xl font-black text-gsrp-orange">{QUIZ_CONFIG.PASS_SCORE}/{QUIZ_CONFIG.TOTAL_QUESTIONS}</p>
+          <p className="text-2xl font-bold text-gsrp-orange">{QUIZ_CONFIG.PASS_SCORE}/{QUIZ_CONFIG.TOTAL_QUESTIONS}</p>
           <p className="text-xs text-gsrp-teal-light/30 mt-1">Correct answers required</p>
         </div>
 
@@ -378,9 +378,9 @@ export default function TrainingPage() {
             <div className="w-10 h-10 rounded-xl bg-gsrp-sunset/10 flex items-center justify-center">
               <RotateCcw size={18} className="text-gsrp-sunset" />
             </div>
-            <h3 className="text-sm font-black text-white">Cooldown</h3>
+            <h3 className="text-sm font-bold text-white">Cooldown</h3>
           </div>
-          <p className="text-2xl font-black text-gsrp-sunset">{QUIZ_CONFIG.COOLDOWN_HOURS}h</p>
+          <p className="text-2xl font-bold text-gsrp-sunset">{QUIZ_CONFIG.COOLDOWN_HOURS}h</p>
           <p className="text-xs text-gsrp-teal-light/30 mt-1">Between failed attempts</p>
         </div>
 
@@ -389,9 +389,9 @@ export default function TrainingPage() {
             <div className="w-10 h-10 rounded-xl bg-gsrp-teal/10 flex items-center justify-center">
               <BookOpen size={18} className="text-gsrp-teal-light" />
             </div>
-            <h3 className="text-sm font-black text-white">Questions</h3>
+            <h3 className="text-sm font-bold text-white">Questions</h3>
           </div>
-          <p className="text-2xl font-black text-gsrp-teal-light">{QUIZ_CONFIG.TOTAL_QUESTIONS}</p>
+          <p className="text-2xl font-bold text-gsrp-teal-light">{QUIZ_CONFIG.TOTAL_QUESTIONS}</p>
           <p className="text-xs text-gsrp-teal-light/30 mt-1">Randomised each attempt</p>
         </div>
 
@@ -400,7 +400,7 @@ export default function TrainingPage() {
             <div className="w-10 h-10 rounded-xl bg-gsrp-teal/10 flex items-center justify-center">
               <BookOpen size={18} className="text-gsrp-teal-light" />
             </div>
-            <h3 className="text-sm font-black text-gsrp-teal-light">Open Book</h3>
+            <h3 className="text-sm font-bold text-gsrp-teal-light">Open Book</h3>
           </div>
           <p className="text-xs text-gsrp-teal-light/50">Handbook accessible at any time during the quiz</p>
         </div>
@@ -414,7 +414,7 @@ export default function TrainingPage() {
               <Clock size={22} className="text-gsrp-teal-light" />
             </div>
             <div className="flex-1 min-w-0">
-              <h3 className="text-sm font-black text-gsrp-teal-light mb-1">Quiz in Progress</h3>
+              <h3 className="text-sm font-bold text-gsrp-teal-light mb-1">Quiz in Progress</h3>
               <p className="text-xs text-gsrp-teal-light/50 mb-1">
                 You were on question {savedSession.currentQ + 1} of {savedSession.questions?.length || QUIZ_CONFIG.TOTAL_QUESTIONS} with a score of {savedSession.score}.
               </p>
@@ -446,7 +446,7 @@ export default function TrainingPage() {
       <div className="flex justify-center py-4">
         <button
           onClick={() => setShowWarning(true)}
-          className="group px-10 py-4 bg-gradient-to-r from-gsrp-orange to-gsrp-orange-light text-white font-black text-lg rounded-2xl shadow-lg shadow-gsrp-orange/20 hover:shadow-gsrp-orange/30 transition-all cursor-pointer flex items-center gap-3"
+          className="group px-10 py-4 bg-gradient-to-r from-gsrp-orange to-gsrp-orange-light text-white font-bold text-lg rounded-2xl shadow-lg shadow-gsrp-orange/20 hover:shadow-gsrp-orange/30 transition-all cursor-pointer flex items-center gap-3"
         >
           <Shield size={20} />
           Start Quiz
@@ -456,7 +456,7 @@ export default function TrainingPage() {
 
       {/* What to expect */}
       <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
-        <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4">What to Expect</h3>
+        <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">What to Expect</h3>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {[
             { label: 'In-Game Punishments', count: '~5 questions', color: 'text-gsrp-orange' },
@@ -483,7 +483,7 @@ export default function TrainingPage() {
             <Shield size={22} className="text-gsrp-teal-light" />
           </div>
           <div className="flex-1 min-w-0">
-            <h3 className="text-sm font-black text-gsrp-teal-light mb-1">Ridealong Simulation</h3>
+            <h3 className="text-sm font-bold text-gsrp-teal-light mb-1">Ridealong Simulation</h3>
             <p className="text-xs text-gsrp-teal-light/50 mb-3">
               After passing the quiz, test your skills with simulated mod calls. Review video evidence and decide the correct course of action.
             </p>

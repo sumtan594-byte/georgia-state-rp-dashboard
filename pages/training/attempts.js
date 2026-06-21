@@ -144,7 +144,7 @@ export default function AttemptsPage() {
     <div className="max-w-6xl mx-auto animate-fade-in-up">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-black text-white">Training Attempts</h1>
+          <h1 className="text-2xl font-bold text-white">Training Attempts</h1>
           <p className="text-gsrp-teal-light/40 text-[10px] uppercase tracking-widest mt-1">
             {tab === 'quiz'
               ? `${filtered.length} quiz attempt${filtered.length !== 1 ? 's' : ''}`

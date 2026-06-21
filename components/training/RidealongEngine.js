@@ -497,7 +497,7 @@ export default function RidealongEngine({
               : <XCircle size={36} className="text-gsrp-sunset" />}
           </div>
 
-          <h2 className="text-3xl font-black text-white mb-2">
+          <h2 className="text-3xl font-bold text-white mb-2">
             {passed ? 'Ridealong Passed!' : 'Ridealong Failed'}
           </h2>
           <p className="text-gsrp-teal-light/50 text-sm mb-6">
@@ -519,22 +519,22 @@ export default function RidealongEngine({
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-3xl font-black text-white">{pct}%</span>
+              <span className="text-3xl font-bold text-white">{pct}%</span>
               <span className="text-[10px] text-gsrp-teal-light/40 uppercase tracking-wider">Score</span>
             </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3 mb-6">
             <div className="bg-gsrp-dark-surface/50 rounded-xl p-3">
-              <div className="text-xl font-black text-gsrp-teal-light">{score}</div>
+              <div className="text-xl font-bold text-gsrp-teal-light">{score}</div>
               <div className="text-[10px] text-gsrp-teal-light/30 uppercase tracking-wider">Correct</div>
             </div>
             <div className="bg-gsrp-dark-surface/50 rounded-xl p-3">
-              <div className="text-xl font-black text-gsrp-sunset">{total - score}</div>
+              <div className="text-xl font-bold text-gsrp-sunset">{total - score}</div>
               <div className="text-[10px] text-gsrp-teal-light/30 uppercase tracking-wider">Wrong</div>
             </div>
             <div className="bg-gsrp-dark-surface/50 rounded-xl p-3">
-              <div className="text-xl font-black text-white">{total}</div>
+              <div className="text-xl font-bold text-white">{total}</div>
               <div className="text-[10px] text-gsrp-teal-light/30 uppercase tracking-wider">Total</div>
             </div>
           </div>
@@ -545,7 +545,7 @@ export default function RidealongEngine({
                 <Clock size={16} />
                 <span>Cooldown</span>
               </div>
-              <p className="text-2xl font-black text-gsrp-sunset mt-2 tabular-nums">
+              <p className="text-2xl font-bold text-gsrp-sunset mt-2 tabular-nums">
                 {Math.floor(cooldownRemaining / 3600)}h {Math.floor((cooldownRemaining % 3600) / 60)}m {cooldownRemaining % 60}s
               </p>
               <p className="text-gsrp-teal-light/40 text-xs mt-2 text-center">
@@ -715,7 +715,7 @@ export default function RidealongEngine({
                 type="button"
                 onClick={handleSkipQuestion}
                 disabled={submitting}
-                className="px-3 py-1.5 rounded-lg border border-gsrp-orange/30 bg-gsrp-orange/10 text-gsrp-orange text-[10px] font-black uppercase tracking-wider hover:bg-gsrp-orange/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                className="px-3 py-1.5 rounded-lg border border-gsrp-orange/30 bg-gsrp-orange/10 text-gsrp-orange text-[10px] font-bold uppercase tracking-wider hover:bg-gsrp-orange/20 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
               >
                 <SkipForward size={12} />
                 Skip question
@@ -1214,7 +1214,7 @@ export default function RidealongEngine({
                           : 'border-gsrp-dark-border/50 hover:border-gsrp-dark-border hover:bg-gsrp-dark-surface/40'
                       } ${answered ? 'cursor-default' : ''}`}
                     >
-                      <span className={`flex items-center justify-center w-7 h-7 rounded-lg text-xs font-black shrink-0 mt-0.5 ${
+                      <span className={`flex items-center justify-center w-7 h-7 rounded-lg text-xs font-bold shrink-0 mt-0.5 ${
                         isCorrect
                           ? 'bg-gsrp-teal text-white'
                           : isWrong

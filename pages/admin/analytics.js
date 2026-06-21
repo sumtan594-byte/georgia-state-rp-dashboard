@@ -12,9 +12,9 @@ function Stat({ icon: Icon, label, value, tone = 'text-white' }) {
     <div className="rounded-xl border border-gsrp-dark-border/50 bg-gsrp-dark-card/55 p-4">
       <div className="mb-3 flex items-center gap-2 text-gsrp-teal-light/35">
         <Icon size={15} />
-        <span className="text-[10px] font-black uppercase tracking-widest">{label}</span>
+        <span className="text-[10px] font-bold uppercase tracking-widest">{label}</span>
       </div>
-      <p className={`text-3xl font-black ${tone}`}>{value}</p>
+      <p className={`font-mono tabular text-3xl font-bold ${tone}`}>{value}</p>
     </div>
   );
 }
@@ -22,7 +22,7 @@ function Stat({ icon: Icon, label, value, tone = 'text-white' }) {
 function ListBlock({ title, items }) {
   return (
     <div className="rounded-xl border border-gsrp-dark-border/50 bg-gsrp-dark-card/55 p-5">
-      <h2 className="mb-4 text-xs font-black uppercase tracking-[0.25em] text-gsrp-orange">{title}</h2>
+      <h2 className="mb-4 text-xs font-bold uppercase tracking-[0.25em] text-gsrp-orange">{title}</h2>
       <div className="space-y-3">
         {(items || []).map(item => (
           <div key={item.label} className="flex items-center gap-3">
@@ -61,7 +61,7 @@ export default function AnalyticsPage({ canAccess }) {
   return (
     <div className="mx-auto max-w-7xl animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="flex items-center gap-3 text-3xl font-black text-white">
+        <h1 className="flex items-center gap-3 text-3xl font-bold text-white">
           <BarChart3 className="text-gsrp-orange" /> Analytics
         </h1>
         <p className="mt-1 text-sm text-gsrp-teal-light/40">Seven-day visitor activity, auto-pruned weekly.</p>

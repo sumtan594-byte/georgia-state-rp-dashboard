@@ -41,7 +41,7 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
             >
               <t.icon size={13} />
               {t.label}
-              {count > 0 && <span className="text-[10px] text-white/20">({count})</span>}
+              {count > 0 && <span className="font-mono text-[10px] text-white/25">{count}</span>}
             </button>
           );
         })}
@@ -56,7 +56,7 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
                 ? <LogIn size={12} className="text-green-400/60 flex-shrink-0" />
                 : <LogOutIcon size={12} className="text-red-400/60 flex-shrink-0" />}
               <span className="text-white/70 flex-1 truncate font-medium">{name}</span>
-              <span className="text-white/20 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
+              <span className="font-mono text-white/30 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
             </div>
           );
         }))}
@@ -70,7 +70,7 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
               <span className="text-white/70 truncate font-medium max-w-[90px] truncate">{k}</span>
               <span className="text-white/20 text-[10px]">→</span>
               <span className="text-white/50 truncate flex-1">{d}</span>
-              <span className="text-white/20 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
+              <span className="font-mono text-white/30 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
             </div>
           );
         }))}
@@ -81,7 +81,7 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
             <div key={i} className="flex items-center gap-2 px-3 py-1.5 text-xs hover:bg-white/[0.03] transition-colors">
               <Terminal size={12} className="text-cyan-400/50 flex-shrink-0" />
               <span className="text-white/60 font-mono text-[11px] truncate flex-1">{log.Command}</span>
-              <span className="text-white/20 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
+              <span className="font-mono text-white/30 flex-shrink-0 text-[10px]">{fmt(log.Timestamp)}</span>
             </div>
           );
         }))}
@@ -94,7 +94,7 @@ export default function InfoPanel({ joinLogs = [], killLogs = [], commandLogs = 
               <MessageSquare size={12} className="text-gsrp-orange/60 flex-shrink-0" />
               <span className="text-white/70 truncate font-medium">{c}</span>
               {m && <span className="text-white/30 text-[10px]">→ {m}</span>}
-              <span className="text-white/20 flex-shrink-0 text-[10px] ml-auto">{fmt(log.Timestamp)}</span>
+              <span className="font-mono text-white/30 flex-shrink-0 text-[10px] ml-auto">{fmt(log.Timestamp)}</span>
             </div>
           );
         }))}

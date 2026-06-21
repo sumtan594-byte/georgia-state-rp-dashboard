@@ -93,7 +93,7 @@ export default function QuizAnalyticsPage() {
             <TrendingUp className="w-4 h-4" /> Pass Rate
           </h3>
           <div className="flex items-end gap-3">
-            <span className="text-4xl font-bold text-white">{passRate}%</span>
+            <span className="font-mono tabular text-4xl font-bold text-white tracking-tight">{passRate}%</span>
             <span className="text-sm text-gray-500 mb-1">
               {stats.passedCount} of {stats.totalAttempts} attempts
             </span>
@@ -111,7 +111,7 @@ export default function QuizAnalyticsPage() {
             <Award className="w-4 h-4" /> Average Score
           </h3>
           <div className="flex items-end gap-3">
-            <span className="text-4xl font-bold text-white">{stats.avgScore}%</span>
+            <span className="font-mono tabular text-4xl font-bold text-white tracking-tight">{stats.avgScore}%</span>
           </div>
           <div className="mt-4 grid grid-cols-3 gap-3 text-center">
             <div>
@@ -188,7 +188,7 @@ export default function QuizAnalyticsPage() {
                 <TrendingUp className="w-4 h-4" /> Ridealong Pass Rate
               </h3>
               <div className="flex items-end gap-3">
-                <span className="text-4xl font-bold text-white">{ridealongStats.passRate}%</span>
+                <span className="font-mono tabular text-4xl font-bold text-white tracking-tight">{ridealongStats.passRate}%</span>
                 <span className="text-sm text-gray-500 mb-1">
                   {ridealongStats.passed} of {ridealongStats.totalAttempts} sessions
                 </span>
@@ -206,7 +206,7 @@ export default function QuizAnalyticsPage() {
                 <Award className="w-4 h-4" /> Average Score
               </h3>
               <div className="flex items-end gap-3">
-                <span className="text-4xl font-bold text-white">{ridealongStats.avgScore}</span>
+                <span className="font-mono tabular text-4xl font-bold text-white tracking-tight">{ridealongStats.avgScore}</span>
                 <span className="text-sm text-gray-500 mb-1">out of 5</span>
               </div>
             </div>
@@ -242,7 +242,7 @@ function StatCard({ icon: Icon, label, value, color, bg }) {
         </div>
         <span className="text-sm text-gray-400">{label}</span>
       </div>
-      <div className="text-2xl font-bold text-white">{value}</div>
+      <div className="font-mono tabular text-2xl font-bold text-white tracking-tight">{value}</div>
     </div>
   );
 }

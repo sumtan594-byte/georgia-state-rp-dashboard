@@ -16,7 +16,7 @@ export default function TermsOfService() {
             <ArrowLeft size={12} /> Back to Dashboard
           </Link>
           <div className="card-glass rounded-2xl p-8 shadow-2xl">
-            <h1 className="text-white font-black text-2xl mb-6">Terms of Service</h1>
+            <h1 className="text-white font-bold text-2xl mb-6">Terms of Service</h1>
             <div className="text-gsrp-teal-light/60 text-sm space-y-4 leading-relaxed">
               <p><strong className="text-white">Last Updated:</strong> January 2025</p>
               <p>By accessing or using the Georgia State Roleplay ("GSRP") dashboard and its associated services, you agree to be bound by these Terms of Service.</p>

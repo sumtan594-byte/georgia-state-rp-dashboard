@@ -597,7 +597,7 @@ export default function LiveMap({
           <div className="gsrp-map-loading-card">
             <Loader2 className="h-6 w-6 animate-spin text-gsrp-orange" />
             <div>
-              <p className="text-xs font-black uppercase tracking-[0.2em] text-white/70">Loading map</p>
+              <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/70">Loading map</p>
               <p className="text-[11px] font-semibold text-white/35">Preparing live blips</p>
             </div>
           </div>

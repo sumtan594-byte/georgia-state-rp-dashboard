@@ -25,14 +25,14 @@ export default function QuizWarning({ onProceed, onGoToHandbook }) {
         </div>
 
         {/* Title */}
-        <h2 className="text-2xl font-black text-white text-center mb-2">
+        <h2 className="text-2xl font-bold text-white text-center mb-2">
           Read the Handbook First
         </h2>
 
         {/* Warning message */}
         <div className="bg-gsrp-orange/10 border border-gsrp-orange/20 rounded-xl p-4 mb-6">
           <p className="text-gsrp-orange-light text-sm font-bold text-center leading-relaxed">
-            If you did not read the handbook properly, you <span className="text-white font-black">WILL</span> fail.
+            If you did not read the handbook properly, you <span className="text-white font-bold">WILL</span> fail.
           </p>
           <p className="text-gsrp-teal-light/60 text-xs text-center mt-2">
             The quiz covers detailed information from all sections of the Staff Handbook.

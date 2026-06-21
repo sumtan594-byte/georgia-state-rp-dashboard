@@ -248,7 +248,7 @@ export default function HandbookPage() {
           <ArrowLeft size={16} />
         </Link>
         <div>
-          <h1 className="text-2xl font-black text-white">Staff Handbook</h1>
+          <h1 className="text-2xl font-bold text-white">Staff Handbook</h1>
           <p className="text-gsrp-teal-light/40 text-[10px] uppercase tracking-widest">GSRP Staff Standards & Development</p>
         </div>
       </div>
@@ -258,7 +258,7 @@ export default function HandbookPage() {
           <div className="card-glass rounded-2xl p-4 sticky top-20">
             <div className="mb-4">
               <div className="flex justify-between items-center mb-2">
-                <h3 className="text-[10px] font-black text-gsrp-teal-light/40 uppercase tracking-widest">Progress</h3>
+                <h3 className="text-[10px] font-bold text-gsrp-teal-light/40 uppercase tracking-widest">Progress</h3>
                 <span className="text-[10px] font-mono text-gsrp-orange font-bold">
                   {Math.round(((progress.completedSections?.length || 0) / ALL_SECTIONS.length) * 100)}%
                 </span>
@@ -273,7 +273,7 @@ export default function HandbookPage() {
 
             {HANDBOOK_CONTENT.map(chapter => (
               <div key={chapter.id} className="mb-3">
-                <h4 className="text-[10px] font-black text-gsrp-teal-light/30 uppercase tracking-widest mb-1.5 px-3">
+                <h4 className="text-[10px] font-bold text-gsrp-teal-light/30 uppercase tracking-widest mb-1.5 px-3">
                   {chapter.title}
                 </h4>
                 <nav className="space-y-0.5">
@@ -335,7 +335,7 @@ export default function HandbookPage() {
                     Copy Link
                   </button>
                 </div>
-                <div className="text-[10px] font-black text-gsrp-teal-light/30 uppercase tracking-widest mb-1">{chapterTitle}</div>
+                <div className="text-[10px] font-bold text-gsrp-teal-light/30 uppercase tracking-widest mb-1">{chapterTitle}</div>
                 <h2 className="text-white font-bold text-lg mb-4 pb-3 border-b border-gsrp-dark-border/50">{s.title}</h2>
                 <div className="text-gsrp-teal-light/60 text-sm leading-relaxed">{parseContent(s.content)}</div>
               </div>

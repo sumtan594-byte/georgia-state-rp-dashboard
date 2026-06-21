@@ -71,17 +71,17 @@ export default function Dashboard() {
   return (
     <div className="max-w-5xl mx-auto animate-fade-in-up">
       <div className="mb-8">
-        <h1 className="text-white font-black text-2xl md:text-3xl mb-2">
+        <h1 className="font-display text-white font-extrabold text-2xl md:text-[34px] leading-[1.05] tracking-tight mb-2">
           Welcome back, <span className="text-gsrp-orange">{session.user.name}</span>
         </h1>
-        <p className="text-gsrp-teal-light/40 text-sm">Georgia State Roleplay Dashboard</p>
+        <p className="text-gsrp-teal-light/50 text-sm">Georgia State Roleplay Dashboard</p>
       </div>
 
       <PresenceBar page="/" />
 
       {/* Community Resources Section */}
       <div className="mb-12">
-        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-gsrp-orange mb-6 flex items-center gap-4">
+        <h2 className="font-display text-white font-bold text-lg tracking-tight mb-5 flex items-center gap-4">
           Community Resources
           <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
         </h2>
@@ -96,7 +96,7 @@ export default function Dashboard() {
 
       {/* Staff Training Section */}
       <div className="mb-12">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-gsrp-orange mb-6 flex items-center gap-4">
+          <h2 className="font-display text-white font-bold text-lg tracking-tight mb-5 flex items-center gap-4">
             Staff Training
             <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
           </h2>
@@ -108,7 +108,7 @@ export default function Dashboard() {
 
       {/* Applications Section */}
       <div className="mb-12">
-        <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-gsrp-orange mb-6 flex items-center gap-4">
+        <h2 className="font-display text-white font-bold text-lg tracking-tight mb-5 flex items-center gap-4">
           Applications
           <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
         </h2>
@@ -125,7 +125,7 @@ export default function Dashboard() {
 
       {hasAdminAccess && (
         <div className="mb-12">
-          <h2 className="text-[10px] font-black uppercase tracking-[0.3em] text-gsrp-orange mb-6 flex items-center gap-4">
+          <h2 className="font-display text-white font-bold text-lg tracking-tight mb-5 flex items-center gap-4">
             Admin
             <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
           </h2>

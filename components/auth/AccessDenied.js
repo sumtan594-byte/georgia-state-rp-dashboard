@@ -22,10 +22,10 @@ export default function AccessDenied({ roleId, resourceLabel, revoked }) {
         <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10">
           <Shield className="h-10 w-10 text-red-400" />
         </div>
-        <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-black uppercase tracking-[0.25em] text-white/40">
+        <p className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.25em] text-white/40">
           <LockKeyhole size={12} /> Restricted Module
         </p>
-        <h2 className="mb-3 text-2xl font-black text-white">{revoked ? 'Your access to this resource has been revoked' : 'Access Locked'}</h2>
+        <h2 className="mb-3 text-2xl font-bold text-white">{revoked ? 'Your access to this resource has been revoked' : 'Access Locked'}</h2>
         <p className="mx-auto max-w-md text-sm leading-relaxed text-gsrp-teal-light/45">
           {revoked
             ? `${resourceLabel || 'This page'} is no longer available to your current Discord roles.`

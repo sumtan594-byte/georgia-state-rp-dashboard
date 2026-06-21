@@ -114,19 +114,19 @@ export default function UsersPage({ canAccess }) {
 
       <div className="grid grid-cols-4 gap-4 mb-6">
         <div className="bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-green-400">{stats.onlineNow}</p>
+          <p className="font-mono tabular text-2xl font-bold text-green-400">{stats.onlineNow}</p>
           <p className="text-xs text-gray-500 mt-1">Online Now</p>
         </div>
         <div className="bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-white">{discordUsers.length}</p>
+          <p className="font-mono tabular text-2xl font-bold text-white">{discordUsers.length}</p>
           <p className="text-xs text-gray-500 mt-1">Discord Users</p>
         </div>
         <div className="bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-white">{anonymousIPs.length}</p>
+          <p className="font-mono tabular text-2xl font-bold text-white">{anonymousIPs.length}</p>
           <p className="text-xs text-gray-500 mt-1">Anonymous IPs</p>
         </div>
         <div className="bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-xl p-4 text-center">
-          <p className="text-2xl font-bold text-white">{stats.totalProfiles}</p>
+          <p className="font-mono tabular text-2xl font-bold text-white">{stats.totalProfiles}</p>
           <p className="text-xs text-gray-500 mt-1">Total Profiles</p>
         </div>
       </div>

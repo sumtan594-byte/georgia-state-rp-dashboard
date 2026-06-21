@@ -39,20 +39,25 @@ export default function PanelLayout({ playerList, liveMap, infoPanel, commandBar
         </div>
 
         <nav className="flex-shrink-0 flex bg-gsrp-dark-card/90 backdrop-blur-xl border-t border-gsrp-dark-border/50">
-          {TABS.map(tab => (
-            <button
-              key={tab.key}
-              onClick={() => setMobileView(tab.key)}
-              className={`flex-1 flex flex-col items-center gap-0.5 py-3 text-[10px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
-                mobileView === tab.key
-                  ? 'text-gsrp-orange'
-                  : 'text-white/30 hover:text-white/60'
-              }`}
-            >
-              <tab.icon size={16} />
-              {tab.label}
-            </button>
-          ))}
+          {TABS.map(tab => {
+            const active = mobileView === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setMobileView(tab.key)}
+                aria-current={active ? 'page' : undefined}
+                className={`relative flex-1 flex flex-col items-center gap-1 py-3 font-mono text-[9.5px] font-semibold uppercase tracking-[0.14em] transition-colors duration-200 cursor-pointer ${
+                  active ? 'text-gsrp-orange' : 'text-white/35 hover:text-white/65'
+                }`}
+              >
+                {active && (
+                  <span className="absolute top-0 left-1/2 -translate-x-1/2 h-[2px] w-9 rounded-full bg-gradient-to-r from-gsrp-orange-light to-gsrp-orange shadow-[0_0_10px_rgba(249,115,22,0.6)]" />
+                )}
+                <tab.icon size={16} strokeWidth={active ? 2.4 : 2} />
+                {tab.label}
+              </button>
+            );
+          })}
         </nav>
       </div>
     </>

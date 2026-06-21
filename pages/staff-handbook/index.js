@@ -77,7 +77,7 @@ export default function StaffHandbookPage() {
       {/* Header & Search */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gsrp-dark-border/50 pb-6">
         <div>
-          <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
             <Book className="text-gsrp-orange" size={32} />
             Staff Handbook
           </h1>
@@ -140,7 +140,7 @@ export default function StaffHandbookPage() {
                   <div key={chapter.id} className="space-y-6">
                     <div className="flex items-center gap-4">
                       <div className="h-[1px] flex-1 bg-gsrp-dark-border/30"></div>
-                      <h2 className="text-gsrp-orange font-black uppercase tracking-[0.2em] text-xs px-2">{chapter.title}</h2>
+                      <h2 className="text-gsrp-orange font-bold uppercase tracking-[0.2em] text-xs px-2">{chapter.title}</h2>
                       <div className="h-[1px] flex-1 bg-gsrp-dark-border/30"></div>
                     </div>
                     {chapter.sections.map(section => (
@@ -170,7 +170,7 @@ export default function StaffHandbookPage() {
                 <span className="text-gsrp-orange font-bold text-xs uppercase tracking-widest flex items-center gap-2">
                    {activeChapter.id.toUpperCase()}
                 </span>
-                <h2 className="text-4xl font-black text-white leading-tight">{activeChapter.title.split(': ')[1] || activeChapter.title}</h2>
+                <h2 className="text-4xl font-bold text-white leading-tight">{activeChapter.title.split(': ')[1] || activeChapter.title}</h2>
                 <div className="w-20 h-1.5 bg-gsrp-orange rounded-full mt-4"></div>
               </div>
 
@@ -194,8 +194,8 @@ function HandbookSectionCard({ section, index }) {
       style={{ animationDelay: `${index * 0.1}s` }}
     >
       {section.title && section.title !== section.id && (
-        <h3 className="text-xl font-black text-white mb-6 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gsrp-dark-surface flex items-center justify-center text-[10px] text-gsrp-orange font-black border border-gsrp-dark-border group-hover:bg-gsrp-orange group-hover:text-white transition-colors">
+        <h3 className="text-xl font-bold text-white mb-6 flex items-center gap-3">
+          <div className="w-8 h-8 rounded-lg bg-gsrp-dark-surface flex items-center justify-center text-[10px] text-gsrp-orange font-bold border border-gsrp-dark-border group-hover:bg-gsrp-orange group-hover:text-white transition-colors">
             {section.id}
           </div>
           {section.title}
@@ -213,7 +213,7 @@ function SearchResultSection({ section }) {
   return (
     <div className="bg-gsrp-dark-card/30 border border-gsrp-dark-border/50 rounded-2xl p-6 hover:bg-gsrp-dark-card/50 transition-colors">
       <h3 className="text-white font-bold flex items-center gap-2 mb-4">
-        <span className="text-gsrp-orange text-[10px] font-black">{section.id}</span>
+        <span className="text-gsrp-orange text-[10px] font-bold">{section.id}</span>
         {section.title}
       </h3>
       <div className="text-xs text-gsrp-teal-light/50 leading-relaxed max-h-32 overflow-hidden relative">
@@ -237,7 +237,7 @@ function formatContent(content) {
           <thead>
             <tr className="bg-gsrp-dark-surface">
               {headers.map((h, i) => (
-                <th key={i} className="px-4 py-3 text-[10px] font-black uppercase tracking-wider text-gsrp-orange border-b border-gsrp-dark-border">
+                <th key={i} className="px-4 py-3 text-[10px] font-bold uppercase tracking-wider text-gsrp-orange border-b border-gsrp-dark-border">
                   {h.replace(/\*\*/g, '')}
                 </th>
               ))}

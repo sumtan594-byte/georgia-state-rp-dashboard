@@ -55,7 +55,7 @@ export default function PresenceBar({ page = '/' }) {
   return (
     <div className="flex items-center gap-3 mb-6 animate-fade-in-up">
       {/* Label */}
-      <span className="text-[10px] font-black uppercase tracking-[0.25em] text-gsrp-teal-light/30 whitespace-nowrap">
+      <span className="text-[10px] font-bold uppercase tracking-[0.25em] text-gsrp-teal-light/30 whitespace-nowrap">
         Active members
       </span>
 
@@ -106,7 +106,7 @@ export default function PresenceBar({ page = '/' }) {
                     <p className="text-white text-[11px] font-bold leading-tight">
                       {viewer.name}
                       {isSelf && (
-                        <span className="text-gsrp-orange ml-1 text-[9px] font-black uppercase tracking-wide">you</span>
+                        <span className="text-gsrp-orange ml-1 text-[9px] font-bold uppercase tracking-wide">you</span>
                       )}
                     </p>
                     <p className="mt-0.5 text-[10px] font-semibold text-gsrp-orange/80">{viewer.pageLabel || viewer.page || '/'}</p>

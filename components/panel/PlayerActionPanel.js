@@ -195,7 +195,7 @@ export default function PlayerActionPanel({ player, vehicles = [], roleplays = [
                 <button
                   onClick={onReplay}
                   disabled={replayLoading}
-                  className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border border-gsrp-orange/25 bg-gsrp-orange/15 px-3 py-2 text-xs font-black text-gsrp-orange transition-all hover:bg-gsrp-orange/25 disabled:opacity-50"
+                  className="mb-2 flex w-full items-center justify-center gap-2 rounded-xl border border-gsrp-orange/25 bg-gsrp-orange/15 px-3 py-2 text-xs font-bold text-gsrp-orange transition-all hover:bg-gsrp-orange/25 disabled:opacity-50"
                 >
                   {replayLoading ? <Loader2 size={13} className="animate-spin" /> : <Clock size={13} />}
                   View {name}'s 5 minute replay

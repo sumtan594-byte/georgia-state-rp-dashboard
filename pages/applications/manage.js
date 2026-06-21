@@ -169,7 +169,7 @@ export default function ManageApplicationTypes() {
     
     return (
       <div className="mb-4">
-        <label className="block text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-2">{label}</label>
+        <label className="block text-[10px] font-bold uppercase tracking-widest text-gsrp-teal-light/40 mb-2">{label}</label>
         <div className="flex flex-wrap gap-2 p-3 bg-gsrp-dark-surface border border-white/5 rounded-xl min-h-[50px] relative">
           {selectedRoles.map(roleId => {
             const role = serverRoles.find(r => r.id === roleId);
@@ -287,18 +287,18 @@ export default function ManageApplicationTypes() {
       {hasChanges && (
         <div className={`fixed bottom-10 left-1/2 -translate-x-1/2 z-[100] flex flex-wrap items-center gap-4 bg-gsrp-dark-card border-2 ${isShaking ? 'border-gsrp-orange' : 'border-white/10'} p-4 rounded-2xl shadow-2xl animate-fade-in-up max-w-[calc(100vw-32px)]`}>
           <div className="px-4 border-r border-white/5">
-            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-gsrp-orange">Unsaved Changes</p>
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-gsrp-orange">Unsaved Changes</p>
             <p className="text-[9px] text-white/40 font-bold">You have modified the application structure.</p>
           </div>
           <button 
             onClick={handleDiscard}
-            className="px-6 py-2 rounded-xl text-xs font-black text-white/40 hover:text-white hover:bg-white/5 transition-all"
+            className="px-6 py-2 rounded-xl text-xs font-bold text-white/40 hover:text-white hover:bg-white/5 transition-all"
           >
             Discard
           </button>
           <button 
             onClick={handleSave}
-            className="px-8 py-2.5 bg-gsrp-orange hover:bg-gsrp-orange-light text-white font-black rounded-xl text-xs shadow-lg shadow-gsrp-orange/20 transition-all flex items-center gap-2"
+            className="px-8 py-2.5 bg-gsrp-orange hover:bg-gsrp-orange-light text-white font-bold rounded-xl text-xs shadow-lg shadow-gsrp-orange/20 transition-all flex items-center gap-2"
           >
             <Save size={14} />
             Save Changes
@@ -308,7 +308,7 @@ export default function ManageApplicationTypes() {
 
       <div className="flex items-center justify-between mb-10">
         <div>
-          <h1 className="text-3xl font-black text-white flex items-center gap-3">
+          <h1 className="text-3xl font-bold text-white flex items-center gap-3">
             <Settings className="text-gsrp-orange" />
             Application Management
           </h1>
@@ -334,7 +334,7 @@ export default function ManageApplicationTypes() {
             setForm(initial);
             setOriginalForm(JSON.parse(JSON.stringify(initial)));
           }}
-          className="bg-gsrp-orange hover:bg-gsrp-orange-light text-white px-6 py-3 rounded-xl font-black text-sm transition-all flex items-center gap-2 shadow-lg shadow-gsrp-orange/20"
+          className="bg-gsrp-orange hover:bg-gsrp-orange-light text-white px-6 py-3 rounded-xl font-bold text-sm transition-all flex items-center gap-2 shadow-lg shadow-gsrp-orange/20"
         >
           <Plus size={18} />
           Create New Type
@@ -344,13 +344,13 @@ export default function ManageApplicationTypes() {
       {editingType ? (
         <div className="bg-gsrp-dark-card border border-white/10 rounded-3xl p-8 animate-fade-in-up">
           <div className="flex items-center justify-between mb-8">
-            <h2 className="text-xl font-black text-white">{editingType === 'new' ? 'New Application Type' : 'Edit Application Type'}</h2>
+            <h2 className="text-xl font-bold text-white">{editingType === 'new' ? 'New Application Type' : 'Edit Application Type'}</h2>
             <button onClick={() => setEditingType(null)} className="text-white/20 hover:text-white"><X /></button>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">Display Name</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Display Name</label>
               <input 
                 type="text" 
                 value={form.name} 
@@ -360,7 +360,7 @@ export default function ManageApplicationTypes() {
               />
             </div>
             <div>
-              <label className="block text-[10px] font-black uppercase tracking-widest text-white/40 mb-2">URL Slug (no spaces)</label>
+              <label className="block text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">URL Slug (no spaces)</label>
               <input 
                 type="text" 
                 value={form.slug} 
@@ -418,7 +418,7 @@ export default function ManageApplicationTypes() {
           </div>
 
           <div className="mb-8 p-6 bg-gsrp-dark-surface/30 border border-white/5 rounded-2xl">
-            <label className="block text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-3">Timezone Block</label>
+            <label className="block text-[10px] font-bold uppercase tracking-widest text-gsrp-teal-light/40 mb-3">Timezone Block</label>
             <p className="text-[10px] text-white/30 font-medium mb-3 leading-relaxed">
               Block applicants from specific timezones. Enter one IANA timezone prefix per line (e.g. <span className="text-gsrp-orange/70 font-mono">America/</span>). Leave empty for no block.
             </p>
@@ -433,8 +433,8 @@ export default function ManageApplicationTypes() {
 
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-black text-gsrp-orange uppercase tracking-widest">Form Fields</h3>
-              <button onClick={addField} className="text-[10px] font-black uppercase bg-white/5 px-4 py-2 rounded-lg hover:bg-white/10 transition-all">+ Add Field</button>
+              <h3 className="text-sm font-bold text-gsrp-orange uppercase tracking-widest">Form Fields</h3>
+              <button onClick={addField} className="text-[10px] font-bold uppercase bg-white/5 px-4 py-2 rounded-lg hover:bg-white/10 transition-all">+ Add Field</button>
             </div>
 
             {form.fields.map((field, i) => (
@@ -443,7 +443,7 @@ export default function ManageApplicationTypes() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="md:col-span-2">
-                    <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Question Label</label>
+                    <label className="block text-[9px] font-bold uppercase text-white/20 mb-1">Question Label</label>
                     <input 
                       type="text" 
                       value={field.label} 
@@ -452,7 +452,7 @@ export default function ManageApplicationTypes() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Type</label>
+                    <label className="block text-[9px] font-bold uppercase text-white/20 mb-1">Type</label>
                     <CustomSelect 
                       value={field.type} 
                       onChange={val => updateField(field.id, { type: val })}
@@ -476,12 +476,12 @@ export default function ManageApplicationTypes() {
                       id={`req-${field.id}`}
                       className="w-4 h-4 rounded border-white/10 bg-gsrp-dark-surface accent-gsrp-orange"
                     />
-                    <label htmlFor={`req-${field.id}`} className="text-[10px] font-black uppercase text-white/40 cursor-pointer">Required Question</label>
+                    <label htmlFor={`req-${field.id}`} className="text-[10px] font-bold uppercase text-white/40 cursor-pointer">Required Question</label>
                   </div>
 
                   {(field.type === 'radio' || field.type === 'checkbox') && (
                     <div className="flex-1 min-w-[200px]">
-                      <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Options (Comma separated)</label>
+                      <label className="block text-[9px] font-bold uppercase text-white/20 mb-1">Options (Comma separated)</label>
                       <input 
                         type="text" 
                         value={Array.isArray(field.options) ? field.options.join(', ') : (field.options || '')} 
@@ -494,7 +494,7 @@ export default function ManageApplicationTypes() {
 
                   {(field.type === 'text' || field.type === 'textarea') && (
                     <div>
-                      <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Minimum Words</label>
+                      <label className="block text-[9px] font-bold uppercase text-white/20 mb-1">Minimum Words</label>
                       <input
                         type="number"
                         min="0"
@@ -508,7 +508,7 @@ export default function ManageApplicationTypes() {
                   {field.type === 'slider' && (
                     <div className="flex flex-wrap gap-4 items-end">
                       <div>
-                        <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Min</label>
+                        <label className="block text-[9px] font-bold uppercase text-white/20 mb-1">Min</label>
                         <input 
                           type="number" 
                           value={field.min || 0} 
@@ -517,7 +517,7 @@ export default function ManageApplicationTypes() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Max</label>
+                        <label className="block text-[9px] font-bold uppercase text-white/20 mb-1">Max</label>
                         <input 
                           type="number" 
                           value={field.max || 10} 
@@ -526,7 +526,7 @@ export default function ManageApplicationTypes() {
                         />
                       </div>
                       <div className="flex-1 min-w-[200px]">
-                        <label className="block text-[9px] font-black uppercase text-white/20 mb-1">Slider Cues (e.g. 1:Poor, 10:Expert)</label>
+                        <label className="block text-[9px] font-bold uppercase text-white/20 mb-1">Slider Cues (e.g. 1:Poor, 10:Expert)</label>
                         <input 
                           type="text" 
                           value={field.cues || ''} 
@@ -544,7 +544,7 @@ export default function ManageApplicationTypes() {
 
           <button 
             onClick={handleSave}
-            className="w-full mt-10 bg-gsrp-orange py-4 rounded-2xl text-white font-black hover:bg-gsrp-orange-light transition-all shadow-xl shadow-gsrp-orange/20"
+            className="w-full mt-10 bg-gsrp-orange py-4 rounded-2xl text-white font-bold hover:bg-gsrp-orange-light transition-all shadow-xl shadow-gsrp-orange/20"
           >
             Save Application Type
           </button>
@@ -578,12 +578,12 @@ export default function ManageApplicationTypes() {
                 </div>
               </div>
               
-              <h3 className="text-white font-black text-lg mb-1">{type.name}</h3>
+              <h3 className="text-white font-bold text-lg mb-1">{type.name}</h3>
               <p className="text-[10px] font-mono text-gsrp-teal-light/30 uppercase tracking-widest mb-6">/apply/{type.slug}</p>
               
               <div className="flex items-center justify-between pt-4 border-t border-white/5">
                 <span className="text-[10px] font-bold text-white/20 uppercase tracking-widest">{type.fields?.length || 0} Fields</span>
-                <Link href={`/apply/${type.slug}`} className="text-[10px] font-black text-gsrp-orange uppercase tracking-widest hover:underline flex items-center gap-1">
+                <Link href={`/apply/${type.slug}`} className="text-[10px] font-bold text-gsrp-orange uppercase tracking-widest hover:underline flex items-center gap-1">
                   Preview <ChevronRight size={10} />
                 </Link>
               </div>

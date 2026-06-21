@@ -120,7 +120,7 @@ export default function AdminsPage() {
       </Head>
 
       <div className="mb-8">
-        <h1 className="text-white font-black text-2xl md:text-3xl mb-2 flex items-center gap-3">
+        <h1 className="font-display text-white font-extrabold text-2xl md:text-3xl tracking-tight mb-2 flex items-center gap-3">
           <ShieldCheck className="text-gsrp-orange" size={28} />
           Edit Admins List
         </h1>
@@ -143,7 +143,7 @@ export default function AdminsPage() {
 
       {envAdmins.length > 0 && (
         <div className="mb-6 p-4 rounded-xl bg-gradient-to-br from-gsrp-orange/10 to-gsrp-gold/5 border border-gsrp-orange/20">
-          <p className="text-[10px] font-black uppercase tracking-widest text-gsrp-orange/70 mb-2 flex items-center gap-2">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gsrp-orange/70 mb-2 flex items-center gap-2">
             <ShieldCheck size={12} /> Env-Configured Admins
           </p>
           <p className="text-xs text-white/50">
@@ -153,7 +153,7 @@ export default function AdminsPage() {
       )}
 
       <div className="mb-8 p-4 rounded-xl bg-black border border-gsrp-orange/20">
-        <p className="text-[10px] font-black uppercase tracking-widest text-gsrp-orange/60 mb-3 flex items-center gap-2">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-gsrp-orange/60 mb-3 flex items-center gap-2">
           <Plus size={12} /> Add New Admin
         </p>
         <div className="flex gap-2">
@@ -178,7 +178,7 @@ export default function AdminsPage() {
 
       <div className="rounded-xl bg-black border border-gsrp-orange/20 overflow-hidden">
         <div className="flex items-center justify-between px-4 py-3 border-b border-gsrp-orange/20">
-          <span className="text-[10px] font-black uppercase tracking-widest text-white/40 flex items-center gap-2">
+          <span className="text-[10px] font-bold uppercase tracking-widest text-white/40 flex items-center gap-2">
             <Users size={12} /> Configured Admins ({admins.length})
           </span>
         </div>
@@ -200,7 +200,7 @@ export default function AdminsPage() {
                   {admin.avatar ? (
                     <img src={admin.avatar} alt="" className="w-10 h-10 rounded-full border-2 border-gsrp-orange/30 object-cover" />
                   ) : (
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gsrp-orange/20 to-gsrp-gold/10 border-2 border-gsrp-orange/30 flex items-center justify-center text-gsrp-orange font-black text-xs">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-gsrp-orange/20 to-gsrp-gold/10 border-2 border-gsrp-orange/30 flex items-center justify-center text-gsrp-orange font-bold text-xs">
                       {admin.name.charAt(0).toUpperCase()}
                     </div>
                   )}

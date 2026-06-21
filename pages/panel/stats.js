@@ -406,13 +406,13 @@ function StatCard({ icon: Icon, label, value, subtitle, trend, trendValue, color
           <span className="text-sm text-gray-400">{label}</span>
         </div>
         {trend && (
-          <div className={`flex items-center gap-1 text-xs ${trendColor}`}>
+          <div className={`flex items-center gap-1 font-mono text-xs ${trendColor}`}>
             <TrendIcon className="w-3 h-3" />
             <span>{trendValue > 0 ? `+${trendValue}` : trendValue}</span>
           </div>
         )}
       </div>
-      <div className="text-2xl font-bold text-white">{value}</div>
+      <div className="font-mono text-[26px] font-bold text-white tabular tracking-tight">{value}</div>
       {subtitle && <div className="text-xs text-gray-500 mt-1">{subtitle}</div>}
     </div>
   );

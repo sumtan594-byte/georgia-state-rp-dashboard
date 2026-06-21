@@ -290,7 +290,7 @@ export default function RidealongPage() {
           <div className="flex items-center justify-center w-20 h-20 rounded-full mx-auto mb-6 bg-gsrp-teal/10 border-2 border-gsrp-teal/30">
             <Shield size={36} className="text-gsrp-teal-light" />
           </div>
-          <h2 className="text-3xl font-black text-white mb-2">Ridealong Complete!</h2>
+          <h2 className="text-3xl font-bold text-white mb-2">Ridealong Complete!</h2>
           <p className="text-gsrp-teal-light/50 text-sm mb-6">
             You have passed the Ridealong Simulation. Your Discord roles and nickname have been updated.
           </p>
@@ -313,7 +313,7 @@ export default function RidealongPage() {
           <div className="flex items-center justify-center w-20 h-20 rounded-full mx-auto mb-6 bg-red-500/10 border-2 border-red-500/30">
             <Ban size={36} className="text-red-400" />
           </div>
-          <h2 className="text-3xl font-black text-white mb-2">Access Revoked</h2>
+          <h2 className="text-3xl font-bold text-white mb-2">Access Revoked</h2>
           <p className="text-gsrp-teal-light/50 text-sm mb-6">
             Your access to the ridealong has been revoked, please redo the Staff orientation quiz.
           </p>
@@ -338,7 +338,7 @@ export default function RidealongPage() {
             <Shield size={28} className="text-gsrp-orange" />
           </div>
 
-          <h2 className="text-2xl font-black text-white text-center mb-1">Callsign Verification</h2>
+          <h2 className="text-2xl font-bold text-white text-center mb-1">Callsign Verification</h2>
           <p className="text-gsrp-teal-light/40 text-xs text-center mb-8">
             Answer correctly to begin the ridealong simulation.
           </p>
@@ -375,7 +375,7 @@ export default function RidealongPage() {
 
           <button
             onClick={handleCallsignSubmit}
-            className="w-full py-3 bg-gradient-to-r from-gsrp-orange to-gsrp-orange-light text-white font-black rounded-xl text-sm hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
+            className="w-full py-3 bg-gradient-to-r from-gsrp-orange to-gsrp-orange-light text-white font-bold rounded-xl text-sm hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2"
           >
             <Shield size={15} />
             Confirm & Begin
@@ -413,7 +413,7 @@ export default function RidealongPage() {
           <Shield size={26} className="text-gsrp-orange" />
         </div>
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black text-white">Ridealong Simulation</h1>
+          <h1 className="text-2xl sm:text-3xl font-bold text-white">Ridealong Simulation</h1>
           <p className="text-gsrp-teal-light/40 text-xs font-medium">Simulated mod call training — Georgia State Roleplay</p>
         </div>
       </div>
@@ -424,9 +424,9 @@ export default function RidealongPage() {
             <div className="w-10 h-10 rounded-xl bg-gsrp-orange/10 flex items-center justify-center">
               <AlertTriangle size={18} className="text-gsrp-orange" />
             </div>
-            <h3 className="text-sm font-black text-white">Pass Score</h3>
+            <h3 className="text-sm font-bold text-white">Pass Score</h3>
           </div>
-          <p className="text-2xl font-black text-gsrp-orange">{RIDEALONG_CONFIG.PASS_SCORE}/{RIDEALONG_CONFIG.TOTAL_SCENARIOS}</p>
+          <p className="text-2xl font-bold text-gsrp-orange">{RIDEALONG_CONFIG.PASS_SCORE}/{RIDEALONG_CONFIG.TOTAL_SCENARIOS}</p>
           <p className="text-xs text-gsrp-teal-light/30 mt-1">Correct scenarios required</p>
         </div>
 
@@ -435,9 +435,9 @@ export default function RidealongPage() {
             <div className="w-10 h-10 rounded-xl bg-gsrp-sunset/10 flex items-center justify-center">
               <RotateCcw size={18} className="text-gsrp-sunset" />
             </div>
-            <h3 className="text-sm font-black text-white">Cooldown</h3>
+            <h3 className="text-sm font-bold text-white">Cooldown</h3>
           </div>
-          <p className="text-2xl font-black text-gsrp-sunset">{RIDEALONG_CONFIG.COOLDOWN_HOURS}h</p>
+          <p className="text-2xl font-bold text-gsrp-sunset">{RIDEALONG_CONFIG.COOLDOWN_HOURS}h</p>
           <p className="text-xs text-gsrp-teal-light/30 mt-1">Between failed attempts</p>
         </div>
 
@@ -446,9 +446,9 @@ export default function RidealongPage() {
             <div className="w-10 h-10 rounded-xl bg-gsrp-teal/10 flex items-center justify-center">
               <BookOpen size={18} className="text-gsrp-teal-light" />
             </div>
-            <h3 className="text-sm font-black text-white">Scenarios</h3>
+            <h3 className="text-sm font-bold text-white">Scenarios</h3>
           </div>
-          <p className="text-2xl font-black text-gsrp-teal-light">{RIDEALONG_CONFIG.TOTAL_SCENARIOS}</p>
+          <p className="text-2xl font-bold text-gsrp-teal-light">{RIDEALONG_CONFIG.TOTAL_SCENARIOS}</p>
           <p className="text-xs text-gsrp-teal-light/30 mt-1">Randomised each attempt</p>
         </div>
       </div>
@@ -471,7 +471,7 @@ export default function RidealongPage() {
       {cooldownUntil && cooldownRemaining !== null && cooldownRemaining > 0 && (
         <div className="card-glass rounded-2xl border border-gsrp-sunset/30 p-6 text-center">
           <p className="text-gsrp-sunset text-sm font-bold mb-1">Cooldown Active</p>
-          <p className="text-2xl font-black text-gsrp-sunset mt-2 tabular-nums">
+          <p className="text-2xl font-bold text-gsrp-sunset mt-2 tabular-nums">
             {Math.floor(cooldownRemaining / 3600)}h {Math.floor((cooldownRemaining % 3600) / 60)}m {cooldownRemaining % 60}s
           </p>
           <p className="text-gsrp-teal-light/50 text-xs mt-2">
@@ -483,7 +483,7 @@ export default function RidealongPage() {
       {showStart && quizPassed && !cooldownUntil && !ridealongPassed && (
         <div className="space-y-6">
           <div className="card-glass rounded-2xl border border-gsrp-dark-border/50 p-6">
-            <h3 className="text-sm font-black text-white uppercase tracking-wider mb-4">How It Works</h3>
+            <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">How It Works</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
                   <span className="text-lg">🚨</span>
@@ -563,7 +563,7 @@ export default function RidealongPage() {
           <div className="flex justify-center py-4">
             <button
               onClick={handleStart}
-              className="group px-10 py-4 bg-gradient-to-r from-gsrp-orange to-gsrp-orange-light text-white font-black text-lg rounded-2xl shadow-lg shadow-gsrp-orange/20 hover:shadow-gsrp-orange/30 transition-all cursor-pointer flex items-center gap-3"
+              className="group px-10 py-4 bg-gradient-to-r from-gsrp-orange to-gsrp-orange-light text-white font-bold text-lg rounded-2xl shadow-lg shadow-gsrp-orange/20 hover:shadow-gsrp-orange/30 transition-all cursor-pointer flex items-center gap-3"
             >
               <Shield size={20} />
               Start Ridealong

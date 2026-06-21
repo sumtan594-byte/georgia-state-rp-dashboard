@@ -216,7 +216,7 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
         <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gsrp-dark-border/50">
           <div className="flex items-center gap-3">
             <ShieldCheck size={16} className="text-gsrp-teal-light" />
-            <h2 className="text-white font-black text-sm tracking-tight">Manage Access</h2>
+            <h2 className="text-white font-bold text-sm tracking-tight">Manage Access</h2>
           </div>
           <button onClick={onClose} className="text-gsrp-teal-light/40 hover:text-white transition-colors cursor-pointer">
             <X size={16} />
@@ -233,7 +233,7 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
               {/* Ticket Owner */}
               {data.owner && (
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gsrp-orange mb-2 flex items-center gap-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gsrp-orange mb-2 flex items-center gap-2">
                     <Users size={11} /> Ticket Owner
                   </p>
                   <div className="flex items-center justify-between bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-xl px-3 py-2">
@@ -245,7 +245,7 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
                       )}
                       <span className="text-white text-sm font-bold truncate">{data.owner.name}</span>
                       {data.owner.isDenied && (
-                        <span className="text-[8px] font-black uppercase tracking-widest text-gsrp-sunset bg-gsrp-sunset/10 px-1.5 py-0.5 rounded flex-shrink-0">Denied</span>
+                        <span className="text-[8px] font-bold uppercase tracking-widest text-gsrp-sunset bg-gsrp-sunset/10 px-1.5 py-0.5 rounded flex-shrink-0">Denied</span>
                       )}
                     </div>
                     {data.isAdmin && (
@@ -266,7 +266,7 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
               {/* System Administrators */}
               {data.admins.length > 0 && (
                 <div>
-                  <p className="text-[10px] font-black uppercase tracking-widest text-gsrp-gold mb-2 flex items-center gap-2">
+                  <p className="text-[10px] font-bold uppercase tracking-widest text-gsrp-gold mb-2 flex items-center gap-2">
                     <ShieldCheck size={11} /> System Administrators
                   </p>
                   <div className="space-y-1.5">
@@ -280,7 +280,7 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
                           )}
                           <span className="text-white text-sm font-bold truncate">{admin.name}</span>
                           {admin.isDenied && (
-                            <span className="text-[8px] font-black uppercase tracking-widest text-gsrp-sunset bg-gsrp-sunset/10 px-1.5 py-0.5 rounded flex-shrink-0">Denied</span>
+                            <span className="text-[8px] font-bold uppercase tracking-widest text-gsrp-sunset bg-gsrp-sunset/10 px-1.5 py-0.5 rounded flex-shrink-0">Denied</span>
                           )}
                         </div>
                         {data.canRemoveAdmins && (
@@ -302,7 +302,7 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
 
               {/* Granted Access */}
               <div>
-                <p className="text-[10px] font-black uppercase tracking-widest text-gsrp-teal-light mb-2">Granted Access</p>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gsrp-teal-light mb-2">Granted Access</p>
                 {data.accesses.length === 0 ? (
                   <p className="text-gsrp-teal-light/30 text-[10px] font-bold uppercase tracking-widest text-center py-4">No custom access granted</p>
                 ) : (
@@ -318,7 +318,7 @@ function AccessModal({ transcriptId, isOpen, onClose }) {
                                 <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: a.color }} />
                               ) : null}
                               <span className="text-white text-sm font-bold truncate" style={a.color ? { color: a.color } : {}}>{a.name}</span>
-                              <span className="text-[8px] font-black uppercase tracking-widest text-gsrp-gold bg-gsrp-gold/10 px-1.5 py-0.5 rounded flex-shrink-0">Role</span>
+                              <span className="text-[8px] font-bold uppercase tracking-widest text-gsrp-gold bg-gsrp-gold/10 px-1.5 py-0.5 rounded flex-shrink-0">Role</span>
                             </>
                           ) : (
                             <>
@@ -505,7 +505,7 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
       <div className="flex items-center justify-center py-20">
         <div className="card-glass rounded-[2rem] p-12 max-w-sm w-full text-center shadow-2xl animate-scale-in">
           <div className="w-14 h-14 rounded-2xl bg-gsrp-sunset/10 border border-gsrp-sunset/20 flex items-center justify-center mx-auto mb-6"><Lock size={24} className="text-gsrp-sunset" /></div>
-          <h1 className="text-white font-black text-lg mb-2 tracking-tight">Access Denied</h1>
+          <h1 className="text-white font-bold text-lg mb-2 tracking-tight">Access Denied</h1>
           <p className="text-gsrp-teal-light/40 text-sm mb-8">You do not have permission to view this transcript or it does not exist.</p>
           <Link href="/" className="inline-flex items-center gap-2 bg-gsrp-dark-card/60 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 hover:border-gsrp-orange/30 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 cursor-pointer"><ArrowLeft size={14} /> Back to Dashboard</Link>
         </div>
@@ -519,7 +519,7 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
       <div className="flex items-center justify-center py-20">
         <div className="card-glass rounded-[2rem] p-12 max-w-sm w-full text-center shadow-2xl animate-scale-in">
           <div className="w-14 h-14 rounded-2xl bg-gsrp-sunset/10 border border-gsrp-sunset/20 flex items-center justify-center mx-auto mb-6"><Lock size={24} className="text-gsrp-sunset" /></div>
-          <h1 className="text-white font-black text-lg mb-2 tracking-tight">Access Revoked</h1>
+          <h1 className="text-white font-bold text-lg mb-2 tracking-tight">Access Revoked</h1>
           <p className="text-gsrp-teal-light/40 text-sm mb-8">Your access to this transcript has been removed.</p>
           <Link href="/" className="inline-flex items-center gap-2 bg-gsrp-dark-card/60 hover:bg-gsrp-dark-surface/60 border border-gsrp-dark-border/50 hover:border-gsrp-orange/30 text-white px-6 py-3 rounded-xl font-bold text-sm transition-all duration-200 cursor-pointer"><ArrowLeft size={14} /> Back to Dashboard</Link>
         </div>
@@ -538,11 +538,11 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
             <div className="relative"><div className="absolute inset-0 bg-gradient-to-r from-gsrp-orange/20 to-gsrp-teal/20 rounded-lg blur-sm" /><img src={LOGO} className="relative w-5 h-5 rounded-lg border border-white/10" alt="GSRP" /></div>
             <div>
               <div className="flex items-center gap-1"><Sparkles size={7} className="text-gsrp-gold" /><span className="text-[7px] text-gsrp-teal-light/40 font-bold uppercase tracking-widest">Transcript</span></div>
-              <div className="text-xs font-black text-white leading-none">{meta.channelName || id}</div>
+              <div className="text-xs font-bold text-white leading-none">{meta.channelName || id}</div>
             </div>
           </div>
           {meta.type && meta.type !== 'UNKNOWN' && (
-            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-widest border ${typeColor}`}>{meta.type}</span>
+            <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-[8px] font-bold uppercase tracking-widest border ${typeColor}`}>{meta.type}</span>
           )}
         </div>
         <div className="flex items-center gap-2">
@@ -570,37 +570,37 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
       {/* Ticket Details Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 animate-fade-in-up">
         <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4">
-          <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Ticket Identifier</div>
+          <div className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Ticket Identifier</div>
           <div className="text-white font-bold text-sm truncate">{meta.channelName}</div>
         </div>
         <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4">
-          <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Ticket Opener</div>
+          <div className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Ticket Opener</div>
           <div className="text-white font-bold text-sm truncate">{meta.openerTag}</div>
         </div>
         <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4">
-          <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Closed Timestamp</div>
+          <div className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Closed Timestamp</div>
           <div className="text-white font-bold text-sm truncate">{meta.closedAt || 'Unknown'}</div>
         </div>
         <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4">
-          <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Close Reason</div>
+          <div className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Close Reason</div>
           <div className="text-white font-bold text-sm truncate">{meta.reason || 'No reason provided'}</div>
         </div>
         
         {meta.claimedByTag && (
           <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4">
-            <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Claimed By</div>
+            <div className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Claimed By</div>
             <div className="text-white font-bold text-sm truncate">{meta.claimedByTag}</div>
           </div>
         )}
         {meta.openReason && meta.openReason !== 'No initial query provided' && (
           <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4 sm:col-span-2 lg:col-span-4">
-            <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Initial Query</div>
+            <div className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Initial Query</div>
             <div className="text-white font-medium text-sm whitespace-pre-wrap">{meta.openReason}</div>
           </div>
         )}
         {meta.staffRequestReason && (
           <div className="bg-gsrp-dark-card/60 border border-gsrp-dark-border/50 rounded-2xl p-4 sm:col-span-2 lg:col-span-4">
-            <div className="text-[9px] font-black uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Staff Resolution Summary</div>
+            <div className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/40 mb-1">Staff Resolution Summary</div>
             <div className="text-white font-medium text-sm whitespace-pre-wrap">{meta.staffRequestReason}</div>
           </div>
         )}
@@ -641,7 +641,7 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
                 <Trash2 size={16} className="text-gsrp-sunset" />
               </div>
               <div>
-                <h3 className="text-white font-black text-sm">Delete Transcript</h3>
+                <h3 className="text-white font-bold text-sm">Delete Transcript</h3>
                 <p className="text-gsrp-teal-light/40 text-[10px] font-bold uppercase tracking-widest mt-0.5">This action cannot be undone.</p>
               </div>
             </div>

@@ -22,7 +22,7 @@ const TYPE_CONFIG = {
 function TypeBadge({ type }) {
   const cfg = TYPE_CONFIG[type] || TYPE_CONFIG.GENERAL;
   return (
-    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[9px] font-black uppercase tracking-widest ${cfg.color} ${cfg.bg} border ${cfg.border}`}>
+    <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[9px] font-bold uppercase tracking-widest ${cfg.color} ${cfg.bg} border ${cfg.border}`}>
       <span className={`w-1.5 h-1.5 rounded-full ${cfg.dot} animate-pulse-glow`} />
       {cfg.label}
     </span>
@@ -151,7 +151,7 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
               <Trash2 size={16} className="text-gsrp-sunset" />
             </div>
             <div>
-              <h3 className="text-white font-black text-sm">{confirmAction.title}</h3>
+              <h3 className="text-white font-bold text-sm">{confirmAction.title}</h3>
               <p className="text-gsrp-teal-light/40 text-[10px] font-bold uppercase tracking-widest mt-0.5">{confirmAction.description}</p>
             </div>
           </div>
@@ -239,10 +239,10 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
       <div className="mb-8">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <h1 className="text-2xl lg:text-3xl font-black text-white tracking-tight">Ticket Records</h1>
-            <p className="text-gsrp-teal-light/40 text-[10px] font-bold uppercase tracking-widest mt-1">
+            <h1 className="font-display text-2xl lg:text-3xl font-extrabold text-white tracking-tight">Ticket Records</h1>
+            <p className="text-gsrp-teal-light/50 text-xs mt-1.5">
               {filteredTranscripts.length > 0
-                ? `Showing ${startIndex + 1}–${totalShowing} of ${filteredTranscripts.length} records`
+                ? <>Showing <span className="font-mono text-gsrp-teal-light/70">{startIndex + 1}–{totalShowing}</span> of <span className="font-mono text-gsrp-teal-light/70">{filteredTranscripts.length}</span> records</>
                 : 'No records found'}
             </p>
           </div>
@@ -311,9 +311,9 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
             <div key={s.label} className={`bg-gradient-to-br ${s.gradient} border ${s.border} rounded-2xl px-5 py-4 animate-fade-in-up`} style={{ animationDelay: `${i * 0.05}s` }}>
               <div className="flex items-center gap-2 mb-2">
                 <s.icon size={12} className="text-gsrp-teal-light/40" />
-                <div className="text-[9px] font-black text-gsrp-teal-light/40 uppercase tracking-widest">{s.label}</div>
+                <div className="text-[10px] font-semibold text-gsrp-teal-light/45 tracking-wide">{s.label}</div>
               </div>
-              <div className={`text-2xl font-black ${s.color}`}>{s.value}</div>
+              <div className={`font-mono text-[26px] font-bold tabular ${s.color}`}>{s.value}</div>
             </div>
           ))}
         </div>
@@ -348,7 +348,7 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
           >
             <Icon size={12} />
             <span className="hidden sm:inline">{label}</span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-black ${activeTab === id ? 'bg-white/20 text-white' : 'bg-gsrp-dark-surface/50 text-gsrp-teal-light/30'}`}>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded-md font-bold ${activeTab === id ? 'bg-white/20 text-white' : 'bg-gsrp-dark-surface/50 text-gsrp-teal-light/30'}`}>
               {count}
             </span>
           </button>
@@ -378,7 +378,7 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
         {paginatedTranscripts.length === 0 ? (
           <div className="py-24 text-center border border-dashed border-gsrp-dark-border/50 rounded-2xl animate-scale-in">
             <FileText className="mx-auto text-gsrp-dark-border mb-4" size={36} />
-            <p className="text-gsrp-teal-light/30 text-[10px] font-black uppercase tracking-widest">No records match your filters</p>
+            <p className="text-gsrp-teal-light/30 text-[10px] font-bold uppercase tracking-widest">No records match your filters</p>
             {(query || date || activeTab !== 'ALL') && (
               <button
                 onClick={() => { setQuery(''); setDate(''); setActiveTab('ALL'); }}
@@ -416,16 +416,16 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
                     </span>
                     <TypeBadge type={t.type} />
                   </div>
-                  <div className="flex items-center gap-4 mt-1">
-                    <span className="flex items-center gap-1 text-[9px] font-bold text-gsrp-teal-light/30 uppercase tracking-widest">
-                      <Calendar size={8} /> {t.date}
+                  <div className="flex items-center gap-3.5 mt-1.5">
+                    <span className="flex items-center gap-1.5 font-mono text-[11px] text-gsrp-teal-light/40">
+                      <Calendar size={10} className="text-gsrp-teal-light/30" /> {t.date}
                     </span>
-                    <span className="flex items-center gap-1 text-[9px] font-bold text-gsrp-teal-light/30 uppercase tracking-widest">
-                      <Hash size={8} /> {t.ownerId}
+                    <span className="flex items-center gap-1.5 font-mono text-[11px] text-gsrp-teal-light/40">
+                      <Hash size={10} className="text-gsrp-teal-light/30" /> {t.ownerId}
                     </span>
                     {t.reason && t.reason !== 'NoReason' && (
-                      <span className="hidden md:flex items-center gap-1 text-[9px] font-bold text-gsrp-teal-light/20 uppercase tracking-widest truncate max-w-[200px]">
-                        <Filter size={8} /> {t.reason}
+                      <span className="hidden md:flex items-center gap-1.5 text-[11px] text-gsrp-teal-light/35 truncate max-w-[200px]">
+                        <Filter size={10} className="text-gsrp-teal-light/25" /> {t.reason}
                       </span>
                     )}
                   </div>
