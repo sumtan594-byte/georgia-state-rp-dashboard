@@ -152,6 +152,17 @@ function VisitorTracker({ setProxyBlocked }) {
       data.userId = session.user.id;
       data.username = session.user.name || '';
       data.avatar = session.user.image || '';
+    } else {
+      // Roblox verification visitors aren't logged in via Discord OAuth but
+      // carry a Discord ID in the URL state param — pass it so the tracking
+      // API can resolve their identity instead of logging an anonymous IP.
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const state = params.get('state');
+        if (state && /^\d{17,20}$/.test(state.trim())) {
+          data.discordId = state.trim();
+        }
+      } catch {}
     }
     fetch('/api/tracking/log', {
       method: 'POST',

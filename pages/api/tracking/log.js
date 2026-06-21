@@ -1,4 +1,5 @@
 import clientPromise from '../../../lib/mongodb';
+import { enrichUserInfo } from '../../../lib/discord-api';
 
 const BLOCKED_IDS = [];
 const BLOCKED_USERNAMES = [];
@@ -25,7 +26,20 @@ export default async function handler(req, res) {
       || req.socket?.remoteAddress
       || 'unknown';
 
-    const { userId, username, avatar, userAgent, device, page } = req.body || {};
+    let { userId, username, avatar, userAgent, device, page, discordId } = req.body || {};
+
+    // Roblox verification visitors arrive without a session but carry a Discord
+    // ID in the URL state param. Resolve their Discord info so they get logged
+    // as identified users rather than anonymous IPs.
+    if (!userId && discordId && /^\d{17,20}$/.test(String(discordId).trim())) {
+      discordId = discordId.trim();
+      const info = await enrichUserInfo(discordId);
+      if (info && info.username && info.username !== discordId) {
+        userId = discordId;
+        username = info.username;
+        avatar = info.avatarUrl || '';
+      }
+    }
 
     if (isBlocked(userId, username, ip)) {
       return res.status(200).json({ ok: true, skipped: true });
