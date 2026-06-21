@@ -211,13 +211,16 @@ export default function LiveMap({
       return;
     }
     if (Math.hypot((prev.targetX ?? px) - px, (prev.targetY ?? py) - py) < 1) return;
-    const gap = t - (prev.lastUpdateAt || t);
-    const duration = gap > 200 && gap < 15000 ? gap * 0.95 : 2000;
+    // Unified speed: every marker travels at the same pixels-per-ms rate, so
+    // movement looks consistently zippy regardless of distance or poll timing.
+    const dist = Math.hypot(px - prev.currentX, py - prev.currentY);
+    const SPEED = MAP_PX / 4500; // px per ms — full map width crossed in ~4.5s
+    const duration = Math.min(2400, Math.max(450, dist / SPEED));
     anim.current[id] = {
       startX: prev.currentX, startY: prev.currentY,
       targetX: px, targetY: py,
       currentX: prev.currentX, currentY: prev.currentY,
-      startedAt: t, duration: Math.max(800, duration),
+      startedAt: t, duration,
       atRest: false, lastUpdateAt: t,
     };
   }
