@@ -18,7 +18,10 @@ export default function VerifyPage() {
 
   useEffect(() => {
     const checkLinking = async (retries = 3, delayMs = 2000) => {
-      if (sessionStatus !== 'authenticated') return;
+      if (sessionStatus !== 'authenticated') {
+        setIsChecking(false);
+        return;
+      }
       
       for (let attempt = 0; attempt <= retries; attempt++) {
         try {
