@@ -187,7 +187,7 @@ export default function LiveMap({
         const mkr = markers.current[id];
         if (!mkr || s.atRest || (ds.current?.playerId === id && ds.current?.isDragging)) continue;
         const raw = Math.min(1, (t - s.startedAt) / s.duration);
-        const eased = raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2;
+        const eased = s.duration < 800 ? raw : (raw < 0.5 ? 2 * raw * raw : 1 - Math.pow(-2 * raw + 2, 2) / 2);
         s.currentX = s.startX + (s.targetX - s.startX) * eased;
         s.currentY = s.startY + (s.targetY - s.startY) * eased;
         mkr.setLatLng([s.currentY, s.currentX]);
@@ -207,16 +207,18 @@ export default function LiveMap({
     const t = performance.now();
     const prev = anim.current[id];
     if (!prev) {
-      anim.current[id] = { startX: px, startY: py, targetX: px, targetY: py, currentX: px, currentY: py, startedAt: t, duration: 900, atRest: true };
+      anim.current[id] = { startX: px, startY: py, targetX: px, targetY: py, currentX: px, currentY: py, startedAt: t, duration: 500, atRest: true, lastUpdateAt: t };
       return;
     }
     if (Math.hypot((prev.targetX ?? px) - px, (prev.targetY ?? py) - py) < 1) return;
+    const gap = t - (prev.lastUpdateAt || t);
+    const duration = gap > 100 && gap < 5000 ? gap * 1.05 : 500;
     anim.current[id] = {
       startX: prev.currentX, startY: prev.currentY,
       targetX: px, targetY: py,
       currentX: prev.currentX, currentY: prev.currentY,
-      startedAt: t, duration: 1100,
-      atRest: false,
+      startedAt: t, duration,
+      atRest: false, lastUpdateAt: t,
     };
   }
 
