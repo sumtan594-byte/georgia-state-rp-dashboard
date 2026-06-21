@@ -5,9 +5,10 @@ import { requireAccess } from '../../../lib/access-check';
 import { recordPanelFrame } from '../../../lib/panel-replay-store';
 
 const ABSOLUTE_MIN_MS = 200;
-// Target a steady cadence instead of greedily firing as fast as the budget
-// allows. This keeps location updates evenly spaced (~1s) rather than bursting
-// ~20 calls in a couple seconds and then stalling until the window resets.
+// Poll on a fixed 1-second cadence. The frontend can't usefully consume faster
+// bursts, so we keep updates evenly spaced at exactly 1s rather than firing as
+// fast as the rate-limit budget allows (which bursts then stalls). We only back
+// off beyond this when the API actually rate-limits us (429 / remaining <= 1).
 const STEADY_TARGET_MS = 1000;
 const MAX_POLL_INTERVAL_MS = 60000;
 const AVATAR_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
@@ -45,14 +46,13 @@ function updateRateLimit(cache, response) {
   if (Number.isFinite(remaining) && Number.isFinite(limit) && resetMs > now) {
     const windowMs = resetMs - now;
     if (remaining <= 1) {
+      // Genuinely out of budget — wait for the window to reset.
       cache.nextAllowedFetch = resetMs + 200;
     } else {
-      // Spread the remaining budget evenly across the rest of the window so we
-      // never deplete it early. Normally this is well under STEADY_TARGET_MS,
-      // giving a stable ~1s cadence; only when we're genuinely close to the
-      // limit does safeInterval climb above the target and we back off.
+      // Fixed 1s cadence. Only if the budget is so tight that 1s/req would blow
+      // the window do we stretch the interval to stay under the limit.
       const safeInterval = windowMs / remaining;
-      cache.nextAllowedFetch = now + Math.max(STEADY_TARGET_MS, safeInterval, ABSOLUTE_MIN_MS);
+      cache.nextAllowedFetch = now + Math.max(STEADY_TARGET_MS, safeInterval);
     }
   } else {
     cache.nextAllowedFetch = now + STEADY_TARGET_MS;

@@ -187,7 +187,9 @@ export default function LiveMap({
         const mkr = markers.current[id];
         if (!mkr || s.atRest || (ds.current?.playerId === id && ds.current?.isDragging)) continue;
         const raw = Math.min(1, (t - s.startedAt) / s.duration);
-        const eased = raw * raw * (3 - 2 * raw);
+        // Quintic smootherstep — zero velocity AND zero acceleration at both
+        // ends, so blips ease in/out more gently than plain smoothstep.
+        const eased = raw * raw * raw * (raw * (raw * 6 - 15) + 10);
         s.currentX = s.startX + (s.targetX - s.startX) * eased;
         s.currentY = s.startY + (s.targetY - s.startY) * eased;
         mkr.setLatLng([s.currentY, s.currentX]);
@@ -203,6 +205,24 @@ export default function LiveMap({
     return () => { if (raf.current) cancelAnimationFrame(raf.current); };
   }, [ready]);
 
+  /* Safety net: guarantee every blip is hard-synced to its latest known
+     location at least once a minute, in case a tween stalled or a marker
+     drifted out of sync with the freshest server data. */
+  useEffect(() => {
+    if (!ready) return;
+    const id = setInterval(() => {
+      for (const [pid, s] of Object.entries(anim.current)) {
+        const mkr = markers.current[pid];
+        if (!mkr || (ds.current?.playerId === pid && ds.current?.isDragging)) continue;
+        s.currentX = s.targetX;
+        s.currentY = s.targetY;
+        s.atRest = true;
+        mkr.setLatLng([s.targetY, s.targetX]);
+      }
+    }, 60000);
+    return () => clearInterval(id);
+  }, [ready]);
+
   function startTween(id, px, py) {
     const t = performance.now();
     const prev = anim.current[id];
@@ -214,8 +234,10 @@ export default function LiveMap({
     // Unified speed: every marker travels at the same pixels-per-ms rate, so
     // movement looks consistently zippy regardless of distance or poll timing.
     const dist = Math.hypot(px - prev.currentX, py - prev.currentY);
-    const SPEED = MAP_PX / 4500; // px per ms — full map width crossed in ~4.5s
-    const duration = Math.min(2400, Math.max(450, dist / SPEED));
+    const SPEED = MAP_PX / 5200; // px per ms — full map width crossed in ~5.2s
+    // Slightly longer min/max than the travel time alone so even tiny position
+    // corrections glide instead of snapping — makes motion read as smoother.
+    const duration = Math.min(2600, Math.max(650, dist / SPEED));
     anim.current[id] = {
       startX: prev.currentX, startY: prev.currentY,
       targetX: px, targetY: py,
