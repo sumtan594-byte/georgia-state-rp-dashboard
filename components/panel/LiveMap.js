@@ -212,7 +212,7 @@ export default function LiveMap({
     }
     if (Math.hypot((prev.targetX ?? px) - px, (prev.targetY ?? py) - py) < 1) return;
     const gap = t - (prev.lastUpdateAt || t);
-    const duration = gap > 100 && gap < 5000 ? gap * 1.05 : 500;
+    const duration = gap > 100 && gap < 2000 ? gap * 1.05 : 500;
     anim.current[id] = {
       startX: prev.currentX, startY: prev.currentY,
       targetX: px, targetY: py,

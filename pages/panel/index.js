@@ -102,7 +102,7 @@ export default function PanelPage() {
   }, [handleData, handleError]);
 
   useEffect(() => {
-    const timer = setInterval(() => setNowMs(Date.now()), 500);
+    const timer = setInterval(() => setNowMs(Date.now()), 100);
     return () => clearInterval(timer);
   }, []);
 
@@ -198,7 +198,9 @@ export default function PanelPage() {
     ? getReplayPlayersAt(replay, replaySnapshot.sampledAt)
     : [];
   const poll = data?._poll || null;
-  const nextPollMs = poll?.nextPollAt ? Math.max(0, poll.nextPollAt - nowMs) : null;
+  const nextPollMs = poll?.fetchedAt && poll?.intervalMs
+    ? Math.max(0, (poll.fetchedAt + poll.intervalMs) - nowMs)
+    : null;
   const initialLoadMs = nowMs - loadStartedAt;
   const initialLoadProgress = getInitialLoadProgress({
     status,
@@ -457,7 +459,9 @@ function formatAgo(value) {
 
 function formatDuration(ms) {
   if (ms == null) return '--';
-  const seconds = Math.max(0, Math.ceil(ms / 1000));
+  if (ms <= 0) return '0.0s';
+  if (ms < 1000) return `0.${Math.ceil(ms / 100)}s`;
+  const seconds = Math.ceil(ms / 1000);
   if (seconds < 60) return `${seconds}s`;
   return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
 }
