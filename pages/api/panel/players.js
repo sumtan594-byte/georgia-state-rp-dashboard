@@ -188,54 +188,75 @@ async function hydratePlayerAvatars(cache, data) {
   return data;
 }
 
-export async function refreshFromErlc(cache, key) {
-  if (cache.fetching) return cache.fetching;
+const FULL_FETCH_INTERVAL_MS = 5000;
 
-  cache.fetching = (async () => {
-    const url = 'https://api.erlc.gg/v2/server?Players=true&Staff=true&JoinLogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true&EmergencyCalls=true';
-    const response = await fetch(url, { headers: { 'server-key': key } });
+async function doErlcFetch(cache, key, fullFetch) {
+  const url = fullFetch
+    ? 'https://api.erlc.gg/v2/server?Players=true&Staff=true&JoinLogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true&EmergencyCalls=true'
+    : 'https://api.erlc.gg/v2/server?Players=true';
+  const response = await fetch(url, { headers: { 'server-key': key } });
 
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}));
-      const err = new Error(`ERLC error ${response.status}`);
-      err.status = response.status;
-      err.body = body;
-      err.headers = {
-        'x-ratelimit-bucket': response.headers.get('x-ratelimit-bucket'),
-        'x-ratelimit-limit': response.headers.get('x-ratelimit-limit'),
-        'x-ratelimit-remaining': response.headers.get('x-ratelimit-remaining'),
-        'x-ratelimit-reset': response.headers.get('x-ratelimit-reset'),
-        'retry-after': response.headers.get('retry-after'),
-      };
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    const err = new Error(`ERLC error ${response.status}`);
+    err.status = response.status;
+    err.body = body;
+    err.headers = {
+      'x-ratelimit-bucket': response.headers.get('x-ratelimit-bucket'),
+      'x-ratelimit-limit': response.headers.get('x-ratelimit-limit'),
+      'x-ratelimit-remaining': response.headers.get('x-ratelimit-remaining'),
+      'x-ratelimit-reset': response.headers.get('x-ratelimit-reset'),
+      'retry-after': response.headers.get('retry-after'),
+    };
 
-      if (response.status === 429) {
-        const retryAfter = body.retry_after ?? err.headers['retry-after'] ?? 5;
-        updateRateLimitFromError(cache, err.headers, retryAfter);
-      }
-
-      throw err;
+    if (response.status === 429) {
+      const retryAfter = body.retry_after ?? err.headers['retry-after'] ?? 5;
+      updateRateLimitFromError(cache, err.headers, retryAfter);
     }
 
-    const data = attachPlayerAvatarUrls(cache, await response.json());
+    throw err;
+  }
+
+  const raw = await response.json();
+  updateRateLimit(cache, response);
+
+  if (fullFetch) {
+    const data = attachPlayerAvatarUrls(cache, raw);
     const mapEvents = await recordPanelFrame(cache, data);
     if (mapEvents.length > 0) data.MapEvents = mapEvents;
     cache.data = data;
     cache.fetchedAt = Date.now();
-    updateRateLimit(cache, response);
+    cache.lastFullFetch = cache.fetchedAt;
     broadcastToSubscribers(data);
     hydratePlayerAvatars(cache, {
       ...data,
       Players: Array.isArray(data.Players) ? data.Players.map(player => ({ ...player })) : [],
     }).then(hydrated => {
       if (!Array.isArray(hydrated?.Players) || hydrated.Players.length === 0) return;
-      cache.data = {
-        ...cache.data,
-        Players: hydrated.Players,
-      };
+      cache.data = { ...cache.data, Players: hydrated.Players };
       broadcastToSubscribers(cache.data);
     }).catch(() => {});
-    return data;
-  })();
+  } else {
+    const players = attachPlayerAvatarUrls(cache, raw)?.Players;
+    if (players && cache.data) {
+      cache.data = { ...cache.data, Players: players };
+    } else if (!cache.data) {
+      cache.data = attachPlayerAvatarUrls(cache, raw);
+    }
+    cache.fetchedAt = Date.now();
+    broadcastToSubscribers(cache.data);
+  }
+
+  return cache.data;
+}
+
+export async function refreshFromErlc(cache, key) {
+  if (cache.fetching) return cache.fetching;
+
+  const needsFull = !cache.data || !cache.lastFullFetch ||
+    (Date.now() - cache.lastFullFetch) >= FULL_FETCH_INTERVAL_MS;
+
+  cache.fetching = doErlcFetch(cache, key, needsFull);
 
   try {
     return await cache.fetching;
@@ -284,9 +305,11 @@ function ensurePoller(cache) {
       const key = process.env.ERLC_API_KEY;
       if (key) {
         try {
+          const t0 = Date.now();
           await refreshFromErlc(cache, key);
+          const elapsed = Date.now() - t0;
+          if (elapsed > 1000) console.log(`[ERLC Poll] fetch took ${elapsed}ms`);
         } catch {
-          // rate-limit backoff handled inside refreshFromErlc
         }
       }
     }
