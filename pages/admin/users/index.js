@@ -9,8 +9,10 @@ import Link from 'next/link';
 import {
   Users, Globe, Monitor, Search, UserCheck, HelpCircle,
   Loader2, RefreshCw, ChevronDown, ChevronUp, Clock, Wifi, ExternalLink,
-  ShieldAlert, ShieldCheck,
+  ShieldAlert, ShieldCheck, ChevronLeft, ChevronRight,
 } from 'lucide-react';
+
+const PAGE_SIZE = 10;
 
 export default function UsersPage({ canAccess }) {
   const { data: session, status } = useSession();
@@ -24,6 +26,7 @@ export default function UsersPage({ canAccess }) {
   const [allowing, setAllowing] = useState(null);
   const [whitelistMsg, setWhitelistMsg] = useState(null);
   const [whitelisted, setWhitelisted] = useState(new Set());
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (status === 'unauthenticated') return;
@@ -74,6 +77,12 @@ export default function UsersPage({ canAccess }) {
   });
 
   const displayList = activeTab === 'discord' ? filteredDiscord : filteredAnonymous;
+  const totalPages = Math.max(1, Math.ceil(displayList.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageItems = displayList.slice(pageStart, pageStart + PAGE_SIZE);
+
+  useEffect(() => { setPage(1); }, [search, activeTab]);
 
   const onlineNow = (p) => {
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000);
@@ -187,8 +196,13 @@ export default function UsersPage({ canAccess }) {
         </div>
       ) : (
         <div className="space-y-2">
-          <p className="text-sm text-gray-500 mb-2">{displayList.length} {activeTab === 'discord' ? 'user' : 'IP'}{displayList.length !== 1 ? 's' : ''}</p>
-          {displayList.map(p => (
+          <p className="text-sm text-gray-500 mb-2">
+            {displayList.length} {activeTab === 'discord' ? 'user' : 'IP'}{displayList.length !== 1 ? 's' : ''}
+            {displayList.length > PAGE_SIZE && (
+              <span className="text-gray-600"> · showing {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, displayList.length)}</span>
+            )}
+          </p>
+          {pageItems.map(p => (
             <div
               key={p._id || (p.userId || p.ip)}
               className="bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-xl overflow-hidden"
@@ -446,6 +460,30 @@ export default function UsersPage({ canAccess }) {
               )}
             </div>
           ))}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold bg-gsrp-dark-card border border-gsrp-dark-border text-gray-400 hover:text-white hover:border-gsrp-orange/30 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Prev
+              </button>
+              <span className="text-xs text-gray-400 px-2">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold bg-gsrp-dark-card border border-gsrp-dark-border text-gray-400 hover:text-white hover:border-gsrp-orange/30 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>
