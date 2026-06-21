@@ -656,6 +656,40 @@ discord-messages {
 .ticket-row:nth-child(15) { animation-delay: 0.45s; }
 
 
+/* ===================== REVIEW MARQUEE (landing page) ===================== */
+@keyframes marquee-scroll-left {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes marquee-scroll-right {
+  from { transform: translateX(-50%); }
+  to   { transform: translateX(0); }
+}
+.marquee-mask {
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+  mask-image: linear-gradient(to right, transparent, #000 8%, #000 92%, transparent);
+}
+.marquee-track {
+  display: flex;
+  width: max-content;
+  gap: 1rem;
+  will-change: transform;
+}
+.marquee-left  { animation: marquee-scroll-left  60s linear infinite; }
+.marquee-right { animation: marquee-scroll-right 75s linear infinite; }
+.marquee-mask:hover .marquee-track { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .marquee-left, .marquee-right { animation: none; }
+}
+
+/* Slow drifting gradient aura for hero */
+@keyframes aura-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); opacity: 0.55; }
+  50%      { transform: translate3d(0, -16px, 0) scale(1.08); opacity: 0.8; }
+}
+.animate-aura { animation: aura-drift 12s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .animate-aura { animation: none; } }
+
 /* ===================== GLOW EFFECTS ===================== */
 .glow-orange {
   box-shadow: 0 0 15px rgba(249, 115, 22, 0.15), 0 0 30px rgba(249, 115, 22, 0.05);

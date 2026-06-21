@@ -16,7 +16,7 @@ export default function LoginScreen() {
 
   const handleDiscordLogin = async () => {
     try {
-      await signIn('discord', { callbackUrl: '/' });
+      await signIn('discord', { callbackUrl: '/dashboard' });
     } catch (err) {
       console.error('[LOGIN] signIn() threw error:', err);
     }

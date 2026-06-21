@@ -245,7 +245,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
   const [proxyBlocked, setProxyBlocked] = useState(false);
 
   useEffect(() => {
-    const publicRoutes = ['/verify', '/privacy-policy', '/terms-of-service', '/login'];
+    const publicRoutes = ['/', '/verify', '/privacy-policy', '/terms-of-service', '/login'];
     const isPublicPage = publicRoutes.includes(router.pathname);
 
     if (!isPublicPage && !sessionStorage.getItem('hasSeenWelcome')) {
@@ -260,7 +260,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
     sessionStorage.setItem('hasSeenWelcome', 'true');
   };
 
-  const publicRoutes = ['/verify', '/privacy-policy', '/terms-of-service', '/login'];
+  const publicRoutes = ['/', '/verify', '/privacy-policy', '/terms-of-service', '/login'];
   const isPublicPage = publicRoutes.includes(router.pathname);
 
   return (
