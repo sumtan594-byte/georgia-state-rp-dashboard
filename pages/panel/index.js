@@ -36,6 +36,7 @@ export default function PanelPage() {
   const [error, setError] = useState(null);
   const [rateLimitUntil, setRateLimitUntil] = useState(null);
   const [loadStartedAt] = useState(() => Date.now());
+  const [loadStage, setLoadStage] = useState('auth');
   const hasConnected = useRef(false);
   const [replay, setReplay] = useState(null);
   const [replayLoading, setReplayLoading] = useState(false);
@@ -85,8 +86,11 @@ export default function PanelPage() {
     const es = new EventSource('/api/panel/events');
     evtSourceRef.current = es;
 
+    es.onopen = () => setLoadStage(s => s === 'auth' || s === 'stream' ? 'poll' : s);
+
     es.addEventListener('players', (e) => {
       hasConnected.current = true;
+      setLoadStage('render');
       try {
         handleData(JSON.parse(e.data));
       } catch { /* ignore bad messages */ }
@@ -202,12 +206,16 @@ export default function PanelPage() {
     ? Math.max(0, (poll.fetchedAt + poll.intervalMs) - nowMs)
     : null;
   const initialLoadMs = nowMs - loadStartedAt;
+  useEffect(() => {
+    if (status !== 'loading' && hasRefreshed) {
+      setLoadStage(s => s === 'auth' ? 'stream' : s);
+    }
+  }, [status, hasRefreshed]);
+
   const initialLoadProgress = getInitialLoadProgress({
-    status,
-    hasRefreshed,
+    loadStage,
     hasData: !!data,
     hasError: !!error,
-    elapsedMs: initialLoadMs,
   });
 
   /* ── Loading / auth states ───────────────────────────────────────────── */
@@ -380,35 +388,25 @@ export default function PanelPage() {
   );
 }
 
-function getInitialLoadProgress({ status, hasRefreshed, hasData, hasError, elapsedMs }) {
+function getInitialLoadProgress({ loadStage, hasData, hasError }) {
   if (hasError) {
-    return { percent: 100, title: 'Connection interrupted', detail: 'Waiting for the live stream to reconnect', icon: WifiOff };
+    return { percent: 100, stage: 4, title: 'Connection interrupted', detail: 'Waiting for the live stream to reconnect', icon: WifiOff };
   }
   if (hasData) {
-    return { percent: 100, title: 'Live map ready', detail: 'Rendering players and patrol data', icon: Radio };
+    return { percent: 100, stage: 4, title: 'Live map ready', detail: 'Rendering players and patrol data', icon: Radio };
   }
-  if (status === 'loading' || !hasRefreshed) {
-    return { percent: 10, title: 'Checking access', detail: 'Authentating session and refreshing Discord roles', icon: Shield };
+  switch (loadStage) {
+    case 'auth':
+      return { percent: 15, stage: 0, title: 'Authenticating', detail: 'Checking session and Discord roles', icon: Shield };
+    case 'stream':
+      return { percent: 40, stage: 1, title: 'Connecting stream', detail: 'Opening SSE connection to server', icon: Radio };
+    case 'poll':
+      return { percent: 65, stage: 2, title: 'Fetching data', detail: 'Waiting for first ER:LC server frame', icon: Server };
+    case 'render':
+      return { percent: 90, stage: 3, title: 'Rendering map', detail: 'Drawing players and patrol data', icon: MapPinned };
+    default:
+      return { percent: 5, stage: 0, title: 'Initializing', detail: 'Starting up', icon: Clock };
   }
-  if (elapsedMs < 1000) {
-    return { percent: 22, title: 'Opening live stream', detail: 'Establishing secure connection to the server feed', icon: Radio };
-  }
-  if (elapsedMs < 2200) {
-    return { percent: 35, title: 'Authenticating stream', detail: 'Validating credentials and permissions with the feed service', icon: Shield };
-  }
-  if (elapsedMs < 4000) {
-    return { percent: 48, title: 'Queueing request', detail: 'Waiting for rate-limit window to open on ER:LC API', icon: Clock };
-  }
-  if (elapsedMs < 6500) {
-    return { percent: 60, title: 'Fetching server frame', detail: 'Requesting player list, kill logs, and command logs', icon: Server };
-  }
-  if (elapsedMs < 9000) {
-    return { percent: 72, title: 'Polling complete data', detail: 'Received server frame; scanning kill/command logs', icon: Server };
-  }
-  if (elapsedMs < 12000) {
-    return { percent: 85, title: 'Hydrating map data', detail: 'Loading players, avatars, vehicles, and patrol routes', icon: MapPinned };
-  }
-  return { percent: 95, title: 'Still connected', detail: 'Server is taking longer than expected; staying queued instead of spamming requests', icon: Clock };
 }
 
 function PanelLoadingState({ progress, elapsedMs }) {
@@ -435,13 +433,13 @@ function PanelLoadingState({ progress, elapsedMs }) {
           </div>
           <div className="mt-3 grid grid-cols-4 gap-2">
             {['Auth', 'Stream', 'Poll', 'Render'].map((step, index) => (
-              <div key={step} className={`gsrp-panel-loading-step ${progress.percent >= (index + 1) * 22 ? 'is-active' : ''}`}>
+              <div key={step} className={`gsrp-panel-loading-step ${index <= (progress.stage ?? 0) ? 'is-active' : ''}`}>
                 {step}
               </div>
             ))}
             <div className="mt-1.5 flex justify-between text-[10px] font-mono text-white/20">
               <span>{Math.floor(elapsedMs / 1000)}s elapsed</span>
-              <span>{Math.min(100, Math.floor(elapsedMs / 120))}%</span>
+              <span>{progress.percent}%</span>
             </div>
           </div>
         </div>
