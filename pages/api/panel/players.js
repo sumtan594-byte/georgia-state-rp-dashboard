@@ -305,10 +305,7 @@ function ensurePoller(cache) {
       const key = process.env.ERLC_API_KEY;
       if (key) {
         try {
-          const t0 = Date.now();
           await refreshFromErlc(cache, key);
-          const elapsed = Date.now() - t0;
-          if (elapsed > 1000) console.log(`[ERLC Poll] fetch took ${elapsed}ms`);
         } catch {
         }
       }
