@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://join-gsrp.com/sitemap.xml
