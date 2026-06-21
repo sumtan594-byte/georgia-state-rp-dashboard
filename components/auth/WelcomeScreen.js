@@ -72,12 +72,12 @@ export default function WelcomeScreen({ onComplete }) {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.5 }}
-            className="text-center mt-8"
+            className="text-center mt-7"
           >
-            <h1 className="text-5xl md:text-7xl font-extrabold text-white tracking-tight drop-shadow-lg">
+            <h1 className="font-display text-4xl md:text-6xl font-extrabold text-white tracking-[-0.03em] drop-shadow-lg leading-[1.05]">
               Welcome, <span className="text-gsrp-teal-light">{userName}</span>
             </h1>
-            <p className="text-xl md:text-2xl text-gsrp-teal-light/60 font-bold uppercase tracking-widest mt-4">
+            <p className="text-sm md:text-base text-gsrp-teal-light/55 font-semibold tracking-[0.12em] mt-3">
               {userRole}
             </p>
           </motion.div>
