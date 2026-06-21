@@ -8,8 +8,10 @@ import AccessDenied from '../../components/auth/AccessDenied';
 import {
   Users, Search, Loader2, BookOpen, FileText, Clock, CheckCircle, XCircle,
   RefreshCw, Shield, ChevronDown, ChevronRight, AlertTriangle, Eye,
-  BarChart3, Ban, Undo2, Trash2, Copy, ExternalLink
+  BarChart3, Ban, Undo2, Trash2, Copy, ExternalLink, ChevronLeft
 } from 'lucide-react';
+
+const PAGE_SIZE = 10;
 
 export default function UserValidationsPage({ canAccess: serverCanAccess, userIsAdmin: serverIsAdmin }) {
   const { data: session, status } = useSession();
@@ -22,6 +24,7 @@ export default function UserValidationsPage({ canAccess: serverCanAccess, userIs
   const [expandedUser, setExpandedUser] = useState(null);
   const [actionLoading, setActionLoading] = useState({});
   const [toast, setToast] = useState(null);
+  const [page, setPage] = useState(1);
 
   useEffect(() => {
     if (status === 'unauthenticated') return;
@@ -87,6 +90,42 @@ export default function UserValidationsPage({ canAccess: serverCanAccess, userIs
     if (filter === 'cooldown') return matchesSearch && u.isOnCooldown;
     return matchesSearch;
   });
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const currentPage = Math.min(page, totalPages);
+  const pageStart = (currentPage - 1) * PAGE_SIZE;
+  const pageUsers = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+
+  // Reset to the first page whenever the result set changes.
+  useEffect(() => {
+    setPage(1);
+  }, [search, filter]);
+
+  // Resolve Discord usernames/avatars for the visible page only, on demand.
+  useEffect(() => {
+    const missing = pageUsers.filter(u => !u.username).map(u => u.userId);
+    if (missing.length === 0) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch('/api/admin/user-validations-resolve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userIds: missing }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        const resolved = data.resolved || {};
+        if (cancelled || Object.keys(resolved).length === 0) return;
+        setUsers(prev => prev.map(u =>
+          resolved[u.userId]
+            ? { ...u, username: resolved[u.userId].username, avatar: resolved[u.userId].avatar }
+            : u
+        ));
+      } catch {}
+    })();
+    return () => { cancelled = true; };
+  }, [currentPage, filter, search, users]);
 
   if (status === 'loading' || !hasRefreshed) {
     return (
@@ -171,8 +210,13 @@ export default function UserValidationsPage({ canAccess: serverCanAccess, userIs
         </div>
       ) : (
         <div className="space-y-2">
-          <p className="text-sm text-gray-500 mb-2">{filtered.length} user{filtered.length !== 1 ? 's' : ''}</p>
-          {filtered.map(user => (
+          <p className="text-sm text-gray-500 mb-2">
+            {filtered.length} user{filtered.length !== 1 ? 's' : ''}
+            {filtered.length > PAGE_SIZE && (
+              <span className="text-gray-600"> · showing {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filtered.length)}</span>
+            )}
+          </p>
+          {pageUsers.map(user => (
             <UserCard
               key={user.userId}
               user={user}
@@ -183,6 +227,30 @@ export default function UserValidationsPage({ canAccess: serverCanAccess, userIs
               isAdmin={isAdmin}
             />
           ))}
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold bg-gsrp-dark-card border border-gsrp-dark-border text-gray-400 hover:text-white hover:border-gsrp-orange/30 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                <ChevronLeft className="w-3.5 h-3.5" />
+                Prev
+              </button>
+              <span className="text-xs text-gray-400 px-2">
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="flex items-center gap-1 px-3 py-2 rounded-lg text-xs font-semibold bg-gsrp-dark-card border border-gsrp-dark-border text-gray-400 hover:text-white hover:border-gsrp-orange/30 transition-colors cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                Next
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

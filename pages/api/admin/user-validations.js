@@ -1,37 +1,6 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth-options';
 import clientPromise from '../../../lib/mongodb';
-import { enrichUserInfo } from '../../../lib/discord-api';
-
-const BATCH_SIZE = 20;
-
-async function getCachedUserInfo(db, userId) {
-  const doc = await db.collection('discord_user_cache').findOne({ userId });
-  if (doc && Date.now() - doc.updatedAt < 86_400_000) {
-    return { username: doc.username, avatar: doc.avatar };
-  }
-  return null;
-}
-
-async function setCachedUserInfo(db, userId, info) {
-  await db.collection('discord_user_cache').updateOne(
-    { userId },
-    { $set: { username: info.username, avatar: info.avatar, updatedAt: Date.now() } },
-    { upsert: true }
-  );
-}
-
-async function resolveDiscordUser(db, userId) {
-  const cached = await getCachedUserInfo(db, userId);
-  if (cached) return cached;
-
-  const raw = await enrichUserInfo(userId);
-  if (!raw) return null;
-
-  const info = { username: raw.username, avatar: raw.avatarUrl };
-  await setCachedUserInfo(db, userId, info);
-  return info;
-}
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
@@ -157,18 +126,28 @@ export default async function handler(req, res) {
       return bTime.localeCompare(aTime);
     });
 
+    // Attach any already-cached Discord info in a single bulk query so the
+    // response is fast. Usernames that aren't cached (or were poisoned by a
+    // failed lookup that stored the raw ID) are left null and resolved
+    // on-demand per page by /api/admin/user-validations-resolve.
     const userIds = users.map(u => u.userId);
-    for (let i = 0; i < userIds.length; i += BATCH_SIZE) {
-      const batch = userIds.slice(i, i + BATCH_SIZE);
-      const results = await Promise.allSettled(
-        batch.map(uid => resolveDiscordUser(dbDefault, uid))
-      );
-      for (let j = 0; j < results.length; j++) {
-        const info = results[j].status === 'fulfilled' ? results[j].value : null;
-        if (info) {
-          users[i + j].username = info.username;
-          users[i + j].avatar = info.avatar;
-        }
+    const cachedDocs = await dbDefault
+      .collection('discord_user_cache')
+      .find({ userId: { $in: userIds } })
+      .toArray();
+    const cacheMap = {};
+    for (const doc of cachedDocs) {
+      const fresh = Date.now() - doc.updatedAt < 86_400_000;
+      const poisoned = doc.username === doc.userId; // failed lookup stored the raw ID
+      if (fresh && !poisoned) {
+        cacheMap[doc.userId] = { username: doc.username, avatar: doc.avatar };
+      }
+    }
+    for (const u of users) {
+      const info = cacheMap[u.userId];
+      if (info) {
+        u.username = info.username;
+        u.avatar = info.avatar;
       }
     }
 
