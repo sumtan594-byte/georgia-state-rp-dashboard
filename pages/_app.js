@@ -30,7 +30,10 @@ function AuthGuard({ isPublicPage, children }) {
     }
   }, [status, isPublicPage, router]);
 
-  if (status === 'loading') {
+  // Public pages (landing, verify, policies, login) must render their real
+  // content immediately — even before the session resolves — so crawlers and
+  // first paint get the marketing/page HTML instead of a loading spinner.
+  if (status === 'loading' && !isPublicPage) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="flex flex-col items-center">
