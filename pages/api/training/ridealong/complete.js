@@ -4,6 +4,7 @@ import clientPromise from '../../../../lib/mongodb'
 import { rateLimit } from '../../../../lib/rate-limiter'
 import { RIDEALONG_NICKNAME_PREFIX, RIDEALONG_ROLES } from '../../../../lib/ridealong-config'
 import { addMemberRole, getGuildMember, modifyGuildMember, removeMemberRole } from '../../../../lib/discord-v2'
+import { markTraineeCompleted } from '../../../../lib/trainee-tracking'
 
 const TRAINEE_ROLE_ID = '1372476380096237609'
 
@@ -73,6 +74,10 @@ export default async function handler(req, res) {
         },
       }
     )
+
+    // Trainee finished the modules within the window — stop tracking them so the
+    // 7-day expiry cron leaves them alone.
+    await markTraineeCompleted(db, userId)
   } catch (err) {
     console.error('[Ridealong Complete] Discord API error:', err.message)
     return res.status(502).json({ error: 'Discord role update failed' })

@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth-options';
 import clientPromise from '../../../lib/mongodb';
 import { rateLimit } from '../../../lib/rate-limiter';
+import { MAX_QUIZ_FAILS, removeTraineeRole } from '../../../lib/trainee-tracking';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
@@ -105,6 +106,26 @@ export default async function handler(req, res) {
     { upsert: true }
   );
 
+  // Enforce the quiz fail cap: after MAX_QUIZ_FAILS failed attempts, strip the
+  // trainee role and DM the user to reapply.
+  let roleRemovedForFails = false;
+  if (!pass) {
+    const updated = await attemptsCollection.findOne({ userId });
+    const failCount = (updated?.attempts || []).filter((a) => !a.pass).length;
+    if (failCount >= MAX_QUIZ_FAILS && !updated?.traineeRoleRemoved) {
+      try {
+        await removeTraineeRole(db, userId, { reason: 'failed-quiz', dm: true });
+        await attemptsCollection.updateOne(
+          { userId },
+          { $set: { traineeRoleRemoved: true, traineeRoleRemovedAt: new Date().toISOString() } }
+        );
+        roleRemovedForFails = true;
+      } catch (err) {
+        console.error('[Quiz Submit] Failed to remove trainee role after fail cap:', err.message);
+      }
+    }
+  }
+
   try {
     const color = pass ? 0x22c55e : 0xef4444;
     const passMsg = pass
@@ -170,5 +191,6 @@ export default async function handler(req, res) {
     ok: true,
     pass,
     cooldownUntil: pass ? null : cooldownUntil,
+    traineeRoleRemoved: roleRemovedForFails,
   });
 }

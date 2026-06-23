@@ -5,6 +5,7 @@ import { authOptions } from "../../../lib/auth-options";
 import { canReviewApplications } from "../../../lib/auth";
 import { sendComponentsV2, sendDM, addMemberRole, removeMemberRole } from "../../../lib/discord-v2";
 import { logAuditEvent } from '../../../lib/audit-log';
+import { startTraineeTracking } from '../../../lib/trainee-tracking';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
@@ -67,6 +68,14 @@ export default async function handler(req, res) {
           await addMemberRole(guildId, application.userId, "1372480733234593812");
           console.log(`[Role Sync] Adding trainee role on staff accept`);
           await addMemberRole(guildId, application.userId, "1372476380096237609");
+          // Start the 7-day window for completing the training modules.
+          // Use the default db so the quiz/cron flows (which use client.db())
+          // read the same trainee_tracking collection.
+          try {
+            await startTraineeTracking(client.db(), application.userId, application.username || application.userName);
+          } catch (e) {
+            console.error('[Trainee Tracking] Failed to start tracking', e);
+          }
         }
       } else {
         await helper('add', appType.roleAddDenied);

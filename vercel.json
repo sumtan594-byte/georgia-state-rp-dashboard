@@ -4,5 +4,11 @@
   "devCommand": "next dev",
   "installCommand": "npm install --legacy-peer-deps",
   "outputDirectory": ".next",
-  "regions": ["iad1"]
+  "regions": ["iad1"],
+  "crons": [
+    {
+      "path": "/api/cron/trainee-expiry",
+      "schedule": "0 * * * *"
+    }
+  ]
 }
