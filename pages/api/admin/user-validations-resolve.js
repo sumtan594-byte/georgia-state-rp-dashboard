@@ -1,7 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth-options';
 import clientPromise from '../../../lib/mongodb';
-import { enrichUserInfo } from '../../../lib/discord-api';
+import { enrichUserInfo, DiscordRateLimitError } from '../../../lib/discord-api';
 
 const MAX_IDS = 20;
 
@@ -42,14 +42,28 @@ export default async function handler(req, res) {
     const client = await clientPromise;
     const db = client.db();
 
-    const results = await Promise.allSettled(
-      userIds.map(uid => resolveDiscordUser(db, uid))
-    );
-
+    // Resolve sequentially rather than firing all lookups at once — a burst of
+    // parallel requests is exactly what trips Discord's per-route rate limit.
+    // enrichUserInfo backs off on 429s; if it still can't get through it throws
+    // DiscordRateLimitError, which we surface to the client as a 429 so it can
+    // keep showing a loading state and retry, rather than rendering raw IDs.
     const resolved = {};
-    for (let i = 0; i < results.length; i++) {
-      const info = results[i].status === 'fulfilled' ? results[i].value : null;
-      if (info) resolved[userIds[i]] = info;
+    for (const uid of userIds) {
+      try {
+        const info = await resolveDiscordUser(db, uid);
+        if (info) resolved[uid] = info;
+      } catch (err) {
+        if (err instanceof DiscordRateLimitError) {
+          const retryAfter = Math.ceil((err.retryAfterMs || 1000) / 1000);
+          res.setHeader('Retry-After', String(retryAfter));
+          return res.status(429).json({
+            error: 'Discord rate limited',
+            retryAfter,
+            resolved, // return whatever we managed to resolve before hitting the limit
+          });
+        }
+        // Non-rate-limit failure for this user: skip it, keep going.
+      }
     }
 
     return res.status(200).json({ resolved });

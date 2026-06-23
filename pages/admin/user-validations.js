@@ -77,6 +77,8 @@ export default function UserValidationsPage({ canAccess: serverCanAccess, userIs
   const [toast, setToast] = useState(null);
   const [page, setPage] = useState(1);
   const [now, setNow] = useState(Date.now());
+  const [resolvingPage, setResolvingPage] = useState(false);
+  const [dataNonce, setDataNonce] = useState(0);
 
   // Tick once a minute so all countdown timers stay live without re-fetching.
   useEffect(() => {
@@ -98,6 +100,7 @@ export default function UserValidationsPage({ canAccess: serverCanAccess, userIs
         const data = await res.json();
         setUsers(data.users || []);
         setNow(Date.now());
+        setDataNonce(n => n + 1);
       }
     } catch (err) {
       console.error('Failed to fetch users:', err);
@@ -169,31 +172,71 @@ export default function UserValidationsPage({ canAccess: serverCanAccess, userIs
     setPage(1);
   }, [search, filter]);
 
-  // Resolve Discord usernames/avatars for the visible page only, on demand.
+  // Resolve Discord usernames/avatars for the visible page on demand, gating the
+  // page behind a loading state so we never flash raw IDs / "Unknown User" and
+  // then slowly populate. Keyed by page (not `users`) so it fires exactly once
+  // per page change; a debounce means flipping pages quickly cancels in-flight
+  // work and only resolves the page you actually land on.
+  const pageKey = `${filter}|${search}|${currentPage}|${dataNonce}`;
   useEffect(() => {
     const missing = pageUsers.filter(u => !u.username).map(u => u.userId);
-    if (missing.length === 0) return;
+    if (missing.length === 0) {
+      setResolvingPage(false);
+      return;
+    }
+
+    setResolvingPage(true);
     let cancelled = false;
-    (async () => {
+
+    const applyResolved = (resolved) => {
+      if (!resolved || Object.keys(resolved).length === 0) return;
+      setUsers(prev => prev.map(u =>
+        resolved[u.userId]
+          ? { ...u, username: resolved[u.userId].username, avatar: resolved[u.userId].avatar }
+          : u
+      ));
+    };
+
+    const resolve = async (ids, attempt = 0) => {
+      const res = await fetch('/api/admin/user-validations-resolve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userIds: ids }),
+      });
+
+      if (res.status === 429) {
+        // Discord is rate limiting. Apply partial results, wait, then retry the
+        // ones still missing — staying on the loading screen the whole time.
+        const data = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        applyResolved(data.resolved);
+        const stillMissing = ids.filter(id => !data.resolved?.[id]);
+        if (stillMissing.length === 0 || attempt >= 4) return;
+        const waitMs = Math.min(((data.retryAfter || 1) * 1000) + 250, 6000);
+        await new Promise(r => setTimeout(r, waitMs));
+        if (cancelled) return;
+        return resolve(stillMissing, attempt + 1);
+      }
+
+      if (!res.ok) return;
+      const data = await res.json();
+      if (cancelled) return;
+      applyResolved(data.resolved);
+    };
+
+    // Debounce so rapid page turns don't fire a request per intermediate page.
+    const timer = setTimeout(async () => {
       try {
-        const res = await fetch('/api/admin/user-validations-resolve', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userIds: missing }),
-        });
-        if (!res.ok) return;
-        const data = await res.json();
-        const resolved = data.resolved || {};
-        if (cancelled || Object.keys(resolved).length === 0) return;
-        setUsers(prev => prev.map(u =>
-          resolved[u.userId]
-            ? { ...u, username: resolved[u.userId].username, avatar: resolved[u.userId].avatar }
-            : u
-        ));
+        await resolve(missing);
       } catch {}
-    })();
-    return () => { cancelled = true; };
-  }, [currentPage, filter, search, users]);
+      finally {
+        if (!cancelled) setResolvingPage(false);
+      }
+    }, 300);
+
+    return () => { cancelled = true; clearTimeout(timer); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pageKey]);
 
   if (status === 'loading' || !hasRefreshed) {
     return (
@@ -297,18 +340,26 @@ export default function UserValidationsPage({ canAccess: serverCanAccess, userIs
               <span className="text-gray-600"> · showing {pageStart + 1}–{Math.min(pageStart + PAGE_SIZE, filtered.length)}</span>
             )}
           </p>
-          {pageUsers.map(user => (
-            <UserCard
-              key={user.userId}
-              user={user}
-              now={now}
-              isExpanded={expandedUser === user.userId}
-              onToggle={() => setExpandedUser(expandedUser === user.userId ? null : user.userId)}
-              onAction={handleAction}
-              actionLoading={actionLoading}
-              isAdmin={isAdmin}
-            />
-          ))}
+          {resolvingPage ? (
+            <div className="flex flex-col items-center justify-center py-20 text-center">
+              <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-3" />
+              <p className="text-sm text-gray-400">Loading user details…</p>
+              <p className="text-xs text-gray-600 mt-1">Fetching Discord profiles</p>
+            </div>
+          ) : (
+            pageUsers.map(user => (
+              <UserCard
+                key={user.userId}
+                user={user}
+                now={now}
+                isExpanded={expandedUser === user.userId}
+                onToggle={() => setExpandedUser(expandedUser === user.userId ? null : user.userId)}
+                onAction={handleAction}
+                actionLoading={actionLoading}
+                isAdmin={isAdmin}
+              />
+            ))
+          )}
 
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 pt-4">
