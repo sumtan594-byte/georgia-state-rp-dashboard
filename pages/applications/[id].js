@@ -25,6 +25,7 @@ import {
   ShieldX,
   Trash2,
   Clipboard,
+  ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
@@ -549,6 +550,22 @@ export default function ApplicationDetail() {
   const totalSessionTabOutTime = (application.sessionTabOuts || []).reduce((sum, t) => sum + (t.duration || 0), 0);
   const totalSessionMouseLeaves = (application.sessionMouseLeaves || []).length;
 
+  // Pending applications other than the one currently open.
+  const otherPending = pendingApplications.filter(app => app._id !== application._id);
+  // The next pending application to review. If we're already viewing a pending
+  // app, cycle to the one after it; otherwise jump to the first in the queue.
+  const currentPendingIdx = pendingApplications.findIndex(app => app._id === application._id);
+  let nextPendingApp = null;
+  if (pendingApplications.length > 0) {
+    if (currentPendingIdx >= 0) {
+      nextPendingApp = pendingApplications.length > 1
+        ? pendingApplications[(currentPendingIdx + 1) % pendingApplications.length]
+        : null;
+    } else {
+      nextPendingApp = pendingApplications[0];
+    }
+  }
+
   return (
     <div className="max-w-6xl mx-auto animate-fade-in-up pb-20 px-4">
       <Head>
@@ -722,45 +739,62 @@ export default function ApplicationDetail() {
         <div className="space-y-6">
           <IntegrityScoreCard application={application} />
 
-          {application.status === 'pending' && (
-            <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-6">
-              <h3 className="text-white font-bold text-xs uppercase tracking-widest mb-4 flex items-center gap-2">
+          <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-white font-bold text-xs uppercase tracking-widest flex items-center gap-2">
                 <Clock size={14} className="text-gsrp-orange" />
-                Other Pending
+                Pending Queue
               </h3>
-              <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
-                {pendingApplications.filter(app => app._id !== application._id).length > 0 ? (
-                  pendingApplications
-                    .filter(app => app._id !== application._id)
-                    .map(app => (
-                      <Link
-                        key={app._id}
-                        href={`/applications/${app._id}`}
-                        className="block rounded-xl border border-white/5 bg-gsrp-dark-surface/40 px-3 py-3 hover:border-gsrp-orange/40 hover:bg-gsrp-dark-surface transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          {app.userImage ? (
-                            <img src={app.userImage} alt="" className="w-8 h-8 rounded-full object-cover border border-white/10" />
-                          ) : (
-                            <div className="w-8 h-8 rounded-full bg-gsrp-dark-card border border-white/10 flex items-center justify-center text-white/70 text-xs font-bold">
-                              {(app.username || '?').charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                          <div className="min-w-0">
-                            <p className="text-white text-xs font-bold truncate">{app.username}</p>
-                            <p className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/30 truncate">
-                              {app.typeName || app.type || 'Application'}
-                            </p>
-                          </div>
-                        </div>
-                      </Link>
-                    ))
-                ) : (
-                  <p className="text-gsrp-teal-light/30 text-xs font-medium">No other pending applications.</p>
-                )}
-              </div>
+              <span className="text-[9px] font-bold uppercase tracking-widest text-gsrp-orange bg-gsrp-orange/10 border border-gsrp-orange/20 px-2 py-0.5 rounded-full">
+                {pendingApplications.length} pending
+              </span>
             </div>
-          )}
+
+            {nextPendingApp ? (
+              <button
+                onClick={() => router.push(`/applications/${nextPendingApp._id}`)}
+                className="w-full mb-4 py-3.5 bg-gsrp-orange hover:bg-gsrp-orange/90 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-widest shadow-lg shadow-gsrp-orange/10"
+              >
+                Next Application
+                <ArrowRight size={18} />
+              </button>
+            ) : pendingApplications.length > 0 ? (
+              <div className="w-full mb-4 py-3 bg-gsrp-dark-surface/50 border border-white/5 text-gsrp-teal-light/30 font-bold rounded-xl flex items-center justify-center gap-2 text-xs uppercase tracking-widest">
+                <CheckCircle size={14} />
+                Last in queue
+              </div>
+            ) : null}
+
+            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+              {otherPending.length > 0 ? (
+                otherPending.map(app => (
+                  <Link
+                    key={app._id}
+                    href={`/applications/${app._id}`}
+                    className="block rounded-xl border border-white/5 bg-gsrp-dark-surface/40 px-3 py-3 hover:border-gsrp-orange/40 hover:bg-gsrp-dark-surface transition-colors"
+                  >
+                    <div className="flex items-center gap-3">
+                      {app.userImage ? (
+                        <img src={app.userImage} alt="" className="w-8 h-8 rounded-full object-cover border border-white/10" />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-gsrp-dark-card border border-white/10 flex items-center justify-center text-white/70 text-xs font-bold">
+                          {(app.username || '?').charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                      <div className="min-w-0">
+                        <p className="text-white text-xs font-bold truncate">{app.username}</p>
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/30 truncate">
+                          {app.typeName || app.type || 'Application'}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+                ))
+              ) : (
+                <p className="text-gsrp-teal-light/30 text-xs font-medium">No other pending applications.</p>
+              )}
+            </div>
+          </div>
 
           <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-6 sticky top-6">
             <h3 className="text-white font-bold text-xs uppercase tracking-widest mb-6 flex items-center gap-2">
