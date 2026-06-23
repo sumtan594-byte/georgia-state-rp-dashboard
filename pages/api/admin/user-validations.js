@@ -17,10 +17,11 @@ export default async function handler(req, res) {
     const dbStaff = client.db('gsrp_staff');
     const dbDefault = client.db();
 
-    const [trainingProgress, quizAttempts, ridealongData] = await Promise.all([
+    const [trainingProgress, quizAttempts, ridealongData, traineeTracking] = await Promise.all([
       dbStaff.collection('training_progress').find({}).toArray(),
       dbDefault.collection('quiz_attempts').find({}).toArray(),
       dbDefault.collection('ridealong_attempts').find({}).toArray(),
+      dbDefault.collection('trainee_tracking').find({}).toArray(),
     ]);
 
     const userMap = {};
@@ -80,6 +81,8 @@ export default async function handler(req, res) {
 
       const attempts = qa.attempts || [];
       userMap[qa.userId].totalAttempts = attempts.length;
+      userMap[qa.userId].failedAttempts = attempts.filter(a => !a.pass).length;
+      userMap[qa.userId].traineeRoleRemoved = qa.traineeRoleRemoved || false;
       userMap[qa.userId].attempts = attempts.map(a => ({
         score: a.score,
         total: a.total,
@@ -118,6 +121,34 @@ export default async function handler(req, res) {
       userMap[ra.userId].ridealongCooldownUntil = ra.cooldownUntil || null;
       const raCooldown = ra.cooldownUntil ? new Date(ra.cooldownUntil) : null;
       userMap[ra.userId].ridealongOnCooldown = !!(raCooldown && raCooldown > new Date());
+    }
+
+    for (const tt of traineeTracking) {
+      if (!userMap[tt.userId]) {
+        userMap[tt.userId] = {
+          userId: tt.userId,
+          username: null,
+          avatar: null,
+          handbookCompleted: false,
+          completedSections: [],
+          lastHandbookUpdate: null,
+          hasPassed: false,
+          hasPassedAt: null,
+          cooldownUntil: null,
+          isOnCooldown: false,
+          attempts: [],
+          totalAttempts: 0,
+          bestScore: 0,
+          lastAttempt: null,
+          ridealongPassed: false,
+        };
+      }
+      const u = userMap[tt.userId];
+      u.traineeStatus = tt.status || null;
+      u.traineeStartedAt = tt.startedAt || null;
+      u.traineeDeadline = tt.deadline || null;
+      u.traineeRemovedAt = tt.removedAt || null;
+      u.traineeRemoveReason = tt.removeReason || null;
     }
 
     const users = Object.values(userMap).sort((a, b) => {
