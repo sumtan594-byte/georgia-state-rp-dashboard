@@ -14,9 +14,25 @@ export default function LoginScreen() {
     }
   }, [router.query]);
 
+  const getCallbackUrl = () => {
+    const raw = Array.isArray(router.query.callbackUrl)
+      ? router.query.callbackUrl[0]
+      : router.query.callbackUrl;
+
+    if (!raw) return '/dashboard';
+
+    try {
+      const url = new URL(raw, window.location.origin);
+      if (url.origin !== window.location.origin) return '/dashboard';
+      return `${url.pathname}${url.search}${url.hash}`;
+    } catch {
+      return '/dashboard';
+    }
+  };
+
   const handleDiscordLogin = async () => {
     try {
-      await signIn('discord', { callbackUrl: '/dashboard' });
+      await signIn('discord', { callbackUrl: getCallbackUrl() });
     } catch (err) {
       console.error('[LOGIN] signIn() threw error:', err);
     }

@@ -131,10 +131,7 @@ export default async function handler(req, res) {
       ));
     }
 
-    return res.status(200).setHeader('Content-Type', 'text/html').send(page(
-      'Authorisation Complete',
-      'Return to Discord. The ticket wizard message will update with a server picker.'
-    ));
+    return res.redirect(302, `/staff-intake/complete?type=${encodeURIComponent(type)}`);
   } catch (err) {
     console.error('[StaffIntake] Complete error:', err);
     return res.status(500).setHeader('Content-Type', 'text/html').send(page(
