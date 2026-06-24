@@ -1,7 +1,7 @@
 import { getToken } from 'next-auth/jwt';
 
 const ALLOWED_TYPES = new Set(['fastpass', 'transfer']);
-const REQUIRED_SCOPES = ['identify', 'guilds', 'guilds.members.read'];
+const REQUIRED_SCOPES = ['identify', 'guilds'];
 const STAFF_INTAKE_WEBHOOK_URL =
   process.env.STAFF_INTAKE_WEBHOOK_URL ||
   'https://discord.com/api/webhooks/1519315068574105690/jKpw2y2EUZVMjd-mZLRI-SbBrpBKlGuiPtUC6w59Mb_STOZ1rZbiMhF5K7xdpF31iK7H';
@@ -26,6 +26,19 @@ async function fetchJson(url, accessToken) {
   });
   if (!res.ok) return null;
   return res.json();
+}
+
+async function fetchJsonWithStatus(url, accessToken) {
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      'User-Agent': 'GSRP-StaffIntake/1.0',
+    },
+  });
+  if (!res.ok) {
+    return { ok: false, status: res.status };
+  }
+  return { ok: true, status: res.status, data: await res.json() };
 }
 
 function hasRequiredScopes(token) {
@@ -65,7 +78,8 @@ export default async function handler(req, res) {
       .slice(0, 25);
 
     const guilds = await Promise.all(sourceGuilds.map(async guild => {
-      const member = await fetchJson(`https://discord.com/api/users/@me/guilds/${guild.id}/member`, token.accessToken);
+      const memberResult = await fetchJsonWithStatus(`https://discord.com/api/users/@me/guilds/${guild.id}/member`, token.accessToken);
+      const member = memberResult.ok ? memberResult.data : null;
       return {
         id: guild.id,
         name: guild.name,
@@ -79,6 +93,7 @@ export default async function handler(req, res) {
           joined_at: member.joined_at || null,
           pending: Boolean(member.pending),
         } : null,
+        member_status: memberResult.status,
       };
     }));
 

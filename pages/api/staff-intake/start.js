@@ -1,7 +1,7 @@
 import { getToken } from 'next-auth/jwt';
 
 const ALLOWED_TYPES = new Set(['fastpass', 'transfer']);
-const REQUIRED_SCOPES = ['identify', 'guilds', 'guilds.members.read'];
+const REQUIRED_SCOPES = ['identify', 'guilds'];
 
 function hasRequiredScopes(token) {
   const scopes = String(token?.scope || '').split(/\s+/).filter(Boolean);
