@@ -1,6 +1,7 @@
 import { getToken } from 'next-auth/jwt';
 
 const ALLOWED_TYPES = new Set(['fastpass', 'transfer']);
+const REQUIRED_SCOPES = ['identify', 'guilds', 'guilds.members.read'];
 const STAFF_INTAKE_WEBHOOK_URL =
   process.env.STAFF_INTAKE_WEBHOOK_URL ||
   'https://discord.com/api/webhooks/1519315068574105690/jKpw2y2EUZVMjd-mZLRI-SbBrpBKlGuiPtUC6w59Mb_STOZ1rZbiMhF5K7xdpF31iK7H';
@@ -27,6 +28,11 @@ async function fetchJson(url, accessToken) {
   return res.json();
 }
 
+function hasRequiredScopes(token) {
+  const scopes = String(token?.scope || '').split(/\s+/).filter(Boolean);
+  return REQUIRED_SCOPES.every(scope => scopes.includes(scope));
+}
+
 export default async function handler(req, res) {
   const type = String(req.query.type || '').toLowerCase();
   const discordId = String(req.query.discordId || '').trim();
@@ -36,7 +42,7 @@ export default async function handler(req, res) {
   }
 
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
-  if (!token?.accessToken || token.id !== discordId) {
+  if (!token?.accessToken || token.id !== discordId || !hasRequiredScopes(token)) {
     return res.redirect(302, `/api/staff-intake/start?type=${encodeURIComponent(type)}&discordId=${encodeURIComponent(discordId)}`);
   }
 

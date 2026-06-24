@@ -1,6 +1,14 @@
-const ALLOWED_TYPES = new Set(['fastpass', 'transfer']);
+import { getToken } from 'next-auth/jwt';
 
-export default function handler(req, res) {
+const ALLOWED_TYPES = new Set(['fastpass', 'transfer']);
+const REQUIRED_SCOPES = ['identify', 'guilds', 'guilds.members.read'];
+
+function hasRequiredScopes(token) {
+  const scopes = String(token?.scope || '').split(/\s+/).filter(Boolean);
+  return REQUIRED_SCOPES.every(scope => scopes.includes(scope));
+}
+
+export default async function handler(req, res) {
   const type = String(req.query.type || '').toLowerCase();
   const discordId = String(req.query.discordId || '').trim();
 
@@ -13,6 +21,12 @@ export default function handler(req, res) {
   }
 
   const callbackUrl = `/api/staff-intake/complete?type=${encodeURIComponent(type)}&discordId=${encodeURIComponent(discordId)}`;
+  const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
+
+  if (token?.accessToken && token.id === discordId && hasRequiredScopes(token)) {
+    return res.redirect(302, callbackUrl);
+  }
+
   const signinUrl = `/api/auth/signin/discord?callbackUrl=${encodeURIComponent(callbackUrl)}`;
 
   return res.redirect(302, signinUrl);
