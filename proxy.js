@@ -6,6 +6,7 @@ const stores = new Map();
 const RATE_LIMITS = [
   { pattern: /^\/api\/auth\//, key: 'auth', max: 30, windowMs: 5 * WINDOW_MS },
   { pattern: /^\/api\/callback$/, key: 'oauth-callback', max: 20, windowMs: 5 * WINDOW_MS },
+  { pattern: /^\/api\/staff-intake\//, key: 'staff-intake', max: 20, windowMs: 5 * WINDOW_MS },
   { pattern: /^\/api\/verify\/forward$/, key: 'verify-forward', max: 10, windowMs: WINDOW_MS },
   { pattern: /^\/api\/webhooks\//, key: 'webhook', max: 120, windowMs: WINDOW_MS },
   { pattern: /^\/api\/panel\/(command|modactions)/, key: 'panel-action', max: 120, windowMs: WINDOW_MS },
