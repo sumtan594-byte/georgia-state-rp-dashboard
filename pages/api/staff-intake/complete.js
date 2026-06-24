@@ -112,7 +112,7 @@ export default async function handler(req, res) {
 
     return res.status(200).setHeader('Content-Type', 'text/html').send(page(
       'Authorisation Complete',
-      'Return to Discord and check your direct messages. The bot will ask which server you are fast passing or transferring from.'
+      'Return to Discord. The ticket wizard message will update with a server picker.'
     ));
   } catch (err) {
     console.error('[StaffIntake] Complete error:', err);
