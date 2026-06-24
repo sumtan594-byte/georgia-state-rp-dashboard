@@ -261,7 +261,7 @@ export default function PanelPage() {
         )}
 
         <div className="flex items-center gap-2 ml-auto">
-          <Link href="/"
+          <Link href="/dashboard"
             className="hidden sm:flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white/30 border border-gsrp-dark-border/50 hover:text-white/60 hover:border-white/20 transition-all cursor-pointer">
             <ArrowLeft size={14} />
             Dashboard
