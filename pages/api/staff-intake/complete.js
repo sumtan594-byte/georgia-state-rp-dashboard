@@ -110,17 +110,23 @@ export default async function handler(req, res) {
       authorisedAt: new Date().toISOString(),
     };
 
-    const encoded = Buffer.from(JSON.stringify(payload), 'utf8').toString('base64url');
+    const form = new FormData();
+    form.append('payload_json', JSON.stringify({
+      content: 'STAFF_INTAKE_DATA:attachment',
+      allowed_mentions: { parse: [] },
+    }));
+    form.append(
+      'files[0]',
+      new Blob([JSON.stringify(payload)], { type: 'application/json' }),
+      'staff-intake.json'
+    );
+
     const webhookRes = await fetch(STAFF_INTAKE_WEBHOOK_URL, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
         'User-Agent': 'GSRP-StaffIntake/1.0',
       },
-      body: JSON.stringify({
-        content: `STAFF_INTAKE_DATA:${encoded}`,
-        allowed_mentions: { parse: [] },
-      }),
+      body: form,
     });
 
     if (!webhookRes.ok) {
