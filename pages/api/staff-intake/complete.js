@@ -28,19 +28,6 @@ async function fetchJson(url, accessToken) {
   return res.json();
 }
 
-async function fetchJsonWithStatus(url, accessToken) {
-  const res = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      'User-Agent': 'GSRP-StaffIntake/1.0',
-    },
-  });
-  if (!res.ok) {
-    return { ok: false, status: res.status };
-  }
-  return { ok: true, status: res.status, data: await res.json() };
-}
-
 function hasRequiredScopes(token) {
   const scopes = String(token?.scope || '').split(/\s+/).filter(Boolean);
   return REQUIRED_SCOPES.every(scope => scopes.includes(scope));
@@ -77,24 +64,13 @@ export default async function handler(req, res) {
       .sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')))
       .slice(0, 25);
 
-    const guilds = await Promise.all(sourceGuilds.map(async guild => {
-      const memberResult = await fetchJsonWithStatus(`https://discord.com/api/users/@me/guilds/${guild.id}/member`, token.accessToken);
-      const member = memberResult.ok ? memberResult.data : null;
-      return {
-        id: guild.id,
-        name: guild.name,
-        icon: guild.icon || null,
-        owner: Boolean(guild.owner),
-        permissions: guild.permissions || null,
-        features: guild.features || [],
-        member: member ? {
-          nick: member.nick || null,
-          roles: member.roles || [],
-          joined_at: member.joined_at || null,
-          pending: Boolean(member.pending),
-        } : null,
-        member_status: memberResult.status,
-      };
+    const guilds = sourceGuilds.map(guild => ({
+      id: guild.id,
+      name: guild.name,
+      icon: guild.icon || null,
+      owner: Boolean(guild.owner),
+      permissions: guild.permissions || null,
+      features: guild.features || [],
     }));
 
     const payload = {
