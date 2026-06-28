@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import {
-  CheckCircle2, Copy, Check, ChevronRight, Shield, ExternalLink,
+  CheckCircle2, Copy, Check, ChevronRight, Shield,
   Loader2, CheckCheck, ArrowRight
 } from 'lucide-react'
 
@@ -354,139 +354,53 @@ export default function PostRidealongOrientation({
       </div>
     )
 
-    // ── 8: final / complete ───────────────────────────────────────────────
+    // ── 8: final / next step is human 1:1 training ────────────────────────
     if (step === 8) return (
       <div className="max-w-2xl mx-auto w-full">
         <div className="w-20 h-20 rounded-full bg-gsrp-teal/10 border-2 border-gsrp-teal/30 flex items-center justify-center mx-auto mb-8">
           <CheckCheck size={36} className="text-gsrp-teal-light" />
         </div>
         <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-4 leading-tight">
-          And that's it, you are (hopefully) ready to start moderating<br />
-          <span className="text-gsrp-teal-light">for Georgia State Roleplay!</span>
+          Nice work getting through the orientation!<br />
+          <span className="text-gsrp-teal-light">But you're not done just yet.</span>
         </h2>
         <p className="text-gsrp-teal-light/50 text-center mb-10">
-          Make sure to ask any questions you may have in staff chat. Congratulations on completing your training.
-          When you are ready, your roles will be updated and you can begin your first shift.
+          This is <span className="text-white font-semibold">not</span> the final step. Before you can advance and start
+          moderating, you must be trained 1:1 by a real human trainer. Completing this orientation does
+          <span className="text-white font-semibold"> not</span> grant you any roles or moderation permissions yet —
+          keep your trainee role and the regular rules below in mind until then.
         </p>
 
         <div className="space-y-6 mb-10">
-          {/* Step block: join WL group */}
-          <div className="bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-2xl p-6">
+          {/* Next step: request 1:1 training */}
+          <div className="bg-gsrp-dark-surface/50 border border-gsrp-orange/25 rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-8 h-8 rounded-lg bg-gsrp-orange/10 border border-gsrp-orange/20 flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-gsrp-orange">1</span>
+                <Shield size={16} className="text-gsrp-orange" />
               </div>
-              <h3 className="text-white font-bold">Request to join the WL group</h3>
+              <h3 className="text-white font-bold">Your next step: request a 1:1 training</h3>
             </div>
-            <ol className="space-y-2">
-              {[
-                <>Head over to <a href="https://discord.com/channels/1366688107788894280/1421334036688932885" target="_blank" rel="noreferrer" className="text-gsrp-teal-light underline underline-offset-2 inline-flex items-center gap-1">this channel <ExternalLink size={11} /></a></>,
-                'Click the "Roblox group" button.',
-                'Click "I haven\'t requested yet".',
-                'Press "Visit group page".',
-                'Press "Join community".',
-                'Come back to the channel and press "I have requested".',
-                'From the dropdown, select "Staff team".',
-              ].map((text, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm text-gsrp-teal-light/60">
-                  <span className="w-5 h-5 rounded-full bg-gsrp-dark-surface border border-gsrp-dark-border/60 flex items-center justify-center text-[10px] font-bold text-gsrp-teal-light/40 shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <span>{text}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          {/* Step block: receive mod commands */}
-          <div className="bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gsrp-orange/10 border border-gsrp-orange/20 flex items-center justify-center shrink-0">
-                <span className="text-xs font-bold text-gsrp-orange">2</span>
-              </div>
-              <h3 className="text-white font-bold">Receiving your mod commands</h3>
-            </div>
-            <ol className="space-y-2">
-              {[
-                <>Go to the <a href="https://discord.com/channels/1366688107788894280/1421334036688932885" target="_blank" rel="noreferrer" className="text-gsrp-teal-light underline underline-offset-2 inline-flex items-center gap-1">same channel <ExternalLink size={11} /></a>.</>,
-                'Press "In game mod" — and it should give you the commands!',
-              ].map((text, i) => (
-                <li key={i} className="flex items-start gap-3 text-sm text-gsrp-teal-light/60">
-                  <span className="w-5 h-5 rounded-full bg-gsrp-dark-surface border border-gsrp-dark-border/60 flex items-center justify-center text-[10px] font-bold text-gsrp-teal-light/40 shrink-0 mt-0.5">
-                    {i + 1}
-                  </span>
-                  <span>{text}</span>
-                </li>
-              ))}
-            </ol>
-          </div>
-
-          {/* Discord status */}
-          <div className="grid grid-cols-2 gap-4">
-            {rolesApplied ? (
-              <>
-                <div className="bg-gsrp-teal/10 rounded-xl p-4 border border-gsrp-teal/20 text-center">
-                  <Check size={18} className="text-gsrp-teal-light mx-auto mb-1" />
-                  <p className="text-[11px] font-bold text-gsrp-teal-light">Roles Set ✓</p>
-                  <p className="text-[10px] text-gsrp-teal-light/40">Your Discord roles have been updated</p>
-                </div>
-                <div className="bg-gsrp-teal/10 rounded-xl p-4 border border-gsrp-teal/20 text-center">
-                  <Check size={18} className="text-gsrp-teal-light mx-auto mb-1" />
-                  <p className="text-[11px] font-bold text-gsrp-teal-light">Nickname Set ✓</p>
-                  <p className="text-[10px] text-gsrp-teal-light/40">Your Discord nickname has been updated</p>
-                </div>
-              </>
-            ) : applyingRoles ? (
-              <>
-                <div className="bg-gsrp-dark-surface/50 rounded-xl p-4 border border-gsrp-dark-border/50 text-center">
-                  <Loader2 size={16} className="text-gsrp-orange mx-auto mb-1 animate-spin" />
-                  <p className="text-[11px] font-bold text-gsrp-teal-light/40">Assigning Roles...</p>
-                </div>
-                <div className="bg-gsrp-dark-surface/50 rounded-xl p-4 border border-gsrp-dark-border/50 text-center">
-                  <Loader2 size={16} className="text-gsrp-orange mx-auto mb-1 animate-spin" />
-                  <p className="text-[11px] font-bold text-gsrp-teal-light/40">Setting Nickname...</p>
-                </div>
-              </>
-            ) : submitResolved ? (
-              <>
-                <div className="bg-gsrp-orange/10 rounded-xl p-4 border border-gsrp-orange/20 text-center">
-                  <Shield size={16} className="text-gsrp-orange mx-auto mb-1" />
-                  <p className="text-[11px] font-bold text-gsrp-orange">Ready to Apply</p>
-                  <p className="text-[10px] text-gsrp-teal-light/40">Roles update after you confirm</p>
-                </div>
-                <div className="bg-gsrp-orange/10 rounded-xl p-4 border border-gsrp-orange/20 text-center">
-                  <Shield size={16} className="text-gsrp-orange mx-auto mb-1" />
-                  <p className="text-[11px] font-bold text-gsrp-orange">Ready to Apply</p>
-                  <p className="text-[10px] text-gsrp-teal-light/40">Nickname updates after you confirm</p>
-                </div>
-              </>
-            ) : (
-              <>
-                <div className="bg-gsrp-dark-surface/50 rounded-xl p-4 border border-gsrp-dark-border/50 text-center">
-                  <Loader2 size={16} className="text-gsrp-orange mx-auto mb-1 animate-spin" />
-                  <p className="text-[11px] font-bold text-gsrp-teal-light/40">Saving Results...</p>
-                </div>
-                <div className="bg-gsrp-dark-surface/50 rounded-xl p-4 border border-gsrp-dark-border/50 text-center">
-                  <Loader2 size={16} className="text-gsrp-orange mx-auto mb-1 animate-spin" />
-                  <p className="text-[11px] font-bold text-gsrp-teal-light/40">Preparing Roles...</p>
-                </div>
-              </>
-            )}
-          </div>
-
-          {applyError && (
-            <p className="text-xs text-gsrp-sunset bg-gsrp-sunset/8 border border-gsrp-sunset/20 rounded-xl p-3 text-center">
-              {applyError}
+            <p className="text-sm text-gsrp-teal-light/60 leading-relaxed">
+              You must now request a regular <span className="text-white font-semibold">1:1 training session</span> with
+              a human trainer. They will train you in-game and decide when you're ready to advance — that's when your
+              roles and moderation permissions will be granted. Until you've been trained by a real trainer, you remain
+              a trainee.
             </p>
-          )}
+          </div>
         </div>
+
+        {applyError && (
+          <p className="text-xs text-gsrp-sunset bg-gsrp-sunset/8 border border-gsrp-sunset/20 rounded-xl p-3 text-center mb-6">
+            {applyError}
+          </p>
+        )}
 
         <div className="flex justify-center">
           <ActionButton
             ready={btnReady && submitResolved}
             busy={applyingRoles}
             onClick={handleReady}
-            label={applyingRoles ? 'Updating...' : "I'm ready!"}
+            label={applyingRoles ? 'Finishing...' : 'Finish orientation'}
             pendingLabel={submitResolved ? 'Please read the info above...' : 'Saving results...'}
             color="teal"
           />

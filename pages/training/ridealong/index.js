@@ -103,7 +103,7 @@ export default function RidealongPage() {
         const ridealongRes = await fetch(`/api/training/ridealong/progress?userId=${effectiveSession.user.id}`)
         const ridealongData = await ridealongRes.json()
 
-        if (ridealongData.hasPassed && !ridealongData.discordRolesApplied && !started) {
+        if (ridealongData.hasPassed && !ridealongData.orientationCompleted && !started) {
           setPendingRidealongCompletion(true)
         } else if (ridealongData.hasPassed && !started) {
           setRidealongPassed(true)

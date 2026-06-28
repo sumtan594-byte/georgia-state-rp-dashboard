@@ -28,6 +28,7 @@ export default async function handler(req, res) {
       hasPassedAt: doc?.hasPassedAt || null,
       cooldownUntil: doc?.cooldownUntil || null,
       discordRolesApplied: doc?.discordRolesApplied || false,
+      orientationCompleted: doc?.orientationCompleted || false,
     })
   }
 
