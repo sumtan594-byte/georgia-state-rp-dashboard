@@ -22,7 +22,7 @@ import {
   UserCheck,
   Globe,
 } from 'lucide-react';
-import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canReviewApplications, canManageAdmins, canViewTracking, canManageAuthorization } from '../../lib/auth';
+import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canAccessTrainerHandbook, canReviewApplications, canManageAdmins, canViewTracking, canManageAuthorization } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 
 export default function Sidebar({ open, onToggle }) {
@@ -61,6 +61,7 @@ export default function Sidebar({ open, onToggle }) {
   const hasHandbook = hasRefreshed ? canAccessHandbook(effectiveSession) : false;
   const hasTraining = hasRefreshed ? canAccessTraining(effectiveSession) : false;
   const hasAttempts = hasRefreshed ? canViewAttempts(effectiveSession) : false;
+  const hasTrainerHandbook = hasRefreshed ? canAccessTrainerHandbook(effectiveSession) : false;
   const showAllTranscripts = hasRefreshed ? canViewAllTranscripts(effectiveSession) : false;
   const canReviewApps = hasRefreshed ? canReviewApplications(effectiveSession) : false;
   const canManageAdminList = hasRefreshed ? canManageAdmins(effectiveSession) : false;
@@ -91,9 +92,10 @@ export default function Sidebar({ open, onToggle }) {
     },
     {
       label: 'Staff Training',
-      show: hasHandbook || hasTraining || hasAttempts,
+      show: hasHandbook || hasTraining || hasAttempts || hasTrainerHandbook,
       items: [
         ...(hasHandbook ? [{ href: '/staff-handbook', icon: BookOpen, label: 'Handbook' }] : []),
+        ...(hasTrainerHandbook ? [{ href: '/trainer-handbook', icon: ClipboardList, label: 'Trainer Handbook' }] : []),
         ...(hasTraining ? [{ href: '/training', icon: BookOpen, label: 'SSD Quiz' }] : []),
         ...(hasTraining ? [{ href: '/training/ridealong', icon: ShieldCheck, label: 'Ridealong' }] : []),
         ...(hasAttempts ? [{ href: '/training/attempts', icon: ClipboardList, label: 'Attempts' }] : []),

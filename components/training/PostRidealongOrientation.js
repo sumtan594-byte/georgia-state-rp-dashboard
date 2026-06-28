@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import {
-  CheckCircle2, Copy, Check, ChevronRight, Shield,
+  CheckCircle2, Copy, Check, ChevronRight, Shield, ExternalLink,
   Loader2, CheckCheck, ArrowRight
 } from 'lucide-react'
 
@@ -386,6 +386,37 @@ export default function PostRidealongOrientation({
               roles and moderation permissions will be granted. Until you've been trained by a real trainer, you remain
               a trainee.
             </p>
+          </div>
+
+          {/* Step block: join WL group (needed for the in-game ride-along) */}
+          <div className="bg-gsrp-dark-surface/50 border border-gsrp-dark-border/50 rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-8 h-8 rounded-lg bg-gsrp-orange/10 border border-gsrp-orange/20 flex items-center justify-center shrink-0">
+                <span className="text-xs font-bold text-gsrp-orange">1</span>
+              </div>
+              <h3 className="text-white font-bold">Request to join the WL group</h3>
+            </div>
+            <p className="text-sm text-gsrp-teal-light/60 leading-relaxed mb-4">
+              You will need to be in the whitelist group for your in-game 1:1 ride-along training, so request to join it now.
+            </p>
+            <ol className="space-y-2">
+              {[
+                <>Head over to <a href="https://discord.com/channels/1366688107788894280/1421334036688932885" target="_blank" rel="noreferrer" className="text-gsrp-teal-light underline underline-offset-2 inline-flex items-center gap-1">this channel <ExternalLink size={11} /></a></>,
+                'Click the "Roblox group" button.',
+                'Click "I haven\'t requested yet".',
+                'Press "Visit group page".',
+                'Press "Join community".',
+                'Come back to the channel and press "I have requested".',
+                'From the dropdown, select "Staff team".',
+              ].map((text, i) => (
+                <li key={i} className="flex items-start gap-3 text-sm text-gsrp-teal-light/60">
+                  <span className="w-5 h-5 rounded-full bg-gsrp-dark-surface border border-gsrp-dark-border/60 flex items-center justify-center text-[10px] font-bold text-gsrp-teal-light/40 shrink-0 mt-0.5">
+                    {i + 1}
+                  </span>
+                  <span>{text}</span>
+                </li>
+              ))}
+            </ol>
           </div>
         </div>
 
