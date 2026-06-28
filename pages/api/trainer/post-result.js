@@ -7,6 +7,9 @@ import { sendComponentsV2, sendDM } from '../../../lib/discord-v2'
 const PASS_GREEN = 0x10b981
 const FAIL_RED = 0xef4444
 
+// Training results channel. Overridable via env, defaults to #training-results.
+const DEFAULT_RESULTS_CHANNEL_ID = '1391402587806498906'
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' })
 
@@ -90,7 +93,7 @@ export default async function handler(req, res) {
   }
 
   // Optionally post to a results channel if configured.
-  const resultsChannel = process.env.TRAINING_RESULTS_CHANNEL_ID
+  const resultsChannel = process.env.TRAINING_RESULTS_CHANNEL_ID || DEFAULT_RESULTS_CHANNEL_ID
   if (resultsChannel) {
     try {
       await sendComponentsV2(resultsChannel, { components: [resultContainer] })
