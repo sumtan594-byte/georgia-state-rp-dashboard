@@ -2,7 +2,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from "../../../lib/auth-options";
 import { ROLES } from '../../../lib/auth';
 import { requireAccess } from '../../../lib/access-check';
-import { recordPanelFrame } from '../../../lib/panel-replay-store';
 
 const ABSOLUTE_MIN_MS = 200;
 // Poll on a fixed 1-second cadence. The frontend can't usefully consume faster
@@ -230,8 +229,6 @@ async function doErlcFetch(cache, key, fullFetch) {
 
   if (fullFetch) {
     const data = attachPlayerAvatarUrls(cache, raw);
-    const mapEvents = await recordPanelFrame(cache, data);
-    if (mapEvents.length > 0) data.MapEvents = mapEvents;
     cache.data = data;
     cache.fetchedAt = Date.now();
     cache.lastFullFetch = cache.fetchedAt;

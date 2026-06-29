@@ -104,10 +104,6 @@ export default function LiveMap({
   onLocationSelected,
   lockedPlayerId,
   onLockPlayer,
-  mapEvents = [],
-  replayMode = false,
-  replaySnapshot,
-  replayEvents = [],
 }) {
   const container = useRef(null);
   const mapRef = useRef(null);
@@ -116,8 +112,6 @@ export default function LiveMap({
   const raf = useRef(null);
   const calls = useRef([]);
   const rpMarkers = useRef({});
-  const killEffects = useRef({});
-  const seenMapEvents = useRef(new Set());
   const ds = useRef(null);
   const playersRef = useRef(players);
   playersRef.current = players;
@@ -278,82 +272,6 @@ export default function LiveMap({
       mapRef.current.panTo([py, px], { animate: true, duration: 0.4 });
     }
   }, [players, lockedPlayerId, ready]);
-
-  function showKillEffect(event) {
-    if (!mapRef.current || !event?.killerId || !event?.victimId) return;
-    const map = mapRef.current;
-    const killerMarker = markers.current[event.killerId];
-    const victimMarker = markers.current[event.victimId];
-    const killerLL = killerMarker?.getLatLng();
-    const victimLL = victimMarker?.getLatLng();
-
-    if (killerLL) {
-      const label = L.marker(killerLL, {
-        interactive: false,
-        zIndexOffset: 600,
-        icon: L.divIcon({
-          className: 'gsrp-kill-label-wrap',
-          html: `<div class="gsrp-kill-label">Killed ${escapeHtml(event.victimName || 'player')}</div>`,
-          iconSize: [180, 42],
-          iconAnchor: [90, 54],
-        }),
-      }).addTo(map);
-      killEffects.current[`${event.id}:label`] = label;
-      setTimeout(() => {
-        if (killEffects.current[`${event.id}:label`]) {
-          map.removeLayer(label);
-          delete killEffects.current[`${event.id}:label`];
-        }
-      }, 2600);
-    }
-
-    if (victimLL) {
-      const death = L.circleMarker(victimLL, {
-        radius: 24,
-        color: '#EF4444',
-        fillColor: '#EF4444',
-        fillOpacity: 0.2,
-        weight: 3,
-        interactive: false,
-      }).addTo(map);
-      const el = victimMarker?.getElement();
-      if (el) el.classList.add('gsrp-map-death');
-      killEffects.current[`${event.id}:death`] = death;
-      setTimeout(() => {
-        if (killEffects.current[`${event.id}:death`]) {
-          map.removeLayer(death);
-          delete killEffects.current[`${event.id}:death`];
-        }
-        if (el) el.classList.remove('gsrp-map-death');
-      }, 1800);
-    }
-  }
-
-  useEffect(() => {
-    if (!ready || replayMode) return;
-    for (const event of mapEvents) {
-      if (event.type !== 'kill' || seenMapEvents.current.has(event.id)) continue;
-      seenMapEvents.current.add(event.id);
-      showKillEffect(event);
-    }
-  }, [mapEvents, ready, replayMode]);
-
-  useEffect(() => {
-    if (!ready || !replayMode || !replaySnapshot) return;
-    const snapTime = new Date(replaySnapshot.sampledAt).getTime();
-    for (const event of replayEvents) {
-      if (event.type !== 'kill') continue;
-      const eventTime = new Date(event.at).getTime();
-      if (Math.abs(eventTime - snapTime) > 2500) continue;
-      const replayEventId = `replay:${event.id}:${replaySnapshot.sampledAt}`;
-      showKillEffect({
-        id: replayEventId,
-        killerId: event.playerId,
-        victimId: event.relatedPlayerId,
-        victimName: event.relatedPlayerName,
-      });
-    }
-  }, [replaySnapshot, replayEvents, ready, replayMode]);
 
   /* Update player markers */
   useEffect(() => {

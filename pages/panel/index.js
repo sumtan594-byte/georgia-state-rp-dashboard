@@ -3,7 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
 import {
-  Loader2, Radio, Users, AlertTriangle, WifiOff, ArrowLeft, X, Clock, Server, MapPinned, Shield,
+  Loader2, Radio, Users, AlertTriangle, WifiOff, ArrowLeft, Clock, Server, MapPinned, Shield,
 } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
 import PanelLayout from '../../components/panel/PanelLayout';
@@ -38,9 +38,6 @@ export default function PanelPage() {
   const [loadStartedAt] = useState(() => Date.now());
   const [loadStage, setLoadStage] = useState('auth');
   const hasConnected = useRef(false);
-  const [replay, setReplay] = useState(null);
-  const [replayLoading, setReplayLoading] = useState(false);
-  const [replayIndex, setReplayIndex] = useState(0);
   const [nowMs, setNowMs] = useState(Date.now());
 
   // Player selection
@@ -163,44 +160,6 @@ export default function PanelPage() {
     });
   }, []);
 
-  const openReplay = useCallback(async (player) => {
-    if (!player?.Player) return;
-    const ci = player.Player.lastIndexOf(':');
-    const id = ci !== -1 ? player.Player.slice(ci + 1) : player.Player;
-    if (!/^\d+$/.test(id)) return;
-    setSelectedPlayer(null);
-    setReplayLoading(true);
-    try {
-      const res = await fetch(`/api/panel/replay/${id}`);
-      const body = await res.json().catch(() => ({}));
-      if (res.ok) {
-        const snapshots = body.snapshots || [];
-        setReplay({
-          player,
-          playerId: id,
-          snapshots,
-          snapshotsByPlayer: body.snapshotsByPlayer || {},
-          participants: body.participants || [id],
-          events: body.events || [],
-        });
-        setReplayIndex(Math.max(0, snapshots.length - 1));
-        setLockedPlayerId(id);
-      }
-    } finally {
-      setReplayLoading(false);
-    }
-  }, []);
-
-  const closeReplay = useCallback(() => {
-    setReplay(null);
-    setReplayIndex(0);
-  }, []);
-
-  const replaySnapshot = replay?.snapshots?.[replayIndex] || null;
-  const replayEvents = replay?.events || [];
-  const replayPlayers = replay && replaySnapshot
-    ? getReplayPlayersAt(replay, replaySnapshot.sampledAt)
-    : [];
   const poll = data?._poll || null;
   const nextPollMs = poll?.fetchedAt && poll?.intervalMs
     ? Math.max(0, (poll.fetchedAt + poll.intervalMs) - nowMs)
@@ -326,18 +285,8 @@ export default function PanelPage() {
           }
           liveMap={
             <div className="relative w-full h-full">
-              {replay && (
-                <ReplayBar
-                  replay={replay}
-                  index={replayIndex}
-                  setIndex={setReplayIndex}
-                  snapshot={replaySnapshot}
-                  events={replayEvents}
-                  onClose={closeReplay}
-                />
-              )}
               <LiveMap
-                players={replay ? replayPlayers : (data.Players || [])}
+                players={data.Players || []}
                 emergencyCalls={data.EmergencyCalls || []}
                 selectedPlayer={selectedPlayer}
                 onSelectPlayer={handleSelectPlayer}
@@ -350,20 +299,14 @@ export default function PanelPage() {
                 live
                 error={error}
                 rateLimitUntil={rateLimitUntil}
-                mapEvents={data.MapEvents || []}
-                replayMode={!!replay}
-                replaySnapshot={replaySnapshot}
-                replayEvents={replayEvents}
               />
 
               {/* Player Action Panel — overlays on map */}
-              {selectedPlayer && !replay && (
+              {selectedPlayer && (
                 <PlayerActionPanel
                   player={selectedPlayer}
                   vehicles={vehicles}
                   session={effectiveSession}
-                  onReplay={() => openReplay(selectedPlayer)}
-                  replayLoading={replayLoading}
                   onClose={() => { setSelectedPlayer(null); setLockedPlayerId(null); }}
                 />
               )}
@@ -448,13 +391,6 @@ function PanelLoadingState({ progress, elapsedMs }) {
   );
 }
 
-function formatAgo(value) {
-  if (!value) return 'now';
-  const seconds = Math.max(0, Math.round((Date.now() - new Date(value).getTime()) / 1000));
-  if (seconds < 60) return `${seconds}s ago`;
-  return `${Math.floor(seconds / 60)}m ${seconds % 60}s ago`;
-}
-
 function formatDuration(ms) {
   if (ms == null) return '--';
   if (ms <= 0) return '0.0s';
@@ -462,81 +398,4 @@ function formatDuration(ms) {
   const seconds = Math.ceil(ms / 1000);
   if (seconds < 60) return `${seconds}s`;
   return `${Math.floor(seconds / 60)}m ${seconds % 60}s`;
-}
-
-function getReplayPlayersAt(replay, sampledAt) {
-  const target = new Date(sampledAt).getTime();
-  const players = [];
-  for (const id of replay.participants || []) {
-    const snapshots = replay.snapshotsByPlayer?.[id] || [];
-    let closest = null;
-    let bestDelta = Infinity;
-    for (const snapshot of snapshots) {
-      const delta = Math.abs(new Date(snapshot.sampledAt).getTime() - target);
-      if (delta < bestDelta) {
-        bestDelta = delta;
-        closest = snapshot;
-      }
-    }
-    if (closest?.player && bestDelta <= 20_000) {
-      players.push({
-        ...closest.player,
-        AvatarUrl: closest.avatarUrl || closest.player.AvatarUrl,
-      });
-    }
-  }
-  return players;
-}
-
-function eventTextForReplay(event, subjectId) {
-  if (event.type === 'kill') {
-    if (String(event.playerId) === String(subjectId)) return `Killed ${event.relatedPlayerName || 'player'}`;
-    if (String(event.relatedPlayerId) === String(subjectId)) return `Killed by ${event.playerName || 'player'}`;
-  }
-  if (event.type === 'command') {
-    if (String(event.relatedPlayerId) === String(subjectId)) return `${event.playerName || 'Staff'} ran ${event.summary}`;
-    return event.summary;
-  }
-  if (event.type === 'team_change') return event.summary;
-  return event.summary;
-}
-
-function ReplayBar({ replay, index, setIndex, snapshot, events, onClose }) {
-  const nearbyEvents = events.filter(event => {
-    if (!snapshot?.sampledAt) return true;
-    return Math.abs(new Date(event.at).getTime() - new Date(snapshot.sampledAt).getTime()) <= 20_000;
-  });
-  return (
-    <div className="gsrp-replay-bar absolute left-3 right-3 top-3 z-[650] p-3">
-      <div className="mb-2 flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <Clock size={14} className="text-gsrp-orange" />
-            <p className="truncate text-sm font-bold text-white">{replay.player?.Player?.split(':')?.[0] || 'Player'} replay</p>
-            <span className="text-xs font-bold text-white/35">{formatAgo(snapshot?.sampledAt)}</span>
-          </div>
-          <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
-            {nearbyEvents.length > 0 ? nearbyEvents.map(event => (
-              <span key={event.id} className="gsrp-replay-chip shrink-0 px-2.5 py-1 text-[11px] font-bold text-white/70">
-                {event.type === 'kill' ? 'Kill' : event.type === 'team_change' ? 'Team' : event.type}: {eventTextForReplay(event, replay.playerId)}
-              </span>
-            )) : (
-              <span className="text-xs text-white/35">No logged events at this moment</span>
-            )}
-          </div>
-        </div>
-        <button onClick={onClose} className="gsrp-soft-icon-button rounded-lg p-1 text-white/45 transition-colors hover:text-white">
-          <X size={16} />
-        </button>
-      </div>
-      <input
-        type="range"
-        min="0"
-        max={Math.max(0, (replay.snapshots?.length || 1) - 1)}
-        value={index}
-        onChange={event => setIndex(Number(event.target.value))}
-        className="gsrp-replay-range w-full accent-gsrp-orange"
-      />
-    </div>
-  );
 }
