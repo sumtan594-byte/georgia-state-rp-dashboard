@@ -1,8 +1,8 @@
 import { Search, X, Users } from 'lucide-react';
 
-const TEAMS = ['All', 'Police', 'Fire', 'EMS', 'DOT', 'Civilian'];
+const TEAMS = ['All', 'Police', 'Sheriff', 'Fire', 'EMS', 'DOT', 'Civilian'];
 const TEAM_DOT = {
-  Police: 'bg-blue-400', Fire: 'bg-red-400', EMS: 'bg-green-400',
+  Police: 'bg-blue-400', Sheriff: 'bg-violet-400', Fire: 'bg-red-400', EMS: 'bg-green-400',
   DOT: 'bg-orange-400', Civilian: 'bg-gray-500',
 };
 

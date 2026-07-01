@@ -17,7 +17,7 @@ function parseName(raw) {
 }
 
 const TEAM_COLOR = {
-  Police: '#60A5FA', Fire: '#F87171', EMS: '#34D399',
+  Police: '#60A5FA', Sheriff: '#A78BFA', Fire: '#F87171', EMS: '#34D399',
   DOT: '#FB923C', Civilian: '#9CA3AF',
 };
 
