@@ -1,6 +1,7 @@
 import Head from 'next/head';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import { Reveal, ShowcaseSections, MediaMarquee } from '../components/landing/LandingMotion';
 import {
   Shield, Star, Users, Activity, Building2, Radio, Flame, Siren,
   Car, ArrowRight, CheckCircle2, MessageSquare, Trophy, Sparkles,
@@ -21,12 +22,12 @@ const STATS = [
 ];
 
 const DEPARTMENTS = [
-  { icon: Shield, name: 'Police Department', desc: 'Patrol the streets of Liberty County, run traffic stops, and keep the peace with realistic ER:LC police roleplay.' },
+  { icon: Shield, name: 'Police Department', desc: 'Patrol the streets of Atlanta City, run traffic stops, and keep the peace with realistic ER:LC police roleplay.' },
   { icon: Siren, name: "Sheriff's Office", desc: 'Join the Sheriff Team and handle county-wide patrols, pursuits, and high-priority calls.' },
   { icon: Flame, name: 'Fire & EMS', desc: 'Respond to fires, crashes, and medical emergencies as a first responder in our ERLC roleplay server.' },
   { icon: Lock, name: 'Homeland Security', desc: 'Work specialised operations within our DHS division for advanced roleplay scenarios.' },
   { icon: Radio, name: 'Communications', desc: 'Run dispatch, coordinate units, and keep every ER:LC roleplay session organised and immersive.' },
-  { icon: Car, name: 'Civilian Operations', desc: 'Drive the story forward as a civilian — businesses, crime, and everyday Liberty County life.' },
+  { icon: Car, name: 'Civilian Operations', desc: 'Drive the story forward as a civilian — businesses, crime, and everyday Atlanta City life.' },
 ];
 
 const FEATURES = [
@@ -60,7 +61,7 @@ const REVIEWS = [
   { name: 'alexisd4786', handle: 'GSRP member', rating: 5, text: "Really good server — it's pretty fun and there's always something happening." },
 ];
 
-const KEYWORDS = 'ERLC, Emergency Response Liberty County, ER:LC, ERLC Roleplay, Georgia State Roleplay, GSRP, Roblox roleplay, roleplay server, ERLC server, ERLC community, police roleplay, rp server, Liberty County roleplay, best ERLC server, ERLC discord';
+const KEYWORDS = 'ERLC, Emergency Response Liberty County, ER:LC, ERLC Roleplay, Georgia State Roleplay, GSRP, Roblox roleplay, roleplay server, ERLC server, ERLC community, police roleplay, rp server, Atlanta City roleplay, best ERLC server, ERLC discord';
 
 function Stars({ n = 5 }) {
   return (
@@ -92,7 +93,34 @@ function ReviewCard({ r }) {
   );
 }
 
-export default function Landing() {
+/* Scans public/media on every request so newly uploaded images appear
+   without any code changes. Showcase slots are matched by filename
+   (showcase-1.* … showcase-5.*); everything else feeds the gallery. */
+export async function getServerSideProps() {
+  const fs = require('fs');
+  const path = require('path');
+  const IMAGE_EXT = /\.(png|jpe?g|webp|gif|avif)$/i;
+  const SITE_ASSETS = /^(gsrp-logo|background|bannerdash)/i;
+
+  let files = [];
+  try {
+    files = fs.readdirSync(path.join(process.cwd(), 'public', 'media')).filter((f) => IMAGE_EXT.test(f));
+  } catch {
+    files = [];
+  }
+
+  const showcase = {};
+  const gallery = [];
+  for (const f of files.sort()) {
+    const slot = f.match(/^showcase-([1-5])\./i);
+    if (slot) showcase[slot[1]] = `/media/${f}`;
+    else if (!SITE_ASSETS.test(f)) gallery.push(`/media/${f}`);
+  }
+
+  return { props: { showcase, gallery } };
+}
+
+export default function Landing({ showcase = {}, gallery = [] }) {
   const { status } = useSession();
   const authed = status === 'authenticated';
   const primaryHref = authed ? '/dashboard' : DISCORD_INVITE;
@@ -106,7 +134,7 @@ export default function Landing() {
     url: SITE_URL,
     logo: `${SITE_URL}${LOGO}`,
     description:
-      'Georgia State Roleplay (GSRP) is one of the largest and most professional Emergency Response: Liberty County (ER:LC) roleplay communities on Roblox.',
+      'Georgia State Roleplay (GSRP) is one of the largest and most professional ER:LC roleplay communities on Roblox.',
     sameAs: [DISCORD_INVITE, ROBLOX_COMMUNITY],
     aggregateRating: {
       '@type': 'AggregateRating',
@@ -120,12 +148,12 @@ export default function Landing() {
     <>
       <Head>
         <title key="title">Georgia State Roleplay (GSRP) | #1 ERLC Roleplay Server on Roblox</title>
-        <meta key="description" name="description" content="Join Georgia State Roleplay (GSRP) — one of the largest, most professional Emergency Response: Liberty County (ER:LC) roleplay servers on Roblox. 9,000+ members, trained staff, realistic ERLC departments, and immersive police, fire & civilian roleplay." />
+        <meta key="description" name="description" content="Join Georgia State Roleplay (GSRP) — one of the largest, most professional ER:LC roleplay servers on Roblox. 9,000+ members, trained staff, realistic ERLC departments, and immersive police, fire & civilian roleplay." />
         <meta name="keywords" content={KEYWORDS} />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={SITE_URL} />
         <meta key="og-title" property="og:title" content="Georgia State Roleplay (GSRP) | #1 ERLC Roleplay Server" />
-        <meta key="og-description" property="og:description" content="One of the largest & most professional Emergency Response: Liberty County (ER:LC) roleplay communities on Roblox. 9,000+ members and trained staff." />
+        <meta key="og-description" property="og:description" content="One of the largest & most professional ER:LC roleplay communities on Roblox. 9,000+ members and trained staff." />
         <meta key="og-type" property="og:type" content="website" />
         <meta key="og-url" property="og:url" content={SITE_URL} />
         <meta name="twitter:card" content="summary_large_image" />
@@ -166,9 +194,9 @@ export default function Landing() {
           <div aria-hidden="true" className="pointer-events-none absolute top-40 -right-40 w-[480px] h-[480px] rounded-full bg-gsrp-teal/20 blur-[130px] animate-aura" style={{ animationDelay: '3s' }} />
 
           <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-16 md:pt-24 pb-16 text-center">
-            <div className="inline-flex items-center gap-2 tac-chip text-gsrp-teal-light/80 mb-7 animate-fade-in-up">
+            <div className="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] backdrop-blur px-4 py-2 text-[13px] font-semibold text-gsrp-teal-light/80 mb-7 animate-fade-in-up">
               <span className="tac-live-dot" />
-              Emergency Response: Liberty County • Roblox Roleplay
+              Emergency Response: Liberty County · Roblox Roleplay
             </div>
 
             <h1 className="font-display text-white font-extrabold tracking-tight leading-[1.02] text-4xl sm:text-6xl md:text-7xl mb-6 animate-fade-in-up stagger-1">
@@ -179,7 +207,7 @@ export default function Landing() {
             <p className="max-w-2xl mx-auto text-gsrp-teal-light/65 text-base md:text-lg leading-relaxed mb-9 animate-fade-in-up stagger-2">
               One of the largest and most professional <strong className="text-white font-semibold">ERLC roleplay servers</strong> on
               Roblox. Join <strong className="text-white font-semibold">9,000+ members</strong> for realistic
-              Emergency Response: Liberty County roleplay — trained staff, real departments, and non-stop sessions.
+              ER:LC roleplay — trained staff, real departments, and non-stop sessions.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-in-up stagger-3">
@@ -211,19 +239,19 @@ export default function Landing() {
         {/* ===== ABOUT ===== */}
         <section id="about" className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <p className="tac-eyebrow mb-4">About GSRP</p>
+            <Reveal>
+              <p className="text-gsrp-orange font-semibold text-sm mb-3">About GSRP</p>
               <h2 className="font-display text-white font-extrabold text-3xl md:text-4xl tracking-tight leading-tight mb-5">
                 The premier <span className="text-gsrp-orange">ER:LC</span> roleplay experience
               </h2>
               <p className="text-gsrp-teal-light/65 leading-relaxed mb-4">
-                Founded in 2025, Georgia State Roleplay has grown into one of the leading Emergency Response: Liberty County
+                Founded in 2025, Georgia State Roleplay has grown into one of the leading ER:LC
                 communities on Roblox. Based in Atlanta, Georgia, our goal is simple: give every member the most immersive
                 <strong className="text-white font-semibold"> ERLC roleplay</strong> experience possible.
               </p>
               <p className="text-gsrp-teal-light/65 leading-relaxed mb-7">
                 Whether you want to patrol as police, fight fires, respond to medical calls, or live out civilian life in
-                Liberty County, our thoroughly trained staff team keeps every roleplay session realistic, fair, and fun.
+                Atlanta City, our thoroughly trained staff team keeps every roleplay session realistic, fair, and fun.
               </p>
               <div className="grid sm:grid-cols-2 gap-3">
                 {FEATURES.map((f) => (
@@ -238,9 +266,9 @@ export default function Landing() {
                   </div>
                 ))}
               </div>
-            </div>
+            </Reveal>
 
-            <div className="relative">
+            <Reveal delay={0.12} className="relative">
               <div aria-hidden="true" className="absolute -inset-4 bg-gradient-to-br from-gsrp-orange/15 to-gsrp-teal/12 rounded-[2.5rem] blur-3xl" />
               <div className="relative tac-panel rounded-3xl p-8 shadow-tac-3">
                 <div className="flex items-center gap-4 mb-7">
@@ -267,48 +295,54 @@ export default function Landing() {
                   ))}
                 </div>
               </div>
-            </div>
+            </Reveal>
           </div>
         </section>
 
+        {/* ===== ROLEPLAY SHOWCASE ===== */}
+        <ShowcaseSections showcase={showcase} />
+
+        {/* ===== MEDIA GALLERY ===== */}
+        <MediaMarquee images={gallery} />
+
         {/* ===== DEPARTMENTS ===== */}
         <section id="departments" className="max-w-6xl mx-auto px-4 sm:px-6 py-12">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <p className="tac-eyebrow mb-4">Departments</p>
+          <Reveal className="text-center max-w-2xl mx-auto mb-12">
+            <p className="text-gsrp-orange font-semibold text-sm mb-3">Departments</p>
             <h2 className="font-display text-white font-extrabold text-3xl md:text-4xl tracking-tight mb-4">
-              Choose your role in Liberty County
+              Choose your role in Atlanta City
             </h2>
             <p className="text-gsrp-teal-light/60 leading-relaxed">
               From law enforcement to first responders and civilians, every ERLC roleplay path is open at Georgia State Roleplay.
             </p>
-          </div>
+          </Reveal>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {DEPARTMENTS.map((d) => (
-              <div key={d.name} className="tac-panel tac-panel-hover rounded-2xl p-6 group">
+            {DEPARTMENTS.map((d, i) => (
+              <Reveal key={d.name} delay={(i % 3) * 0.08} className="tac-panel tac-panel-hover rounded-2xl p-6 group">
                 <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-gsrp-orange/15 to-gsrp-teal/12 border border-white/10 flex items-center justify-center mb-4">
                   <d.icon size={20} className="text-gsrp-orange" />
                 </div>
                 <h3 className="font-display text-white font-bold text-lg mb-2">{d.name}</h3>
                 <p className="text-gsrp-teal-light/55 text-[13px] leading-relaxed">{d.desc}</p>
-              </div>
+              </Reveal>
             ))}
           </div>
         </section>
 
         {/* ===== COMMUNITY / TOP MEMBERS ===== */}
         <section id="community" className="max-w-6xl mx-auto px-4 sm:px-6 py-20">
-          <div className="text-center max-w-2xl mx-auto mb-12">
-            <p className="tac-eyebrow mb-4">Our Community</p>
+          <Reveal className="text-center max-w-2xl mx-auto mb-12">
+            <p className="text-gsrp-orange font-semibold text-sm mb-3">Our Community</p>
             <h2 className="font-display text-white font-extrabold text-3xl md:text-4xl tracking-tight mb-4">
               Most active members
             </h2>
             <p className="text-gsrp-teal-light/60 leading-relaxed">
               Hundreds of hours of roleplay logged — these members live and breathe Georgia State Roleplay.
             </p>
-          </div>
+          </Reveal>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-4xl mx-auto">
-            {TOP_MEMBERS.map((m) => (
-              <div key={m.rank} className="tac-panel rounded-2xl p-4 flex items-center gap-4">
+            {TOP_MEMBERS.map((m, i) => (
+              <Reveal key={m.rank} delay={(i % 3) * 0.08} className="tac-panel rounded-2xl p-4 flex items-center gap-4">
                 <div className={`w-10 h-10 rounded-xl flex items-center justify-center font-display font-extrabold text-sm flex-shrink-0 ${
                   m.rank === 1 ? 'bg-gsrp-gold/15 text-gsrp-gold border border-gsrp-gold/30'
                   : m.rank <= 3 ? 'bg-gsrp-orange/15 text-gsrp-orange border border-gsrp-orange/25'
@@ -321,15 +355,15 @@ export default function Landing() {
                     <Clock size={11} /> {m.hours} played
                   </p>
                 </div>
-              </div>
+              </Reveal>
             ))}
           </div>
         </section>
 
         {/* ===== REVIEWS MARQUEE ===== */}
         <section id="reviews" className="py-16 overflow-hidden">
-          <div className="text-center max-w-2xl mx-auto px-4 mb-12">
-            <p className="tac-eyebrow mb-4">Reviews</p>
+          <Reveal className="text-center max-w-2xl mx-auto px-4 mb-12">
+            <p className="text-gsrp-orange font-semibold text-sm mb-3">Reviews</p>
             <h2 className="font-display text-white font-extrabold text-3xl md:text-4xl tracking-tight mb-4">
               Loved by the ER:LC community
             </h2>
@@ -337,7 +371,7 @@ export default function Landing() {
               <Stars n={5} />
               <span className="text-sm font-semibold">4.5 out of 5 · 86 reviews</span>
             </div>
-          </div>
+          </Reveal>
 
           <div className="marquee-mask space-y-4">
             <div className="marquee-track marquee-left">
@@ -359,7 +393,7 @@ export default function Landing() {
                 Ready to start your<br className="hidden sm:block" /> ERLC roleplay?
               </h2>
               <p className="text-gsrp-teal-light/65 max-w-xl mx-auto mb-9 leading-relaxed">
-                Join 9,000+ members in Georgia State Roleplay, one of the best Emergency Response: Liberty County
+                Join 9,000+ members in Georgia State Roleplay, one of the best ER:LC
                 communities on Roblox. Your department is waiting.
               </p>
               <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
@@ -388,7 +422,7 @@ export default function Landing() {
                   <span className="font-display font-extrabold text-white text-sm">Georgia State Roleplay</span>
                 </div>
                 <p className="text-gsrp-teal-light/45 text-[12.5px] leading-relaxed max-w-xs">
-                  One of the largest and most professional ERLC (Emergency Response: Liberty County) roleplay communities on Roblox.
+                  One of the largest and most professional ER:LC roleplay communities on Roblox.
                 </p>
               </div>
               <div>
@@ -418,7 +452,7 @@ export default function Landing() {
             </div>
             <div className="pt-6 border-t border-gsrp-dark-border/40 flex flex-col sm:flex-row items-center justify-between gap-3">
               <p className="text-gsrp-teal-light/35 text-[12px]">© {new Date().getFullYear()} Georgia State Roleplay. All rights reserved.</p>
-              <p className="text-gsrp-teal-light/25 text-[11px]">ERLC · Emergency Response: Liberty County · Roblox Roleplay Server</p>
+              <p className="text-gsrp-teal-light/25 text-[11px]">ERLC · Georgia State Roleplay · Roblox Roleplay Server</p>
             </div>
           </div>
         </footer>
