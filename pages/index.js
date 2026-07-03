@@ -93,29 +93,34 @@ function ReviewCard({ r }) {
   );
 }
 
-/* Scans public/media on every request so newly uploaded images appear
-   without any code changes. Showcase slots are matched by filename
-   (showcase-1.* … showcase-5.*); everything else feeds the gallery. */
+/* Scans the media folders on every request so newly uploaded images appear
+   without any code changes.
+   - Scroll story sections: public/media/scroll-showcases/, matched to slots
+     1–5 by a leading digit in the filename (e.g. 1-emergency.png).
+   - Moving gallery: every image in public/media/landing-showcases/. */
 export async function getServerSideProps() {
   const fs = require('fs');
   const path = require('path');
   const IMAGE_EXT = /\.(png|jpe?g|webp|gif|avif)$/i;
-  const SITE_ASSETS = /^(gsrp-logo|background|bannerdash)/i;
 
-  let files = [];
-  try {
-    files = fs.readdirSync(path.join(process.cwd(), 'public', 'media')).filter((f) => IMAGE_EXT.test(f));
-  } catch {
-    files = [];
-  }
+  const readImages = (subdir) => {
+    try {
+      return fs
+        .readdirSync(path.join(process.cwd(), 'public', 'media', subdir))
+        .filter((f) => IMAGE_EXT.test(f))
+        .sort();
+    } catch {
+      return [];
+    }
+  };
 
   const showcase = {};
-  const gallery = [];
-  for (const f of files.sort()) {
-    const slot = f.match(/^showcase-([1-5])\./i);
-    if (slot) showcase[slot[1]] = `/media/${f}`;
-    else if (!SITE_ASSETS.test(f)) gallery.push(`/media/${f}`);
+  for (const f of readImages('scroll-showcases')) {
+    const slot = f.match(/^([1-5])[-_. ]/);
+    if (slot && !showcase[slot[1]]) showcase[slot[1]] = `/media/scroll-showcases/${f}`;
   }
+
+  const gallery = readImages('landing-showcases').map((f) => `/media/landing-showcases/${f}`);
 
   return { props: { showcase, gallery } };
 }
