@@ -3,6 +3,7 @@ import { authOptions } from '../../../lib/auth-options'
 import { rateLimit } from '../../../lib/rate-limiter'
 import { canAccessTrainerHandbook } from '../../../lib/auth'
 import { sendComponentsV2, sendDM } from '../../../lib/discord-v2'
+import { saveTrainingReport } from '../../../lib/training-reports'
 
 const PASS_GREEN = 0x10b981
 const FAIL_RED = 0xef4444
@@ -66,7 +67,26 @@ export default async function handler(req, res) {
     ],
   }
 
-  const outcome = { dmSent: false, channelPosted: false }
+  const outcome = { dmSent: false, channelPosted: false, logged: false }
+
+  // Persist the result to the shared MySQL DB so /traininghistory and the
+  // trainer-inactivity auto-punisher can read it. Non-fatal: a DB failure must
+  // never block delivering the result to the trainee.
+  try {
+    await saveTrainingReport({
+      traineeId: String(traineeDiscordId),
+      traineeRoblox: traineeRoblox ? String(traineeRoblox).slice(0, 50) : null,
+      trainerId,
+      score: numScore,
+      total: numTotal,
+      pct,
+      passed: isPass,
+      notes: notesText,
+    })
+    outcome.logged = true
+  } catch (err) {
+    console.error('[Trainer Post Result] DB log failed:', err.message)
+  }
 
   // DM the trainee their outcome.
   try {
