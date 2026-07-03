@@ -678,9 +678,6 @@ discord-messages {
 .marquee-left  { animation: marquee-scroll-left  60s linear infinite; }
 .marquee-right { animation: marquee-scroll-right 75s linear infinite; }
 .marquee-mask:hover .marquee-track { animation-play-state: paused; }
-@media (prefers-reduced-motion: reduce) {
-  .marquee-left, .marquee-right { animation: none; }
-}
 
 /* Slow drifting gradient aura for hero */
 @keyframes aura-drift {
@@ -688,7 +685,6 @@ discord-messages {
   50%      { transform: translate3d(0, -16px, 0) scale(1.08); opacity: 0.8; }
 }
 .animate-aura { animation: aura-drift 12s ease-in-out infinite; }
-@media (prefers-reduced-motion: reduce) { .animate-aura { animation: none; } }
 
 /* ===================== GLOW EFFECTS ===================== */
 .glow-orange {
@@ -785,11 +781,6 @@ discord-messages {
   0% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.5); }
   70% { box-shadow: 0 0 0 7px rgba(20, 184, 166, 0); }
   100% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .tac-live-dot { animation: none; }
-  .tac-panel-hover:hover { transform: none; }
 }
 
 /* ===================== SHIMMER LOADER ===================== */

@@ -1,11 +1,11 @@
 import { useRef } from 'react';
-import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 const EASE = [0.16, 1, 0.3, 1];
 
 /* Soft one-time reveal used across the landing page. Keep `initial`
-   identical on server and client to avoid hydration style mismatches;
-   framer-motion still respects reduced-motion for the transform. */
+   identical on server and client to avoid hydration style mismatches.
+   Animations always play here regardless of the OS reduced-motion setting. */
 export function Reveal({ children, delay = 0, y = 28, className }) {
   return (
     <motion.div
@@ -69,12 +69,11 @@ const humanize = (slug) =>
 
 function ShowcaseItem({ src, label, title, desc, flip }) {
   const ref = useRef(null);
-  const reduced = useReducedMotion();
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ['start end', 'end start'],
   });
-  const y = useTransform(scrollYProgress, [0, 1], reduced ? [0, 0] : [36, -36]);
+  const y = useTransform(scrollYProgress, [0, 1], [36, -36]);
 
   return (
     <div ref={ref} className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
