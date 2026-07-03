@@ -27,7 +27,7 @@ const DEPARTMENTS = [
   { icon: Flame, name: 'Fire & EMS', desc: 'Respond to fires, crashes, and medical emergencies as a first responder in our ERLC roleplay server.' },
   { icon: Lock, name: 'Homeland Security', desc: 'Work specialised operations within our DHS division for advanced roleplay scenarios.' },
   { icon: Radio, name: 'Communications', desc: 'Run dispatch, coordinate units, and keep every ER:LC roleplay session organised and immersive.' },
-  { icon: Car, name: 'Civilian Operations', desc: 'Drive the story forward as a civilian — businesses, crime, and everyday Atlanta City life.' },
+  { icon: Car, name: 'Civilian Operations', desc: 'Drive the story forward as a civilian: run a business, get into crime, or just live everyday life in Atlanta City.' },
 ];
 
 const FEATURES = [

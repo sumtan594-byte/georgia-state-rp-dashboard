@@ -30,13 +30,13 @@ const SHOWCASES = [
     slug: 'respond-to-emergencies',
     label: 'Emergency response',
     title: 'Respond and assist in realistic situations',
-    desc: 'Vehicle fires, water rescues, multi-car pileups — every callout plays out the way it would in real life. Roll up with Fire & EMS or law enforcement and work the scene together.',
+    desc: 'Vehicle fires, water rescues, multi-car pileups. Every callout plays out like it would in real life, with Fire & EMS and law enforcement working the scene side by side.',
   },
   {
     slug: 'maintain-safety',
     label: 'Law enforcement',
     title: 'Maintain safety and keep the peace',
-    desc: 'Run patrols, traffic stops, and pursuits across Atlanta City. Hold the line when things escalate and keep every street safe — realistic policing, done right.',
+    desc: 'Run patrols, traffic stops, and pursuits across Atlanta City. When things escalate, you hold the line and keep the street safe.',
   },
   {
     slug: 'team-up',
@@ -48,19 +48,19 @@ const SHOWCASES = [
     slug: 'participate-events-flex',
     label: 'Events & races',
     title: 'Flex your best vehicles in special events and races',
-    desc: 'Line up your finest rides at the car meets, takeovers, and races we host regularly. Bring something worth showing off — the whole server will be watching.',
+    desc: 'Line up your finest rides at the car meets, takeovers, and races we host regularly. Bring something worth showing off, because the whole server will be watching.',
   },
   {
     slug: 'camp-n-chill',
     label: 'Community',
     title: 'Camp out and chill with the community',
-    desc: 'Convoy out to the lakeside, park up with the crew, and let the roleplay slow down for a night. Campouts bring civilians, staff, and departments together around one campfire.',
+    desc: 'Convoy out to the lakeside, park up with the crew, and let the roleplay slow down for a night. Civilians, staff, and every department end up around the same campfire.',
   },
   {
     slug: 'tac-ops',
     label: 'Tactical operations',
     title: 'Partake in major tactical operations against most wanted mafias',
-    desc: "When organised crime digs in, SWAT and state troopers roll out. Join large-scale, coordinated operations against Atlanta City's most wanted — planned, briefed, and executed like the real thing.",
+    desc: "When organised crime digs in, SWAT and state troopers roll out. These are large-scale, coordinated operations against Atlanta City's most wanted, briefed and run like the real thing.",
   },
 ];
 
@@ -127,7 +127,7 @@ export function ShowcaseSections({ showcase }) {
           What roleplay looks like at GSRP
         </h2>
         <p className="text-gsrp-teal-light/60 leading-relaxed">
-          Real moments captured in our sessions — from quiet nights with the community to full-scale operations.
+          Screenshots pulled straight from our sessions, whether it's a quiet night with the community or a full-scale operation.
         </p>
       </Reveal>
       <div className="space-y-24 md:space-y-32">
@@ -139,7 +139,7 @@ export function ShowcaseSections({ showcase }) {
   );
 }
 
-/* Infinite marquee gallery. Adapts to whatever lives in public/media —
+/* Infinite marquee gallery. Adapts to whatever lives in public/media:
    drop in new images and they appear after the next page load. */
 function MarqueeRow({ images, reverse, duration }) {
   // Pad short lists so the looping track is always wider than the viewport.
@@ -185,7 +185,7 @@ export function MediaMarquee({ images }) {
           More from around Atlanta City
         </h2>
         <p className="text-gsrp-teal-light/60 leading-relaxed">
-          Straight from our sessions — patrols, pursuits, meets, and everything in between.
+          Patrols, pursuits, meets, and everything else that happens during a session.
         </p>
       </Reveal>
 
