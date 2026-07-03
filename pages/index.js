@@ -95,8 +95,8 @@ function ReviewCard({ r }) {
 
 /* Scans the media folders on every request so newly uploaded images appear
    without any code changes.
-   - Scroll story sections: public/media/scroll-showcases/, matched to slots
-     1–5 by a leading digit in the filename (e.g. 1-emergency.png).
+   - Scroll story sections: public/media/scroll-showcases/, keyed to copy by
+     filename without extension (e.g. respond-to-emergencies.png).
    - Moving gallery: every image in public/media/landing-showcases/. */
 export async function getServerSideProps() {
   const fs = require('fs');
@@ -116,8 +116,8 @@ export async function getServerSideProps() {
 
   const showcase = {};
   for (const f of readImages('scroll-showcases')) {
-    const slot = f.match(/^([1-5])[-_. ]/);
-    if (slot && !showcase[slot[1]]) showcase[slot[1]] = `/media/scroll-showcases/${f}`;
+    const slug = f.replace(/\.[^.]+$/, '').toLowerCase();
+    if (!showcase[slug]) showcase[slug] = `/media/scroll-showcases/${f}`;
   }
 
   const gallery = readImages('landing-showcases').map((f) => `/media/landing-showcases/${f}`);

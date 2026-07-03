@@ -3,13 +3,14 @@ import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion
 
 const EASE = [0.16, 1, 0.3, 1];
 
-/* Soft one-time reveal used across the landing page. */
+/* Soft one-time reveal used across the landing page. Keep `initial`
+   identical on server and client to avoid hydration style mismatches;
+   framer-motion still respects reduced-motion for the transform. */
 export function Reveal({ children, delay = 0, y = 28, className }) {
-  const reduced = useReducedMotion();
   return (
     <motion.div
       className={className}
-      initial={reduced ? false : { opacity: 0, y }}
+      initial={{ opacity: 0, y }}
       whileInView={{ opacity: 1, y: 0 }}
       viewport={{ once: true, margin: '-60px' }}
       transition={{ duration: 0.7, delay, ease: EASE }}
@@ -19,40 +20,52 @@ export function Reveal({ children, delay = 0, y = 28, className }) {
   );
 }
 
-/* The five featured roleplay moments. Images are matched by filename:
-   public/media/showcase-1.* through showcase-5.* (any image extension). */
+/* Featured roleplay moments. Each entry is matched to an image in
+   public/media/scroll-showcases/ by filename (without extension), so
+   respond-to-emergencies.png fills the `respond-to-emergencies` slot.
+   The array order is the on-page order. Any uploaded image whose name
+   isn't listed here still renders, with a humanized heading. */
 const SHOWCASES = [
   {
-    slot: '1',
+    slug: 'respond-to-emergencies',
     label: 'Emergency response',
     title: 'Respond and assist in realistic situations',
     desc: 'Vehicle fires, water rescues, multi-car pileups — every callout plays out the way it would in real life. Roll up with Fire & EMS or law enforcement and work the scene together.',
   },
   {
-    slot: '2',
-    label: 'Community',
-    title: 'Chill out and have fun with other roleplayers',
-    desc: 'Not every session is a code three. Hang out on the bridge, swap stories between calls, and make friends with roleplayers from all over the community.',
+    slug: 'maintain-safety',
+    label: 'Law enforcement',
+    title: 'Maintain safety and keep the peace',
+    desc: 'Run patrols, traffic stops, and pursuits across Atlanta City. Hold the line when things escalate and keep every street safe — realistic policing, done right.',
   },
   {
-    slot: '3',
+    slug: 'team-up',
+    label: 'Teamwork',
+    title: 'Team up with other roleplayers',
+    desc: 'Coordinate units, back each other up, and run every scene as a crew. The best roleplay happens when everyone works together toward the same story.',
+  },
+  {
+    slug: 'participate-events-flex',
     label: 'Events & races',
     title: 'Flex your best vehicles in special events and races',
     desc: 'Line up your finest rides at the car meets, takeovers, and races we host regularly. Bring something worth showing off — the whole server will be watching.',
   },
   {
-    slot: '4',
-    label: 'Campouts',
-    title: 'Unwind at community campouts',
+    slug: 'camp-n-chill',
+    label: 'Community',
+    title: 'Camp out and chill with the community',
     desc: 'Convoy out to the lakeside, park up with the crew, and let the roleplay slow down for a night. Campouts bring civilians, staff, and departments together around one campfire.',
   },
   {
-    slot: '5',
+    slug: 'tac-ops',
     label: 'Tactical operations',
     title: 'Partake in major tactical operations against most wanted mafias',
     desc: "When organised crime digs in, SWAT and state troopers roll out. Join large-scale, coordinated operations against Atlanta City's most wanted — planned, briefed, and executed like the real thing.",
   },
 ];
+
+const humanize = (slug) =>
+  slug.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 
 function ShowcaseItem({ src, label, title, desc, flip }) {
   const ref = useRef(null);
@@ -90,14 +103,21 @@ function ShowcaseItem({ src, label, title, desc, flip }) {
         <h3 className="font-display text-white font-extrabold text-3xl md:text-4xl tracking-tight leading-tight mb-4">
           {title}
         </h3>
-        <p className="text-gsrp-teal-light/65 leading-relaxed text-[15px] max-w-xl">{desc}</p>
+        {desc && <p className="text-gsrp-teal-light/65 leading-relaxed text-[15px] max-w-xl">{desc}</p>}
       </Reveal>
     </div>
   );
 }
 
 export function ShowcaseSections({ showcase }) {
-  const items = SHOWCASES.filter((s) => showcase?.[s.slot]);
+  const map = showcase || {};
+  const known = SHOWCASES.filter((s) => map[s.slug]);
+  const knownSlugs = new Set(SHOWCASES.map((s) => s.slug));
+  const extras = Object.keys(map)
+    .filter((slug) => !knownSlugs.has(slug))
+    .sort()
+    .map((slug) => ({ slug, label: 'Roleplay', title: humanize(slug), desc: '' }));
+  const items = [...known, ...extras];
   if (!items.length) return null;
 
   return (
@@ -113,7 +133,7 @@ export function ShowcaseSections({ showcase }) {
       </Reveal>
       <div className="space-y-24 md:space-y-32">
         {items.map((s, i) => (
-          <ShowcaseItem key={s.slot} {...s} src={showcase[s.slot]} flip={i % 2 === 1} />
+          <ShowcaseItem key={s.slug} {...s} src={map[s.slug]} flip={i % 2 === 1} />
         ))}
       </div>
     </section>
