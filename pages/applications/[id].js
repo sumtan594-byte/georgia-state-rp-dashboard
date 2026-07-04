@@ -61,17 +61,25 @@ const AutoMarkResult = ({ result, error, applicationStatus, onUseSuggestion }) =
     <section className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-orange/25 p-6 md:p-8">
       <div className="flex flex-col md:flex-row md:items-start justify-between gap-5 mb-7">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-gsrp-orange mb-2 flex items-center gap-2"><Sparkles size={13} /> Auto mark result</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-gsrp-orange mb-2 flex items-center gap-2"><Sparkles size={13} /> AI marking summary</p>
           <h2 className="text-2xl font-bold text-white">{result.score}<span className="text-white/25">/{result.maxScore}</span></h2>
           <p className="text-xs text-gsrp-teal-light/40 mt-1">SPaG and professionalism: <span className="text-white/70 font-bold">{result.spag.score}/100 · {result.spag.label}</span></p>
         </div>
         <div className="flex flex-wrap gap-2 md:justify-end">
           <span className={`px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wider ${accepted ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
-            Recommend {accepted ? 'accept' : 'deny'}
+            AI recommends {accepted ? 'accepting' : 'denying'}
           </span>
           <span className={`px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wider ${aiRiskStyles[result.aiAssessment.risk]}`}>
             AI risk: {result.aiAssessment.risk}
           </span>
+        </div>
+      </div>
+
+      <div className="mb-6 rounded-xl border border-blue-400/20 bg-blue-400/5 px-4 py-3 flex items-start gap-3">
+        <AlertCircle size={16} className="text-blue-300 mt-0.5 shrink-0" />
+        <div>
+          <p className="text-xs font-bold text-blue-200">Advisory result only — no decision has been made.</p>
+          <p className="text-[11px] text-blue-200/55 mt-1">The reviewing staff member must check the responses and confirm the final outcome.</p>
         </div>
       </div>
 
@@ -102,12 +110,12 @@ const AutoMarkResult = ({ result, error, applicationStatus, onUseSuggestion }) =
 
       <div className="rounded-xl border border-gsrp-orange/20 bg-gsrp-orange/5 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-widest text-gsrp-orange/70 mb-1">Suggested 5–10 word reason</p>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gsrp-orange/70 mb-1">Suggested 5–10 word reason for marker review</p>
           <p className="text-white font-bold">{result.decisionReason}</p>
         </div>
         {applicationStatus === 'pending' && (
           <button onClick={onUseSuggestion} className="shrink-0 px-5 py-2.5 rounded-xl bg-gsrp-orange hover:bg-gsrp-orange/90 text-white text-xs font-bold uppercase tracking-widest transition-colors">
-            Use suggestion
+            Review recommendation
           </button>
         )}
       </div>
@@ -432,6 +440,7 @@ export default function ApplicationDetail() {
   const applicationRequestRef = useRef(0);
   const currentApplicationIdRef = useRef(applicationId);
   const autoMarkAbortRef = useRef(null);
+  const autoMarkResultRef = useRef(null);
   currentApplicationIdRef.current = applicationId;
   
   const [application, setApplication] = useState(null);
@@ -452,6 +461,15 @@ export default function ApplicationDetail() {
   const [autoMarkResult, setAutoMarkResult] = useState(null);
   const [autoMarkError, setAutoMarkError] = useState('');
   const [isAutoMarking, setIsAutoMarking] = useState(false);
+
+  useEffect(() => {
+    if ((!autoMarkResult && !autoMarkError) || !autoMarkResultRef.current) return undefined;
+    const frame = requestAnimationFrame(() => {
+      autoMarkResultRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      autoMarkResultRef.current?.focus({ preventScroll: true });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [autoMarkResult, autoMarkError]);
 
   useEffect(() => {
     if (!router.isReady || !applicationId || !reviewerId || !hasReviewAccess) return undefined;
@@ -628,6 +646,7 @@ export default function ApplicationDetail() {
     const requestedApplicationId = application._id;
     setIsAutoMarking(true);
     setAutoMarkError('');
+    setAutoMarkResult(null);
     try {
       const res = await fetch('/api/applications/auto-mark', {
         method: 'POST',
@@ -780,6 +799,15 @@ export default function ApplicationDetail() {
             </div>
           </div>
 
+          <div ref={autoMarkResultRef} tabIndex={-1} className="scroll-mt-6 outline-none" aria-live="polite">
+            <AutoMarkResult
+              result={autoMarkResult}
+              error={autoMarkError}
+              applicationStatus={application.status}
+              onUseSuggestion={handleUseAutoMarkSuggestion}
+            />
+          </div>
+
           <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-8">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <h2 className="text-white font-bold text-sm uppercase tracking-[0.2em] flex items-center gap-3">
@@ -862,13 +890,6 @@ export default function ApplicationDetail() {
               )}
             </div>
           </div>
-
-          <AutoMarkResult
-            result={autoMarkResult}
-            error={autoMarkError}
-            applicationStatus={application.status}
-            onUseSuggestion={handleUseAutoMarkSuggestion}
-          />
 
           {totalSessionTabOuts > 0 && (
             <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-8">
