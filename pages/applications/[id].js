@@ -26,6 +26,10 @@ import {
   Trash2,
   Clipboard,
   ArrowRight,
+  Sparkles,
+  ThumbsUp,
+  ThumbsDown,
+  Bot,
 } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
@@ -34,6 +38,94 @@ import LoginScreen from '../../components/auth/LoginScreen';
 import AccessDenied from '../../components/auth/AccessDenied';
 
 const TAB_OUT_THRESHOLD = 3;
+
+const AutoMarkResult = ({ result, error, applicationStatus, onUseSuggestion }) => {
+  if (!result && !error) return null;
+  const accepted = result?.decision === 'accepted';
+  const aiRiskStyles = {
+    low: 'bg-green-500/10 text-green-400 border-green-500/20',
+    medium: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+    high: 'bg-red-500/10 text-red-400 border-red-500/20',
+  };
+
+  if (error) {
+    return (
+      <div className="bg-red-500/5 rounded-2xl border border-red-500/20 p-6">
+        <div className="flex items-center gap-3 text-red-400 font-bold"><AlertCircle size={18} /> Auto mark failed</div>
+        <p className="text-sm text-red-300/70 mt-2">{error}</p>
+      </div>
+    );
+  }
+
+  return (
+    <section className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-orange/25 p-6 md:p-8">
+      <div className="flex flex-col md:flex-row md:items-start justify-between gap-5 mb-7">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-gsrp-orange mb-2 flex items-center gap-2"><Sparkles size={13} /> Auto mark result</p>
+          <h2 className="text-2xl font-bold text-white">{result.score}<span className="text-white/25">/{result.maxScore}</span></h2>
+          <p className="text-xs text-gsrp-teal-light/40 mt-1">SPaG and professionalism: <span className="text-white/70 font-bold">{result.spag.score}/100 · {result.spag.label}</span></p>
+        </div>
+        <div className="flex flex-wrap gap-2 md:justify-end">
+          <span className={`px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wider ${accepted ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
+            Recommend {accepted ? 'accept' : 'deny'}
+          </span>
+          <span className={`px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wider ${aiRiskStyles[result.aiAssessment.risk]}`}>
+            AI risk: {result.aiAssessment.risk}
+          </span>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4 mb-6">
+        <div className="rounded-xl bg-green-500/5 border border-green-500/15 p-5">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-green-400 flex items-center gap-2 mb-3"><ThumbsUp size={14} /> Goods</h3>
+          <ul className="space-y-2">{result.goods.map((item, index) => <li key={index} className="text-sm text-white/70 leading-relaxed">• {item}</li>)}</ul>
+        </div>
+        <div className="rounded-xl bg-red-500/5 border border-red-500/15 p-5">
+          <h3 className="text-xs font-bold uppercase tracking-widest text-red-400 flex items-center gap-2 mb-3"><ThumbsDown size={14} /> Bads</h3>
+          <ul className="space-y-2">{result.bads.map((item, index) => <li key={index} className="text-sm text-white/70 leading-relaxed">• {item}</li>)}</ul>
+        </div>
+      </div>
+
+      <div className="grid md:grid-cols-2 gap-4 mb-6">
+        <div className="rounded-xl bg-gsrp-dark-surface/40 border border-white/5 p-5">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gsrp-teal-light/35 mb-2">Final feedback</p>
+          <p className="text-sm text-white/75 leading-relaxed">{result.feedback}</p>
+          <p className="text-xs text-gsrp-teal-light/45 mt-3">{result.spag.summary}</p>
+        </div>
+        <div className="rounded-xl bg-gsrp-dark-surface/40 border border-white/5 p-5">
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gsrp-teal-light/35 mb-2 flex items-center gap-2"><Bot size={12} /> Potential AI writing</p>
+          <p className="text-sm text-white/75 leading-relaxed">{result.aiAssessment.explanation}</p>
+          {result.aiAssessment.signals.length > 0 && <ul className="mt-3 space-y-1">{result.aiAssessment.signals.map((signal, index) => <li key={index} className="text-xs text-amber-300/70">• {signal}</li>)}</ul>}
+          <p className="text-[10px] text-white/25 mt-3">Style detection is an indicator only, not proof of AI use.</p>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-gsrp-orange/20 bg-gsrp-orange/5 p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-widest text-gsrp-orange/70 mb-1">Suggested 5–10 word reason</p>
+          <p className="text-white font-bold">{result.decisionReason}</p>
+        </div>
+        {applicationStatus === 'pending' && (
+          <button onClick={onUseSuggestion} className="shrink-0 px-5 py-2.5 rounded-xl bg-gsrp-orange hover:bg-gsrp-orange/90 text-white text-xs font-bold uppercase tracking-widest transition-colors">
+            Use suggestion
+          </button>
+        )}
+      </div>
+
+      <details className="mt-5 rounded-xl border border-white/5 bg-black/10">
+        <summary className="cursor-pointer px-5 py-4 text-xs font-bold uppercase tracking-widest text-white/45 hover:text-white/70">Question breakdown</summary>
+        <div className="px-5 pb-5 grid gap-2">
+          {result.questionScores.map(item => (
+            <div key={item.id} className="rounded-lg border border-white/5 bg-gsrp-dark-surface/30 p-3 flex gap-4">
+              <span className={`w-9 h-9 rounded-lg shrink-0 flex items-center justify-center font-bold ${item.score >= 2 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>{item.score}/3</span>
+              <div><p className="text-xs font-bold text-white mb-1">{item.label}</p><p className="text-xs text-white/50">{item.good} {item.bad}</p></div>
+            </div>
+          ))}
+        </div>
+      </details>
+    </section>
+  );
+};
 
 const PasteDetector = ({ pastes }) => {
   if (!pastes || pastes.length === 0) return null;
@@ -350,6 +442,9 @@ export default function ApplicationDetail() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [autoMarkResult, setAutoMarkResult] = useState(null);
+  const [autoMarkError, setAutoMarkError] = useState('');
+  const [isAutoMarking, setIsAutoMarking] = useState(false);
 
   useEffect(() => {
     if (id && session && canReviewApplications(effectiveSession)) {
@@ -492,6 +587,32 @@ export default function ApplicationDetail() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleAutoMark = async () => {
+    setIsAutoMarking(true);
+    setAutoMarkError('');
+    try {
+      const res = await fetch('/api/applications/auto-mark', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: application._id }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Auto marking failed.');
+      setAutoMarkResult(data);
+    } catch (err) {
+      setAutoMarkError(err.message);
+    } finally {
+      setIsAutoMarking(false);
+    }
+  };
+
+  const handleUseAutoMarkSuggestion = () => {
+    if (!autoMarkResult) return;
+    setDecisionType(autoMarkResult.decision);
+    setReason(autoMarkResult.decisionReason);
+    setShowReasonModal(true);
+  };
+
   if (status === 'loading' || !hasRefreshed) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
@@ -614,22 +735,32 @@ export default function ApplicationDetail() {
           </div>
 
           <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-8">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
               <h2 className="text-white font-bold text-sm uppercase tracking-[0.2em] flex items-center gap-3">
                 <FileText size={18} className="text-gsrp-orange" />
                 Submission Details
               </h2>
-              <button
-                onClick={handleCopyResponses}
-                className={`flex items-center gap-2 px-4 py-2 bg-gsrp-dark-surface border rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
-                  copied
-                    ? 'border-green-500/30 text-green-400 bg-green-500/10'
-                    : 'border-gsrp-dark-border text-gsrp-teal-light/60 hover:text-white hover:border-gsrp-orange'
-                }`}
-              >
-                {copied ? <CheckCircle size={14} /> : <Clipboard size={14} />}
-                {copied ? 'Copied!' : 'Copy user responses'}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={handleAutoMark}
+                  disabled={isAutoMarking}
+                  className="flex items-center gap-2 px-4 py-2 bg-gsrp-orange hover:bg-gsrp-orange/90 disabled:opacity-60 disabled:cursor-wait text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
+                >
+                  {isAutoMarking ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
+                  {isAutoMarking ? 'Marking…' : 'Auto mark'}
+                </button>
+                <button
+                  onClick={handleCopyResponses}
+                  className={`flex items-center gap-2 px-4 py-2 bg-gsrp-dark-surface border rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${
+                    copied
+                      ? 'border-green-500/30 text-green-400 bg-green-500/10'
+                      : 'border-gsrp-dark-border text-gsrp-teal-light/60 hover:text-white hover:border-gsrp-orange'
+                  }`}
+                >
+                  {copied ? <CheckCircle size={14} /> : <Clipboard size={14} />}
+                  {copied ? 'Copied!' : 'Copy user responses'}
+                </button>
+              </div>
             </div>
             <div className="space-y-8">
               {appType ? appType.fields.map((field, fIdx) => {
@@ -685,6 +816,13 @@ export default function ApplicationDetail() {
               )}
             </div>
           </div>
+
+          <AutoMarkResult
+            result={autoMarkResult}
+            error={autoMarkError}
+            applicationStatus={application.status}
+            onUseSuggestion={handleUseAutoMarkSuggestion}
+          />
 
           {totalSessionTabOuts > 0 && (
             <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-8">
