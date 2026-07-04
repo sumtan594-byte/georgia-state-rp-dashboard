@@ -195,7 +195,10 @@ export default async function handler(req, res) {
     const scoreKeys = scoreShape && !Array.isArray(scoreShape) && typeof scoreShape === 'object'
       ? Object.keys(scoreShape).slice(0, 20).join(',')
       : 'n/a';
-    console.log(`[Auto Mark:${requestId}] parsed JSON shape | keys=${parsedKeys || 'none'} | scores=${Array.isArray(scoreShape) ? `array(${scoreShape.length})` : typeof scoreShape} | scoreKeys=${scoreKeys}`);
+    const scoreValueShapes = scoreShape && !Array.isArray(scoreShape) && typeof scoreShape === 'object'
+      ? Object.entries(scoreShape).slice(0, 20).map(([key, value]) => `${key}:${typeof value === 'object' && value ? `{${Object.keys(value).join('|')}}` : typeof value}`).join(',')
+      : 'n/a';
+    console.log(`[Auto Mark:${requestId}] parsed JSON shape | keys=${parsedKeys || 'none'} | scores=${Array.isArray(scoreShape) ? `array(${scoreShape.length})` : typeof scoreShape} | scoreKeys=${scoreKeys} | scoreValues=${scoreValueShapes}`);
     const result = normalizeMarkingResult(parsed);
     console.log(`[Auto Mark:${requestId}] complete | application=${id} | score=${result.score}/36 | decision=${result.decision} | ${Date.now() - startedAt}ms`);
     return res.status(200).json(result);
