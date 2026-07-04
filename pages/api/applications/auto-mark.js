@@ -14,6 +14,12 @@ import {
 } from '../../../lib/application-marking';
 
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
+const RETRYABLE_PROVIDER_STATUSES = new Set([429, 503]);
+const PASSTHROUGH_PROVIDER_STATUSES = new Set([400, 401, 402, 403, 408, 429, 502, 503, 504]);
+
+function wait(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
 
 function getAnswers(application) {
   return MARKING_QUESTIONS.map(question => ({
@@ -65,20 +71,53 @@ async function callOpenRouter(apiKey, prompt, structured, requestId) {
 
 async function readOpenRouterResponse(response, requestId) {
   const payload = await response.json().catch(() => null);
-  if (!response.ok) {
-    const message = payload?.error?.message || 'The marking model could not process this application.';
-    console.error(`[Auto Mark:${requestId}] provider error | status=${response.status} | ${message}`);
+  const choice = payload?.choices?.[0];
+  const providerError = payload?.error || choice?.error;
+  if (!response.ok || providerError || choice?.finish_reason === 'error') {
+    const providerStatus = Number(providerError?.code) || response.status || 502;
+    const errorType = providerError?.metadata?.error_type || 'unknown';
+    const message = providerError?.message || 'The marking model could not process this application.';
+    const retryAfterValue = Number(response.headers.get('Retry-After'));
+    const retryAfter = Number.isFinite(retryAfterValue) && retryAfterValue > 0 ? Math.ceil(retryAfterValue) : null;
+    console.error(`[Auto Mark:${requestId}] provider error | http=${response.status} | code=${providerStatus} | type=${errorType} | retryAfter=${retryAfter ?? 'none'} | ${message}`);
     const error = new Error(message);
     error.code = 'PROVIDER_ERROR';
+    error.providerStatus = providerStatus;
+    error.errorType = errorType;
+    error.retryAfter = retryAfter;
     throw error;
   }
 
-  const choice = payload?.choices?.[0];
   return {
     content: choice?.message?.content,
     finishReason: choice?.finish_reason || 'unknown',
     usage: payload?.usage || null,
   };
+}
+
+async function requestModel(apiKey, prompt, structured, requestId, allowRateLimitRetry = false) {
+  let response = await callOpenRouter(apiKey, prompt, structured, requestId);
+  try {
+    return await readOpenRouterResponse(response, requestId);
+  } catch (error) {
+    const canRetry = allowRateLimitRetry
+      && error.code === 'PROVIDER_ERROR'
+      && RETRYABLE_PROVIDER_STATUSES.has(error.providerStatus)
+      && error.retryAfter
+      && error.retryAfter <= 5;
+    if (!canRetry) throw error;
+
+    console.warn(`[Auto Mark:${requestId}] provider requested retry | waiting=${error.retryAfter}s | status=${error.providerStatus}`);
+    await wait(error.retryAfter * 1000);
+    response = await callOpenRouter(apiKey, prompt, structured, requestId);
+    return readOpenRouterResponse(response, requestId);
+  }
+}
+
+function isStructuredOutputError(error) {
+  return error?.code === 'PROVIDER_ERROR'
+    && error.providerStatus === 400
+    && /response[_ -]?format|json[_ -]?schema|structured|schema|unsupported/i.test(error.message);
 }
 
 export default async function handler(req, res) {
@@ -115,12 +154,14 @@ export default async function handler(req, res) {
     const prompt = buildMarkingPrompt(answers, integritySignals);
     console.log(`[Auto Mark:${requestId}] prompt ready | chars=${prompt.length} | pastes=${integritySignals.pasteEvents} | styleSignals=${integritySignals.styleSignals.length}`);
 
-    let openRouterResponse = await callOpenRouter(process.env.OPENROUTER_API_KEY, prompt, true, requestId);
-    if (openRouterResponse.status === 400) {
-      console.warn(`[Auto Mark:${requestId}] structured output rejected; retrying with JSON-only prompt`);
-      openRouterResponse = await callOpenRouter(process.env.OPENROUTER_API_KEY, prompt, false, requestId);
+    let modelResponse;
+    try {
+      modelResponse = await requestModel(process.env.OPENROUTER_API_KEY, prompt, true, requestId, true);
+    } catch (error) {
+      if (!isStructuredOutputError(error)) throw error;
+      console.warn(`[Auto Mark:${requestId}] structured output unsupported; retrying with JSON-only prompt`);
+      modelResponse = await requestModel(process.env.OPENROUTER_API_KEY, prompt, false, requestId);
     }
-    let modelResponse = await readOpenRouterResponse(openRouterResponse, requestId);
     console.log(`[Auto Mark:${requestId}] parsing model response | finish=${modelResponse.finishReason} | contentChars=${Array.isArray(modelResponse.content) ? 'multipart' : String(modelResponse.content || '').length} | completionTokens=${modelResponse.usage?.completion_tokens ?? 'unknown'}`);
 
     let parsed;
@@ -130,8 +171,7 @@ export default async function handler(req, res) {
     } catch (parseError) {
       console.warn(`[Auto Mark:${requestId}] invalid JSON | ${parseError.message} | retrying once in compact mode`);
       const retryPrompt = `${prompt}\n\nRETRY REQUIREMENT: Return extremely compact valid JSON. Use no markdown and keep all notes under 12 words.`;
-      const retryResponse = await callOpenRouter(process.env.OPENROUTER_API_KEY, retryPrompt, false, requestId);
-      modelResponse = await readOpenRouterResponse(retryResponse, requestId);
+      modelResponse = await requestModel(process.env.OPENROUTER_API_KEY, retryPrompt, false, requestId);
       console.log(`[Auto Mark:${requestId}] retry response | finish=${modelResponse.finishReason} | contentChars=${String(modelResponse.content || '').length}`);
       try {
         if (modelResponse.finishReason === 'length') throw new Error('retry reached its token limit');
@@ -148,9 +188,16 @@ export default async function handler(req, res) {
     return res.status(200).json(result);
   } catch (error) {
     console.error(`[Auto Mark:${requestId}] failed | application=${id} | ${Date.now() - startedAt}ms | ${error.name === 'AbortError' ? 'OpenRouter timed out' : error.message}`);
-    const status = error.name === 'AbortError' ? 504 : (error.code === 'PROVIDER_ERROR' || error.code === 'INVALID_MODEL_JSON' ? 502 : 500);
+    const status = error.name === 'AbortError'
+      ? 504
+      : (error.code === 'PROVIDER_ERROR' && PASSTHROUGH_PROVIDER_STATUSES.has(error.providerStatus)
+        ? error.providerStatus
+        : (error.code === 'PROVIDER_ERROR' || error.code === 'INVALID_MODEL_JSON' ? 502 : 500));
+    if (error.retryAfter) res.setHeader('Retry-After', String(error.retryAfter));
     return res.status(status).json({
       message: error.name === 'AbortError' ? 'OpenRouter timed out after 35 seconds. Please try again.' : (error.code ? error.message : 'Auto marking failed. Please try again.'),
+      errorType: error.errorType || undefined,
+      retryAfter: error.retryAfter || undefined,
     });
   }
 }

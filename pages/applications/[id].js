@@ -636,7 +636,10 @@ export default function ApplicationDetail() {
         signal: controller.signal,
       });
       const data = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(data.message || 'Auto marking failed.');
+      if (!res.ok) {
+        const retryText = data.retryAfter ? ` Try again in ${data.retryAfter} seconds.` : '';
+        throw new Error(`${data.message || 'Auto marking failed.'}${retryText}`);
+      }
       if (requestedApplicationId !== currentApplicationIdRef.current) return;
       setAutoMarkResult(data);
     } catch (err) {
