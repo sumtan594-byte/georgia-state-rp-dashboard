@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
@@ -118,7 +118,7 @@ const AutoMarkResult = ({ result, error, applicationStatus, onUseSuggestion }) =
           {result.questionScores.map(item => (
             <div key={item.id} className="rounded-lg border border-white/5 bg-gsrp-dark-surface/30 p-3 flex gap-4">
               <span className={`w-9 h-9 rounded-lg shrink-0 flex items-center justify-center font-bold ${item.score >= 2 ? 'bg-green-500/10 text-green-400' : 'bg-red-500/10 text-red-400'}`}>{item.score}/3</span>
-              <div><p className="text-xs font-bold text-white mb-1">{item.label}</p><p className="text-xs text-white/50">{item.good} {item.bad}</p></div>
+              <div><p className="text-xs font-bold text-white mb-1">{item.label}</p><p className="text-xs text-white/50">{item.note}</p></div>
             </div>
           ))}
         </div>
@@ -426,6 +426,13 @@ export default function ApplicationDetail() {
   const effectiveSession = refreshedSession || session;
   const router = useRouter();
   const { id } = router.query;
+  const applicationId = typeof id === 'string' ? id : null;
+  const reviewerId = effectiveSession?.user?.id || null;
+  const hasReviewAccess = canReviewApplications(effectiveSession);
+  const applicationRequestRef = useRef(0);
+  const currentApplicationIdRef = useRef(applicationId);
+  const autoMarkAbortRef = useRef(null);
+  currentApplicationIdRef.current = applicationId;
   
   const [application, setApplication] = useState(null);
   const [resolvedTimezone, setResolvedTimezone] = useState(null);
@@ -447,93 +454,118 @@ export default function ApplicationDetail() {
   const [isAutoMarking, setIsAutoMarking] = useState(false);
 
   useEffect(() => {
-    if (id && session && canReviewApplications(effectiveSession)) {
-      fetch(`/api/applications/${id}`)
-        .then(r => {
-          if (!r.ok) {
-            setLoading(false);
-            return null;
-          }
-          return r.json();
-        })
-        .then(data => {
-          setApplication(data);
-          if (!data) return;
+    if (!router.isReady || !applicationId || !reviewerId || !hasReviewAccess) return undefined;
 
-          // Resolve timezone if not present or invalid (not IANA)
-          const hasValidTz = data.timezone && data.timezone.includes('/');
-          if (!hasValidTz) {
-            fetch(`/api/applications/timezone/${id}`)
-              .then(r => r.ok ? r.json() : null)
-              .then(res => {
-                if (res?.timezone) setResolvedTimezone(res.timezone);
-              })
-              .catch(err => console.error('[Review Page] Timezone resolve failed:', err));
-          } else {
-            setResolvedTimezone(data.timezone);
-          }
+    const controller = new AbortController();
+    const requestSequence = ++applicationRequestRef.current;
+    const requestId = `viewer-${Date.now().toString(36)}-${requestSequence}`;
+    let active = true;
 
-          if (data?.type) {
-            fetch('/api/applications/types')
+    setLoading(true);
+    setError(null);
+    setApplication(null);
+    setAppType(null);
+    setResolvedTimezone(null);
+    setAutoMarkResult(null);
+    setAutoMarkError('');
+    autoMarkAbortRef.current?.abort();
+    setIsAutoMarking(false);
 
-              .then(r => r.json())
-              .then(types => {
-                const type = types.find(t => t.slug === data.type);
-                if (type) {
-                  setAppType(type);
-                } else if (data.type === 'staff') {
-                  setAppType({
-                    name: 'Staff Application',
-                    slug: 'staff',
-                    fields: [
-                      { id: 'roblox_user', label: 'Roblox username', type: 'text', subtitle: 'Username, not display name.', required: true },
-                      { id: 'pd_rank', label: 'In game PD rank?', type: 'text', subtitle: 'What rank are you in game (e.g. Major, Commander etc.)', required: true },
-                      { id: 'rdm', label: 'What is RDM?', type: 'textarea', subtitle: 'Elaborate, What is RDM? What may be a valid punishment for offenders?', sentences: 2, required: true },
-                      { id: 'vdm', label: 'What is VDM?', type: 'textarea', subtitle: 'Elaborate, What is VDM? What may be a valid punishment for offenders?', sentences: 2, required: true },
-                      { id: 'frp', label: 'What is FRP?', type: 'textarea', subtitle: 'Elaborate, What is FRP? What may be a valid punishment for offenders?', sentences: 2, required: true },
-                      { id: 'ltap', label: 'What is LTAP?', type: 'textarea', subtitle: 'Elaborate, What is LTAP? What may be a valid punishment for offenders?', sentences: 2, required: true },
-                      { id: 'scen_1', label: 'Scenario: Spawn Shooting', type: 'textarea', subtitle: 'A player is shooting inside civilian spawn, which is a safezone. What would you do to this player?', sentences: 2, required: true },
-                      { id: 'scen_2', label: 'Scenario: Arrest Button', type: 'textarea', subtitle: 'A police officer is arresting criminals through the "arrest" button. What is this classified as and what will you do in this situation?', sentences: 2, required: true },
-                      { id: 'scen_3', label: 'Scenario: Sniper', type: 'textarea', subtitle: 'A sniper on a roof is killing people for no reason. What would you do?', sentences: 2, required: true },
-                      { id: 'scen_4', label: 'Scenario: Stop Sticks', type: 'textarea', subtitle: 'A player is spamming stop sticks. What is this classified as and what would you do?', sentences: 2, required: true },
-                      { id: 'scen_5', label: 'Scenario: No Response', type: 'textarea', subtitle: 'A player does not respond for more than 2 minutes on a mod call. What is your decision?', sentences: 2, required: true },
-                      { id: 'scen_6', label: 'Scenario: Threats', type: 'textarea', subtitle: 'A player is threatening to jump off a building, what is this classified as and what would your first instinct be?', sentences: 2, required: true },
-                      { id: 'scen_7', label: 'Scenario: Swearing', type: 'textarea', subtitle: 'A player is saying swear words bypassing the roblox filter. What is your decision?', sentences: 2, required: true },
-                      { id: 'scen_8', label: 'Scenario: Exploiting', type: 'textarea', subtitle: 'You see a player exploiting. What would you do?', sentences: 2, required: true },
-      
-                      { id: 'agree_tiring', label: 'Do you understand that moderation can become tiring and frustrating?', type: 'radio', options: ['Yes I do, and I am ready for it.', 'I don\'t think I can do that'], required: true },
-                      { id: 'agree_spag', label: 'Do you understand that on shift, you are obliged to use utmost SPaG?', type: 'radio', options: ['I do', 'I cannot do that.'], required: true },
-                      { id: 'agree_quota', label: 'Do you understand that you Have to meet a 4 hour quota per Week?', type: 'radio', options: ['Yes', 'No'], required: true },
-                      { id: 'agree_check', label: 'Procced after checking responses?', type: 'radio', options: ['Yes!'], required: true },
-                      { id: 'questions', label: 'Questions?', type: 'text', subtitle: 'Note, asking for an update on your application will result in an instant denial + Blacklist.', required: true },
-                      { id: 'agree_no_ask', label: 'Do you agree to not ask anyone when your application will be read?', type: 'radio', options: ['Yes', 'No'], required: true },
-                      { id: 'melonly', label: 'How familiar are you with melonly?', type: 'radio', options: ['1 (What the hell?)', '2', '3', '4', '5 (Expert)'], required: true },
-                    ]
-                  });
-                }
-                setLoading(false);
-              });
-          } else {
-            setLoading(false);
-          }
-        })
-        .catch(err => {
-          setError(err.message);
-          setLoading(false);
+    const loadApplication = async () => {
+      try {
+        const response = await fetch(`/api/applications/${encodeURIComponent(applicationId)}`, {
+          signal: controller.signal,
+          headers: {
+            'X-GSRP-Request': 'application-viewer',
+            'X-Request-ID': requestId,
+          },
         });
-    }
-  }, [id, session]);
+        if (!response.ok) throw new Error(response.status === 404 ? 'Application not found' : 'Failed to load application');
+        const data = await response.json();
+        if (!active || requestSequence !== applicationRequestRef.current || data?._id !== applicationId) return;
+
+        setApplication(data);
+
+        const hasValidTz = data.timezone && data.timezone.includes('/');
+        if (hasValidTz) {
+          setResolvedTimezone(data.timezone);
+        } else {
+          fetch(`/api/applications/timezone/${encodeURIComponent(applicationId)}`, { signal: controller.signal })
+            .then(r => r.ok ? r.json() : null)
+            .then(result => {
+              if (active && requestSequence === applicationRequestRef.current && result?.timezone) setResolvedTimezone(result.timezone);
+            })
+            .catch(err => {
+              if (err.name !== 'AbortError') console.error('[Review Page] Timezone resolve failed:', err);
+            });
+        }
+
+        if (data?.type) {
+          const typesResponse = await fetch('/api/applications/types', { signal: controller.signal });
+          if (!typesResponse.ok) throw new Error('Failed to load application structure');
+          const types = await typesResponse.json();
+          if (!active || requestSequence !== applicationRequestRef.current) return;
+          const type = types.find(item => item.slug === data.type);
+          if (type) {
+            setAppType(type);
+          } else if (data.type === 'staff') {
+            setAppType({
+              name: 'Staff Application',
+              slug: 'staff',
+              fields: [
+                { id: 'roblox_user', label: 'Roblox username', type: 'text', subtitle: 'Username, not display name.', required: true },
+                { id: 'pd_rank', label: 'In game PD rank?', type: 'text', subtitle: 'What rank are you in game (e.g. Major, Commander etc.)', required: true },
+                { id: 'rdm', label: 'What is RDM?', type: 'textarea', subtitle: 'Elaborate, What is RDM? What may be a valid punishment for offenders?', sentences: 2, required: true },
+                { id: 'vdm', label: 'What is VDM?', type: 'textarea', subtitle: 'Elaborate, What is VDM? What may be a valid punishment for offenders?', sentences: 2, required: true },
+                { id: 'frp', label: 'What is FRP?', type: 'textarea', subtitle: 'Elaborate, What is FRP? What may be a valid punishment for offenders?', sentences: 2, required: true },
+                { id: 'ltap', label: 'What is LTAP?', type: 'textarea', subtitle: 'Elaborate, What is LTAP? What may be a valid punishment for offenders?', sentences: 2, required: true },
+                { id: 'scen_1', label: 'Scenario: Spawn Shooting', type: 'textarea', subtitle: 'A player is shooting inside civilian spawn, which is a safezone. What would you do to this player?', sentences: 2, required: true },
+                { id: 'scen_2', label: 'Scenario: Arrest Button', type: 'textarea', subtitle: 'A police officer is arresting criminals through the "arrest" button. What is this classified as and what will you do in this situation?', sentences: 2, required: true },
+                { id: 'scen_3', label: 'Scenario: Sniper', type: 'textarea', subtitle: 'A sniper on a roof is killing people for no reason. What would you do?', sentences: 2, required: true },
+                { id: 'scen_4', label: 'Scenario: Stop Sticks', type: 'textarea', subtitle: 'A player is spamming stop sticks. What is this classified as and what would you do?', sentences: 2, required: true },
+                { id: 'scen_5', label: 'Scenario: No Response', type: 'textarea', subtitle: 'A player does not respond for more than 2 minutes on a mod call. What is your decision?', sentences: 2, required: true },
+                { id: 'scen_6', label: 'Scenario: Threats', type: 'textarea', subtitle: 'A player is threatening to jump off a building, what is this classified as and what would your first instinct be?', sentences: 2, required: true },
+                { id: 'scen_7', label: 'Scenario: Swearing', type: 'textarea', subtitle: 'A player is saying swear words bypassing the roblox filter. What is your decision?', sentences: 2, required: true },
+                { id: 'scen_8', label: 'Scenario: Exploiting', type: 'textarea', subtitle: 'You see a player exploiting. What would you do?', sentences: 2, required: true },
+                { id: 'agree_tiring', label: 'Do you understand that moderation can become tiring and frustrating?', type: 'radio', options: ['Yes I do, and I am ready for it.', 'I don\'t think I can do that'], required: true },
+                { id: 'agree_spag', label: 'Do you understand that on shift, you are obliged to use utmost SPaG?', type: 'radio', options: ['I do', 'I cannot do that.'], required: true },
+                { id: 'agree_quota', label: 'Do you understand that you Have to meet a 4 hour quota per Week?', type: 'radio', options: ['Yes', 'No'], required: true },
+                { id: 'agree_check', label: 'Procced after checking responses?', type: 'radio', options: ['Yes!'], required: true },
+                { id: 'questions', label: 'Questions?', type: 'text', subtitle: 'Note, asking for an update on your application will result in an instant denial + Blacklist.', required: true },
+                { id: 'agree_no_ask', label: 'Do you agree to not ask anyone when your application will be read?', type: 'radio', options: ['Yes', 'No'], required: true },
+                { id: 'melonly', label: 'How familiar are you with melonly?', type: 'radio', options: ['1 (What the hell?)', '2', '3', '4', '5 (Expert)'], required: true },
+              ],
+            });
+          }
+        }
+      } catch (err) {
+        if (err.name !== 'AbortError' && active && requestSequence === applicationRequestRef.current) setError(err.message);
+      } finally {
+        if (active && requestSequence === applicationRequestRef.current) setLoading(false);
+      }
+    };
+
+    loadApplication();
+    return () => {
+      active = false;
+      controller.abort();
+    };
+  }, [router.isReady, applicationId, reviewerId, hasReviewAccess]);
 
   useEffect(() => {
-    if (!session || !canReviewApplications(effectiveSession)) return;
-    fetch('/api/applications/list?limit=100')
+    if (!reviewerId || !hasReviewAccess) return undefined;
+    const controller = new AbortController();
+    fetch('/api/applications/list?limit=100', { signal: controller.signal })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         const apps = Array.isArray(data?.applications) ? data.applications : [];
         setPendingApplications(apps.filter(app => app.status === 'pending'));
       })
-      .catch(err => console.error('[Review Page] Pending list failed:', err));
-  }, [id, session, effectiveSession]);
+      .catch(err => {
+        if (err.name !== 'AbortError') console.error('[Review Page] Pending list failed:', err);
+      });
+    return () => controller.abort();
+  }, [reviewerId, hasReviewAccess]);
 
   const handleDecision = async () => {
     if (!reason.trim()) return;
@@ -588,21 +620,32 @@ export default function ApplicationDetail() {
   };
 
   const handleAutoMark = async () => {
+    if (!application?._id || isAutoMarking) return;
+    autoMarkAbortRef.current?.abort();
+    const controller = new AbortController();
+    autoMarkAbortRef.current = controller;
+    const timeout = setTimeout(() => controller.abort(), 80000);
+    const requestedApplicationId = application._id;
     setIsAutoMarking(true);
     setAutoMarkError('');
     try {
       const res = await fetch('/api/applications/auto-mark', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: application._id }),
+        body: JSON.stringify({ id: requestedApplicationId }),
+        signal: controller.signal,
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data.message || 'Auto marking failed.');
+      if (requestedApplicationId !== currentApplicationIdRef.current) return;
       setAutoMarkResult(data);
     } catch (err) {
-      setAutoMarkError(err.message);
+      if (requestedApplicationId !== currentApplicationIdRef.current) return;
+      setAutoMarkError(err.name === 'AbortError' ? 'Auto marking timed out after 80 seconds. Please try again.' : err.message);
     } finally {
-      setIsAutoMarking(false);
+      clearTimeout(timeout);
+      if (autoMarkAbortRef.current === controller) autoMarkAbortRef.current = null;
+      if (requestedApplicationId === currentApplicationIdRef.current) setIsAutoMarking(false);
     }
   };
 
@@ -909,6 +952,7 @@ export default function ApplicationDetail() {
                   <Link
                     key={app._id}
                     href={`/applications/${app._id}`}
+                    prefetch={false}
                     className="block rounded-xl border border-white/5 bg-gsrp-dark-surface/40 px-3 py-3 hover:border-gsrp-orange/40 hover:bg-gsrp-dark-surface transition-colors"
                   >
                     <div className="flex items-center gap-3">
