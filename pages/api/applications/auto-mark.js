@@ -191,7 +191,7 @@ export default async function handler(req, res) {
     }
 
     const parsedKeys = parsed && typeof parsed === 'object' ? Object.keys(parsed).slice(0, 20).join(',') : typeof parsed;
-    const scoreShape = parsed?.questionScores || parsed?.question_scores || parsed?.scores;
+    const scoreShape = parsed?.questionScores || parsed?.question_scores || parsed?.scores || parsed?.ratings;
     const scoreKeys = scoreShape && !Array.isArray(scoreShape) && typeof scoreShape === 'object'
       ? Object.keys(scoreShape).slice(0, 20).join(',')
       : 'n/a';
