@@ -62,15 +62,22 @@ async function callOpenRouter(apiKey, prompt, structured, requestId) {
       },
       body: JSON.stringify(body),
     });
-    console.log(`[Auto Mark:${requestId}] OpenRouter response | status=${response.status} | structured=${structured} | ${Date.now() - startedAt}ms`);
-    return response;
+    console.log(`[Auto Mark:${requestId}] OpenRouter headers | status=${response.status} | structured=${structured} | ${Date.now() - startedAt}ms`);
+    const payload = await response.json().catch(error => {
+      if (controller.signal.aborted) throw new DOMException('OpenRouter response body timed out', 'AbortError');
+      const bodyError = new Error(`OpenRouter returned an unreadable response body: ${error.message}`);
+      bodyError.code = 'INVALID_PROVIDER_BODY';
+      throw bodyError;
+    });
+    console.log(`[Auto Mark:${requestId}] OpenRouter body complete | status=${response.status} | structured=${structured} | ${Date.now() - startedAt}ms`);
+    return { response, payload };
   } finally {
     clearTimeout(timeout);
   }
 }
 
-async function readOpenRouterResponse(response, requestId) {
-  const payload = await response.json().catch(() => null);
+function readOpenRouterResponse(openRouterResult, requestId) {
+  const { response, payload } = openRouterResult;
   const choice = payload?.choices?.[0];
   const providerError = payload?.error || choice?.error;
   if (!response.ok || providerError || choice?.finish_reason === 'error') {
@@ -98,7 +105,7 @@ async function readOpenRouterResponse(response, requestId) {
 async function requestModel(apiKey, prompt, structured, requestId, allowRateLimitRetry = false) {
   let response = await callOpenRouter(apiKey, prompt, structured, requestId);
   try {
-    return await readOpenRouterResponse(response, requestId);
+    return readOpenRouterResponse(response, requestId);
   } catch (error) {
     const canRetry = allowRateLimitRetry
       && error.code === 'PROVIDER_ERROR'
@@ -192,7 +199,7 @@ export default async function handler(req, res) {
       ? 504
       : (error.code === 'PROVIDER_ERROR' && PASSTHROUGH_PROVIDER_STATUSES.has(error.providerStatus)
         ? error.providerStatus
-        : (error.code === 'PROVIDER_ERROR' || error.code === 'INVALID_MODEL_JSON' ? 502 : 500));
+        : (error.code === 'PROVIDER_ERROR' || error.code === 'INVALID_MODEL_JSON' || error.code === 'INVALID_PROVIDER_BODY' ? 502 : 500));
     if (error.retryAfter) res.setHeader('Retry-After', String(error.retryAfter));
     return res.status(status).json({
       message: error.name === 'AbortError' ? 'OpenRouter timed out after 35 seconds. Please try again.' : (error.code ? error.message : 'Auto marking failed. Please try again.'),
