@@ -624,7 +624,7 @@ export default function ApplicationDetail() {
     autoMarkAbortRef.current?.abort();
     const controller = new AbortController();
     autoMarkAbortRef.current = controller;
-    const timeout = setTimeout(() => controller.abort(), 80000);
+    const timeout = setTimeout(() => controller.abort(), 120000);
     const requestedApplicationId = application._id;
     setIsAutoMarking(true);
     setAutoMarkError('');
@@ -644,7 +644,7 @@ export default function ApplicationDetail() {
       setAutoMarkResult(data);
     } catch (err) {
       if (requestedApplicationId !== currentApplicationIdRef.current) return;
-      setAutoMarkError(err.name === 'AbortError' ? 'Auto marking timed out after 80 seconds. Please try again.' : err.message);
+      setAutoMarkError(err.name === 'AbortError' ? 'Auto marking timed out after 120 seconds. Please try again.' : err.message);
     } finally {
       clearTimeout(timeout);
       if (autoMarkAbortRef.current === controller) autoMarkAbortRef.current = null;
