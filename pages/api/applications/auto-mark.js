@@ -190,6 +190,9 @@ export default async function handler(req, res) {
       }
     }
 
+    const parsedKeys = parsed && typeof parsed === 'object' ? Object.keys(parsed).slice(0, 20).join(',') : typeof parsed;
+    const scoreShape = parsed?.questionScores || parsed?.question_scores || parsed?.scores;
+    console.log(`[Auto Mark:${requestId}] parsed JSON shape | keys=${parsedKeys || 'none'} | scores=${Array.isArray(scoreShape) ? `array(${scoreShape.length})` : typeof scoreShape}`);
     const result = normalizeMarkingResult(parsed);
     console.log(`[Auto Mark:${requestId}] complete | application=${id} | score=${result.score}/36 | decision=${result.decision} | ${Date.now() - startedAt}ms`);
     return res.status(200).json(result);
