@@ -62,11 +62,9 @@ const AutoMarkResult = ({ result, error, status, attempts, applicationStatus, on
     return (
       <div className="bg-gsrp-orange/5 rounded-2xl border border-gsrp-orange/20 p-6">
         <div className="flex items-center gap-3 text-gsrp-orange font-bold">
-          <Loader2 size={18} className="animate-spin" /> Automatic marking in progress
+          <Loader2 size={18} className="animate-spin" /> This application is still being auto reviewed...
         </div>
-        <p className="text-sm text-gsrp-teal-light/50 mt-2">
-          The result will appear here automatically. Temporary model failures are retried until marking succeeds{attempts > 1 ? ` · attempt ${attempts}` : ''}.
-        </p>
+        {attempts > 0 && <p className="text-sm text-gsrp-teal-light/50 mt-2">Marking attempt {Math.min(attempts, 4)} of 4.</p>}
       </div>
     );
   }
@@ -520,7 +518,7 @@ export default function ApplicationDetail() {
         setAutoMarkResult(data.autoMark?.result || null);
         setAutoMarkStatus(data.autoMark?.status || null);
         setAutoMarkAttempts(data.autoMark?.attempts || 0);
-        setAutoMarkError(data.autoMark?.status === 'skipped' ? data.autoMark.lastError || 'This application cannot be marked automatically.' : '');
+        setAutoMarkError(['failed', 'skipped'].includes(data.autoMark?.status) ? data.autoMark.lastError || 'Automatic review could not be completed.' : '');
 
         const hasValidTz = data.timezone && data.timezone.includes('/');
         if (hasValidTz) {
@@ -617,7 +615,7 @@ export default function ApplicationDetail() {
         setAutoMarkStatus(autoMark.status);
         setAutoMarkAttempts(autoMark.attempts || 0);
         if (autoMark.result) setAutoMarkResult(autoMark.result);
-        if (autoMark.status === 'skipped') setAutoMarkError(autoMark.lastError || 'This application cannot be marked automatically.');
+        if (['failed', 'skipped'].includes(autoMark.status)) setAutoMarkError(autoMark.lastError || 'Automatic review could not be completed.');
       } catch (error) {
         if (error.name !== 'AbortError') console.error('[Review Page] Auto mark status refresh failed:', error);
       }
