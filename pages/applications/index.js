@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import { useSession } from 'next-auth/react';
 import { Users, Search, Calendar, ChevronRight, ChevronLeft, Loader2, Trash2, CheckSquare, Square } from 'lucide-react';
@@ -30,34 +30,40 @@ export default function ApplicationsList() {
   const [showBatchDelete, setShowBatchDelete] = useState(false);
   const [isBatchDeleting, setIsBatchDeleting] = useState(false);
   const fetchedRef = useRef(false);
+  const listRequestRef = useRef(0);
 
-  const fetchPage = (p, type) => {
+  const fetchPage = useCallback(async (p, type) => {
+    const requestSequence = ++listRequestRef.current;
     setLoading(true);
+    setError(null);
     setSelected(new Set());
     const params = new URLSearchParams({ page: p, limit: PAGE_SIZE });
     if (type) params.set('type', type);
-    Promise.all([
-      fetch(`/api/applications/list?${params}`).then(r => r.ok ? r.json() : { applications: [], total: 0, page: 1, totalPages: 1, counts: {} }),
-      fetch('/api/applications/types').then(r => r.ok ? r.json() : [])
-    ])
-    .then(([data, appTypes]) => {
+    try {
+      const [listResponse, typesResponse] = await Promise.all([
+        fetch(`/api/applications/list?${params}`, { cache: 'no-store' }),
+        fetch('/api/applications/types'),
+      ]);
+      if (!listResponse.ok || !typesResponse.ok) throw new Error('Failed to refresh applications');
+      const [data, returnedTypes] = await Promise.all([listResponse.json(), typesResponse.json()]);
+      if (requestSequence !== listRequestRef.current) return;
       setApplications(data.applications);
       setPage(data.page);
       setTotalPages(data.totalPages);
       setCounts(data.counts);
 
+      const appTypes = Array.isArray(returnedTypes) ? [...returnedTypes] : [];
       const hasStaff = appTypes.find(t => t.slug === 'staff');
       if (!hasStaff) {
         appTypes.unshift({ name: 'Staff Application', slug: 'staff' });
       }
       setTypes(appTypes);
-      setLoading(false);
-    })
-    .catch(err => {
-      setError(err.message);
-      setLoading(false);
-    });
-  };
+    } catch (err) {
+      if (requestSequence === listRequestRef.current) setError(err.message);
+    } finally {
+      if (requestSequence === listRequestRef.current) setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (status !== 'authenticated') return;
@@ -65,16 +71,15 @@ export default function ApplicationsList() {
     if (fetchedRef.current) return;
     fetchedRef.current = true;
     fetchPage(page, activeTab);
-  }, [status, hasRefreshed, effectiveSession]);
+  }, [status, hasRefreshed, effectiveSession, fetchPage]);
 
   const handleDelete = async (appId) => {
     setIsDeleting(true);
     try {
       const res = await fetch(`/api/applications/${appId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete');
-      setApplications(prev => prev.filter(a => a._id !== appId));
       setDeleteTarget(null);
-      setSelected(prev => { const next = new Set(prev); next.delete(appId); return next; });
+      await fetchPage(applications.length === 1 && page > 1 ? page - 1 : page, activeTab);
     } catch (err) {
       alert(err.message);
     } finally {
@@ -92,9 +97,9 @@ export default function ApplicationsList() {
         body: JSON.stringify({ ids }),
       });
       if (!res.ok) throw new Error('Failed to delete applications');
-      setApplications(prev => prev.filter(a => !selected.has(a._id)));
-      setSelected(new Set());
       setShowBatchDelete(false);
+      const remainingOnPage = applications.filter(app => !selected.has(app._id)).length;
+      await fetchPage(remainingOnPage === 0 && page > 1 ? page - 1 : page, activeTab);
     } catch (err) {
       alert(err.message);
     } finally {
@@ -179,7 +184,7 @@ export default function ApplicationsList() {
             <button
               key={type.slug}
               onClick={() => { setActiveTab(type.slug); fetchPage(1, type.slug); }}
-              className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all border
+              className={`px-4 py-2 rounded-xl text-[10px] font-bold uppercase tracking-widest transition-all duration-200 active:scale-[0.97] motion-reduce:transform-none border
                 ${activeTab === type.slug 
                   ? 'bg-gsrp-orange text-white border-gsrp-orange shadow-lg shadow-gsrp-orange/20 scale-105' 
                   : 'bg-gsrp-dark-card text-gsrp-teal-light/40 border-gsrp-dark-border/50 hover:text-white hover:border-gsrp-orange/30'}
@@ -260,13 +265,13 @@ export default function ApplicationsList() {
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <Link
                     href={`/applications/${app._id}`}
-                    className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-xs font-bold text-gsrp-teal-light hover:text-white hover:border-gsrp-orange/50 transition-all"
+                    className="inline-flex items-center gap-1 px-3 py-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-xs font-bold text-gsrp-teal-light hover:text-white hover:border-gsrp-orange/50 transition-all duration-200 active:scale-[0.97] motion-reduce:transform-none"
                   >
                     Review <ChevronRight size={13} />
                   </Link>
                   <button
                     onClick={() => setDeleteTarget(app)}
-                    className="p-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-gsrp-teal-light/30 hover:text-red-500 hover:border-red-500/30 transition-all"
+                    className="p-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-gsrp-teal-light/30 hover:text-red-500 hover:border-red-500/30 transition-all duration-200 active:scale-90 motion-reduce:transform-none"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -343,14 +348,14 @@ export default function ApplicationsList() {
                       <div className="flex items-center justify-end gap-2">
                         <Link
                           href={`/applications/${app._id}`}
-                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-xs font-bold text-gsrp-teal-light hover:text-white hover:border-gsrp-orange/50 transition-all group-hover:bg-gsrp-dark-surface/80"
+                          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-xs font-bold text-gsrp-teal-light hover:text-white hover:border-gsrp-orange/50 transition-all duration-200 active:scale-[0.97] motion-reduce:transform-none group-hover:bg-gsrp-dark-surface/80"
                         >
                           Review
                           <ChevronRight size={14} />
                         </Link>
                         <button
                           onClick={() => setDeleteTarget(app)}
-                          className="p-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-gsrp-teal-light/30 hover:text-red-500 hover:border-red-500/30 transition-all"
+                          className="p-2 rounded-lg bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-gsrp-teal-light/30 hover:text-red-500 hover:border-red-500/30 transition-all duration-200 active:scale-90 motion-reduce:transform-none"
                         >
                           <Trash2 size={14} />
                         </button>

@@ -3,6 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { createPortal } from 'react-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { 
   FileText, 
   ArrowLeft, 
@@ -19,6 +20,7 @@ import {
   Timer,
   Mouse,
   ChevronDown,
+  ChevronRight,
   ChevronUp,
   ShieldAlert,
   ShieldCheck,
@@ -38,6 +40,14 @@ import LoginScreen from '../../components/auth/LoginScreen';
 import AccessDenied from '../../components/auth/AccessDenied';
 
 const TAB_OUT_THRESHOLD = 3;
+
+function getNextPendingApplication(queue, currentId) {
+  if (!queue.length) return null;
+  const currentIndex = queue.findIndex(item => item._id === currentId);
+  if (currentIndex === -1) return queue[0];
+  if (queue.length === 1) return null;
+  return queue[(currentIndex + 1) % queue.length];
+}
 
 const AutoMarkResult = ({ result, error, status, attempts, applicationStatus, onUseSuggestion }) => {
   const markingInProgress = ['pending', 'processing', 'retrying'].includes(status);
@@ -450,6 +460,7 @@ export default function ApplicationDetail() {
   const reviewerId = effectiveSession?.user?.id || null;
   const hasReviewAccess = canReviewApplications(effectiveSession);
   const applicationRequestRef = useRef(0);
+  const pendingQueueRequestRef = useRef(0);
   const currentApplicationIdRef = useRef(applicationId);
   const autoMarkResultRef = useRef(null);
   currentApplicationIdRef.current = applicationId;
@@ -460,12 +471,19 @@ export default function ApplicationDetail() {
   const [error, setError] = useState(null);
   const [appType, setAppType] = useState(null);
   const [pendingApplications, setPendingApplications] = useState([]);
+  const [pendingTotal, setPendingTotal] = useState(0);
+  const [isQueueRefreshing, setIsQueueRefreshing] = useState(false);
+  const [queueError, setQueueError] = useState('');
+  const [queueRefreshVersion, setQueueRefreshVersion] = useState(0);
 
   
   const [showReasonModal, setShowReasonModal] = useState(false);
   const [decisionType, setDecisionType] = useState(null); 
   const [reason, setReason] = useState('');
   const [isProcessing, setIsProcessing] = useState(false);
+  const [decisionError, setDecisionError] = useState('');
+  const [decisionNotice, setDecisionNotice] = useState('');
+  const [isNavigatingNext, setIsNavigatingNext] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -473,6 +491,7 @@ export default function ApplicationDetail() {
   const [autoMarkError, setAutoMarkError] = useState('');
   const [autoMarkStatus, setAutoMarkStatus] = useState(null);
   const [autoMarkAttempts, setAutoMarkAttempts] = useState(0);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
     if ((!autoMarkResult && !autoMarkError) || !autoMarkResultRef.current) return undefined;
@@ -589,17 +608,45 @@ export default function ApplicationDetail() {
   useEffect(() => {
     if (!reviewerId || !hasReviewAccess) return undefined;
     const controller = new AbortController();
-    fetch('/api/applications/list?limit=100', { signal: controller.signal })
-      .then(r => r.ok ? r.json() : null)
-      .then(data => {
-        const apps = Array.isArray(data?.applications) ? data.applications : [];
-        setPendingApplications(apps.filter(app => app.status === 'pending'));
-      })
-      .catch(err => {
-        if (err.name !== 'AbortError') console.error('[Review Page] Pending list failed:', err);
-      });
-    return () => controller.abort();
-  }, [reviewerId, hasReviewAccess]);
+    let active = true;
+
+    const loadPendingQueue = async (silent = false) => {
+      const requestSequence = ++pendingQueueRequestRef.current;
+      if (!silent) setIsQueueRefreshing(true);
+      try {
+        const response = await fetch('/api/applications/list?limit=250&status=pending', {
+          signal: controller.signal,
+          cache: 'no-store',
+        });
+        if (!response.ok) throw new Error('Could not refresh the pending queue');
+        const data = await response.json();
+        if (!active || requestSequence !== pendingQueueRequestRef.current) return;
+        setPendingApplications(Array.isArray(data.applications) ? data.applications : []);
+        setPendingTotal(Number(data.total || 0));
+        setQueueError('');
+      } catch (err) {
+        if (err.name !== 'AbortError' && active && requestSequence === pendingQueueRequestRef.current) {
+          setQueueError(err.message);
+          console.error('[Review Page] Pending list failed:', err);
+        }
+      } finally {
+        if (active && requestSequence === pendingQueueRequestRef.current) setIsQueueRefreshing(false);
+      }
+    };
+
+    loadPendingQueue(false);
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') loadPendingQueue(true);
+    };
+    const interval = setInterval(refreshWhenVisible, 15000);
+    window.addEventListener('focus', refreshWhenVisible);
+    return () => {
+      active = false;
+      controller.abort();
+      clearInterval(interval);
+      window.removeEventListener('focus', refreshWhenVisible);
+    };
+  }, [reviewerId, hasReviewAccess, applicationId, queueRefreshVersion]);
 
   useEffect(() => {
     if (!applicationId || !reviewerId || !hasReviewAccess || !['pending', 'processing', 'retrying'].includes(autoMarkStatus)) return undefined;
@@ -630,7 +677,10 @@ export default function ApplicationDetail() {
 
   const handleDecision = async () => {
     if (!reason.trim()) return;
+    const wasQueued = pendingApplications.some(item => item._id === application._id);
     setIsProcessing(true);
+    setDecisionError('');
+    setDecisionNotice('');
     
     try {
       const res = await fetch('/api/applications/decide', {
@@ -643,12 +693,43 @@ export default function ApplicationDetail() {
         }),
       });
 
-      if (!res.ok) throw new Error('Failed to process decision');
-      
-      setApplication(prev => ({ ...prev, status: decisionType, decisionReason: reason }));
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        if (res.status === 409 && data.application) {
+          setApplication(prev => ({
+            ...prev,
+            status: data.application.status,
+            reason: data.application.reason,
+            decisionReason: data.application.reason,
+            reviewedBy: data.application.reviewedBy,
+            reviewedByName: data.application.reviewedByName,
+          }));
+          setPendingApplications(prev => prev.filter(item => item._id !== application._id));
+          if (wasQueued) setPendingTotal(prev => Math.max(0, prev - 1));
+          setDecisionNotice(data.message || 'Another reviewer already processed this application.');
+          setShowReasonModal(false);
+          setQueueRefreshVersion(prev => prev + 1);
+          return;
+        }
+        throw new Error(data.message || 'Failed to process decision');
+      }
+
+      const savedApplication = data.application || {};
+      setApplication(prev => ({
+        ...prev,
+        status: savedApplication.status || decisionType,
+        reason: savedApplication.reason || reason.trim(),
+        decisionReason: savedApplication.reason || reason.trim(),
+        reviewedBy: savedApplication.reviewedBy || reviewerId,
+        reviewedByName: savedApplication.reviewedByName || effectiveSession?.user?.name,
+      }));
+      setPendingApplications(prev => prev.filter(item => item._id !== application._id));
+      if (wasQueued) setPendingTotal(prev => Math.max(0, prev - 1));
+      setDecisionNotice(data.warnings?.[0] || 'Decision saved and pending queue updated.');
       setShowReasonModal(false);
+      setQueueRefreshVersion(prev => prev + 1);
     } catch (err) {
-      alert(err.message);
+      setDecisionError(err.message);
     } finally {
       setIsProcessing(false);
     }
@@ -657,12 +738,27 @@ export default function ApplicationDetail() {
   const handleDelete = async () => {
     setIsDeleting(true);
     try {
-      const res = await fetch(`/api/applications/${id}`, { method: 'DELETE' });
+      const nextApplication = getNextPendingApplication(pendingApplications, application._id);
+      const res = await fetch(`/api/applications/${encodeURIComponent(application._id)}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete application');
-      router.push('/applications');
+      setPendingApplications(prev => prev.filter(item => item._id !== application._id));
+      if (application.status === 'pending') setPendingTotal(prev => Math.max(0, prev - 1));
+      setShowDeleteModal(false);
+      await router.push(nextApplication ? `/applications/${nextApplication._id}` : '/applications');
     } catch (err) {
-      alert(err.message);
+      setDecisionNotice(err.message);
+    } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleNextApplication = async (nextApplication) => {
+    if (!nextApplication || isNavigatingNext) return;
+    setIsNavigatingNext(true);
+    try {
+      await router.push(`/applications/${nextApplication._id}`);
+    } finally {
+      setIsNavigatingNext(false);
     }
   };
 
@@ -684,6 +780,7 @@ export default function ApplicationDetail() {
     if (!autoMarkResult) return;
     setDecisionType(autoMarkResult.decision);
     setReason(autoMarkResult.decisionReason);
+    setDecisionError('');
     setShowReasonModal(true);
   };
 
@@ -747,19 +844,7 @@ export default function ApplicationDetail() {
 
   // Pending applications other than the one currently open.
   const otherPending = pendingApplications.filter(app => app._id !== application._id);
-  // The next pending application to review. If we're already viewing a pending
-  // app, cycle to the one after it; otherwise jump to the first in the queue.
-  const currentPendingIdx = pendingApplications.findIndex(app => app._id === application._id);
-  let nextPendingApp = null;
-  if (pendingApplications.length > 0) {
-    if (currentPendingIdx >= 0) {
-      nextPendingApp = pendingApplications.length > 1
-        ? pendingApplications[(currentPendingIdx + 1) % pendingApplications.length]
-        : null;
-    } else {
-      nextPendingApp = pendingApplications[0];
-    }
-  }
+  const nextPendingApp = getNextPendingApplication(pendingApplications, application._id);
 
   return (
     <div className="max-w-6xl mx-auto animate-fade-in-up pb-20 px-4">
@@ -947,60 +1032,80 @@ export default function ApplicationDetail() {
         <div className="space-y-6">
           <IntegrityScoreCard application={application} />
 
-          <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-6">
+          <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 p-6 transition-colors duration-200 hover:border-gsrp-orange/20">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-white font-bold text-xs uppercase tracking-widest flex items-center gap-2">
-                <Clock size={14} className="text-gsrp-orange" />
+                {isQueueRefreshing ? <Loader2 size={14} className="text-gsrp-orange animate-spin" /> : <Clock size={14} className="text-gsrp-orange" />}
                 Pending Queue
               </h3>
               <span className="text-[9px] font-bold uppercase tracking-widest text-gsrp-orange bg-gsrp-orange/10 border border-gsrp-orange/20 px-2 py-0.5 rounded-full">
-                {pendingApplications.length} pending
+                {pendingTotal} pending
               </span>
             </div>
 
+            {queueError && (
+              <div className="mb-3 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[10px] font-medium text-amber-300/70">
+                Queue sync paused. It will retry automatically.
+              </div>
+            )}
+
             {nextPendingApp ? (
               <button
-                onClick={() => router.push(`/applications/${nextPendingApp._id}`)}
-                className="w-full mb-4 py-3.5 bg-gsrp-orange hover:bg-gsrp-orange/90 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-widest shadow-lg shadow-gsrp-orange/10"
+                onClick={() => handleNextApplication(nextPendingApp)}
+                disabled={isNavigatingNext}
+                className="group w-full mb-4 py-3.5 bg-gsrp-orange hover:bg-gsrp-orange-light disabled:opacity-60 disabled:cursor-wait text-white font-bold rounded-xl transition-all duration-200 active:scale-[0.98] motion-reduce:transform-none flex items-center justify-center gap-2 text-sm uppercase tracking-widest shadow-lg shadow-gsrp-orange/10 hover:shadow-gsrp-orange/20"
               >
-                Next Application
-                <ArrowRight size={18} />
+                {isNavigatingNext ? 'Loading...' : 'Next Application'}
+                {isNavigatingNext ? <Loader2 size={18} className="animate-spin" /> : <ArrowRight size={18} className="transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transform-none" />}
               </button>
-            ) : pendingApplications.length > 0 ? (
+            ) : pendingTotal > 0 ? (
               <div className="w-full mb-4 py-3 bg-gsrp-dark-surface/50 border border-white/5 text-gsrp-teal-light/30 font-bold rounded-xl flex items-center justify-center gap-2 text-xs uppercase tracking-widest">
                 <CheckCircle size={14} />
                 Last in queue
               </div>
             ) : null}
 
-            <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-80 overflow-y-auto pr-1" aria-live="polite">
               {otherPending.length > 0 ? (
-                otherPending.map(app => (
-                  <Link
-                    key={app._id}
-                    href={`/applications/${app._id}`}
-                    prefetch={false}
-                    className="block rounded-xl border border-white/5 bg-gsrp-dark-surface/40 px-3 py-3 hover:border-gsrp-orange/40 hover:bg-gsrp-dark-surface transition-colors"
-                  >
-                    <div className="flex items-center gap-3">
-                      {app.userImage ? (
-                        <img src={app.userImage} alt="" className="w-8 h-8 rounded-full object-cover border border-white/10" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-gsrp-dark-card border border-white/10 flex items-center justify-center text-white/70 text-xs font-bold">
-                          {(app.username || '?').charAt(0).toUpperCase()}
+                <AnimatePresence initial={false}>
+                  {otherPending.map(app => (
+                    <motion.div
+                      key={app._id}
+                      layout={!reduceMotion}
+                      initial={reduceMotion ? false : { opacity: 0, x: 8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -12, height: 0 }}
+                      transition={{ duration: reduceMotion ? 0 : 0.2 }}
+                    >
+                      <Link
+                        href={`/applications/${app._id}`}
+                        prefetch={false}
+                        className="group block rounded-xl border border-white/5 bg-gsrp-dark-surface/40 px-3 py-3 hover:border-gsrp-orange/40 hover:bg-gsrp-dark-surface transition-all duration-200 active:scale-[0.99] motion-reduce:transform-none"
+                      >
+                        <div className="flex items-center gap-3">
+                          {app.userImage ? (
+                            <img src={app.userImage} alt="" className="w-8 h-8 rounded-full object-cover border border-white/10 transition-transform duration-200 group-hover:scale-105 motion-reduce:transform-none" />
+                          ) : (
+                            <div className="w-8 h-8 rounded-full bg-gsrp-dark-card border border-white/10 flex items-center justify-center text-white/70 text-xs font-bold">
+                              {(app.username || '?').charAt(0).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="min-w-0 flex-1">
+                            <p className="text-white text-xs font-bold truncate">{app.username}</p>
+                            <p className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/30 truncate">
+                              {app.typeName || app.type || 'Application'}
+                            </p>
+                          </div>
+                          <ChevronRight size={14} className="shrink-0 text-white/20 transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-gsrp-orange motion-reduce:transform-none" />
                         </div>
-                      )}
-                      <div className="min-w-0">
-                        <p className="text-white text-xs font-bold truncate">{app.username}</p>
-                        <p className="text-[9px] font-bold uppercase tracking-widest text-gsrp-teal-light/30 truncate">
-                          {app.typeName || app.type || 'Application'}
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
-                ))
+                      </Link>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               ) : (
-                <p className="text-gsrp-teal-light/30 text-xs font-medium">No other pending applications.</p>
+                <p className="rounded-xl border border-dashed border-white/5 px-3 py-4 text-center text-gsrp-teal-light/30 text-xs font-medium">
+                  {isQueueRefreshing ? 'Syncing pending applications...' : 'No other pending applications.'}
+                </p>
               )}
             </div>
           </div>
@@ -1010,19 +1115,25 @@ export default function ApplicationDetail() {
               <CheckCircle size={14} className="text-gsrp-teal" />
               Decision Area
             </h3>
+
+            {decisionNotice && (
+              <div className="mb-4 rounded-xl border border-gsrp-teal/20 bg-gsrp-teal/5 px-3 py-2.5 text-xs font-medium text-gsrp-teal-light animate-fade-in-up" role="status">
+                {decisionNotice}
+              </div>
+            )}
             
             {application.status === 'pending' ? (
               <div className="space-y-3">
                 <button 
-                  onClick={() => { setDecisionType('accepted'); setShowReasonModal(true); }}
-                  className="w-full py-3 bg-gsrp-teal hover:bg-gsrp-teal-light text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                  onClick={() => { setDecisionType('accepted'); setReason(''); setDecisionError(''); setShowReasonModal(true); }}
+                  className="w-full py-3 bg-gsrp-teal hover:bg-gsrp-teal-light text-white font-bold rounded-xl transition-all duration-200 active:scale-[0.98] motion-reduce:transform-none flex items-center justify-center gap-2 shadow-lg shadow-gsrp-teal/10 hover:shadow-gsrp-teal/20"
                 >
                   <CheckCircle size={16} />
                   Accept
                 </button>
                 <button 
-                  onClick={() => { setDecisionType('denied'); setShowReasonModal(true); }}
-                  className="w-full py-3 bg-gsrp-dark-surface border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                  onClick={() => { setDecisionType('denied'); setReason(''); setDecisionError(''); setShowReasonModal(true); }}
+                  className="w-full py-3 bg-gsrp-dark-surface border border-red-500/30 text-red-500 hover:bg-red-500 hover:text-white font-bold rounded-xl transition-all duration-200 active:scale-[0.98] motion-reduce:transform-none flex items-center justify-center gap-2"
                 >
                   <XCircle size={16} />
                   Deny
@@ -1080,29 +1191,34 @@ export default function ApplicationDetail() {
       </div>
 
       {showReasonModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ position: 'fixed' }}>
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowReasonModal(false)} />
-          <div className="relative bg-gsrp-dark-card border border-gsrp-dark-border rounded-2xl p-8 w-full max-w-lg shadow-2xl">
-            <h3 className="text-white font-bold text-xl mb-4">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ position: 'fixed' }} role="dialog" aria-modal="true" aria-labelledby="decision-modal-title">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !isProcessing && setShowReasonModal(false)} />
+          <div className="relative bg-gsrp-dark-card border border-gsrp-dark-border rounded-2xl p-8 w-full max-w-lg shadow-2xl animate-scale-in motion-reduce:animate-none">
+            <h3 id="decision-modal-title" className="text-white font-bold text-xl mb-4">
               {decisionType === 'accepted' ? 'Accept' : 'Deny'} Application
             </h3>
             <p className="text-gsrp-teal-light/60 text-sm mb-6">
               Enter the reason for this decision. This will be sent to the user's DMs.
             </p>
-            <textarea 
+            <label htmlFor="decision-reason" className="sr-only">Decision reason</label>
+            <textarea
+              id="decision-reason"
               autoFocus
               className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border rounded-xl p-4 text-white text-sm focus:border-gsrp-orange/50 focus:outline-none h-32 mb-6"
               placeholder="Reason..."
               value={reason}
+              maxLength={500}
               onChange={(e) => setReason(e.target.value)}
             />
+            {decisionError && <p className="-mt-3 mb-5 text-xs font-medium text-red-400" role="alert">{decisionError}</p>}
             <div className="flex gap-3">
-              <button onClick={() => setShowReasonModal(false)} className="flex-1 py-3 text-gsrp-teal-light font-bold">Cancel</button>
+              <button onClick={() => setShowReasonModal(false)} disabled={isProcessing} className="flex-1 py-3 text-gsrp-teal-light hover:text-white disabled:opacity-50 font-bold rounded-xl transition-all duration-200 active:scale-[0.98] motion-reduce:transform-none">Cancel</button>
               <button 
                 onClick={handleDecision}
                 disabled={isProcessing || !reason.trim()}
-                className={`flex-1 py-3 font-bold rounded-xl ${decisionType === 'accepted' ? 'bg-green-500' : 'bg-red-500'} text-white`}
+                className={`flex-1 py-3 font-bold rounded-xl ${decisionType === 'accepted' ? 'bg-green-500 hover:bg-green-400' : 'bg-red-500 hover:bg-red-400'} text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98] motion-reduce:transform-none flex items-center justify-center gap-2`}
               >
+                {isProcessing && <Loader2 size={16} className="animate-spin" />}
                 {isProcessing ? 'Processing...' : 'Confirm'}
               </button>
             </div>
@@ -1112,14 +1228,14 @@ export default function ApplicationDetail() {
       )}
 
       {showDeleteModal && typeof document !== 'undefined' && createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ position: 'fixed' }}>
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowDeleteModal(false)} />
-          <div className="relative bg-gsrp-dark-card border border-red-500/30 rounded-2xl p-8 w-full max-w-md shadow-2xl">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ position: 'fixed' }} role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !isDeleting && setShowDeleteModal(false)} />
+          <div className="relative bg-gsrp-dark-card border border-red-500/30 rounded-2xl p-8 w-full max-w-md shadow-2xl animate-scale-in motion-reduce:animate-none">
             <div className="flex items-center gap-3 mb-4">
               <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
                 <Trash2 size={20} className="text-red-500" />
               </div>
-              <h3 className="text-white font-bold text-xl">Delete Application</h3>
+              <h3 id="delete-modal-title" className="text-white font-bold text-xl">Delete Application</h3>
             </div>
             <p className="text-gsrp-teal-light/60 text-sm mb-2">
               This will permanently delete <span className="text-white font-bold">{application.username}</span>'s application.
@@ -1130,15 +1246,17 @@ export default function ApplicationDetail() {
             <div className="flex gap-3">
               <button 
                 onClick={() => setShowDeleteModal(false)} 
-                className="flex-1 py-3 bg-gsrp-dark-surface border border-white/10 text-gsrp-teal-light font-bold rounded-xl hover:text-white transition-colors"
+                disabled={isDeleting}
+                className="flex-1 py-3 bg-gsrp-dark-surface border border-white/10 text-gsrp-teal-light font-bold rounded-xl hover:text-white disabled:opacity-50 transition-all duration-200 active:scale-[0.98] motion-reduce:transform-none"
               >
                 Cancel
               </button>
               <button 
                 onClick={handleDelete}
                 disabled={isDeleting}
-                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors"
+                className="flex-1 py-3 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl disabled:opacity-50 transition-all duration-200 active:scale-[0.98] motion-reduce:transform-none flex items-center justify-center gap-2"
               >
+                {isDeleting && <Loader2 size={16} className="animate-spin" />}
                 {isDeleting ? 'Deleting...' : 'Delete'}
               </button>
             </div>

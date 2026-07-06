@@ -16,34 +16,54 @@ export default async function handler(req, res) {
   }
 
   const { id, status, reason } = req.body;
+  const cleanId = String(id || '').trim();
+  const cleanReason = String(reason || '').trim();
+  if (!cleanId || cleanId.length > 100) return res.status(400).json({ message: 'A valid application ID is required' });
+  if (!['accepted', 'denied'].includes(status)) return res.status(400).json({ message: 'Invalid application decision' });
+  if (!cleanReason || cleanReason.length > 500) return res.status(400).json({ message: 'A decision reason between 1 and 500 characters is required' });
   console.log('[Application Decide] Staff', session.user.name, status, 'application', id);
 
   try {
     const pool = getPool();
     if (!pool) return res.status(500).json({ message: 'Database connection failed' });
 
-    const [rows] = await pool.execute('SELECT * FROM applications WHERE id = ?', [id]);
+    const [rows] = await pool.execute('SELECT * FROM applications WHERE id = ?', [cleanId]);
     if (rows.length === 0) return res.status(404).json({ message: 'Application not found' });
     const application = rowToApplication(rows[0]);
 
+    if (application.status !== 'pending') {
+      return res.status(409).json({
+        message: `This application has already been ${application.status}.`,
+        application: { status: application.status, reason: application.reason, reviewedBy: application.reviewedBy, reviewedByName: application.reviewedByName },
+      });
+    }
+
     // Fetch type config for role automation (still in MongoDB)
-    const client = await clientPromise;
-    const db = client.db("gsrp_staff");
-    const appType = await db.collection("application_types").findOne({ slug: application.type || 'staff' });
+    let client = null;
+    let appType = null;
+    try {
+      client = await clientPromise;
+      appType = await client.db("gsrp_staff").collection("application_types").findOne({ slug: application.type || 'staff' });
+    } catch (configError) {
+      console.error('[Application Decide] Type configuration lookup failed:', configError.message);
+    }
 
     // Update DB
-    await pool.execute(
-      'UPDATE applications SET status = ?, reason = ?, reviewed_by = ?, reviewed_by_name = ?, reviewed_at = NOW() WHERE id = ?',
-      [status, reason, session.user.id, session.user.name, id]
+    const [updateResult] = await pool.execute(
+      "UPDATE applications SET status = ?, reason = ?, reviewed_by = ?, reviewed_by_name = ?, reviewed_at = NOW() WHERE id = ? AND status = 'pending'",
+      [status, cleanReason, session.user.id, session.user.name, cleanId]
     );
+    if (!updateResult.affectedRows) return res.status(409).json({ message: 'Another reviewer has already processed this application.' });
 
     const isAccepted = status === 'accepted';
     const color = isAccepted ? 0x22C55E : 0xEF4444;
     const outcomeText = isAccepted ? 'accepted' : 'denied';
     const informingText = isAccepted ? 'are pleased' : 'regret';
     const guildId = process.env.ALLOWED_GUILD_ID || "1251347648351506485";
+    const warnings = [];
 
-    console.log(`[Role Sync] Processing decision for ${application.userId} in guild ${guildId}. Status: ${status}`);
+    try {
+      console.log(`[Role Sync] Processing decision for ${application.userId} in guild ${guildId}. Status: ${status}`);
 
     // Role Automation Logic
     if (appType) {
@@ -81,7 +101,7 @@ export default async function handler(req, res) {
         await helper('add', appType.roleAddDenied);
         await helper('remove', appType.roleRemoveDenied);
 
-        if (reason && /\bai\b|\ba\.i\.\b/i.test(reason)) {
+        if (/\bai\b|\ba\.i\.\b/i.test(cleanReason)) {
           console.log(`[Role Sync] AI detected in denial reason — blacklisting ${application.userId}`);
           await addMemberRole(guildId, application.userId, "1374326193536372756");
         }
@@ -103,7 +123,7 @@ export default async function handler(req, res) {
           components: [
             {
               type: 10,
-              content: `# ${appName} Outcome\nDear <@${application.userId}>,\n\nWe ${informingText} to inform you that your **${appName}** has been **${outcomeText}** by <@${session.user.id}>.\n\n**Reason:**\n${reason}`
+              content: `# ${appName} Outcome\nDear <@${application.userId}>,\n\nWe ${informingText} to inform you that your **${appName}** has been **${outcomeText}** by <@${session.user.id}>.\n\n**Reason:**\n${cleanReason}`
             }
           ]
         }
@@ -112,7 +132,7 @@ export default async function handler(req, res) {
     await sendComponentsV2(outcomeChannel, outcomeEmbed);
 
     // 2. DM the user
-    const dmContent = `# ${appName} Outcome\nDear <@${application.userId}>,\n\nWe ${informingText} to inform you that your **${appName}** has been **${outcomeText}** by <@${session.user.id}>.\n\n**Reason:**\n${reason}${isAccepted ? `\n\nPlease read <#1391349500941041807> before asking any questions. If you ask very obvious questions your rank will be taken away.` : ''}`;
+    const dmContent = `# ${appName} Outcome\nDear <@${application.userId}>,\n\nWe ${informingText} to inform you that your **${appName}** has been **${outcomeText}** by <@${session.user.id}>.\n\n**Reason:**\n${cleanReason}${isAccepted ? `\n\nPlease read <#1391349500941041807> before asking any questions. If you ask very obvious questions your rank will be taken away.` : ''}`;
     const dmEmbed = {
       components: [
         {
@@ -144,7 +164,7 @@ export default async function handler(req, res) {
           components: [
             {
               type: 10,
-              content: `<@${session.user.id}> has **${outcomeText}** <@${application.userId}>'s **${appName}**.\n\n**Reason:** ${reason}`
+              content: `<@${session.user.id}> has **${outcomeText}** <@${application.userId}>'s **${appName}**.\n\n**Reason:** ${cleanReason}`
             }
           ]
         }
@@ -156,16 +176,30 @@ export default async function handler(req, res) {
       actorId: session.user.id,
       actorName: session.user.name,
       targetType: 'application',
-      targetId: id,
+      targetId: cleanId,
       details: {
         applicantUserId: application.userId,
         applicationType: application.type,
-        reason,
+        reason: cleanReason,
       },
       ip: req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.socket?.remoteAddress,
     });
 
-    return res.status(200).json({ success: true });
+    } catch (sideEffectError) {
+      warnings.push('The decision was saved, but one or more Discord follow-up actions failed.');
+      console.error('[Application Decision Follow-up Error]', sideEffectError);
+    }
+
+    return res.status(200).json({
+      success: true,
+      warnings,
+      application: {
+        status,
+        reason: cleanReason,
+        reviewedBy: session.user.id,
+        reviewedByName: session.user.name,
+      },
+    });
   } catch (error) {
     console.error('[Application Decision Error]', error);
     return res.status(500).json({ message: 'Internal server error' });

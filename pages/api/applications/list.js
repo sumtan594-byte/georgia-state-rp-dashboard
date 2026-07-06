@@ -6,6 +6,7 @@ import { canReviewApplications } from "../../../lib/admin-helper";
 export function invalidateAppListCache() {}
 
 export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'private, no-store, max-age=0');
   const session = await getServerSession(req, res, authOptions);
   if (!session || !await canReviewApplications(session)) {
     return res.status(403).json({ message: 'Forbidden' });
@@ -13,25 +14,35 @@ export default async function handler(req, res) {
 
   try {
     const page = Math.max(1, parseInt(req.query.page) || 1);
-    const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 10));
+    const limit = Math.min(250, Math.max(1, parseInt(req.query.limit) || 10));
     const skip = (page - 1) * limit;
     const typeFilter = req.query.type || null;
+    const statusFilter = req.query.status || null;
+
+    if (statusFilter && !['pending', 'accepted', 'denied'].includes(statusFilter)) {
+      return res.status(400).json({ message: 'Invalid application status filter' });
+    }
 
     const pool = getPool();
     if (!pool) return res.status(500).json({ message: 'Database connection failed' });
 
-    let whereClause = '1=1';
+    const whereParts = [];
     const params = [];
 
     if (typeFilter) {
       if (typeFilter === 'staff') {
-        whereClause = '(type = ? OR type IS NULL)';
+        whereParts.push('(type = ? OR type IS NULL)');
         params.push('staff');
       } else {
-        whereClause = 'type = ?';
+        whereParts.push('type = ?');
         params.push(typeFilter);
       }
     }
+    if (statusFilter) {
+      whereParts.push('status = ?');
+      params.push(statusFilter);
+    }
+    const whereClause = whereParts.length ? whereParts.join(' AND ') : '1=1';
 
     const [applications] = await pool.execute(
       `SELECT id, type, type_name, username, user_id, user_image, status, submitted_at FROM applications WHERE ${whereClause} ORDER BY submitted_at DESC LIMIT ? OFFSET ?`,
