@@ -1,6 +1,6 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '../../../lib/auth-options';
-import { canReviewApplications } from '../../../lib/auth';
+import { canReviewApplications } from '../../../lib/admin-helper';
 import { getPool, rowToApplication } from '../../../lib/appdb';
 import { rateLimit } from '../../../lib/rate-limiter';
 import {
@@ -130,7 +130,7 @@ function isStructuredOutputError(error) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ message: 'Method not allowed' });
   const session = await getServerSession(req, res, authOptions);
-  if (!session || !canReviewApplications(session)) return res.status(403).json({ message: 'Forbidden' });
+  if (!session || !await canReviewApplications(session)) return res.status(403).json({ message: 'Forbidden' });
 
   const limited = rateLimit(req, res, 'command');
   if (limited.limited) return res.status(429).json({ message: 'Too many marking requests. Please wait and try again.' });

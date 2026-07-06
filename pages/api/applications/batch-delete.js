@@ -1,7 +1,7 @@
 import { getPool } from '../../../lib/appdb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
-import { canReviewApplications } from "../../../lib/auth";
+import { canReviewApplications } from "../../../lib/admin-helper";
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -9,7 +9,7 @@ export default async function handler(req, res) {
   }
 
   const session = await getServerSession(req, res, authOptions);
-  if (!session || !canReviewApplications(session)) {
+  if (!session || !await canReviewApplications(session)) {
     return res.status(403).json({ message: 'Forbidden' });
   }
 

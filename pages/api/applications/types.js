@@ -2,7 +2,7 @@ import clientPromise from '../../../lib/mongodb';
 import { ObjectId } from 'mongodb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
-import { canReviewApplications } from "../../../lib/auth";
+import { canReviewApplications } from "../../../lib/admin-helper";
 
 const typesCache = { data: null, ts: 0 };
 const CACHE_TTL = 30000;
@@ -16,11 +16,12 @@ export default async function handler(req, res) {
 
   const client = await clientPromise;
   const db = client.db("gsrp_staff");
+  const canReview = await canReviewApplications(session);
 
   if (req.method === 'GET') {
     if (Date.now() - typesCache.ts < CACHE_TTL && typesCache.data) {
       const types = typesCache.data;
-      if (!canReviewApplications(session)) {
+      if (!canReview) {
         return res.status(200).json(types.map(t => ({
           name: t.name,
           slug: t.slug,
@@ -36,7 +37,7 @@ export default async function handler(req, res) {
     const types = await db.collection("application_types").find({}).toArray();
     typesCache.data = types;
     typesCache.ts = Date.now();
-    if (!canReviewApplications(session)) {
+    if (!canReview) {
       return res.status(200).json(types.map(t => ({
         name: t.name,
         slug: t.slug,
@@ -49,7 +50,7 @@ export default async function handler(req, res) {
   }
 
   // Only staff can manage types (POST/DELETE)
-  if (!canReviewApplications(session)) {
+  if (!canReview) {
     return res.status(403).json({ message: 'Forbidden' });
   }
 
