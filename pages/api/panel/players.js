@@ -3,13 +3,6 @@ import { authOptions } from "../../../lib/auth-options";
 import { ROLES } from '../../../lib/auth';
 import { requireAccess } from '../../../lib/access-check';
 
-const ABSOLUTE_MIN_MS = 200;
-// Poll on a fixed 1-second cadence. The frontend can't usefully consume faster
-// bursts, so we keep updates evenly spaced at exactly 1s rather than firing as
-// fast as the rate-limit budget allows (which bursts then stalls). We only back
-// off beyond this when the API actually rate-limits us (429 / remaining <= 1).
-const STEADY_TARGET_MS = 1000;
-const MAX_POLL_INTERVAL_MS = 60000;
 const AVATAR_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const AVATAR_BATCH_SIZE = 100;
 const AVATAR_DATA_URI_MAX_BYTES = 80_000;
@@ -38,23 +31,25 @@ function updateRateLimit(cache, response) {
   const remaining = parseInt(response.headers.get('x-ratelimit-remaining'));
   const limit = parseInt(response.headers.get('x-ratelimit-limit'));
   const resetEpoch = parseFloat(response.headers.get('x-ratelimit-reset'));
+  const resetAfter = parseFloat(response.headers.get('x-ratelimit-reset-after'));
   const bucket = response.headers.get('x-ratelimit-bucket') || 'unknown';
   const resetMs = resetEpoch ? resetEpoch * 1000 : 0;
   const now = Date.now();
 
-  if (Number.isFinite(remaining) && Number.isFinite(limit) && resetMs > now) {
-    const windowMs = resetMs - now;
-    if (remaining <= 1) {
-      // Genuinely out of budget — wait for the window to reset.
-      cache.nextAllowedFetch = resetMs + 200;
+  const windowMs = Number.isFinite(resetAfter)
+    ? resetAfter * 1000
+    : (resetMs > now ? resetMs - now : 0);
+
+  if (Number.isFinite(remaining) && windowMs > 0) {
+    if (remaining <= 0) {
+      cache.nextAllowedFetch = now + windowMs;
     } else {
-      // Fixed 1s cadence. Only if the budget is so tight that 1s/req would blow
-      // the window do we stretch the interval to stay under the limit.
-      const safeInterval = windowMs / remaining;
-      cache.nextAllowedFetch = now + Math.max(STEADY_TARGET_MS, safeInterval);
+      cache.nextAllowedFetch = now + (windowMs / remaining);
     }
   } else {
-    cache.nextAllowedFetch = now + STEADY_TARGET_MS;
+    // No arbitrary fallback cadence: without headers, allow the next response
+    // to establish the server-authoritative bucket timing.
+    cache.nextAllowedFetch = now;
   }
 
   cache.lastRateLimit = {
@@ -71,12 +66,14 @@ function updateRateLimitFromError(cache, headers, retryAfter) {
   const resetMs = resetEpoch ? parseFloat(resetEpoch) * 1000 : 0;
   const raMs = retryAfter ? parseFloat(retryAfter) * 1000 : 0;
 
-  if (resetMs > now) {
-    cache.nextAllowedFetch = resetMs + 500;
-  } else if (raMs > 0) {
-    cache.nextAllowedFetch = now + raMs + 500;
+  if (raMs > 0) {
+    cache.nextAllowedFetch = now + raMs;
+  } else if (resetMs > now) {
+    cache.nextAllowedFetch = resetMs;
   } else {
-    cache.nextAllowedFetch = now + 5000;
+    // A 429 without Retry-After/reset data cannot be retried safely without
+    // inventing a delay, so pause this poller.
+    cache.nextAllowedFetch = Number.POSITIVE_INFINITY;
   }
 }
 
@@ -195,8 +192,6 @@ async function hydratePlayerAvatars(cache, data) {
   return data;
 }
 
-const FULL_FETCH_INTERVAL_MS = 5000;
-
 async function doErlcFetch(cache, key, fullFetch) {
   const url = fullFetch
     ? 'https://api.erlc.gg/v2/server?Players=true&Staff=true&JoinLogs=true&Queue=true&KillLogs=true&CommandLogs=true&ModCalls=true&Vehicles=true&EmergencyCalls=true'
@@ -258,10 +253,9 @@ async function doErlcFetch(cache, key, fullFetch) {
 export async function refreshFromErlc(cache, key) {
   if (cache.fetching) return cache.fetching;
 
-  const needsFull = !cache.data || !cache.lastFullFetch ||
-    (Date.now() - cache.lastFullFetch) >= FULL_FETCH_INTERVAL_MS;
-
-  cache.fetching = doErlcFetch(cache, key, needsFull);
+  // Every request carries all live fields, so players, vehicles, calls, logs,
+  // and queue state share the same header-governed freshness.
+  cache.fetching = doErlcFetch(cache, key, true);
 
   try {
     return await cache.fetching;
@@ -311,16 +305,22 @@ function ensurePoller(cache) {
       if (key) {
         try {
           await refreshFromErlc(cache, key);
-        } catch {
+        } catch (error) {
+          if (error?.status === 403) {
+            console.error('[Panel Players] Stopped ER:LC polling after a 403 response; check ERLC_API_KEY.');
+            cache.pollTimer = null;
+            return;
+          }
         }
       }
     }
 
     const now = Date.now();
-    const delay = Math.min(
-      MAX_POLL_INTERVAL_MS,
-      Math.max(ABSOLUTE_MIN_MS, cache.nextAllowedFetch > now ? cache.nextAllowedFetch - now : ABSOLUTE_MIN_MS)
-    );
+    if (!Number.isFinite(cache.nextAllowedFetch)) {
+      cache.pollTimer = null;
+      return;
+    }
+    const delay = Math.max(0, cache.nextAllowedFetch - now);
     cache.pollTimer = setTimeout(tick, delay);
   }
 
