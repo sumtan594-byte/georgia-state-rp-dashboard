@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from "../../../lib/auth-options";
 import { getLinkedRobloxUsername } from "../../../lib/linked-roblox-user";
+import { getStorageDocument } from "../../../lib/storage-documents";
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
@@ -9,29 +10,10 @@ export default async function handler(req, res) {
   }
 
   const discordId = session.user.id;
-  const githubToken = process.env.GITHUB_ACCESS_TOKEN;
-  
-  const githubFetch = async (path) => {
-    const url = `https://api.github.com/repos/sumtan594-byte/gsrp-management/contents/${path}`;
-    const headers = {
-      'Accept': 'application/vnd.github.v3.raw',
-      'User-Agent': 'GSRP-Dashboard-App'
-    };
-    if (githubToken) {
-      headers['Authorization'] = `token ${githubToken}`;
-    }
-    
-    const res = await fetch(url, { headers });
-    if (!res.ok) {
-      throw new Error(`Failed to fetch ${path} from GitHub: ${res.statusText} (${res.status})`);
-    }
-    return res.json();
-  };
-
   try {
     const [robloxUsername, rolesRes] = await Promise.all([
       getLinkedRobloxUsername(discordId),
-      githubFetch('roles.json')
+      getStorageDocument('roles', { roles: {}, aliases: {} })
     ]);
 
     if (!robloxUsername) {
