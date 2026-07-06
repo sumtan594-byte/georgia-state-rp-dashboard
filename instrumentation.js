@@ -5,6 +5,9 @@ export async function register() {
   // Only run in the Node.js server runtime, never on the edge runtime.
   if (process.env.NEXT_RUNTIME !== 'nodejs') return
 
+  const { startAutoMarkWorker } = await import('./lib/application-auto-marker')
+  startAutoMarkWorker()
+
   // Guard against double-registration (e.g. dev hot reload / multiple workers).
   if (globalThis.__traineeExpiryStarted) return
   globalThis.__traineeExpiryStarted = true

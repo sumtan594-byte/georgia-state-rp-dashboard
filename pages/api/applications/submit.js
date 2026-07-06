@@ -4,6 +4,7 @@ import { authOptions } from "../../../lib/auth-options";
 import { sendComponentsV2 } from "../../../lib/discord-v2";
 import { rateLimit } from '../../../lib/rate-limiter';
 import { invalidateAppListCache } from './list';
+import { enqueueApplicationMark, isAutoMarkEligible } from '../../../lib/application-auto-marker';
 
 const MAX_PAYLOAD_SIZE = 2 * 1024 * 1024;
 
@@ -127,6 +128,15 @@ export default async function handler(req, res) {
     );
 
     console.log('[Application API] Saved to DB, ID:', id);
+
+    if (isAutoMarkEligible(application)) {
+      try {
+        await enqueueApplicationMark(id);
+        console.log('[Application API] Automatic marking queued:', id);
+      } catch (markQueueError) {
+        console.error('[Application API] Could not queue automatic marking:', markQueueError.message);
+      }
+    }
 
     const notificationChannel = "1389202990555988071";
     const typeName = application.typeName || "Staff Application";

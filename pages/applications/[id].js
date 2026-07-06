@@ -39,8 +39,9 @@ import AccessDenied from '../../components/auth/AccessDenied';
 
 const TAB_OUT_THRESHOLD = 3;
 
-const AutoMarkResult = ({ result, error, applicationStatus, onUseSuggestion }) => {
-  if (!result && !error) return null;
+const AutoMarkResult = ({ result, error, status, attempts, applicationStatus, onUseSuggestion }) => {
+  const markingInProgress = ['pending', 'processing', 'retrying'].includes(status);
+  if (!result && !error && !markingInProgress) return null;
   const accepted = result?.decision === 'accepted';
   const aiRiskStyles = {
     low: 'bg-green-500/10 text-green-400 border-green-500/20',
@@ -53,6 +54,19 @@ const AutoMarkResult = ({ result, error, applicationStatus, onUseSuggestion }) =
       <div className="bg-red-500/5 rounded-2xl border border-red-500/20 p-6">
         <div className="flex items-center gap-3 text-red-400 font-bold"><AlertCircle size={18} /> Auto mark failed</div>
         <p className="text-sm text-red-300/70 mt-2">{error}</p>
+      </div>
+    );
+  }
+
+  if (!result && markingInProgress) {
+    return (
+      <div className="bg-gsrp-orange/5 rounded-2xl border border-gsrp-orange/20 p-6">
+        <div className="flex items-center gap-3 text-gsrp-orange font-bold">
+          <Loader2 size={18} className="animate-spin" /> Automatic marking in progress
+        </div>
+        <p className="text-sm text-gsrp-teal-light/50 mt-2">
+          The result will appear here automatically. Temporary model failures are retried until marking succeeds{attempts > 1 ? ` · attempt ${attempts}` : ''}.
+        </p>
       </div>
     );
   }
@@ -439,7 +453,6 @@ export default function ApplicationDetail() {
   const hasReviewAccess = canReviewApplications(effectiveSession);
   const applicationRequestRef = useRef(0);
   const currentApplicationIdRef = useRef(applicationId);
-  const autoMarkAbortRef = useRef(null);
   const autoMarkResultRef = useRef(null);
   currentApplicationIdRef.current = applicationId;
   
@@ -460,7 +473,8 @@ export default function ApplicationDetail() {
   const [copied, setCopied] = useState(false);
   const [autoMarkResult, setAutoMarkResult] = useState(null);
   const [autoMarkError, setAutoMarkError] = useState('');
-  const [isAutoMarking, setIsAutoMarking] = useState(false);
+  const [autoMarkStatus, setAutoMarkStatus] = useState(null);
+  const [autoMarkAttempts, setAutoMarkAttempts] = useState(0);
 
   useEffect(() => {
     if ((!autoMarkResult && !autoMarkError) || !autoMarkResultRef.current) return undefined;
@@ -486,8 +500,8 @@ export default function ApplicationDetail() {
     setResolvedTimezone(null);
     setAutoMarkResult(null);
     setAutoMarkError('');
-    autoMarkAbortRef.current?.abort();
-    setIsAutoMarking(false);
+    setAutoMarkStatus(null);
+    setAutoMarkAttempts(0);
 
     const loadApplication = async () => {
       try {
@@ -503,6 +517,10 @@ export default function ApplicationDetail() {
         if (!active || requestSequence !== applicationRequestRef.current || data?._id !== applicationId) return;
 
         setApplication(data);
+        setAutoMarkResult(data.autoMark?.result || null);
+        setAutoMarkStatus(data.autoMark?.status || null);
+        setAutoMarkAttempts(data.autoMark?.attempts || 0);
+        setAutoMarkError(data.autoMark?.status === 'skipped' ? data.autoMark.lastError || 'This application cannot be marked automatically.' : '');
 
         const hasValidTz = data.timezone && data.timezone.includes('/');
         if (hasValidTz) {
@@ -585,6 +603,33 @@ export default function ApplicationDetail() {
     return () => controller.abort();
   }, [reviewerId, hasReviewAccess]);
 
+  useEffect(() => {
+    if (!applicationId || !reviewerId || !hasReviewAccess || !['pending', 'processing', 'retrying'].includes(autoMarkStatus)) return undefined;
+    const controller = new AbortController();
+
+    const refreshAutoMark = async () => {
+      try {
+        const response = await fetch(`/api/applications/auto-mark?id=${encodeURIComponent(applicationId)}`, { signal: controller.signal });
+        if (!response.ok) return;
+        const data = await response.json();
+        const autoMark = data.autoMark;
+        if (!autoMark || applicationId !== currentApplicationIdRef.current) return;
+        setAutoMarkStatus(autoMark.status);
+        setAutoMarkAttempts(autoMark.attempts || 0);
+        if (autoMark.result) setAutoMarkResult(autoMark.result);
+        if (autoMark.status === 'skipped') setAutoMarkError(autoMark.lastError || 'This application cannot be marked automatically.');
+      } catch (error) {
+        if (error.name !== 'AbortError') console.error('[Review Page] Auto mark status refresh failed:', error);
+      }
+    };
+
+    const interval = setInterval(refreshAutoMark, 5000);
+    return () => {
+      controller.abort();
+      clearInterval(interval);
+    };
+  }, [applicationId, reviewerId, hasReviewAccess, autoMarkStatus]);
+
   const handleDecision = async () => {
     if (!reason.trim()) return;
     setIsProcessing(true);
@@ -635,40 +680,6 @@ export default function ApplicationDetail() {
     navigator.clipboard.writeText(lines);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
-  };
-
-  const handleAutoMark = async () => {
-    if (!application?._id || isAutoMarking) return;
-    autoMarkAbortRef.current?.abort();
-    const controller = new AbortController();
-    autoMarkAbortRef.current = controller;
-    const timeout = setTimeout(() => controller.abort(), 120000);
-    const requestedApplicationId = application._id;
-    setIsAutoMarking(true);
-    setAutoMarkError('');
-    setAutoMarkResult(null);
-    try {
-      const res = await fetch('/api/applications/auto-mark', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: requestedApplicationId }),
-        signal: controller.signal,
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        const retryText = data.retryAfter ? ` Try again in ${data.retryAfter} seconds.` : '';
-        throw new Error(`${data.message || 'Auto marking failed.'}${retryText}`);
-      }
-      if (requestedApplicationId !== currentApplicationIdRef.current) return;
-      setAutoMarkResult(data);
-    } catch (err) {
-      if (requestedApplicationId !== currentApplicationIdRef.current) return;
-      setAutoMarkError(err.name === 'AbortError' ? 'Auto marking timed out after 120 seconds. Please try again.' : err.message);
-    } finally {
-      clearTimeout(timeout);
-      if (autoMarkAbortRef.current === controller) autoMarkAbortRef.current = null;
-      if (requestedApplicationId === currentApplicationIdRef.current) setIsAutoMarking(false);
-    }
   };
 
   const handleUseAutoMarkSuggestion = () => {
@@ -803,6 +814,8 @@ export default function ApplicationDetail() {
             <AutoMarkResult
               result={autoMarkResult}
               error={autoMarkError}
+              status={autoMarkStatus}
+              attempts={autoMarkAttempts}
               applicationStatus={application.status}
               onUseSuggestion={handleUseAutoMarkSuggestion}
             />
@@ -815,14 +828,6 @@ export default function ApplicationDetail() {
                 Submission Details
               </h2>
               <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={handleAutoMark}
-                  disabled={isAutoMarking}
-                  className="flex items-center gap-2 px-4 py-2 bg-gsrp-orange hover:bg-gsrp-orange/90 disabled:opacity-60 disabled:cursor-wait text-white rounded-xl text-xs font-bold uppercase tracking-widest transition-all"
-                >
-                  {isAutoMarking ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />}
-                  {isAutoMarking ? 'Marking…' : 'Auto mark'}
-                </button>
                 <button
                   onClick={handleCopyResponses}
                   className={`flex items-center gap-2 px-4 py-2 bg-gsrp-dark-surface border rounded-xl text-xs font-bold uppercase tracking-widest transition-all ${

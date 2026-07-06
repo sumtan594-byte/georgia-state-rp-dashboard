@@ -2,6 +2,7 @@ import { getPool, rowToApplication } from '../../../lib/appdb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
 import { canReviewApplications } from "../../../lib/admin-helper";
+import { getApplicationAutoMark } from '../../../lib/application-auto-marker';
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
@@ -26,6 +27,7 @@ export default async function handler(req, res) {
         return res.status(404).json({ message: 'Application not found' });
       }
       const application = rowToApplication(rows[0]);
+      application.autoMark = await getApplicationAutoMark(id);
       console.log(`[Application GET:${requestId}] complete | id=${id} | type=${application.typeName} | ${Date.now() - startedAt}ms`);
       return res.status(200).json(application);
     }
