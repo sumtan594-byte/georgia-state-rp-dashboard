@@ -172,20 +172,23 @@ export default async function handler(req, res) {
     console.log(`[Auto Mark:${requestId}] parsing model response | finish=${modelResponse.finishReason} | contentChars=${Array.isArray(modelResponse.content) ? 'multipart' : String(modelResponse.content || '').length} | completionTokens=${modelResponse.usage?.completion_tokens ?? 'unknown'}`);
 
     let parsed;
+    let result;
     try {
       if (modelResponse.finishReason === 'length') throw new Error('response reached its token limit');
       parsed = parseModelJson(modelResponse.content);
-    } catch (parseError) {
-      console.warn(`[Auto Mark:${requestId}] invalid JSON | ${parseError.message} | retrying once in compact mode`);
-      const retryPrompt = `${prompt}\n\nRETRY REQUIREMENT: Return extremely compact valid JSON. Use no markdown and keep all notes under 12 words.`;
+      result = normalizeMarkingResult(parsed);
+    } catch (modelOutputError) {
+      console.warn(`[Auto Mark:${requestId}] invalid model result | ${modelOutputError.message} | retrying once in compact mode`);
+      const retryPrompt = `${prompt}\n\nRETRY REQUIREMENT: Return extremely compact valid JSON. Use no markdown. questionScores must be an object containing each required rubric key exactly once. Keep all notes under 12 words.`;
       modelResponse = await requestModel(process.env.OPENROUTER_API_KEY, retryPrompt, false, requestId);
       console.log(`[Auto Mark:${requestId}] retry response | finish=${modelResponse.finishReason} | contentChars=${String(modelResponse.content || '').length}`);
       try {
         if (modelResponse.finishReason === 'length') throw new Error('retry reached its token limit');
         parsed = parseModelJson(modelResponse.content);
+        result = normalizeMarkingResult(parsed);
       } catch (retryError) {
-        const invalidError = new Error(`The model returned incomplete JSON twice (${retryError.message}).`);
-        invalidError.code = 'INVALID_MODEL_JSON';
+        const invalidError = new Error(`The model returned an incomplete marking result twice (${retryError.message}).`);
+        invalidError.code = 'INVALID_MODEL_RESULT';
         throw invalidError;
       }
     }
@@ -199,7 +202,6 @@ export default async function handler(req, res) {
       ? Object.entries(scoreShape).slice(0, 20).map(([key, value]) => `${key}:${typeof value === 'object' && value ? `{${Object.keys(value).join('|')}}` : typeof value}`).join(',')
       : 'n/a';
     console.log(`[Auto Mark:${requestId}] parsed JSON shape | keys=${parsedKeys || 'none'} | scores=${Array.isArray(scoreShape) ? `array(${scoreShape.length})` : typeof scoreShape} | scoreKeys=${scoreKeys} | scoreValues=${scoreValueShapes}`);
-    const result = normalizeMarkingResult(parsed);
     console.log(`[Auto Mark:${requestId}] complete | application=${id} | score=${result.score}/36 | decision=${result.decision} | ${Date.now() - startedAt}ms`);
     return res.status(200).json(result);
   } catch (error) {
@@ -208,7 +210,7 @@ export default async function handler(req, res) {
       ? 504
       : (error.code === 'PROVIDER_ERROR' && PASSTHROUGH_PROVIDER_STATUSES.has(error.providerStatus)
         ? error.providerStatus
-        : (error.code === 'PROVIDER_ERROR' || error.code === 'INVALID_MODEL_JSON' || error.code === 'INVALID_PROVIDER_BODY' ? 502 : 500));
+        : (error.code === 'PROVIDER_ERROR' || error.code === 'INVALID_MODEL_RESULT' || error.code === 'INVALID_PROVIDER_BODY' ? 502 : 500));
     if (error.retryAfter) res.setHeader('Retry-After', String(error.retryAfter));
     return res.status(status).json({
       message: error.name === 'AbortError' ? 'OpenRouter timed out after 55 seconds. Please try again.' : (error.code ? error.message : 'Auto marking failed. Please try again.'),
