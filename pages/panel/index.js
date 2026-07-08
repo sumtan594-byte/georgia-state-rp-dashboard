@@ -80,26 +80,50 @@ export default function PanelPage() {
   }, []);
 
   useEffect(() => {
-    const es = new EventSource('/api/panel/events');
-    evtSourceRef.current = es;
+    let cancelled = false;
+    let retryTimer = null;
+    let retryDelay = 2000;
 
-    es.onopen = () => setLoadStage(s => s === 'auth' || s === 'stream' ? 'poll' : s);
+    const connect = () => {
+      if (cancelled) return;
+      const es = new EventSource('/api/panel/events');
+      evtSourceRef.current = es;
 
-    es.addEventListener('players', (e) => {
-      hasConnected.current = true;
-      setLoadStage('render');
-      try {
-        handleData(JSON.parse(e.data));
-      } catch { /* ignore bad messages */ }
-    });
+      es.onopen = () => {
+        retryDelay = 2000;
+        setLoadStage(s => s === 'auth' || s === 'stream' ? 'poll' : s);
+      };
 
-    es.onerror = () => {
-      if (!hasConnected.current) {
-        handleError('Live map stream unavailable. Please refresh in a moment.');
-      }
+      es.addEventListener('players', (e) => {
+        hasConnected.current = true;
+        setLoadStage('render');
+        try {
+          handleData(JSON.parse(e.data));
+        } catch { /* ignore bad messages */ }
+      });
+
+      es.onerror = () => {
+        // A fatal error (e.g. 401/403) closes the stream; reconnect ourselves
+        // with backoff instead of asking the user to refresh.
+        if (es.readyState === EventSource.CLOSED) {
+          es.close();
+          if (evtSourceRef.current === es) evtSourceRef.current = null;
+          if (!hasConnected.current) {
+            handleError('Connecting to live map…');
+          }
+          retryTimer = setTimeout(connect, retryDelay);
+          retryDelay = Math.min(retryDelay * 2, 15000);
+        }
+      };
     };
 
-    return () => { es.close(); evtSourceRef.current = null; };
+    connect();
+
+    return () => {
+      cancelled = true;
+      if (retryTimer) clearTimeout(retryTimer);
+      if (evtSourceRef.current) { evtSourceRef.current.close(); evtSourceRef.current = null; }
+    };
   }, [handleData, handleError]);
 
   useEffect(() => {
