@@ -225,13 +225,18 @@ export default function LiveMap({
       return;
     }
     if (Math.hypot((prev.targetX ?? px) - px, (prev.targetY ?? py) - py) < 1) return;
-    // Unified speed: every marker travels at the same pixels-per-ms rate, so
-    // movement looks consistently zippy regardless of distance or poll timing.
+    // Entity interpolation: glide over roughly the observed gap between real
+    // position updates (ER:LC refreshes positions every ~3s), so a blip is
+    // still moving when the next position lands instead of darting to the
+    // target in under a second and then freezing until the next update.
     const dist = Math.hypot(px - prev.currentX, py - prev.currentY);
-    const SPEED = MAP_PX / 5200; // px per ms — full map width crossed in ~5.2s
-    // Slightly longer min/max than the travel time alone so even tiny position
-    // corrections glide instead of snapping — makes motion read as smoother.
-    const duration = Math.min(2600, Math.max(650, dist / SPEED));
+    const sincePrev = t - (prev.lastUpdateAt || t);
+    const TELEPORT_DIST = MAP_PX / 6;
+    // 1.15x overlap so the tween slightly outlasts the update cadence and
+    // motion never visibly stalls; long jumps (teleports/respawns) snap fast.
+    const duration = dist > TELEPORT_DIST
+      ? 500
+      : Math.min(4500, Math.max(450, sincePrev * 1.15));
     anim.current[id] = {
       startX: prev.currentX, startY: prev.currentY,
       targetX: px, targetY: py,

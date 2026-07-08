@@ -3,6 +3,14 @@ import { authOptions } from "../../../lib/auth-options";
 import { ROLES } from '../../../lib/auth';
 import { requireAccess } from '../../../lib/access-check';
 
+// ER:LC only refreshes player position data on its side every few seconds, so
+// polling faster than that burns rate-limit quota re-downloading identical
+// coordinates. Pace adaptively: speed back up when positions are changing,
+// back off while they aren't.
+const ADAPTIVE_POLL_MIN_MS = 800;
+const ADAPTIVE_POLL_MAX_MS = 3000;
+const ADAPTIVE_POLL_STEP_MS = 250;
+
 const AVATAR_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
 const AVATAR_BATCH_SIZE = 100;
 const AVATAR_DATA_URI_MAX_BYTES = 80_000;
@@ -14,6 +22,8 @@ globalThis.__gsrpErlcCache ??= {
   nextAllowedFetch: 0,
   subscribers: new Set(),
   pollTimer: null,
+  lastPlayersSignature: null,
+  adaptiveMinMs: ADAPTIVE_POLL_MIN_MS,
   avatarCache: new Map(),
   avatarFetching: null,
   avatarRateLimitedUntil: 0,
@@ -75,6 +85,28 @@ function updateRateLimitFromError(cache, headers, retryAfter) {
     // inventing a delay, so pause this poller.
     cache.nextAllowedFetch = Number.POSITIVE_INFINITY;
   }
+}
+
+function playersSignature(data) {
+  if (!Array.isArray(data?.Players)) return '';
+  return data.Players
+    .map(p => `${p.Player}:${p.Location?.LocationX ?? ''},${p.Location?.LocationZ ?? ''}`)
+    .join('|');
+}
+
+function applyAdaptivePacing(cache, raw) {
+  const signature = playersSignature(raw);
+  const changed = signature !== cache.lastPlayersSignature;
+  cache.lastPlayersSignature = signature;
+
+  const prevMin = cache.adaptiveMinMs ?? ADAPTIVE_POLL_MIN_MS;
+  cache.adaptiveMinMs = changed
+    ? ADAPTIVE_POLL_MIN_MS
+    : Math.min(ADAPTIVE_POLL_MAX_MS, prevMin + ADAPTIVE_POLL_STEP_MS);
+
+  // Header-derived pacing still wins when the bucket is nearly exhausted;
+  // otherwise the adaptive floor stops us from draining quota on stale data.
+  cache.nextAllowedFetch = Math.max(cache.nextAllowedFetch, Date.now() + cache.adaptiveMinMs);
 }
 
 function broadcastToSubscribers(data) {
@@ -221,6 +253,7 @@ async function doErlcFetch(cache, key, fullFetch) {
 
   const raw = await response.json();
   updateRateLimit(cache, response);
+  applyAdaptivePacing(cache, raw);
 
   if (fullFetch) {
     const data = attachPlayerAvatarUrls(cache, raw);
