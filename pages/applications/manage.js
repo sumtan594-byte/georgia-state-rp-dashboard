@@ -16,6 +16,7 @@ import {
   ArrowLeft,
   Loader2
 } from 'lucide-react';
+import { PageSkeleton } from '../../components/SkeletonLoader';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
@@ -264,14 +265,7 @@ export default function ManageApplicationTypes() {
   };
 
   if (status === 'loading' || !hasRefreshed) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-gsrp-orange" />
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-gsrp-teal-light/40">Loading Form Manager</p>
-        </div>
-      </div>
-    );
+    return <PageSkeleton variant="form" />;
   }
   if (!session) return <LoginScreen />;
   if (accessDenied) return <AccessDenied roleId={accessDenied.roleId} />;

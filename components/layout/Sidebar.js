@@ -24,6 +24,9 @@ import {
 } from 'lucide-react';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canViewAllTranscripts, canAccessHandbook, canAccessTrainerHandbook, canReviewApplications, canManageAdmins, canViewTracking, canManageAuthorization } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import { motion } from 'framer-motion';
+
+const MotionLink = motion.create(Link);
 
 export default function Sidebar({ open, onToggle }) {
   const { data: session } = useSession();
@@ -131,7 +134,7 @@ export default function Sidebar({ open, onToggle }) {
     const active = isActive(item.href);
     const viewer = viewersFor(item.href)[0];
     return (
-      <Link
+      <MotionLink
         key={item.href}
         href={item.href}
         target={item.external ? '_blank' : undefined}
@@ -143,6 +146,9 @@ export default function Sidebar({ open, onToggle }) {
             ? 'tac-accent bg-gsrp-orange/[0.08] text-white'
             : 'text-gsrp-teal-light/55 hover:text-white hover:bg-white/[0.04]'
         }`}
+        whileHover={{ x: open ? 2 : 0 }}
+        whileTap={{ scale: 0.975 }}
+        transition={{ type: 'spring', stiffness: 520, damping: 34 }}
       >
         <span className="relative flex-shrink-0">
           <item.icon
@@ -164,7 +170,7 @@ export default function Sidebar({ open, onToggle }) {
             )}
           </>
         )}
-      </Link>
+      </MotionLink>
     );
   };
 

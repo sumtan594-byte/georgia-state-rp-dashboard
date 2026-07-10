@@ -5,6 +5,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../lib/auth-options';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import AccessDenied from '../../components/auth/AccessDenied';
+import { PageSkeleton } from '../../components/SkeletonLoader';
 import {
   Server, Users, Activity, Clock, Loader2, RefreshCw,
   TrendingUp, TrendingDown, Minus, UserCheck, ListOrdered,
@@ -85,11 +86,7 @@ export default function ServerStatsPage() {
   };
 
   if (status === 'loading' || !hasRefreshed || loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   if (accessDenied) {

@@ -6,6 +6,7 @@ import LoginScreen from '../../../components/auth/LoginScreen';
 import { useRefreshedUser } from '../../../lib/UserRefreshContext';
 import AccessDenied from '../../../components/auth/AccessDenied';
 import Link from 'next/link';
+import { PageSkeleton, SkeletonTable } from '../../../components/SkeletonLoader';
 import {
   Users, Globe, Monitor, Search, UserCheck, HelpCircle,
   Loader2, RefreshCw, ChevronDown, ChevronUp, Clock, Wifi, ExternalLink,
@@ -90,11 +91,7 @@ export default function UsersPage({ canAccess }) {
   };
 
   if (status === 'loading' || !hasRefreshed) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
-      </div>
-    );
+    return <PageSkeleton variant="table" rows={8} />;
   }
 
   if (!session) return <LoginScreen />;
@@ -186,9 +183,7 @@ export default function UsersPage({ canAccess }) {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
-        </div>
+        <SkeletonTable rows={8} cols={4} />
       ) : displayList.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <Users className="w-12 h-12 text-gray-600 mb-4" />

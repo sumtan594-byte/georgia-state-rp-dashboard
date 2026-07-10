@@ -1,12 +1,13 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { FileText, Map, BookOpen, ShieldCheck, Users, Loader2, ShoppingCart, Building2, UserPlus, Settings, ScrollText, UserCheck, BarChart3, Globe } from 'lucide-react';
+import { FileText, Map, BookOpen, ShieldCheck, Users, ShoppingCart, Building2, UserPlus, Settings, ScrollText, UserCheck, BarChart3, Globe } from 'lucide-react';
 import Link from 'next/link';
 import FeatureCard from '../components/dashboard/FeatureCard';
 import PresenceBar from '../components/dashboard/PresenceBar';
 import LoginScreen from '../components/auth/LoginScreen';
 import { canAccessPanel, canAccessTraining, canViewAttempts, canReviewApplications, canManageAdmins, canViewTracking, canManageAuthorization } from '../lib/auth';
 import { useRefreshedUser } from '../lib/UserRefreshContext';
+import { DashboardSkeleton } from '../components/SkeletonLoader';
 
 export default function Dashboard() {
   const { data: session, status } = useSession();
@@ -43,14 +44,7 @@ export default function Dashboard() {
 
 
   if (status === 'loading' || !hasRefreshed) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center">
-          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-          <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Dashboard</span>
-        </div>
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   if (!session) {

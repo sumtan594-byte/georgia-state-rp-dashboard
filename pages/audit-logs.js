@@ -5,6 +5,7 @@ import { Shield, UserPlus, UserMinus, FileCheck, FileX, Loader2, ChevronLeft, Ch
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../lib/auth-options';
 import AccessDenied from '../components/auth/AccessDenied';
+import { PageSkeleton, SkeletonTable } from '../components/SkeletonLoader';
 
 const ACTION_LABELS = {
   admin_add: { label: 'Admin Added', icon: UserPlus, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
@@ -52,11 +53,7 @@ export default function AuditLogsPage() {
   }, [status, hasRefreshed, accessDenied, isAdmin, page, filter]);
 
   if (status === 'loading' || !hasRefreshed) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
-      </div>
-    );
+    return <PageSkeleton variant="table" rows={7} />;
   }
 
   if (accessDenied) {
@@ -93,9 +90,7 @@ export default function AuditLogsPage() {
       </div>
 
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
-        </div>
+        <SkeletonTable rows={7} cols={4} />
       ) : logs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-center">
           <Shield className="w-12 h-12 text-gray-600 mb-4" />

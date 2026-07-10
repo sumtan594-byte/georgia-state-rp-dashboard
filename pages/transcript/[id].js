@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { useEffect, useState, useCallback } from "react";
 import { EMBED_IMAGE, EMBED_THEME_COLOR, SITE_URL, buildTranscriptEmbed } from "../../lib/discord-embeds";
+import { PageSkeleton } from '../../components/SkeletonLoader';
 
 const LOGO = "https://i.imgur.com/70GfmYd.gif";
 const BG_IMAGE = "/media/Background.png";
@@ -492,10 +493,7 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
   if (status === "loading") return (
     <>
       <TranscriptEmbedHead id={id} meta={meta} />
-      <div className="flex flex-col items-center justify-center py-20">
-        <Loader2 className="w-7 h-7 text-gsrp-orange animate-spin mb-4" />
-        <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Record</span>
-      </div>
+      <PageSkeleton variant="table" rows={7} />
     </>
   );
 

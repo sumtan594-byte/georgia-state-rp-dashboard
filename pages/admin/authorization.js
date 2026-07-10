@@ -6,6 +6,7 @@ import LoginScreen from '../../components/auth/LoginScreen';
 import AccessDenied from '../../components/auth/AccessDenied';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import { Loader2, Save, ShieldCheck, X } from 'lucide-react';
+import { PageSkeleton } from '../../components/SkeletonLoader';
 
 function RolePill({ role, onRemove }) {
   const color = role?.color ? `#${role.color.toString(16).padStart(6, '0')}` : '#94a3b8';
@@ -66,7 +67,7 @@ export default function AuthorizationPage({ canAccess }) {
   }
 
   if (status === 'loading' || !hasRefreshed || loading) {
-    return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gsrp-orange" /></div>;
+    return <PageSkeleton variant="form" />;
   }
   if (!session) return <LoginScreen />;
   if (accessDenied) return <AccessDenied {...accessDenied} />;

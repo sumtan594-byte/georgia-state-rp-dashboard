@@ -1,5 +1,6 @@
 import { useSession } from "next-auth/react";
 import Link from "next/link";
+import { PageSkeleton } from '../../components/SkeletonLoader';
 import { useState, useMemo, useEffect, useCallback } from "react";
 import { useRouter } from "next/router";
 import {
@@ -208,12 +209,7 @@ export default function Transcripts({ transcripts: initialTranscripts, isAdmin: 
   };
 
   if (status === "loading" || loading && transcripts.length === 0) return (
-    <div className="flex items-center justify-center min-h-[60vh]">
-      <div className="flex flex-col items-center">
-        <div className="w-10 h-10 border-2 border-gsrp-orange/20 border-t-gsrp-orange rounded-full animate-spin mb-4" />
-        <span className="text-gsrp-teal-light/50 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Transcripts</span>
-      </div>
-    </div>
+    <PageSkeleton variant="table" rows={7} />
   );
 
   if (!session) return (

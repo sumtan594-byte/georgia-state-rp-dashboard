@@ -1,28 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useSession } from 'next-auth/react';
 
 export default function WelcomeScreen({ onComplete }) {
   const { data: session, status } = useSession();
   const [stage, setStage] = useState('welcome'); // 'welcome' -> 'gliding' -> 'complete'
+  const onCompleteRef = useRef(onComplete);
 
   useEffect(() => {
+    onCompleteRef.current = onComplete;
+  }, [onComplete]);
+
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      onCompleteRef.current();
+      return undefined;
+    }
+
     if (status === 'authenticated') {
+      let finishTimer;
       const timer = setTimeout(() => {
         setStage('gliding');
-        setTimeout(() => {
-          onComplete();
-        }, 1000);
+        finishTimer = setTimeout(() => onCompleteRef.current(), 800);
       }, 2000);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        clearTimeout(finishTimer);
+      };
     }
-  }, [status, onComplete]);
+    return undefined;
+  }, [status]);
 
   if (stage === 'complete' || status === 'loading') return null;
-  if (status === 'unauthenticated') {
-    onComplete(); // Skip animation for guests
-    return null;
-  }
+  if (status === 'unauthenticated') return null;
 
   const isGliding = stage === 'gliding';
   const userName = session?.user?.name || 'User';

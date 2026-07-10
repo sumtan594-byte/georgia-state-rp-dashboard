@@ -6,6 +6,7 @@ import { canManageAdmins } from '../lib/auth';
 import { useRefreshedUser } from '../lib/UserRefreshContext';
 import AccessDenied from '../components/auth/AccessDenied';
 import LoginScreen from '../components/auth/LoginScreen';
+import { PageSkeleton, SkeletonTable } from '../components/SkeletonLoader';
 
 export default function AdminsPage() {
   const { data: session, status } = useSession();
@@ -94,14 +95,7 @@ export default function AdminsPage() {
   };
 
   if (status === 'loading' || !hasRefreshed) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-gsrp-orange" />
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-gsrp-teal-light/40">Loading Admin Access</p>
-        </div>
-      </div>
-    );
+    return <PageSkeleton variant="table" rows={6} />;
   }
   if (!session) return <LoginScreen />;
 
@@ -184,9 +178,7 @@ export default function AdminsPage() {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 size={20} className="text-gsrp-orange animate-spin" />
-          </div>
+          <div className="p-4"><SkeletonTable rows={5} cols={3} /></div>
         ) : admins.length === 0 ? (
           <div className="py-12 text-center">
             <Users size={24} className="text-white/15 mx-auto mb-3" />

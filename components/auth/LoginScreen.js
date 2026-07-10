@@ -2,6 +2,7 @@ import { useSession, signIn } from 'next-auth/react';
 import { useRouter } from 'next/router';
 import { useEffect } from 'react';
 import { Loader2, ShieldAlert, Lock } from 'lucide-react';
+import { AuthSkeleton } from '../SkeletonLoader';
 import Link from 'next/link';
 
 export default function LoginScreen() {
@@ -39,14 +40,7 @@ export default function LoginScreen() {
   };
 
   if (status === 'loading') {
-    return (
-      <div className="min-h-screen flex items-center justify-center relative">
-        <div className="relative z-10 flex flex-col items-center">
-          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-          <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading</span>
-        </div>
-      </div>
-    );
+    return <AuthSkeleton />;
   }
 
   const accessDenied = router.query.error === 'AccessDenied';

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
-import { Crosshair, LocateFixed, Lock, Minus, Plus, Unlock, Loader2, Radio, Users } from 'lucide-react';
+import { Crosshair, LocateFixed, Lock, Minus, Plus, Unlock, Radio, Users } from 'lucide-react';
+import { MapSkeleton } from '../SkeletonLoader';
 
 export const MAP_PX = 3120;
 const OFFSET_X = 11;
@@ -516,15 +517,7 @@ export default function LiveMap({
       <div ref={container} className="w-full h-full relative" style={{ background: '#000', cursor: cursorStyle }} />
       <div className="gsrp-map-vignette pointer-events-none absolute inset-0 z-[120]" />
       {!ready && (
-        <div className="gsrp-map-loading absolute inset-0 z-[700] flex items-center justify-center">
-          <div className="gsrp-map-loading-card">
-            <Loader2 className="h-6 w-6 animate-spin text-gsrp-orange" />
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.2em] text-white/70">Loading map</p>
-              <p className="text-[11px] font-semibold text-white/35">Preparing live blips</p>
-            </div>
-          </div>
-        </div>
+        <MapSkeleton label="Preparing live map and player blips" />
       )}
 
       <div className="gsrp-map-status-card absolute left-3 top-3 z-[300] flex items-center gap-2 px-3 py-2 text-xs font-bold text-white/75">

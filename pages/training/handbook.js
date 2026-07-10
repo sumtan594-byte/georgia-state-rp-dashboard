@@ -7,6 +7,7 @@ import LoginScreen from '../../components/auth/LoginScreen';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import AccessDenied from '../../components/auth/AccessDenied';
 import { HANDBOOK_CONTENT } from '../../data/handbook';
+import { PageSkeleton } from '../../components/SkeletonLoader';
 
 const ALL_SECTIONS = HANDBOOK_CONTENT.flatMap(ch => ch.sections);
 
@@ -225,14 +226,7 @@ export default function HandbookPage() {
   };
 
   if (status === 'loading' || !hasRefreshed) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center">
-          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-          <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Handbook</span>
-        </div>
-      </div>
-    );
+    return <PageSkeleton variant="form" />;
   }
 
   if (!session) return <LoginScreen />;

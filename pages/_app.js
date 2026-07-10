@@ -13,6 +13,7 @@ import { ToastProvider } from "../lib/ToastContext";
 import { ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { EMBED_IMAGE, EMBED_THEME_COLOR, buildPageUrl, getRouteEmbed } from '../lib/discord-embeds';
+import { PageSkeleton } from '../components/SkeletonLoader';
 
 function DebugSessionLogger() {
   const { status, data } = useSession();
@@ -34,14 +35,7 @@ function AuthGuard({ isPublicPage, children }) {
   // content immediately — even before the session resolves — so crawlers and
   // first paint get the marketing/page HTML instead of a loading spinner.
   if (status === 'loading' && !isPublicPage) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center">
-          <div className="w-10 h-10 border-2 border-gsrp-orange/20 border-t-gsrp-orange rounded-full animate-spin mb-4" />
-          <span className="text-gsrp-teal-light/50 font-mono text-[9px] uppercase tracking-[0.3em]">Loading</span>
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen p-4 md:p-8"><PageSkeleton /></div>;
   }
 
   if (status === 'unauthenticated' && !isPublicPage) {
@@ -75,21 +69,29 @@ function AppContent({ Component, pageProps, sidebarOpen, setSidebarOpen, isPubli
             initial={{ opacity: 0, y: 20 }}
             animate={animationFinished ? { opacity: 1, y: 0 } : {}}
             exit={{ opacity: 0, y: -20 }}
-            transition={{ duration: 0.4, ease: "easeOut" }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="relative z-10 flex min-h-screen"
           >
             <div className={`hidden md:block flex-shrink-0 transition-all duration-300 ${sidebarOpen ? 'w-64' : 'w-[72px]'}`}>
               <Sidebar open={sidebarOpen} onToggle={() => setSidebarOpen(!sidebarOpen)} />
             </div>
 
-            {sidebarOpen && (
-              <div className="md:hidden fixed inset-0 z-50">
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
-                <div className="fixed left-0 top-0 h-screen w-64 max-w-[80vw] shadow-2xl">
-                  <Sidebar open={true} onToggle={() => setSidebarOpen(false)} />
-                </div>
-              </div>
-            )}
+            <AnimatePresence>
+              {sidebarOpen && (
+                <motion.div className="md:hidden fixed inset-0 z-50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.18 }}>
+                  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />
+                  <motion.div
+                    initial={{ x: -280 }}
+                    animate={{ x: 0 }}
+                    exit={{ x: -280 }}
+                    transition={{ type: 'spring', stiffness: 420, damping: 38 }}
+                    className="fixed left-0 top-0 h-screen w-64 max-w-[80vw] shadow-2xl"
+                  >
+                    <Sidebar open={true} onToggle={() => setSidebarOpen(false)} />
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <div className="flex-1 flex flex-col min-w-0">
               <TopBar onMenuClick={() => setSidebarOpen(!sidebarOpen)} />
@@ -185,16 +187,27 @@ function VisitorTracker({ setProxyBlocked }) {
 function RouteLoadingBar() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showSkeleton, setShowSkeleton] = useState(false);
 
   useEffect(() => {
-    const start = () => setLoading(true);
-    const end = () => setLoading(false);
+    let skeletonTimer;
+    const start = () => {
+      setLoading(true);
+      clearTimeout(skeletonTimer);
+      skeletonTimer = setTimeout(() => setShowSkeleton(true), 120);
+    };
+    const end = () => {
+      clearTimeout(skeletonTimer);
+      setLoading(false);
+      setShowSkeleton(false);
+    };
 
     router.events.on('routeChangeStart', start);
     router.events.on('routeChangeComplete', end);
     router.events.on('routeChangeError', end);
 
     return () => {
+      clearTimeout(skeletonTimer);
       router.events.off('routeChangeStart', start);
       router.events.off('routeChangeComplete', end);
       router.events.off('routeChangeError', end);
@@ -202,15 +215,30 @@ function RouteLoadingBar() {
   }, [router]);
 
   return (
-    <div
-      className={`fixed top-0 left-0 z-[100] h-0.5 bg-gradient-to-r from-gsrp-orange via-gsrp-teal to-gsrp-orange transition-all duration-300 ease-out ${
-        loading ? 'w-full opacity-100' : 'w-0 opacity-0'
-      }`}
-      style={{
-        backgroundSize: '200% 100%',
-        animation: loading ? 'shimmer 1s linear infinite' : 'none',
-      }}
-    />
+    <>
+      <div
+        className={`fixed top-0 left-0 z-[100] h-0.5 bg-gradient-to-r from-gsrp-orange via-gsrp-teal to-gsrp-orange transition-all duration-300 ease-out ${
+          loading ? 'w-full opacity-100' : 'w-0 opacity-0'
+        }`}
+        style={{
+          backgroundSize: '200% 100%',
+          animation: loading ? 'shimmer 1s linear infinite' : 'none',
+        }}
+      />
+      <AnimatePresence>
+        {showSkeleton && (
+          <motion.div
+            className="fixed inset-0 z-[90] overflow-y-auto bg-gsrp-dark/95 p-4 pt-20 backdrop-blur-xl md:p-8 md:pt-24"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            <PageSkeleton />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
 

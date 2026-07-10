@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Loader2, ShieldCheck, ArrowLeft, Gamepad2 } from 'lucide-react';
 import Link from 'next/link';
 import LoginScreen from '../../components/auth/LoginScreen';
+import { PageSkeleton } from '../../components/SkeletonLoader';
 
 const ROBLOX_CLIENT_ID = '4646799346124146894';
 const REDIRECT_URI = 'https://join-gsrp.com/verify';
@@ -161,14 +162,7 @@ export default function VerifyPage() {
   };
 
   if (isChecking || (status === 'idle' && sessionStatus === 'loading')) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-10 h-10 text-gsrp-orange animate-spin" />
-          <p className="text-gsrp-teal-light/40 font-mono text-[10px] uppercase tracking-[0.3em]">Checking Verification Status</p>
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen p-6 pt-20"><PageSkeleton variant="form" /></div>;
   }
 
   if (!session) return <LoginScreen />;

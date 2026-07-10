@@ -10,6 +10,7 @@ import AccessDenied from '../../components/auth/AccessDenied';
 import QuizWarning from '../../components/training/QuizWarning';
 import QuizEngine from '../../components/training/QuizEngine';
 import CustomCommandsSection from '../../components/training/CustomCommands';
+import { PageSkeleton } from '../../components/SkeletonLoader';
 import {
   QUESTION_BANK,
   QUIZ_CONFIG,
@@ -220,14 +221,7 @@ export default function TrainingPage() {
 
   // Loading states
   if (status === 'loading' || checkingProgress || !hasRefreshed) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center">
-          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-          <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Verifying Handbook Completion</span>
-        </div>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   if (!session) return <LoginScreen />;

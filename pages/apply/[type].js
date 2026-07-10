@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
 import { hasRole } from '../../lib/auth';
+import { PageSkeleton } from '../../components/SkeletonLoader';
 
 function countWords(value) {
   return String(value || '').trim().split(/\s+/).filter(Boolean).length;
@@ -852,12 +853,7 @@ export default function DynamicApplyPage() {
   }
 
   if (status === 'loading' || loading || checkingTimezone) {
-    return (
-      <div className="max-w-3xl mx-auto py-20 px-4 text-center">
-        <Loader2 className="w-10 h-10 text-gsrp-orange animate-spin mx-auto" />
-        <p className="text-gsrp-teal-light mt-4 font-medium">Loading application...</p>
-      </div>
-    );
+    return <PageSkeleton variant="form" />;
   }
   if (!session) return <LoginScreen />;
   if (!appType) return <div className="text-center py-20 text-white">Application type not found.</div>;

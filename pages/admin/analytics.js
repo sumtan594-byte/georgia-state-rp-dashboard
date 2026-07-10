@@ -6,6 +6,7 @@ import { authOptions } from '../../lib/auth-options';
 import LoginScreen from '../../components/auth/LoginScreen';
 import AccessDenied from '../../components/auth/AccessDenied';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import { PageSkeleton } from '../../components/SkeletonLoader';
 
 function Stat({ icon: Icon, label, value, tone = 'text-white' }) {
   return (
@@ -49,12 +50,12 @@ export default function AnalyticsPage({ canAccess }) {
   }, [status, hasRefreshed, accessDenied]);
 
   if (status === 'loading' || !hasRefreshed) {
-    return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gsrp-orange" /></div>;
+    return <PageSkeleton />;
   }
   if (!session) return <LoginScreen />;
   if (accessDenied) return <AccessDenied {...accessDenied} />;
   if (!canAccess) return <AccessDenied roleId="ADMIN" />;
-  if (!data) return <div className="flex min-h-[60vh] items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-gsrp-orange" /></div>;
+  if (!data) return <PageSkeleton />;
 
   const stats = data.stats || {};
 

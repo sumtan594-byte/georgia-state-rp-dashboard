@@ -11,6 +11,7 @@ import RidealongEngine from '../../../components/training/RidealongEngine'
 import PostRidealongOrientation from '../../../components/training/PostRidealongOrientation'
 import { SCENARIO_BANK, generateRpLogScenario, generatePLogScenario, RIDEALONG_POOL } from '../../../lib/ridealong-scenarios'
 import { RIDEALONG_CONFIG, RIDEALONG_TESTER_ROLE_ID } from '../../../lib/ridealong-config'
+import { PageSkeleton } from '../../../components/SkeletonLoader'
 
 function shuffleArray(arr) {
   const a = [...arr]
@@ -257,14 +258,7 @@ export default function RidealongPage() {
   }, [router])
 
   if (status === 'loading' || checkingAccess || !hasRefreshed) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center">
-          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-          <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Verifying Access</span>
-        </div>
-      </div>
-    )
+    return <PageSkeleton />
   }
 
   if (!session) return <LoginScreen />

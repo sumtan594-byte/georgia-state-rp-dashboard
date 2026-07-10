@@ -5,6 +5,7 @@ import { BarChart3, Users, CheckCircle, XCircle, Clock, TrendingUp, Loader2, Awa
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../lib/auth-options';
 import AccessDenied from '../../components/auth/AccessDenied';
+import { PageSkeleton } from '../../components/SkeletonLoader';
 
 export default function QuizAnalyticsPage() {
   const { status } = useSession();
@@ -42,11 +43,7 @@ export default function QuizAnalyticsPage() {
   }, [status, hasRefreshed, accessDenied, canView]);
 
   if (status === 'loading' || !hasRefreshed || loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   if (accessDenied) {

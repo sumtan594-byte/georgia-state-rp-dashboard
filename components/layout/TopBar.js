@@ -1,5 +1,6 @@
 import { useSession, signOut } from 'next-auth/react';
 import { LogOut, User, Menu } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 export default function TopBar({ onMenuClick }) {
   const { data: session } = useSession();
@@ -7,13 +8,14 @@ export default function TopBar({ onMenuClick }) {
   return (
     <header className="sticky top-0 z-40 bg-gsrp-dark/75 backdrop-blur-xl border-b border-gsrp-dark-border/40 px-4 md:px-6 h-[60px] flex items-center justify-between">
       <div className="flex items-center gap-3 min-w-0">
-        <button
+        <motion.button
           onClick={onMenuClick}
           aria-label="Open menu"
           className="md:hidden p-2 -ml-1 rounded-lg hover:bg-white/[0.06] text-gsrp-teal-light/60 hover:text-white transition-colors cursor-pointer"
+          whileTap={{ scale: 0.9 }}
         >
           <Menu size={18} />
-        </button>
+        </motion.button>
         <img src="https://i.imgur.com/SSbZ8VZ.png" alt="GSRP" className="w-7 h-7 rounded-lg object-cover ring-1 ring-white/10 hidden sm:block" />
         <div className="min-w-0">
           <h1 className="font-display text-white font-extrabold text-[15px] md:text-base truncate max-w-[170px] sm:max-w-none tracking-tight leading-tight">
@@ -40,7 +42,7 @@ export default function TopBar({ onMenuClick }) {
               <User size={16} className="text-gsrp-teal-light/45 absolute inset-0 m-auto" />
             )}
           </div>
-          <button
+          <motion.button
             onClick={async (e) => {
               e.preventDefault();
               await signOut({ redirect: false });
@@ -49,9 +51,12 @@ export default function TopBar({ onMenuClick }) {
             className="p-2 rounded-lg hover:bg-gsrp-sunset/12 text-gsrp-teal-light/45 hover:text-gsrp-sunset transition-colors cursor-pointer"
             aria-label="Sign out"
             title="Sign Out"
+            whileHover={{ y: -1 }}
+            whileTap={{ scale: 0.88 }}
+            transition={{ type: 'spring', stiffness: 520, damping: 30 }}
           >
             <LogOut size={16} />
-          </button>
+          </motion.button>
         </div>
       )}
     </header>

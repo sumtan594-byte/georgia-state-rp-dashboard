@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import LoginScreen from '../../components/auth/LoginScreen';
+import { PageSkeleton } from '../../components/SkeletonLoader';
 
 import { hasRole } from '../../lib/auth';
 
@@ -66,14 +67,7 @@ export default function ApplicationList() {
   }, [session]);
 
   if (status === 'loading' || loading) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-gsrp-orange" />
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-gsrp-teal-light/40">Loading Applications</p>
-        </div>
-      </div>
-    );
+    return <PageSkeleton />;
   }
   if (!session) return <LoginScreen />;
 

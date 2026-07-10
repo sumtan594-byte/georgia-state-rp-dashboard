@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { PageSkeleton } from '../../components/SkeletonLoader';
 import { 
   FileText, 
   ArrowLeft, 
@@ -785,24 +786,14 @@ export default function ApplicationDetail() {
   };
 
   if (status === 'loading' || !hasRefreshed) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-        <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Application Access</span>
-      </div>
-    );
+    return <PageSkeleton variant="form" />;
   }
   if (!session) return <LoginScreen />;
   if (accessDenied) return <AccessDenied roleId={accessDenied.roleId} />;
   if (!canReviewApplications(effectiveSession)) return <AccessDenied roleId="1372491512709124106" />;
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh]">
-        <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-        <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Fetching Application</span>
-      </div>
-    );
+    return <PageSkeleton variant="form" />;
   }
 
   if (!application) {

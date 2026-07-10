@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { Loader2, MapPin, Clock, User, Radio, Calendar } from 'lucide-react';
+import { PageSkeleton } from '../../components/SkeletonLoader';
 
 export default function RoleplayDetailPage() {
   const router = useRouter();
@@ -36,14 +37,7 @@ export default function RoleplayDetailPage() {
   }, [router.isReady, router.query.rpId]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0a0f1e] flex items-center justify-center text-white">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin" />
-          <p className="text-xs font-mono uppercase tracking-widest text-white/40">Loading Roleplay Log</p>
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen bg-[#0a0f1e] p-6"><PageSkeleton variant="table" /></div>;
   }
 
   if (error || !rp) {

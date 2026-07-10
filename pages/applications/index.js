@@ -8,6 +8,7 @@ import LoginScreen from '../../components/auth/LoginScreen';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import AccessDenied from '../../components/auth/AccessDenied';
 import { createPortal } from 'react-dom';
+import { PageSkeleton, SkeletonTable } from '../../components/SkeletonLoader';
 
 const PAGE_SIZE = 10;
 
@@ -125,14 +126,7 @@ export default function ApplicationsList() {
   };
 
   if (status === 'loading' || !hasRefreshed) {
-    return (
-      <div className="flex min-h-[60vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-gsrp-orange" />
-          <p className="font-mono text-[10px] uppercase tracking-[0.3em] text-gsrp-teal-light/40">Loading Applications</p>
-        </div>
-      </div>
-    );
+    return <PageSkeleton variant="table" rows={7} />;
   }
   if (!session) return <LoginScreen />;
   if (accessDenied) return <AccessDenied roleId={accessDenied.roleId} />;
@@ -218,10 +212,7 @@ export default function ApplicationsList() {
 
       <div className="bg-gsrp-dark-card/60 backdrop-blur-md rounded-2xl border border-gsrp-dark-border/50 overflow-hidden">
         {loading ? (
-          <div className="p-20 flex flex-col items-center justify-center">
-            <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-            <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Applications</span>
-          </div>
+          <div className="p-4"><SkeletonTable rows={7} cols={5} /></div>
         ) : error ? (
           <div className="p-20 text-center">
             <p className="text-red-500 font-bold">{error}</p>

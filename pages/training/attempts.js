@@ -5,6 +5,7 @@ import { Loader2, Users, Search, Filter, ChevronDown, ChevronUp, Clock, RotateCc
 import LoginScreen from '../../components/auth/LoginScreen';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import AccessDenied from '../../components/auth/AccessDenied';
+import { PageSkeleton } from '../../components/SkeletonLoader';
 
 function esc(str) {
   return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -83,14 +84,7 @@ export default function AttemptsPage() {
   };
 
   if (status === 'loading' || !hasRefreshed || loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center">
-          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-          <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Loading Attempts</span>
-        </div>
-      </div>
-    );
+    return <PageSkeleton variant="table" rows={8} />;
   }
 
   if (!session) return <LoginScreen />;

@@ -6,6 +6,7 @@ import LoginScreen from '../components/auth/LoginScreen'
 import { useRefreshedUser } from '../lib/UserRefreshContext'
 import { canAccessTrainerHandbook } from '../lib/auth'
 import TrainerHandbook, { TraineeIntakeModal } from '../components/training/TrainerHandbook'
+import { PageSkeleton } from '../components/SkeletonLoader'
 
 export default function TrainerHandbookPage() {
   const { data: session, status } = useSession()
@@ -15,14 +16,7 @@ export default function TrainerHandbookPage() {
   const [trainee, setTrainee] = useState(null)
 
   if (status === 'loading' || (status === 'authenticated' && !hasRefreshed)) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center">
-          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-          <span className="text-gsrp-teal-light/40 font-mono text-[9px] uppercase tracking-[0.3em]">Verifying Access</span>
-        </div>
-      </div>
-    )
+    return <PageSkeleton variant="form" />
   }
 
   if (status !== 'authenticated') {

@@ -13,6 +13,7 @@ import CommandBar from '../../components/panel/CommandBar';
 import PlayerActionPanel from '../../components/panel/PlayerActionPanel';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import AccessDenied from '../../components/auth/AccessDenied';
+import { PanelSkeleton } from '../../components/SkeletonLoader';
 
 const LiveMap = dynamic(() => import('../../components/panel/LiveMap'), { ssr: false });
 
@@ -203,18 +204,12 @@ export default function PanelPage() {
 
   /* ── Loading / auth states ───────────────────────────────────────────── */
   if (status === 'loading' || !hasRefreshed) {
-    return (
-      <div className="flex items-center justify-center min-h-[60vh]">
-        <div className="flex flex-col items-center">
-          <Loader2 className="w-8 h-8 text-gsrp-orange animate-spin mb-4" />
-          <span className="text-white/40 font-mono text-xs uppercase tracking-[0.3em]">Loading Panel</span>
-        </div>
-      </div>
-    );
+    return <PanelSkeleton />;
   }
 
   if (!session) return <LoginScreen />;
   if (accessDenied) return <AccessDenied roleId={accessDenied.roleId} />;
+  if (loading && !data && !error) return <PanelSkeleton />;
 
   return (
     <div className="h-full flex flex-col">
@@ -286,10 +281,6 @@ export default function PanelPage() {
             </button>
           </div>
         </div>
-      )}
-
-      {loading && !data && (
-        <PanelLoadingState progress={initialLoadProgress} elapsedMs={initialLoadMs} />
       )}
 
       {data && (
