@@ -61,6 +61,7 @@ export default async function handler(req, res) {
 
     const countsMap = {};
     counts.forEach(c => { countsMap[c.app_type] = c.count; });
+    countsMap.all = counts.reduce((sum, item) => sum + Number(item.count), 0);
 
     const mapped = applications.map(a => ({
       _id: a.id,

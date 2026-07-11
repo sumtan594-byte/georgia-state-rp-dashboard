@@ -38,7 +38,6 @@ function labelForPage(page) {
   if (page.startsWith('/admin/authorization')) return 'Authorisation';
   if (page.startsWith('/admin/users')) return 'Users';
   if (page.startsWith('/transcripts')) return 'Transcripts';
-  if (page.startsWith('/departments')) return 'Departments';
   if (page.startsWith('/verify')) return 'Verification';
   if (page.startsWith('/shop')) return 'Store';
   return page;

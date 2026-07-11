@@ -13,7 +13,6 @@ import {
   Users,
   ClipboardList,
   ShoppingCart,
-  Building2,
   UserPlus,
   Settings,
   BarChart3,
@@ -85,7 +84,6 @@ export default function Sidebar({ open, onToggle }) {
       label: 'General',
       items: [
         { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-        { href: '/departments', icon: Building2, label: 'Departments' },
         { href: '/transcripts', icon: FileText, label: 'Transcripts', badge: transcriptCount > 0 ? transcriptCount : null },
         ...(hasPanel ? [{ href: '/panel', icon: Map, label: 'Live Panel' }] : []),
         ...(hasPanel ? [{ href: '/panel/stats', icon: Server, label: 'Server Stats' }] : []),

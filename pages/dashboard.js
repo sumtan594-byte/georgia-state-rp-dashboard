@@ -1,6 +1,6 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
-import { FileText, Map, BookOpen, ShieldCheck, Users, ShoppingCart, Building2, UserPlus, Settings, ScrollText, UserCheck, BarChart3, Globe } from 'lucide-react';
+import { FileText, Map, BookOpen, ShieldCheck, Users, ShoppingCart, UserPlus, Settings, ScrollText, UserCheck, BarChart3, Globe } from 'lucide-react';
 import Link from 'next/link';
 import FeatureCard from '../components/dashboard/FeatureCard';
 import PresenceBar from '../components/dashboard/PresenceBar';
@@ -80,11 +80,10 @@ export default function Dashboard() {
           <div className="h-[1px] flex-1 bg-gradient-to-r from-gsrp-orange/20 to-transparent" />
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <FeatureCard className="animate-fade-in-up stagger-1" href="/departments" icon={Building2} title="Departments" description="View and join GSRP's official departments" activeViewers={viewersFor('/departments')} />
-          <FeatureCard className="animate-fade-in-up stagger-2" href="/transcripts" icon={FileText} title="Transcripts" description="View and manage Discord ticket transcripts" badge={stats.transcripts > 0 ? `${stats.transcripts} records` : null} activeViewers={viewersFor('/transcripts')} />
-          <FeatureCard className="animate-fade-in-up stagger-3" href="/panel" icon={Map} title="Live Panel" description="ERLC server map, player management, and commands" locked={!hasPanel} requiredRole="Panel" activeViewers={viewersFor('/panel')} />
-          <FeatureCard className="animate-fade-in-up stagger-4" href="/verify" icon={ShieldCheck} title="Verification" description="Link your Roblox account to Discord" activeViewers={viewersFor('/verify')} />
-          <FeatureCard className="animate-fade-in-up stagger-5" href="/shop" icon={ShoppingCart} title="Store" description="Purchase premium roles, pings, and donations" activeViewers={viewersFor('/shop')} />
+          <FeatureCard className="animate-fade-in-up stagger-1" href="/transcripts" icon={FileText} title="Transcripts" description="View and manage Discord ticket transcripts" badge={stats.transcripts > 0 ? `${stats.transcripts} records` : null} activeViewers={viewersFor('/transcripts')} />
+          <FeatureCard className="animate-fade-in-up stagger-2" href="/panel" icon={Map} title="Live Panel" description="ERLC server map, player management, and commands" locked={!hasPanel} requiredRole="Panel" activeViewers={viewersFor('/panel')} />
+          <FeatureCard className="animate-fade-in-up stagger-3" href="/verify" icon={ShieldCheck} title="Verification" description="Link your Roblox account to Discord" activeViewers={viewersFor('/verify')} />
+          <FeatureCard className="animate-fade-in-up stagger-4" href="/shop" icon={ShoppingCart} title="Store" description="Purchase premium roles, pings, and donations" activeViewers={viewersFor('/shop')} />
         </div>
       </div>
 

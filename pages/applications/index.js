@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import { useSession } from 'next-auth/react';
-import { Users, Search, Calendar, ChevronRight, ChevronLeft, Loader2, Trash2, CheckSquare, Square } from 'lucide-react';
+import { Users, Search, Calendar, ChevronRight, ChevronLeft, Loader2, Trash2, CheckSquare, Square, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
 import LoginScreen from '../../components/auth/LoginScreen';
@@ -18,7 +18,7 @@ export default function ApplicationsList() {
   const effectiveSession = refreshedSession || session;
   const [applications, setApplications] = useState([]);
   const [types, setTypes] = useState([]);
-  const [activeTab, setActiveTab] = useState('staff');
+  const [activeTab, setActiveTab] = useState('all');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState('');
@@ -33,13 +33,15 @@ export default function ApplicationsList() {
   const fetchedRef = useRef(false);
   const listRequestRef = useRef(0);
 
-  const fetchPage = useCallback(async (p, type) => {
+  const fetchPage = useCallback(async (p, type, { background = false } = {}) => {
     const requestSequence = ++listRequestRef.current;
-    setLoading(true);
-    setError(null);
-    setSelected(new Set());
+    if (!background) {
+      setLoading(true);
+      setError(null);
+      setSelected(new Set());
+    }
     const params = new URLSearchParams({ page: p, limit: PAGE_SIZE });
-    if (type) params.set('type', type);
+    if (type && type !== 'all') params.set('type', type);
     try {
       const [listResponse, typesResponse] = await Promise.all([
         fetch(`/api/applications/list?${params}`, { cache: 'no-store' }),
@@ -48,7 +50,7 @@ export default function ApplicationsList() {
       if (!listResponse.ok || !typesResponse.ok) throw new Error('Failed to refresh applications');
       const [data, returnedTypes] = await Promise.all([listResponse.json(), typesResponse.json()]);
       if (requestSequence !== listRequestRef.current) return;
-      setApplications(data.applications);
+      setApplications(Array.isArray(data.applications) ? data.applications : []);
       setPage(data.page);
       setTotalPages(data.totalPages);
       setCounts(data.counts);
@@ -58,11 +60,11 @@ export default function ApplicationsList() {
       if (!hasStaff) {
         appTypes.unshift({ name: 'Staff Application', slug: 'staff' });
       }
-      setTypes(appTypes);
+      setTypes([{ name: 'All Applications', slug: 'all' }, ...appTypes.filter(type => type.slug !== 'all')]);
     } catch (err) {
-      if (requestSequence === listRequestRef.current) setError(err.message);
+      if (requestSequence === listRequestRef.current && !background) setError(err.message);
     } finally {
-      if (requestSequence === listRequestRef.current) setLoading(false);
+      if (requestSequence === listRequestRef.current && !background) setLoading(false);
     }
   }, []);
 
@@ -73,6 +75,25 @@ export default function ApplicationsList() {
     fetchedRef.current = true;
     fetchPage(page, activeTab);
   }, [status, hasRefreshed, effectiveSession, fetchPage]);
+
+  useEffect(() => {
+    if (status !== 'authenticated' || !hasRefreshed || !canReviewApplications(effectiveSession)) return;
+
+    const refreshList = () => {
+      if (document.visibilityState === 'visible') {
+        fetchPage(page, activeTab, { background: true });
+      }
+    };
+    const interval = window.setInterval(refreshList, 15000);
+    window.addEventListener('focus', refreshList);
+    document.addEventListener('visibilitychange', refreshList);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', refreshList);
+      document.removeEventListener('visibilitychange', refreshList);
+    };
+  }, [status, hasRefreshed, effectiveSession, page, activeTab, fetchPage]);
 
   const handleDelete = async (appId) => {
     setIsDeleting(true);
@@ -157,15 +178,27 @@ export default function ApplicationsList() {
               Manage and review staff applications from the community.
             </p>
           </div>
-          <div className="relative">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gsrp-teal-light/30 w-4 h-4" />
-            <input 
-              type="text" 
-              placeholder="Search applicants..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl pl-11 pr-4 py-2.5 text-white text-sm focus:border-gsrp-orange/50 focus:outline-none transition-colors w-full md:w-64 font-medium"
-            />
+          <div className="flex items-center gap-2">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gsrp-teal-light/30 w-4 h-4" />
+              <input
+                type="text"
+                placeholder="Search applicants..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="bg-gsrp-dark-surface border border-gsrp-dark-border/50 rounded-xl pl-11 pr-4 py-2.5 text-white text-sm focus:border-gsrp-orange/50 focus:outline-none transition-colors w-full md:w-64 font-medium"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => fetchPage(page, activeTab)}
+              disabled={loading}
+              aria-label="Refresh applications"
+              title="Refresh applications"
+              className="p-2.5 rounded-xl bg-gsrp-dark-surface border border-gsrp-dark-border/50 text-gsrp-teal-light/50 hover:text-white hover:border-gsrp-orange/50 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
+            </button>
           </div>
         </div>
       </div>
@@ -219,7 +252,7 @@ export default function ApplicationsList() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="p-20 text-center">
-            <p className="text-gsrp-teal-light/40 font-medium">No {activeTab} applications found.</p>
+            <p className="text-gsrp-teal-light/40 font-medium">No {activeTab === 'all' ? '' : `${activeTab} `}applications found.</p>
           </div>
         ) : (
           <>

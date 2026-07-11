@@ -442,7 +442,6 @@ export default function Landing({ showcase = {}, gallery = [] }) {
                 <p className="text-white font-bold text-[13px] mb-3">Dashboard</p>
                 <ul className="space-y-2 text-[13px] text-gsrp-teal-light/50">
                   <li><Link href="/dashboard" className="hover:text-gsrp-orange transition-colors">Open Dashboard</Link></li>
-                  <li><Link href="/departments" className="hover:text-gsrp-orange transition-colors">Departments</Link></li>
                   <li><Link href="/apply" className="hover:text-gsrp-orange transition-colors">Apply Now</Link></li>
                   <li><Link href="/verify" className="hover:text-gsrp-orange transition-colors">Roblox Verification</Link></li>
                 </ul>
