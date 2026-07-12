@@ -921,6 +921,29 @@ export default function DynamicApplyPage() {
         </div>
       </div>
 
+      {step === 1 && (
+        <div className="mb-6 p-6 rounded-2xl bg-gsrp-orange/10 border border-gsrp-orange/30 animate-fade-in-up">
+          <div className="flex items-center gap-3 mb-4">
+            <AlertCircle className="w-5 h-5 text-gsrp-orange flex-shrink-0" />
+            <h2 className="text-white font-bold text-sm uppercase tracking-widest">Before You Begin — Important</h2>
+          </div>
+          <ul className="space-y-2 ml-1">
+            <li className="flex items-start gap-3 text-sm text-white/80 font-medium">
+              <span className="text-gsrp-orange font-bold mt-0.5">•</span>
+              AI usage will result in an immediate blacklist for life.
+            </li>
+            <li className="flex items-start gap-3 text-sm text-white/80 font-medium">
+              <span className="text-gsrp-orange font-bold mt-0.5">•</span>
+              Asking when your application will be read will lead to it being declined.
+            </li>
+            <li className="flex items-start gap-3 text-sm text-white/80 font-medium">
+              <span className="text-gsrp-orange font-bold mt-0.5">•</span>
+              Make sure to use at least 2 or more proper sentences.
+            </li>
+          </ul>
+        </div>
+      )}
+
       {draftRestored && (
         <div className="mb-6 p-4 rounded-2xl bg-gsrp-teal/10 border border-gsrp-teal/20 flex items-center gap-3 animate-fade-in-up">
           <Save className="w-5 h-5 text-gsrp-teal flex-shrink-0" />
