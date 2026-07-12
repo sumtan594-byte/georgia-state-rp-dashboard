@@ -264,17 +264,32 @@ function loadDraft(userId, typeSlug) {
   }
 }
 
-function saveDraft(userId, typeSlug, answers) {
+function saveDraft(userId, typeSlug, answers, timeline) {
   try {
     const key = getDraftKey(userId, typeSlug);
     const draft = {
       answers,
+      timeline: timeline || {},
       savedAt: Date.now(),
       expiresAt: Date.now() + 5 * 60 * 60 * 1000,
     };
     localStorage.setItem(key, JSON.stringify(draft));
     console.log('[Draft] saveDraft: saved', Object.keys(answers).length, 'fields to', key);
   } catch (e) {
+    // Timeline can be large; if the quota is exceeded, fall back to answers-only
+    // so at least the text is preserved across reloads.
+    if (e && (e.name === 'QuotaExceededError' || /quota/i.test(e.message || ''))) {
+      try {
+        localStorage.setItem(getDraftKey(userId, typeSlug), JSON.stringify({
+          answers,
+          timeline: {},
+          savedAt: Date.now(),
+          expiresAt: Date.now() + 5 * 60 * 60 * 1000,
+        }));
+        console.warn('[Draft] saveDraft: timeline dropped (quota), saved answers only');
+        return;
+      } catch (_) {}
+    }
     console.error('[Draft] saveDraft error:', e);
   }
 }
@@ -383,9 +398,23 @@ export default function DynamicApplyPage() {
       console.log('[Application] Draft restored:', Object.keys(draft.answers).length, 'fields');
       answersRef.current = draft.answers;
       setAnswers(draft.answers);
+      // Keep the typing timeline in sync with the restored text. Prefer the
+      // timeline saved with the draft (full granularity); otherwise seed each
+      // restored field with a single insert so the replay reconstructs the
+      // restored text as its starting point instead of an empty string.
+      if (draft.timeline && typeof draft.timeline === 'object' && !Array.isArray(draft.timeline)) {
+        typingTimelineRef.current = draft.timeline;
+      } else {
+        const seeded = {};
+        for (const [fieldId, value] of Object.entries(draft.answers)) {
+          if (typeof value === 'string' && value.length > 0) {
+            seeded[fieldId] = [{ t: Date.now(), p: 0, d: 0, i: value }];
+          }
+        }
+        typingTimelineRef.current = seeded;
+      }
       setKeystrokes({});
       keystrokesRef.current = {};
-      typingTimelineRef.current = {};
       setPastes({});
       pastesRef.current = {};
       setMonitoringData({});
@@ -409,7 +438,7 @@ export default function DynamicApplyPage() {
     if (!session || !typeSlug || success) return;
     const interval = setInterval(() => {
       if (Object.keys(answersRef.current).length > 0 && !submitSuccessRef.current) {
-        saveDraft(session.user.id, typeSlug, answersRef.current);
+        saveDraft(session.user.id, typeSlug, answersRef.current, typingTimelineRef.current);
       }
     }, AUTO_SAVE_INTERVAL);
     return () => clearInterval(interval);
@@ -419,7 +448,7 @@ export default function DynamicApplyPage() {
     const handleBeforeUnload = (e) => {
       if (Object.keys(answers).length > 0 && !success && !isSubmitting) {
         if (session && typeSlug) {
-          saveDraft(session.user.id, typeSlug, answers);
+          saveDraft(session.user.id, typeSlug, answers, typingTimelineRef.current);
         }
         e.preventDefault();
         e.returnValue = '';
