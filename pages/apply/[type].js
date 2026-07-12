@@ -24,6 +24,35 @@ function countWords(value) {
   return String(value || '').trim().split(/\s+/).filter(Boolean).length;
 }
 
+const MAX_TIMELINE_EVENTS_PER_FIELD = 20000;
+
+// Compute a minimal edit between two strings as { p, d, i }:
+//  p = length of the common prefix that was untouched
+//  d = number of characters deleted after the prefix
+//  i = string that was inserted after the prefix
+// Replaying these diffs in order reconstructs the exact field value at every
+// step — including backspaces, mid-text edits, selection replacement and paste —
+// which a keydown-only log cannot do.
+function computeDiff(oldValue, newValue) {
+  const a = String(oldValue || '');
+  const b = String(newValue || '');
+  if (a === b) return null;
+
+  const maxPrefix = Math.min(a.length, b.length);
+  let p = 0;
+  while (p < maxPrefix && a[p] === b[p]) p++;
+
+  let s = 0;
+  const maxSuffix = Math.min(a.length - p, b.length - p);
+  while (s < maxSuffix && a[a.length - 1 - s] === b[b.length - 1 - s]) s++;
+
+  return {
+    p,
+    d: a.length - p - s,
+    i: b.slice(p, b.length - s),
+  };
+}
+
 function getMinimumWords(field) {
   const minimumWords = parseInt(field?.minimumWords, 10);
   return Number.isFinite(minimumWords) && minimumWords > 0 ? minimumWords : 0;
@@ -308,6 +337,7 @@ export default function DynamicApplyPage() {
   const lastKeystrokeTimeRef = useRef({});
   const monitoringInitializedRef = useRef(false);
   const answersRef = useRef({});
+  const typingTimelineRef = useRef({});
   const keystrokesRef = useRef({});
   const pastesRef = useRef({});
   const monitoringDataRef = useRef({});
@@ -355,6 +385,7 @@ export default function DynamicApplyPage() {
       setAnswers(draft.answers);
       setKeystrokes({});
       keystrokesRef.current = {};
+      typingTimelineRef.current = {};
       setPastes({});
       pastesRef.current = {};
       setMonitoringData({});
@@ -461,6 +492,14 @@ export default function DynamicApplyPage() {
       }
     }, 30000);
   }, [updateMonitoringForField]);
+
+  const recordTyping = useCallback((fieldName, oldValue, newValue) => {
+    const diff = computeDiff(oldValue, newValue);
+    if (!diff) return;
+    const list = typingTimelineRef.current[fieldName] || (typingTimelineRef.current[fieldName] = []);
+    if (list.length >= MAX_TIMELINE_EVENTS_PER_FIELD) return;
+    list.push({ t: Date.now(), ...diff });
+  }, []);
 
   const trackEvent = useCallback((fieldName, type, data) => {
     if (type === 'keystroke') {
@@ -581,6 +620,7 @@ export default function DynamicApplyPage() {
           leftAt,
           returnedAt: Date.now(),
           duration,
+          activeField: activeFieldRef.current,
         }]);
         mouseLeaveStartRef.current = null;
       }
@@ -762,6 +802,7 @@ export default function DynamicApplyPage() {
       userId: session.user.id,
       userImage: session.user.image,
       answers: answersRef.current,
+      typingTimeline: typingTimelineRef.current,
       keystrokeData: truncateArrays(keystrokesRef.current, 5000),
       pasteData: truncateArrays(pastesRef.current, 100),
       monitoringData: truncateArrays(monitoringDataRef.current, 20),
@@ -810,6 +851,7 @@ export default function DynamicApplyPage() {
         console.log('[Application] Submit successful, ID:', result.id);
         submitSuccessRef.current = true;
         answersRef.current = {};
+        typingTimelineRef.current = {};
         if (session && typeSlug) {
           clearDraft(session.user.id, typeSlug);
         }
@@ -973,6 +1015,7 @@ export default function DynamicApplyPage() {
                   minimumWords={getMinimumWords(field)}
                   onChange={(e) => {
                     const val = e.target.value;
+                    recordTyping(field.id, answersRef.current[field.id], val);
                     answersRef.current = { ...answersRef.current, [field.id]: val };
                     setAnswers(answersRef.current);
                     if (validationErrors[field.id]) {
@@ -1040,6 +1083,7 @@ export default function DynamicApplyPage() {
                   minimumWords={getMinimumWords(field)}
                   onChange={(e) => {
                     const val = e.target.value;
+                    recordTyping(field.id, answersRef.current[field.id], val);
                     answersRef.current = { ...answersRef.current, [field.id]: val };
                     setAnswers(answersRef.current);
                     if (validationErrors[field.id]) {

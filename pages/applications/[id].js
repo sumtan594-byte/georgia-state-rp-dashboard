@@ -33,10 +33,12 @@ import {
   ThumbsUp,
   ThumbsDown,
   Bot,
+  Film,
 } from 'lucide-react';
 import Link from 'next/link';
 import { canReviewApplications } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
+import TypingReplay from '../../components/TypingReplay';
 import LoginScreen from '../../components/auth/LoginScreen';
 import AccessDenied from '../../components/auth/AccessDenied';
 
@@ -412,6 +414,39 @@ const MonitoringTimeline = ({ application, fieldId, fieldLabel }) => {
             </div>
           )}
         </div>
+      )}
+    </div>
+  );
+};
+
+const FieldTypingReplay = ({ application, fieldId }) => {
+  const [open, setOpen] = useState(false);
+  const events = application.typingTimeline?.[fieldId] || [];
+  const fieldMonitoring = application.monitoringData?.[fieldId] || {};
+  const pastes = application.pasteData?.[fieldId] || [];
+  const mouseLeaves = (application.sessionMouseLeaves || []).filter(m => m.activeField === fieldId);
+
+  if (events.length === 0) return null;
+
+  return (
+    <div className="mt-3">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-gsrp-orange/10 border border-gsrp-orange/20 text-gsrp-orange text-[10px] font-bold uppercase tracking-widest hover:bg-gsrp-orange/20 transition-colors"
+      >
+        <Film size={12} />
+        {open ? 'Hide typing replay' : 'Replay typing'}
+      </button>
+      {open && (
+        <TypingReplay
+          events={events}
+          tabOuts={fieldMonitoring.tabOuts || []}
+          pastes={pastes}
+          mouseLeaves={mouseLeaves}
+          rightClicks={fieldMonitoring.rightClicks || []}
+          idlePeriods={fieldMonitoring.idlePeriods || []}
+          finalValue={typeof application.answers?.[fieldId] === 'string' ? application.answers[fieldId] : ''}
+        />
       )}
     </div>
   );
@@ -955,10 +990,14 @@ export default function ApplicationDetail() {
                     
                     <PasteDetector pastes={fieldPastes} />
 
-                    <MonitoringTimeline 
-                      application={application} 
-                      fieldId={field.id} 
-                      fieldLabel={field.label} 
+                    {(field.type === 'textarea' || field.type === 'text') && (
+                      <FieldTypingReplay application={application} fieldId={field.id} />
+                    )}
+
+                    <MonitoringTimeline
+                      application={application}
+                      fieldId={field.id}
+                      fieldLabel={field.label}
                     />
                   </div>
                 );
