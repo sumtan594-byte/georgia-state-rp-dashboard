@@ -36,7 +36,7 @@ import {
   Film,
 } from 'lucide-react';
 import Link from 'next/link';
-import { canReviewApplications } from '../../lib/auth';
+import { canReviewApplications, isAdmin } from '../../lib/auth';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import TypingReplay from '../../components/TypingReplay';
 import LoginScreen from '../../components/auth/LoginScreen';
@@ -522,6 +522,10 @@ export default function ApplicationDetail() {
   const [isNavigatingNext, setIsNavigatingNext] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteAllModal, setShowDeleteAllModal] = useState(false);
+  const [isDeletingAll, setIsDeletingAll] = useState(false);
+  const [deleteAllConfirm, setDeleteAllConfirm] = useState('');
+  const [deleteAllError, setDeleteAllError] = useState('');
   const [copied, setCopied] = useState(false);
   const [autoMarkResult, setAutoMarkResult] = useState(null);
   const [autoMarkError, setAutoMarkError] = useState('');
@@ -785,6 +789,31 @@ export default function ApplicationDetail() {
       setDecisionNotice(err.message);
     } finally {
       setIsDeleting(false);
+    }
+  };
+
+  const handleDeleteAll = async () => {
+    if (deleteAllConfirm.trim() !== 'DELETE ALL') {
+      setDeleteAllError('Type DELETE ALL to confirm.');
+      return;
+    }
+    setIsDeletingAll(true);
+    setDeleteAllError('');
+    try {
+      const res = await fetch('/api/applications/delete-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirm: 'DELETE ALL' }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.message || 'Failed to delete all applications');
+      setShowDeleteAllModal(false);
+      setDeleteAllConfirm('');
+      await router.push('/applications');
+    } catch (err) {
+      setDeleteAllError(err.message);
+    } finally {
+      setIsDeletingAll(false);
     }
   };
 
@@ -1215,6 +1244,16 @@ export default function ApplicationDetail() {
                 <Trash2 size={14} />
                 Delete Application
               </button>
+
+              {isAdmin(effectiveSession) && (
+                <button
+                  onClick={() => { setDeleteAllConfirm(''); setDeleteAllError(''); setShowDeleteAllModal(true); }}
+                  className="w-full mt-3 py-3 bg-red-600/10 border border-red-600/40 text-red-500 hover:bg-red-600 hover:text-white hover:border-red-600 font-bold rounded-xl transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-widest"
+                >
+                  <AlertTriangle size={14} />
+                  Delete All Applications
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -1288,6 +1327,58 @@ export default function ApplicationDetail() {
               >
                 {isDeleting && <Loader2 size={16} className="animate-spin" />}
                 {isDeleting ? 'Deleting...' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {showDeleteAllModal && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ position: 'fixed' }} role="dialog" aria-modal="true" aria-labelledby="delete-all-modal-title">
+          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => !isDeletingAll && setShowDeleteAllModal(false)} />
+          <div className="relative bg-gsrp-dark-card border border-red-600/40 rounded-2xl p-8 w-full max-w-md shadow-2xl animate-scale-in motion-reduce:animate-none">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-10 h-10 rounded-full bg-red-600/10 flex items-center justify-center">
+                <AlertTriangle size={20} className="text-red-500" />
+              </div>
+              <h3 id="delete-all-modal-title" className="text-white font-bold text-xl">Delete ALL Applications</h3>
+            </div>
+            <p className="text-gsrp-teal-light/60 text-sm mb-2">
+              This permanently deletes <span className="text-white font-bold">every application</span> and all associated
+              data — answers, keystroke timelines, monitoring records, and auto-mark results — for all applicants.
+            </p>
+            <p className="text-red-400/80 text-xs mb-5 font-medium">
+              This action cannot be undone and affects the entire database.
+            </p>
+            <label htmlFor="delete-all-confirm" className="block text-[10px] font-bold uppercase tracking-widest text-gsrp-teal-light/40 mb-2">
+              Type <span className="text-red-400">DELETE ALL</span> to confirm
+            </label>
+            <input
+              id="delete-all-confirm"
+              autoFocus
+              type="text"
+              value={deleteAllConfirm}
+              onChange={(e) => { setDeleteAllConfirm(e.target.value); if (deleteAllError) setDeleteAllError(''); }}
+              placeholder="DELETE ALL"
+              className="w-full bg-gsrp-dark-surface border border-gsrp-dark-border rounded-xl p-3 text-white text-sm focus:border-red-500/50 focus:outline-none mb-3"
+            />
+            {deleteAllError && <p className="-mt-1 mb-4 text-xs font-medium text-red-400" role="alert">{deleteAllError}</p>}
+            <div className="flex gap-3 mt-2">
+              <button
+                onClick={() => setShowDeleteAllModal(false)}
+                disabled={isDeletingAll}
+                className="flex-1 py-3 bg-gsrp-dark-surface border border-white/10 text-gsrp-teal-light font-bold rounded-xl hover:text-white disabled:opacity-50 transition-all duration-200 active:scale-[0.98] motion-reduce:transform-none"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteAll}
+                disabled={isDeletingAll || deleteAllConfirm.trim() !== 'DELETE ALL'}
+                className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-[0.98] motion-reduce:transform-none flex items-center justify-center gap-2"
+              >
+                {isDeletingAll && <Loader2 size={16} className="animate-spin" />}
+                {isDeletingAll ? 'Deleting all...' : 'Delete Everything'}
               </button>
             </div>
           </div>
