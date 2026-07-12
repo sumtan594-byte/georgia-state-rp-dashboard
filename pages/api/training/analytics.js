@@ -20,15 +20,23 @@ export default async function handler(req, res) {
     const db = client.db();
     const collection = db.collection('quiz_attempts');
 
-    const docs = await collection.find({}).toArray();
+    // Stream with a cursor and keep the recent-attempts buffer bounded so
+    // this endpoint doesn't materialize every attempt ever taken in memory.
+    const cursor = collection.find({}).project({ _id: 0, attempts: 1 });
 
+    let totalUsers = 0;
     let totalAttempts = 0;
     let passedCount = 0;
     let failedCount = 0;
     const scores = [];
-    const recentAttempts = [];
+    let recentAttempts = [];
+    const RECENT_LIMIT = 20;
+    const RECENT_COMPACT_AT = 400;
 
-    for (const doc of docs) {
+    const byNewest = (a, b) => new Date(b.timestamp) - new Date(a.timestamp);
+
+    for await (const doc of cursor) {
+      totalUsers++;
       const attempts = doc.attempts || [];
       totalAttempts += attempts.length;
 
@@ -43,9 +51,14 @@ export default async function handler(req, res) {
         }
         recentAttempts.push(attempt);
       }
+
+      if (recentAttempts.length > RECENT_COMPACT_AT) {
+        recentAttempts.sort(byNewest);
+        recentAttempts = recentAttempts.slice(0, RECENT_LIMIT);
+      }
     }
 
-    recentAttempts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+    recentAttempts.sort(byNewest);
 
     const avgScore = scores.length > 0
       ? Math.round(scores.reduce((a, b) => a + b, 0) / scores.length)
@@ -59,7 +72,7 @@ export default async function handler(req, res) {
       : 0;
 
     return res.status(200).json({
-      totalUsers: docs.length,
+      totalUsers,
       totalAttempts,
       passedCount,
       failedCount,

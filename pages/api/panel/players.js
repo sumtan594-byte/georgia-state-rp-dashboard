@@ -11,9 +11,9 @@ const ADAPTIVE_POLL_MIN_MS = 800;
 const ADAPTIVE_POLL_MAX_MS = 3000;
 const ADAPTIVE_POLL_STEP_MS = 250;
 
-const AVATAR_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-const AVATAR_BATCH_SIZE = 100;
-const AVATAR_DATA_URI_MAX_BYTES = 80_000;
+// A subscriber whose socket has this much unsent data buffered is dead or too
+// slow to keep up; drop it so Node doesn't buffer broadcasts in memory forever.
+const MAX_SUBSCRIBER_BUFFER_BYTES = 1_000_000;
 
 globalThis.__gsrpErlcCache ??= {
   data: null,
@@ -23,10 +23,8 @@ globalThis.__gsrpErlcCache ??= {
   subscribers: new Set(),
   pollTimer: null,
   lastPlayersSignature: null,
+  lastBroadcastBody: null,
   adaptiveMinMs: ADAPTIVE_POLL_MIN_MS,
-  avatarCache: new Map(),
-  avatarFetching: null,
-  avatarRateLimitedUntil: 0,
 };
 
 export function getCache() {
@@ -110,9 +108,24 @@ function applyAdaptivePacing(cache, raw) {
 }
 
 function broadcastToSubscribers(data) {
-  const msg = JSON.stringify(withPollMetadata(globalThis.__gsrpErlcCache, data));
-  for (const sub of globalThis.__gsrpErlcCache.subscribers) {
-    try { sub.write(`event: players\ndata: ${msg}\n\n`); } catch { globalThis.__gsrpErlcCache.subscribers.delete(sub); }
+  const cache = globalThis.__gsrpErlcCache;
+
+  // Identical data means nothing to interpolate on the client — skip the
+  // re-serialize/re-send. New subscribers get a snapshot in addSubscriber.
+  const body = JSON.stringify(data);
+  if (body === cache.lastBroadcastBody) return;
+  cache.lastBroadcastBody = body;
+
+  const msg = JSON.stringify(withPollMetadata(cache, data));
+  for (const sub of cache.subscribers) {
+    // res.write() to a half-dead client doesn't throw — it buffers in memory
+    // indefinitely. Destroy connections that have stopped draining.
+    if (sub.writableLength > MAX_SUBSCRIBER_BUFFER_BYTES || sub.writableEnded || sub.destroyed) {
+      cache.subscribers.delete(sub);
+      try { sub.destroy(); } catch {}
+      continue;
+    }
+    try { sub.write(`event: players\ndata: ${msg}\n\n`); } catch { cache.subscribers.delete(sub); }
   }
 }
 
@@ -137,87 +150,21 @@ function parsePlayerId(raw) {
   return /^\d+$/.test(id) ? id : '';
 }
 
-function getCachedAvatar(cache, id) {
-  const entry = cache.avatarCache.get(id);
-  if (!entry) return null;
-  if (Date.now() - entry.at > AVATAR_CACHE_TTL_MS) return null;
-  return entry.url || null;
-}
-
-function getPlayerAvatarUrl(cache, id) {
+// Avatars are served via the /api/panel/avatar redirect endpoint (which has
+// its own size-capped cache) instead of being inlined as base64 data URIs.
+// Inlining bloated every SSE broadcast by up to 80KB per player and pinned
+// the base64 blobs in an unbounded server-side Map.
+function getPlayerAvatarUrl(id) {
   if (!id) return '';
-  return getCachedAvatar(cache, id) || `/api/panel/avatar?id=${encodeURIComponent(id)}`;
+  return `/api/panel/avatar?id=${encodeURIComponent(id)}`;
 }
 
-function attachPlayerAvatarUrls(cache, data) {
+function attachPlayerAvatarUrls(data) {
   if (!Array.isArray(data?.Players)) return data;
 
   data.Players = data.Players.map(player => {
     const id = parsePlayerId(player.Player);
-    const avatarUrl = getPlayerAvatarUrl(cache, id);
-    return avatarUrl ? { ...player, AvatarUrl: avatarUrl } : player;
-  });
-
-  return data;
-}
-
-async function hydratePlayerAvatars(cache, data) {
-  if (!Array.isArray(data?.Players) || data.Players.length === 0) return data;
-
-  const now = Date.now();
-  const ids = [...new Set(data.Players.map(p => parsePlayerId(p.Player)).filter(Boolean))];
-  const missing = ids.filter(id => !getCachedAvatar(cache, id));
-
-  if (missing.length > 0 && now >= cache.avatarRateLimitedUntil) {
-    if (!cache.avatarFetching) {
-      cache.avatarFetching = (async () => {
-        for (let i = 0; i < missing.length; i += AVATAR_BATCH_SIZE) {
-          const batch = missing.slice(i, i + AVATAR_BATCH_SIZE);
-          const url = `https://thumbnails.roblox.com/v1/users/avatar-headshot?userIds=${batch.join(',')}&size=60x60&format=Png&isCircular=true`;
-          const response = await fetch(url, { headers: { Accept: 'application/json' } });
-
-          if (response.status === 429) {
-            const retryAfter = parseFloat(response.headers.get('retry-after') || '30');
-            cache.avatarRateLimitedUntil = Date.now() + retryAfter * 1000 + 1000;
-            return;
-          }
-
-          if (!response.ok) return;
-
-          const body = await response.json().catch(() => ({}));
-          for (const item of body?.data || []) {
-            if (item?.targetId) {
-              let dataUri = '';
-              if (item.imageUrl) {
-                try {
-                  const imageResponse = await fetch(item.imageUrl);
-                  const contentType = imageResponse.headers.get('content-type') || 'image/png';
-                  const bytes = await imageResponse.arrayBuffer();
-                  if (imageResponse.ok && bytes.byteLength <= AVATAR_DATA_URI_MAX_BYTES) {
-                    dataUri = `data:${contentType};base64,${Buffer.from(bytes).toString('base64')}`;
-                  }
-                } catch {
-                  dataUri = '';
-                }
-              }
-              cache.avatarCache.set(String(item.targetId), {
-                url: dataUri,
-                at: Date.now(),
-              });
-            }
-          }
-        }
-      })().finally(() => {
-        cache.avatarFetching = null;
-      });
-    }
-
-    await cache.avatarFetching.catch(() => {});
-  }
-
-  data.Players = data.Players.map(player => {
-    const id = parsePlayerId(player.Player);
-    const avatarUrl = getPlayerAvatarUrl(cache, id);
+    const avatarUrl = getPlayerAvatarUrl(id);
     return avatarUrl ? { ...player, AvatarUrl: avatarUrl } : player;
   });
 
@@ -256,25 +203,16 @@ async function doErlcFetch(cache, key, fullFetch) {
   applyAdaptivePacing(cache, raw);
 
   if (fullFetch) {
-    const data = attachPlayerAvatarUrls(cache, raw);
-    cache.data = data;
+    cache.data = attachPlayerAvatarUrls(raw);
     cache.fetchedAt = Date.now();
     cache.lastFullFetch = cache.fetchedAt;
-    broadcastToSubscribers(data);
-    hydratePlayerAvatars(cache, {
-      ...data,
-      Players: Array.isArray(data.Players) ? data.Players.map(player => ({ ...player })) : [],
-    }).then(hydrated => {
-      if (!Array.isArray(hydrated?.Players) || hydrated.Players.length === 0) return;
-      cache.data = { ...cache.data, Players: hydrated.Players };
-      broadcastToSubscribers(cache.data);
-    }).catch(() => {});
+    broadcastToSubscribers(cache.data);
   } else {
-    const players = attachPlayerAvatarUrls(cache, raw)?.Players;
+    const players = attachPlayerAvatarUrls(raw)?.Players;
     if (players && cache.data) {
       cache.data = { ...cache.data, Players: players };
     } else if (!cache.data) {
-      cache.data = attachPlayerAvatarUrls(cache, raw);
+      cache.data = attachPlayerAvatarUrls(raw);
     }
     cache.fetchedAt = Date.now();
     broadcastToSubscribers(cache.data);

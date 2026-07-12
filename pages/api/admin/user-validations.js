@@ -17,11 +17,23 @@ export default async function handler(req, res) {
     const dbStaff = client.db('gsrp_staff');
     const dbDefault = client.db();
 
+    // Project only the fields this aggregation reads — these collections are
+    // loaded whole, and un-projected quiz attempt docs carry full answer
+    // payloads that balloon memory as the collections grow.
     const [trainingProgress, quizAttempts, ridealongData, traineeTracking] = await Promise.all([
-      dbStaff.collection('training_progress').find({}).toArray(),
-      dbDefault.collection('quiz_attempts').find({}).toArray(),
-      dbDefault.collection('ridealong_attempts').find({}).toArray(),
-      dbDefault.collection('trainee_tracking').find({}).toArray(),
+      dbStaff.collection('training_progress').find({}).project({
+        _id: 0, userId: 1, handbookCompleted: 1, completedSections: 1, lastUpdated: 1,
+      }).toArray(),
+      dbDefault.collection('quiz_attempts').find({}).project({
+        _id: 0, userId: 1, hasPassed: 1, hasPassedAt: 1, cooldownUntil: 1, traineeRoleRemoved: 1,
+        'attempts.score': 1, 'attempts.total': 1, 'attempts.pct': 1, 'attempts.pass': 1, 'attempts.timestamp': 1,
+      }).toArray(),
+      dbDefault.collection('ridealong_attempts').find({}).project({
+        _id: 0, userId: 1, hasPassed: 1, cooldownUntil: 1,
+      }).toArray(),
+      dbDefault.collection('trainee_tracking').find({}).project({
+        _id: 0, userId: 1, status: 1, startedAt: 1, deadline: 1, removedAt: 1, removeReason: 1,
+      }).toArray(),
     ]);
 
     const userMap = {};
@@ -165,6 +177,7 @@ export default async function handler(req, res) {
     const cachedDocs = await dbDefault
       .collection('discord_user_cache')
       .find({ userId: { $in: userIds } })
+      .project({ _id: 0, userId: 1, username: 1, avatar: 1, updatedAt: 1 })
       .toArray();
     const cacheMap = {};
     for (const doc of cachedDocs) {

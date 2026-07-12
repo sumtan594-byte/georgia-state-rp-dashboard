@@ -24,7 +24,9 @@ export default async function handler(req, res) {
     const includeUserData = req.query.userData === 'true';
 
     try {
-      const docs = await attemptsCollection.find({}).toArray();
+      const docs = await attemptsCollection.find({}).project({
+        _id: 0, userId: 1, attempts: 1, cooldownUntil: 1, hasPassed: 1, hasPassedAt: 1,
+      }).toArray();
       const allAttempts = [];
       const userDataMap = {};
 

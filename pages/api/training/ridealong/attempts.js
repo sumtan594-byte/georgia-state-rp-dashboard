@@ -27,7 +27,9 @@ export default async function handler(req, res) {
   }
 
   const attemptsCollection = db.collection('ridealong_attempts')
-  const allDocs = await attemptsCollection.find({}).toArray()
+  const allDocs = await attemptsCollection.find({}).project({
+    _id: 0, userId: 1, attempts: 1, hasPassed: 1, cooldownUntil: 1, discordRolesApplied: 1,
+  }).toArray()
 
   const attempts = allDocs.flatMap(doc => {
     return (doc.attempts || []).map(a => ({
