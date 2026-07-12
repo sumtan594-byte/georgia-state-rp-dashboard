@@ -484,21 +484,6 @@ select option {
   100% { filter: none; transform: scale(1); }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .gsrp-map-button,
-  .gsrp-map-blip,
-  .gsrp-map-banner,
-  .gsrp-map-loading-card,
-  .gsrp-panel-loading-card,
-  .gsrp-panel-loading-ring,
-  .gsrp-player-panel,
-  .gsrp-replay-bar,
-  .gsrp-kill-label,
-  .gsrp-map-death .gsrp-map-blip {
-    animation: none !important;
-    transition: none !important;
-  }
-}
 
 /* ===================== TRANSCRIPT VIEWER ===================== */
 discord-messages {
@@ -945,15 +930,3 @@ tbody tr:hover {
   animation: fade-in-down 0.32s var(--ease-out) forwards;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-    transition-duration: 0.01ms !important;
-  }
-}

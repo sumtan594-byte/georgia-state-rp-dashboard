@@ -3,7 +3,7 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import { useSession } from 'next-auth/react';
 import { createPortal } from 'react-dom';
-import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { PageSkeleton } from '../../components/SkeletonLoader';
 import { 
   FileText, 
@@ -492,7 +492,7 @@ export default function ApplicationDetail() {
   const [autoMarkError, setAutoMarkError] = useState('');
   const [autoMarkStatus, setAutoMarkStatus] = useState(null);
   const [autoMarkAttempts, setAutoMarkAttempts] = useState(0);
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = false;
 
   useEffect(() => {
     if ((!autoMarkResult && !autoMarkError) || !autoMarkResultRef.current) return undefined;
