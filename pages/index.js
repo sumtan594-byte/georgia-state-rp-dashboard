@@ -199,11 +199,6 @@ export default function Landing({ showcase = {}, gallery = [] }) {
           <div aria-hidden="true" className="pointer-events-none absolute top-40 -right-40 w-[480px] h-[480px] rounded-full bg-gsrp-teal/20 blur-[130px] animate-aura" style={{ animationDelay: '3s' }} />
 
           <div className="relative max-w-6xl mx-auto px-4 sm:px-6 pt-16 md:pt-24 pb-16 text-center">
-            <div className="inline-flex items-center gap-2.5 rounded-full border border-white/10 bg-white/[0.03] backdrop-blur px-4 py-2 text-[13px] font-semibold text-gsrp-teal-light/80 mb-7 animate-fade-in-up">
-              <span className="tac-live-dot" />
-              Emergency Response: Liberty County · Roblox Roleplay
-            </div>
-
             <h1 className="font-display text-white font-extrabold tracking-tight leading-[1.02] text-4xl sm:text-6xl md:text-7xl mb-6 animate-fade-in-up stagger-1">
               Georgia State<br />
               <span className="bg-gradient-to-r from-gsrp-orange via-gsrp-warm to-gsrp-gold bg-clip-text text-transparent">Roleplay</span>
