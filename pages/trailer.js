@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { useRef, useState } from 'react';
 import { ArrowLeft, Play, Maximize2, Volume2, VolumeX } from 'lucide-react';
 
-const VIDEO_SRC = '/media/Georgia%20State%20Roleplay%20Ten%20Thousand%20Member%20Anniversary.mp4';
+const VIDEO_SRC = '/media/Georgia_State_Roleplay_Ten_Thousand_Member_Anniversary.mp4';
 const LOGO = '/media/gsrp-logo.png';
 
 export default function Trailer() {
