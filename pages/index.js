@@ -5,7 +5,7 @@ import { Reveal, ShowcaseSections, MediaMarquee } from '../components/landing/La
 import {
   Shield, Star, Users, Activity, Building2, Radio, Flame, Siren,
   Car, ArrowRight, CheckCircle2, MessageSquare, Trophy, Sparkles,
-  Globe, Lock, ScrollText, Clock,
+  Globe, Lock, ScrollText, Clock, Play,
 } from 'lucide-react';
 
 const DISCORD_INVITE = 'https://discord.gg/gsrp7';
@@ -221,6 +221,18 @@ export default function Landing({ showcase = {}, gallery = [] }) {
                 <Globe size={18} className="text-gsrp-teal-light" />
                 Roblox Community
               </a>
+            </div>
+
+            {/* Watch trailer */}
+            <div className="mt-5 flex justify-center animate-fade-in-up stagger-4">
+              <Link href="/trailer"
+                className="trailer-cta group inline-flex items-center gap-3 rounded-full pl-2 pr-6 py-2 font-bold text-[14.5px] text-white cursor-pointer">
+                <span className="relative flex h-9 w-9 items-center justify-center rounded-full bg-gsrp-orange shadow-glow-orange">
+                  <span aria-hidden="true" className="absolute inset-0 rounded-full bg-gsrp-orange animate-ping opacity-40" />
+                  <Play size={15} className="relative translate-x-[1px] fill-white text-white" />
+                </span>
+                Watch server trailer
+              </Link>
             </div>
 
             {/* Stats band */}
