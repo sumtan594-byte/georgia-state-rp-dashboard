@@ -110,7 +110,7 @@ function applyAdaptivePacing(cache, raw) {
 function broadcastToSubscribers(data) {
   const cache = globalThis.__gsrpErlcCache;
 
-  // Identical data means nothing to interpolate on the client — skip the
+  // Identical data means nothing to interpolate on the client, skip the
   // re-serialize/re-send. New subscribers get a snapshot in addSubscriber.
   const body = JSON.stringify(data);
   if (body === cache.lastBroadcastBody) return;
@@ -118,7 +118,7 @@ function broadcastToSubscribers(data) {
 
   const msg = JSON.stringify(withPollMetadata(cache, data));
   for (const sub of cache.subscribers) {
-    // res.write() to a half-dead client doesn't throw — it buffers in memory
+    // res.write() to a half-dead client doesn't throw, it buffers in memory
     // indefinitely. Destroy connections that have stopped draining.
     if (sub.writableLength > MAX_SUBSCRIBER_BUFFER_BYTES || sub.writableEnded || sub.destroyed) {
       cache.subscribers.delete(sub);
@@ -322,12 +322,12 @@ export default async function handler(req, res) {
   const cache = getCache();
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
 
-  // If we already have cached data, return it immediately — no ERLC call.
+  // If we already have cached data, return it immediately, no ERLC call.
   if (cache.data) {
     return res.status(200).json(withPollMetadata(cache, cache.data));
   }
 
-  // No cache at all yet — cold start.
+  // No cache at all yet, cold start.
   if (cache.fetching) {
     try {
       await cache.fetching;

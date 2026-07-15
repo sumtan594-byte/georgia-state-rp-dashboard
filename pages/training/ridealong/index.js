@@ -182,7 +182,7 @@ export default function RidealongPage() {
       setStarted(true)
     } else {
       setCallsignError(
-        'Incorrect callsign. Your callsign must match your rank — Junior Moderators must use the prefix JM- (e.g. JM-1234). The numbers at the end do not matter, but the prefix does.'
+        'Incorrect callsign. Your callsign must match your rank, Junior Moderators must use the prefix JM- (e.g. JM-1234). The numbers at the end do not matter, but the prefix does.'
       )
     }
   }, [callsignInput])
@@ -408,7 +408,7 @@ export default function RidealongPage() {
         </div>
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">Ridealong Simulation</h1>
-          <p className="text-gsrp-teal-light/40 text-xs font-medium">Simulated mod call training — Georgia State Roleplay</p>
+          <p className="text-gsrp-teal-light/40 text-xs font-medium">Simulated mod call training, Georgia State Roleplay</p>
         </div>
       </div>
 

@@ -75,7 +75,7 @@ export default async function handler(req, res) {
 function errorPage(title, message) {
   const isNotInServer = title === 'Not in Server';
   return `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${title} — GSRP Quiz</title>
+<title>${title}, GSRP Quiz</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}

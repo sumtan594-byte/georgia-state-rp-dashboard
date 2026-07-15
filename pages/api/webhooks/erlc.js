@@ -10,7 +10,6 @@ const PRC_PUBLIC_KEY_BASE64 = 'MCowBQYDK2VwAyEAjSICb9pp0kHizGQtdG8ySWsDChfGqi+gy
 const TARGET_WEBHOOK_URL = process.env.ERLC_WEBHOOK_URL;
 
 const PUBLIC_KEY_PEM = `-----BEGIN PUBLIC KEY-----\n${PRC_PUBLIC_KEY_BASE64}\n-----END PUBLIC KEY-----`;
-const DEV_MODE = process.env.NODE_ENV === 'development' || process.env.ERLC_WEBHOOK_DEV === 'true';
 const MAX_WEBHOOK_BODY_BYTES = 256 * 1024;
 const MAX_WEBHOOK_EVENTS = 50;
 const MAX_SIGNATURE_AGE_MS = 5 * 60 * 1000;
@@ -68,7 +67,7 @@ export default async function handler(req, res) {
   }
 
   if (!TARGET_WEBHOOK_URL) {
-    console.error('[ERLC] Missing ERLC_WEBHOOK_URL env var — cannot forward');
+    console.error('[ERLC] Missing ERLC_WEBHOOK_URL env var, cannot forward');
     return res.status(500).json({ error: 'Webhook not configured' });
   }
 
@@ -102,16 +101,12 @@ export default async function handler(req, res) {
     const signature = Buffer.from(signatureHex, 'hex');
 
     let isVerified = false;
-    if (DEV_MODE) {
-      isVerified = true;
-    } else {
-      isVerified = crypto.verify(
-        null,
-        message,
-        { key: PUBLIC_KEY_PEM, format: 'pem', type: 'spki' },
-        signature
-      );
-    }
+    isVerified = crypto.verify(
+      null,
+      message,
+      { key: PUBLIC_KEY_PEM, format: 'pem', type: 'spki' },
+      signature
+    );
 
     if (!isVerified) {
       const now = Date.now();

@@ -117,7 +117,7 @@ export default async function handler(req, res) {
 
     if (erlcRes.status === 429) {
       const body = await erlcRes.json().catch(() => ({}));
-      return res.status(429).json({ error: 'Rate limited by PRC — queued retry failed', ...body });
+      return res.status(429).json({ error: 'Rate limited by PRC, queued retry failed', ...body });
     }
 
     if (erlcRes.status === 422) {
@@ -125,7 +125,7 @@ export default async function handler(req, res) {
     }
 
     if (erlcRes.status === 403) {
-      return res.status(403).json({ error: 'Unauthorized — check your ERLC_API_KEY', code: 2002 });
+      return res.status(403).json({ error: 'Unauthorized, check your ERLC_API_KEY', code: 2002 });
     }
 
     const text = await erlcRes.text().catch(() => '');

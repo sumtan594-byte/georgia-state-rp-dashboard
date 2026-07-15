@@ -49,16 +49,16 @@ const TOP_MEMBERS = [
 const REVIEWS = [
   { name: 'kamden112s', handle: '@k_a_m_d_e_n', rating: 5, text: 'Best owners and great roleplays! Must join.' },
   { name: 'Kadyn123311', handle: '@fielddaygaming34yt', rating: 5, text: "Best experience I've ever had in my whole entire career of Roleplaying." },
-  { name: 'Hopeclipzz', handle: '@whois._adrian._', rating: 5, text: 'One of the best servers in ER:LC. The staff get the job done efficiently and the roleplay scene is amazing — so many department opportunities.' },
-  { name: 'cs202021', handle: '@joeman584809', rating: 5, text: 'Best RP server ever. — Signed, Probationary Deputy.' },
+  { name: 'Hopeclipzz', handle: '@whois._adrian._', rating: 5, text: 'One of the best servers in ER:LC. The staff get the job done efficiently and the roleplay scene is amazing, so many department opportunities.' },
+  { name: 'cs202021', handle: '@joeman584809', rating: 5, text: 'Best RP server ever. Signed, Probationary Deputy.' },
   { name: 'Power_king027', handle: '@power_king027', rating: 5, text: 'The server is extremely professional, and the staff is kind, considerate, and knowledgeable.' },
   { name: 'guus_nl22', handle: 'ER:LC veteran', rating: 5, text: "I've played ERLC for 4-5 years and this server really stands out. People are nice and welcoming and the RP is almost always realistic." },
-  { name: 'TvRemote31', handle: '@tvremote31', rating: 5, text: 'Moderation is good, the sessions are chill and have good RPs — would recommend to join.' },
+  { name: 'TvRemote31', handle: '@tvremote31', rating: 5, text: 'Moderation is good, the sessions are chill and have good RPs, would recommend to join.' },
   { name: 'Dubyazx', handle: '@dubyayt', rating: 5, text: 'Very good roleplay server. The staff team really know what they are doing.' },
-  { name: 'CRD_588', handle: '@CRD_588', rating: 5, text: 'Good server along with the staff — very helpful. Overall a great place to roleplay.' },
+  { name: 'CRD_588', handle: '@CRD_588', rating: 5, text: 'Good server along with the staff, very helpful. Overall a great place to roleplay.' },
   { name: 'Securityguard2711', handle: '@cape4726', rating: 5, text: 'Made a great first impression and already gave me chances for development. Currently in DHS and it is very fun.' },
-  { name: 'FootballPuppy145', handle: '@udonemessedupaa_ron', rating: 5, text: 'Very supportive and helpful staff. Before I was staff I still loved the community — they always have players online.' },
-  { name: 'alexisd4786', handle: 'GSRP member', rating: 5, text: "Really good server — it's pretty fun and there's always something happening." },
+  { name: 'FootballPuppy145', handle: '@udonemessedupaa_ron', rating: 5, text: 'Very supportive and helpful staff. Before I was staff I still loved the community, they always have players online.' },
+  { name: 'alexisd4786', handle: 'GSRP member', rating: 5, text: "Really good server, it's pretty fun and there's always something happening." },
 ];
 
 const KEYWORDS = 'ERLC, Emergency Response Liberty County, ER:LC, ERLC Roleplay, Georgia State Roleplay, GSRP, Roblox roleplay, roleplay server, ERLC server, ERLC community, police roleplay, rp server, Atlanta City roleplay, best ERLC server, ERLC discord';
@@ -153,7 +153,7 @@ export default function Landing({ showcase = {}, gallery = [] }) {
     <>
       <Head>
         <title key="title">Georgia State Roleplay (GSRP) | #1 ERLC Roleplay Server on Roblox</title>
-        <meta key="description" name="description" content="Join Georgia State Roleplay (GSRP) — one of the largest, most professional ER:LC roleplay servers on Roblox. 9,000+ members, trained staff, realistic ERLC departments, and immersive police, fire & civilian roleplay." />
+        <meta key="description" name="description" content="Join Georgia State Roleplay (GSRP), one of the largest, most professional ER:LC roleplay servers on Roblox. 9,000+ members, trained staff, realistic ERLC departments, and immersive police, fire & civilian roleplay." />
         <meta name="keywords" content={KEYWORDS} />
         <meta name="robots" content="index, follow" />
         <link rel="canonical" href={SITE_URL} />
@@ -207,7 +207,7 @@ export default function Landing({ showcase = {}, gallery = [] }) {
             <p className="max-w-2xl mx-auto text-gsrp-teal-light/65 text-base md:text-lg leading-relaxed mb-9 animate-fade-in-up stagger-2">
               One of the largest and most professional <strong className="text-white font-semibold">ERLC roleplay servers</strong> on
               Roblox. Join <strong className="text-white font-semibold">9,000+ members</strong> for realistic
-              ER:LC roleplay — trained staff, real departments, and non-stop sessions.
+              ER:LC roleplay, trained staff, real departments, and non-stop sessions.
             </p>
 
             <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-in-up stagger-3">
@@ -337,7 +337,7 @@ export default function Landing({ showcase = {}, gallery = [] }) {
               Most active members
             </h2>
             <p className="text-gsrp-teal-light/60 leading-relaxed">
-              Hundreds of hours of roleplay logged — these members live and breathe Georgia State Roleplay.
+              Hundreds of hours of roleplay logged, these members live and breathe Georgia State Roleplay.
             </p>
           </Reveal>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 max-w-4xl mx-auto">

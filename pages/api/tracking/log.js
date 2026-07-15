@@ -105,7 +105,7 @@ export default async function handler(req, res) {
       if (!whitelisted) {
         return res.status(200).json({ ok: false, blocked: true, reason: 'proxy' });
       }
-      // whitelisted — don't label as proxy in profile (ip-api false positives)
+      // whitelisted, don't label as proxy in profile (ip-api false positives)
       geo = { ...geo, proxy: false };
     }
 

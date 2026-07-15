@@ -103,7 +103,7 @@ const AutoMarkResult = ({ result, error, status, attempts, applicationStatus, on
       <div className="mb-6 rounded-xl border border-blue-400/20 bg-blue-400/5 px-4 py-3 flex items-start gap-3">
         <AlertCircle size={16} className="text-blue-300 mt-0.5 shrink-0" />
         <div>
-          <p className="text-xs font-bold text-blue-200">Advisory result only — no decision has been made.</p>
+          <p className="text-xs font-bold text-blue-200">Advisory result only, no decision has been made.</p>
           <p className="text-[11px] text-blue-200/55 mt-1">The reviewing staff member must check the responses and confirm the final outcome.</p>
         </div>
       </div>
@@ -319,7 +319,7 @@ const IntegrityScoreCard = ({ application }) => {
         <div className="mt-4 flex items-center gap-2 px-3 py-2 bg-red-500/10 border border-red-500/20 rounded-xl">
           <AlertTriangle size={14} className="text-red-500 flex-shrink-0" />
           <span className="text-xs font-bold text-red-400">
-            {totalTabOuts} tab-outs detected (threshold: {TAB_OUT_THRESHOLD}) — review recommended
+            {totalTabOuts} tab-outs detected (threshold: {TAB_OUT_THRESHOLD}), review recommended
           </span>
         </div>
       )}
@@ -359,7 +359,7 @@ const MonitoringTimeline = ({ application, fieldId, fieldLabel }) => {
                 {tabOuts.map((t, i) => (
                   <div key={i} className="flex items-center gap-2 text-[10px] text-amber-400/70 bg-amber-500/5 px-3 py-1.5 rounded-lg border border-amber-500/10">
                     <span className="font-mono">{formatTime(t.leftAt)}</span>
-                    <span>— left for <span className="font-bold text-amber-400">{formatDuration(t.duration)}</span></span>
+                    <span>- left for <span className="font-bold text-amber-400">{formatDuration(t.duration)}</span></span>
                   </div>
                 ))}
               </div>
@@ -407,7 +407,7 @@ const MonitoringTimeline = ({ application, fieldId, fieldLabel }) => {
                 {idlePeriods.map((p, i) => (
                   <div key={i} className="flex items-center gap-2 text-[10px] text-cyan-400/70 bg-cyan-500/5 px-3 py-1.5 rounded-lg border border-cyan-500/10">
                     <span className="font-mono">{formatTime(p.startedAt)}</span>
-                    <span>— idle for <span className="font-bold text-cyan-400">{formatDuration(p.duration)}</span></span>
+                    <span>- idle for <span className="font-bold text-cyan-400">{formatDuration(p.duration)}</span></span>
                   </div>
                 ))}
               </div>
@@ -1055,7 +1055,7 @@ export default function ApplicationDetail() {
                     <span className="text-amber-500/40 font-mono text-xs">#{i + 1}</span>
                     <span className="text-gsrp-teal-light/50 font-mono text-xs">{formatTime(tab.leftAt)}</span>
                     <span className="text-amber-400/80 text-xs font-medium">
-                      Left on {tab.activeField || 'unknown field'} — returned after <span className="font-bold text-amber-400">{formatDuration(tab.duration)}</span>
+                      Left on {tab.activeField || 'unknown field'}, returned after <span className="font-bold text-amber-400">{formatDuration(tab.duration)}</span>
                     </span>
                   </div>
                 ))}
@@ -1346,7 +1346,7 @@ export default function ApplicationDetail() {
             </div>
             <p className="text-gsrp-teal-light/60 text-sm mb-2">
               This permanently deletes <span className="text-white font-bold">every application</span> and all associated
-              data — answers, keystroke timelines, monitoring records, and auto-mark results — for all applicants.
+              data, answers, keystroke timelines, monitoring records, and auto-mark results, for all applicants.
             </p>
             <p className="text-red-400/80 text-xs mb-5 font-medium">
               This action cannot be undone and affects the entire database.

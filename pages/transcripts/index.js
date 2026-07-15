@@ -445,7 +445,7 @@ export async function getServerSideProps(context) {
   const session = await getServerSession(context.req, context.res, authOptions);
   const { sort = 'latest' } = context.query;
 
-  // Only check auth server-side — the actual transcript list is fetched
+  // Only check auth server-side, the actual transcript list is fetched
   // client-side via /api/transcripts/list to avoid the 210kB page data warning.
   if (!session) return { props: { transcripts: [], isAdmin: false, currentSort: sort } };
 

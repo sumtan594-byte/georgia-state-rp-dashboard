@@ -593,7 +593,7 @@ export default function RidealongEngine({
 
         <div className="mt-6">
           <h3 className="text-sm font-bold text-gsrp-teal-light/40 uppercase tracking-wider mb-4">
-            Scenario Review — {results.filter(r => !r.correct).length} incorrect
+            Scenario Review, {results.filter(r => !r.correct).length} incorrect
           </h3>
           {results.map((r, i) => (
             <div
@@ -706,8 +706,8 @@ export default function RidealongEngine({
         <div className="flex items-center justify-between mb-2">
           <span className="text-xs font-bold text-gsrp-teal-light/40 uppercase tracking-wider">
             Scenario {currentQ + 1} of {total}
-            {isRplog && <span className="ml-2 text-gsrp-teal-light/30">— RP Logging</span>}
-            {isPlog && <span className="ml-2 text-gsrp-teal-light/30">— Punishment Logging</span>}
+            {isRplog && <span className="ml-2 text-gsrp-teal-light/30">- RP Logging</span>}
+            {isPlog && <span className="ml-2 text-gsrp-teal-light/30">- Punishment Logging</span>}
           </span>
           <div className="flex items-center gap-3">
             {canSkipQuestions && !answered && (
@@ -749,7 +749,7 @@ export default function RidealongEngine({
             <div className="flex items-center gap-2 mb-4">
               <div className="w-1.5 h-1.5 rounded-full bg-gsrp-orange" />
               <span className="text-[10px] font-bold text-gsrp-teal-light/40 uppercase tracking-wider">
-                Scene — Responded to {scenario.modCall.callerName}
+                Scene, Responded to {scenario.modCall.callerName}
               </span>
               {isRplog && (
                 <span className="text-[10px] px-1.5 py-0.5 rounded bg-gsrp-teal/10 text-gsrp-teal-light/50 ml-auto">
@@ -798,7 +798,7 @@ export default function RidealongEngine({
                   <div className="flex items-center gap-2 mb-4">
                     <FileText size={14} className="text-gsrp-teal-light" />
                     <h3 className="text-xs font-bold text-gsrp-teal-light/60 uppercase tracking-wider">
-                      Logs Reviewed — Make Your Decision
+                      Logs Reviewed, Make Your Decision
                     </h3>
                   </div>
                   <div className="flex items-center gap-2 mb-4">
@@ -1011,7 +1011,7 @@ export default function RidealongEngine({
                     onClick={() => { setRpLogOpen(false); setRpLogsViewed(true) }}
                     className="w-full py-2.5 bg-gsrp-orange text-white rounded-xl text-sm font-bold hover:bg-gsrp-orange/90 transition-all cursor-pointer"
                   >
-                    Close Logs — I've Reviewed Them
+                    Close Logs, I've Reviewed Them
                   </button>
                 </div>
               </div>
@@ -1127,7 +1127,7 @@ export default function RidealongEngine({
                         {correct ? <CheckCircle2 size={12} className="shrink-0 mt-0.5" /> : <XCircle size={12} className="shrink-0 mt-0.5" />}
                         <span>
                           {correct
-                            ? `Correct — ${pFormData.punishment} is the right level`
+                            ? `Correct, ${pFormData.punishment} is the right level`
                             : `Expected: ${scenario.correctPunishment}`}
                         </span>
                       </div>

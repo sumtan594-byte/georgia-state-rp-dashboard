@@ -72,7 +72,7 @@ export default function Sidebar({ open, onToggle }) {
   const canManageAuth = hasRefreshed ? canManageAuthorization(effectiveSession) : false;
   const viewersFor = (href) => activeViewers.filter(v => v.page === href || v.page?.startsWith(`${href}/`));
 
-  // Exact match for root, prefix match for sections — so /panel/stats lights up /panel too.
+  // Exact match for root, prefix match for sections, so /panel/stats lights up /panel too.
   const isActive = (href) => {
     const path = router.asPath.split('?')[0];
     if (href === '/') return path === '/';

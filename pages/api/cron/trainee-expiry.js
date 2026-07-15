@@ -3,9 +3,12 @@ import { processExpiredTrainees } from '../../../lib/trainee-tracking'
 
 // Manual trigger for the 7-day trainee expiry sweep. The app also runs this
 // automatically on an interval (see instrumentation.js); this route lets you
-// kick it off by hand. Protected by CRON_SECRET when that env var is set.
+// kick it off by hand. Protected by CRON_SECRET, required in production.
 export default async function handler(req, res) {
   const secret = process.env.CRON_SECRET
+  if (!secret && process.env.NODE_ENV === 'production') {
+    return res.status(403).json({ error: 'CRON_SECRET not configured' })
+  }
   if (secret) {
     const auth = req.headers.authorization || ''
     if (auth !== `Bearer ${secret}`) {

@@ -12,14 +12,14 @@ async function sendRidealongWebhook({ webhookUrl, userId, username, score, total
     ? results.map((r, i) => {
         const label = r.scenarioTitle || r.title || `Scenario ${i + 1}`
         const outcome = r.correct ? 'Pass' : 'Fail'
-        return `${i + 1}. ${label} — ${outcome}`
+        return `${i + 1}. ${label}, ${outcome}`
       }).join('\n')
     : 'No scenario data available'
 
   const payload = {
     embeds: [
       {
-        title: `Ridealong Simulation — ${passFail}`,
+        title: `Ridealong Simulation, ${passFail}`,
         color: accentColor,
         fields: [
           {
@@ -71,11 +71,11 @@ async function sendRidealongWebhook({ webhookUrl, userId, username, score, total
 
   if (!res.ok) {
     const errBody = await res.text().catch(() => '')
-    console.error('[Ridealong Submit] Webhook returned', res.status, '—', errBody.substring(0, 300))
+    console.error('[Ridealong Submit] Webhook returned', res.status, '-', errBody.substring(0, 300))
     return false
   }
 
-  console.log('[Ridealong Submit] Webhook sent successfully — pass:', pass)
+  console.log('[Ridealong Submit] Webhook sent successfully, pass:', pass)
   return true
 }
 
@@ -102,7 +102,7 @@ export default async function handler(req, res) {
   const { username, globalName, avatar, score, total, pct, pass, results, timestamp } = body
   const userId = session.user.id
 
-  console.log('[Ridealong Submit] Received submission — user:', userId, 'username:', username || session.user.name, 'score:', score, '/', total, 'pass:', pass)
+  console.log('[Ridealong Submit] Received submission, user:', userId, 'username:', username || session.user.name, 'score:', score, '/', total, 'pass:', pass)
 
   if (score === undefined) return res.status(400).json({ error: 'Missing fields' })
 
@@ -160,7 +160,7 @@ export default async function handler(req, res) {
   if (!pass) {
     const cooldownMs = RIDEALONG_CONFIG.COOLDOWN_HOURS * 60 * 60 * 1000
     cooldownUntil = new Date(Date.now() + cooldownMs).toISOString()
-    console.log('[Ridealong Submit] Attempt failed — cooldown until:', cooldownUntil)
+    console.log('[Ridealong Submit] Attempt failed, cooldown until:', cooldownUntil)
   } else {
     hasPassed = true
     hasPassedAt = submittedAt
@@ -201,13 +201,13 @@ export default async function handler(req, res) {
         timestamp: submittedAt,
       })
     } else {
-      console.warn('[Ridealong Submit] No TRAINING_WEBHOOK_URL configured — skipping webhook')
+      console.warn('[Ridealong Submit] No TRAINING_WEBHOOK_URL configured, skipping webhook')
     }
   } catch (err) {
     console.error('[Ridealong Submit] Webhook error:', err.message)
   }
 
-  console.log('[Ridealong Submit] Complete — user:', userId, 'pass:', pass, 'discordRolesApplied:', discordRolesApplied)
+  console.log('[Ridealong Submit] Complete, user:', userId, 'pass:', pass, 'discordRolesApplied:', discordRolesApplied)
 
   res.status(200).json({
     ok: true,

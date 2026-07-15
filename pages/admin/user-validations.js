@@ -37,10 +37,10 @@ function traineeState(user, now) {
     return { kind: 'completed', label: 'Training complete', tone: 'green' };
   }
   if (status === 'expired') {
-    return { kind: 'removed', label: 'Role removed — expired', tone: 'gray' };
+    return { kind: 'removed', label: 'Role removed, expired', tone: 'gray' };
   }
   if (status === 'failed') {
-    return { kind: 'removed', label: 'Role removed — failed quiz', tone: 'red' };
+    return { kind: 'removed', label: 'Role removed, failed quiz', tone: 'red' };
   }
   // active
   if (!user.traineeDeadline) return { kind: 'active', label: 'In training', tone: 'orange' };
@@ -207,7 +207,7 @@ export default function UserValidationsPage({ canAccess: serverCanAccess, userIs
 
       if (res.status === 429) {
         // Discord is rate limiting. Apply partial results, wait, then retry the
-        // ones still missing — staying on the loading screen the whole time.
+        // ones still missing, staying on the loading screen the whole time.
         const data = await res.json().catch(() => ({}));
         if (cancelled) return;
         applyResolved(data.resolved);
@@ -401,7 +401,7 @@ function StatCard({ icon: Icon, label, value, tone }) {
 
 function UserCard({ user, now, isExpanded, onToggle, onAction, actionLoading, isAdmin }) {
   const lastAttempt = user.lastAttempt;
-  const lastAttemptDate = lastAttempt?.timestamp ? new Date(lastAttempt.timestamp).toLocaleDateString() : '—';
+  const lastAttemptDate = lastAttempt?.timestamp ? new Date(lastAttempt.timestamp).toLocaleDateString() : '-';
 
   const ts = traineeState(user, now);
   const quizCooldownMs = user.isOnCooldown && user.cooldownUntil ? new Date(user.cooldownUntil).getTime() - now : 0;
@@ -461,7 +461,7 @@ function UserCard({ user, now, isExpanded, onToggle, onAction, actionLoading, is
             )}
             {lastAttempt && (
               <span className="text-xs text-gray-500">
-                Last: {lastAttempt.score}/{lastAttempt.total} ({lastAttempt.pct}%) — {lastAttemptDate}
+                Last: {lastAttempt.score}/{lastAttempt.total} ({lastAttempt.pct}%), {lastAttemptDate}
               </span>
             )}
           </div>

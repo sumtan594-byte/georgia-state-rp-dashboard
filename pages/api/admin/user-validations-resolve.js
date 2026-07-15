@@ -42,7 +42,7 @@ export default async function handler(req, res) {
     const client = await clientPromise;
     const db = client.db();
 
-    // Resolve sequentially rather than firing all lookups at once — a burst of
+    // Resolve sequentially rather than firing all lookups at once, a burst of
     // parallel requests is exactly what trips Discord's per-route rate limit.
     // enrichUserInfo backs off on 429s; if it still can't get through it throws
     // DiscordRateLimitError, which we surface to the client as a 429 so it can

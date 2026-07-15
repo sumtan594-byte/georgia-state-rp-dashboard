@@ -243,7 +243,7 @@ export default function QuizEngine({ questions, passScore, cooldownHours, onSubm
         {/* Review Section */}
         <div className="mt-6">
           <h3 className="text-sm font-bold text-gsrp-teal-light/40 uppercase tracking-wider mb-4">
-            Review — {userAnswers.filter(a => !a.correct).length} incorrect
+            Review, {userAnswers.filter(a => !a.correct).length} incorrect
           </h3>
           {userAnswers.map((a, i) => (
             <div

@@ -33,7 +33,7 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    // Save progress (for future resume functionality — currently unused but stubbed)
+    // Save progress (for future resume functionality, currently unused but stubbed)
     return res.status(200).json({ ok: true })
   }
 

@@ -350,7 +350,7 @@ export default function TrainingPage() {
         </div>
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-white">Staff Orientation Quiz</h1>
-          <p className="text-gsrp-teal-light/40 text-xs font-medium">Staff Standards & Development — Georgia State Roleplay</p>
+          <p className="text-gsrp-teal-light/40 text-xs font-medium">Staff Standards & Development, Georgia State Roleplay</p>
         </div>
       </div>
 

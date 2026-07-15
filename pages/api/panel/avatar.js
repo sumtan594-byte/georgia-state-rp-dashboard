@@ -8,7 +8,7 @@ const fetching = new Map();
 const CACHE_TTL_MS = 300_000; // 5 min for rate-limit safety; 24h for the actual redirect
 const MAX_CACHE_SIZE = 500;
 
-// Concurrency gate — max 5 simultaneous outbound Roblox fetches
+// Concurrency gate, max 5 simultaneous outbound Roblox fetches
 const MAX_CONCURRENT = 5;
 let activeFetches = 0;
 const pendingQueue = [];

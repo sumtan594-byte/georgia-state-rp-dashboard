@@ -380,7 +380,7 @@ export default function ShopAdminPage({ canAccess }) {
             <ShoppingCart className="text-gsrp-orange" /> Shop Manager
           </h1>
           <p className="mt-1 text-sm text-gsrp-teal-light/40">
-            Configure every store item — prices, descriptions, links, roles and more. Changes appear on the store within seconds.
+            Configure every store item, prices, descriptions, links, roles and more. Changes appear on the store within seconds.
           </p>
         </div>
         <button onClick={load} className="inline-flex items-center gap-2 rounded-xl border border-gsrp-dark-border bg-gsrp-dark-card px-4 py-2.5 text-sm font-bold text-gsrp-teal-light/70 hover:text-white">
@@ -409,7 +409,7 @@ export default function ShopAdminPage({ canAccess }) {
             <div className="space-y-4">
               {(grouped[category] || []).length === 0 && (
                 <p className="rounded-xl border border-dashed border-gsrp-dark-border/60 py-8 text-center text-sm text-gsrp-teal-light/30">
-                  No items yet — click “Add item”.
+                  No items yet, click “Add item”.
                 </p>
               )}
               {(grouped[category] || []).map(product => (

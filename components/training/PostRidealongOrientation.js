@@ -138,7 +138,7 @@ export default function PostRidealongOrientation({
   useEffect(() => {
     setBtnReady(false)
     // step 0: no timer (immediate)
-    // step 1: greeting picker — button appears only after a greeting is selected (handled inline)
+    // step 1: greeting picker, button appears only after a greeting is selected (handled inline)
     if (step === 0) {
       setBtnReady(true)
       return
@@ -367,7 +367,7 @@ export default function PostRidealongOrientation({
         <p className="text-gsrp-teal-light/50 text-center mb-10">
           This is <span className="text-white font-semibold">not</span> the final step. Before you can advance and start
           moderating, you must be trained 1:1 by a real human trainer. Completing this orientation does
-          <span className="text-white font-semibold"> not</span> grant you any roles or moderation permissions yet —
+          <span className="text-white font-semibold"> not</span> grant you any roles or moderation permissions yet -
           keep your trainee role and the regular rules below in mind until then.
         </p>
 
@@ -382,7 +382,7 @@ export default function PostRidealongOrientation({
             </div>
             <p className="text-sm text-gsrp-teal-light/60 leading-relaxed">
               You must now request a regular <span className="text-white font-semibold">1:1 training session</span> with
-              a human trainer. They will train you in-game and decide when you're ready to advance — that's when your
+              a human trainer. They will train you in-game and decide when you're ready to advance, that's when your
               roles and moderation permissions will be granted. Until you've been trained by a real trainer, you remain
               a trainee.
             </p>
@@ -445,7 +445,7 @@ export default function PostRidealongOrientation({
   const TOTAL_STEPS = 9
 
   return (
-    // Full area between topbar and sidebar — parent layout handles the outer frame
+    // Full area between topbar and sidebar, parent layout handles the outer frame
     <div className="flex flex-col min-h-full w-full">
       {/* Progress bar */}
       <div className="w-full h-1 bg-gsrp-dark-surface shrink-0">
@@ -465,7 +465,7 @@ export default function PostRidealongOrientation({
         </span>
       </div>
 
-      {/* Main content area — fills remaining space and centres content */}
+      {/* Main content area, fills remaining space and centres content */}
       <div
         className={`flex-1 flex flex-col items-center justify-center px-6 py-10 transition-all duration-500 ${
           visible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-4'

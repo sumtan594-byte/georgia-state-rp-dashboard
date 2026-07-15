@@ -9,9 +9,10 @@
     "start": "next start -p ${SERVER_PORT:-${PORT:-3001}}"
   },
   "dependencies": {
-    "discord2html": "^1.0.4",
     "discord.js": "^14.0.0",
+    "discord2html": "^1.0.4",
     "framer-motion": "^11.11.17",
+    "isomorphic-dompurify": "^3.18.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.300.0",
     "mongodb": "^7.2.0",

@@ -17,7 +17,7 @@ export default async function handler(req, res) {
     const dbStaff = client.db('gsrp_staff');
     const dbDefault = client.db();
 
-    // Project only the fields this aggregation reads — these collections are
+    // Project only the fields this aggregation reads, these collections are
     // loaded whole, and un-projected quiz attempt docs carry full answer
     // payloads that balloon memory as the collections grow.
     const [trainingProgress, quizAttempts, ridealongData, traineeTracking] = await Promise.all([

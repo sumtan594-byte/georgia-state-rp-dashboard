@@ -13,7 +13,7 @@
 
 // ─── Logging Helper ───────────────────────────────────────────────────────────
 // Posts a rich embed to the log channel for every verification event.
-// Never throws — a log failure must never break the main flow.
+// Never throws, a log failure must never break the main flow.
 async function sendLog(fetchFn, logWebhookUrl, { type, discordId, ip, detail, extra } = {}) {
     if (!logWebhookUrl) return;
 
@@ -226,7 +226,7 @@ export default async function handler(req, res) {
             type: 'ratelimit',
             discordId: cleanId,
             ip,
-            detail: `Rate limit hit — ${rateLimitMax} attempts per minute exceeded`,
+            detail: `Rate limit hit, ${rateLimitMax} attempts per minute exceeded`,
             extra: `Retry after: ${retryAfter}s`,
         });
         return res.status(429).json({
@@ -279,7 +279,7 @@ export default async function handler(req, res) {
                     type: 'failure',
                     discordId: cleanId,
                     ip,
-                    detail: 'Main webhook returned 404 — webhook not found or deleted',
+                    detail: 'Main webhook returned 404, webhook not found or deleted',
                 });
                 return res.status(502).json({
                     success: false,

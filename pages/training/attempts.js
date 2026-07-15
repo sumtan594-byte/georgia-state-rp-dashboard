@@ -218,7 +218,7 @@ export default function AttemptsPage() {
                   const avUrl = a.avatar
                     ? `https://cdn.discordapp.com/avatars/${a.userId}/${a.avatar}.png?size=32`
                     : `https://cdn.discordapp.com/embed/avatars/0.png`;
-                  const dateStr = a.timestamp ? new Date(a.timestamp).toLocaleString() : '—';
+                  const dateStr = a.timestamp ? new Date(a.timestamp).toLocaleString() : '-';
                   return (
                     <div key={a.attemptId || i}>
                       <button
@@ -281,9 +281,9 @@ export default function AttemptsPage() {
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                             {a.answers.map((ans, j) => (
                               <div key={j} className={`p-3 rounded-lg text-xs border ${ans.correct ? 'bg-green-400/5 border-green-400/15' : 'bg-red-400/5 border-red-400/15'}`}>
-                                <p className="text-gsrp-teal-light/50 mb-1.5 leading-relaxed line-clamp-2">{ans.question || '—'}</p>
+                                <p className="text-gsrp-teal-light/50 mb-1.5 leading-relaxed line-clamp-2">{ans.question || '-'}</p>
                                 <p className={ans.correct ? 'text-green-400 font-medium' : 'text-red-400 font-medium'}>
-                                  {ans.correct ? '✓' : '✗'} {ans.chosen || '—'}
+                                  {ans.correct ? '✓' : '✗'} {ans.chosen || '-'}
                                 </p>
                                 {!ans.correct && <p className="text-green-400/60 mt-0.5">Correct: {ans.answer || ''}</p>}
                               </div>
@@ -312,7 +312,7 @@ export default function AttemptsPage() {
                   const avUrl = a.avatar
                     ? `https://cdn.discordapp.com/avatars/${a.userId}/${a.avatar}.png?size=32`
                     : `https://cdn.discordapp.com/embed/avatars/0.png`;
-                  const dateStr = a.timestamp ? new Date(a.timestamp).toLocaleString() : '—';
+                  const dateStr = a.timestamp ? new Date(a.timestamp).toLocaleString() : '-';
                   const ud = ridealongUserData[a.userId] || {};
                   return (
                     <div key={a.attemptId || i}>

@@ -31,7 +31,7 @@ const MAX_TIMELINE_EVENTS_PER_FIELD = 20000;
 //  d = number of characters deleted after the prefix
 //  i = string that was inserted after the prefix
 // Replaying these diffs in order reconstructs the exact field value at every
-// step — including backspaces, mid-text edits, selection replacement and paste —
+// step, including backspaces, mid-text edits, selection replacement and paste -
 // which a keydown-only log cannot do.
 function computeDiff(oldValue, newValue) {
   const a = String(oldValue || '');
@@ -916,7 +916,7 @@ export default function DynamicApplyPage() {
           </div>
           <h1 className="text-3xl font-bold text-white mb-4">We Appreciate Your Interest!</h1>
           <p className="text-white/70 text-base leading-relaxed max-w-lg mx-auto">
-            We truly appreciate your interest in joining our staff team! Unfortunately, we've reached capacity for staff from USA timezones at this time. We're incredibly sorry for the inconvenience — please feel free to reapply in the future if our needs change. Thank you for understanding!
+            We truly appreciate your interest in joining our staff team! Unfortunately, we've reached capacity for staff from USA timezones at this time. We're incredibly sorry for the inconvenience, please feel free to reapply in the future if our needs change. Thank you for understanding!
           </p>
         </div>
       </div>
@@ -996,7 +996,7 @@ export default function DynamicApplyPage() {
         <div className="mb-6 p-6 rounded-2xl bg-gsrp-orange/10 border border-gsrp-orange/30 animate-fade-in-up">
           <div className="flex items-center gap-3 mb-4">
             <AlertCircle className="w-5 h-5 text-gsrp-orange flex-shrink-0" />
-            <h2 className="text-white font-bold text-sm uppercase tracking-widest">Before You Begin — Important</h2>
+            <h2 className="text-white font-bold text-sm uppercase tracking-widest">Before You Begin, Important</h2>
           </div>
           <ul className="space-y-2 ml-1">
             <li className="flex items-start gap-3 text-sm text-white/80 font-medium">

@@ -16,12 +16,12 @@ export default async function handler(req, res) {
     return res.status(401).json({ message: 'Unauthorized' });
   }
 
-  // System administrators only — the same set that populates session.user.isAdmin
+  // System administrators only, the same set that populates session.user.isAdmin
   // (ADMIN_USER_IDS env + the admins collection). Deliberately NOT the broader
   // application-reviewer permission.
   const adminIds = await getAllAdminIds();
   if (!adminIds.includes(String(session.user.id))) {
-    return res.status(403).json({ message: 'Forbidden — system administrators only' });
+    return res.status(403).json({ message: 'Forbidden, system administrators only' });
   }
 
   if (req.body?.confirm !== CONFIRM_PHRASE) {

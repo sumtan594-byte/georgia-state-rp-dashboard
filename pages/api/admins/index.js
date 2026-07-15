@@ -98,7 +98,7 @@ export default async function handler(req, res) {
         headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` },
       });
       if (!userRes.ok) {
-        return res.status(400).json({ error: 'Invalid Discord user ID — user not found' });
+        return res.status(400).json({ error: 'Invalid Discord user ID, user not found' });
       }
 
       const client = await clientPromise;

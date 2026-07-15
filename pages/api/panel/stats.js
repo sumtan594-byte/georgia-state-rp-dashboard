@@ -37,12 +37,12 @@ export default async function handler(req, res) {
 
   const cache = getCache();
 
-  // If we have cached data, derive stats from it — no extra ERLC call
+  // If we have cached data, derive stats from it, no extra ERLC call
   if (cache.data) {
     return res.status(200).json(buildStats(cache.data, cache, true));
   }
 
-  // No cache yet — warm the same process cache directly, no HTTP self-call.
+  // No cache yet, warm the same process cache directly, no HTTP self-call.
   const ERLC_KEY = process.env.ERLC_API_KEY;
   if (!ERLC_KEY) return res.status(500).json({ error: 'Missing ERLC_API_KEY' });
 

@@ -182,7 +182,7 @@ export default function LiveMap({
         const mkr = markers.current[id];
         if (!mkr || s.atRest || (ds.current?.playerId === id && ds.current?.isDragging)) continue;
         const raw = Math.min(1, (t - s.startedAt) / s.duration);
-        // Quintic smootherstep — zero velocity AND zero acceleration at both
+        // Quintic smootherstep, zero velocity AND zero acceleration at both
         // ends, so blips ease in/out more gently than plain smoothstep.
         const eased = raw * raw * raw * (raw * (raw * 6 - 15) + 10);
         s.currentX = s.startX + (s.targetX - s.startX) * eased;

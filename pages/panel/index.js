@@ -316,7 +316,7 @@ export default function PanelPage() {
                 rateLimitUntil={rateLimitUntil}
               />
 
-              {/* Player Action Panel — overlays on map */}
+              {/* Player Action Panel, overlays on map */}
               {selectedPlayer && (
                 <PlayerActionPanel
                   player={selectedPlayer}

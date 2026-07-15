@@ -57,7 +57,7 @@ export default async function handler(req, res) {
     type: 17,
     accent_color: accent,
     components: [
-      { type: 10, content: `## Training Result — ${resultWord}` },
+      { type: 10, content: `## Training Result, ${resultWord}` },
       { type: 14 },
       { type: 10, content: `**Trainee:** <@${traineeDiscordId}>${robloxLine}\n**Trainer:** <@${trainerId}>` },
       { type: 14 },
@@ -98,7 +98,7 @@ export default async function handler(req, res) {
           { type: 10, content: `## Your Training Result` },
           { type: 14 },
           { type: 10, content: isPass
-            ? 'Congratulations — you **passed** your 1:1 training! A staff member will finalise your roles shortly.'
+            ? 'Congratulations, you **passed** your 1:1 training! A staff member will finalise your roles shortly.'
             : 'Unfortunately, you did **not pass** this training. Review the notes below and request another session when you are ready.' },
           { type: 14 },
           { type: 10, content: `**Score:** ${numScore}/${numTotal} (${pct}%)` },

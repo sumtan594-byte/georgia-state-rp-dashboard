@@ -42,7 +42,7 @@ export default async function handler(req, res) {
 
   // The ridealong is no longer the final step toward becoming a full moderator.
   // Completing the orientation no longer grants any staff roles, removes the
-  // trainee role, or changes the user's nickname — they must still be trained
+  // trainee role, or changes the user's nickname, they must still be trained
   // 1:1 by a human trainer before advancing. We only record that they've
   // finished the orientation so they don't have to repeat it.
   try {

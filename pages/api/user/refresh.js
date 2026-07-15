@@ -98,6 +98,9 @@ async function fetchMember(userId) {
 }
 
 export default async function handler(req, res) {
+  // Prevent any caching layer from serving stale role data, critical for fast auto-kick
+  res.setHeader('Cache-Control', 'no-store, max-age=0');
+
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const session = await getServerSession(req, res, authOptions);
@@ -157,8 +160,6 @@ export default async function handler(req, res) {
         iconUrl: r.icon ? `https://cdn.discordapp.com/role-icons/${r.id}/${r.icon}.png?size=64` : null,
       }));
     }
-
-    res.setHeader('Cache-Control', 'no-store, max-age=0');
 
     const envAdminIds = (process.env.ADMIN_USER_IDS || '').split(',').map(i => i.trim()).filter(Boolean);
     const dbAdminIds = await getDbAdminIds();

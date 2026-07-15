@@ -82,7 +82,7 @@ export default function AllVisitsPage({ canAccess }) {
           <Globe className="w-7 h-7 text-gsrp-orange" />
           All Visits
         </h1>
-        <p className="text-gray-400 text-sm mt-1">Raw chronological visitor log — includes authenticated and anonymous visitors</p>
+        <p className="text-gray-400 text-sm mt-1">Raw chronological visitor log, includes authenticated and anonymous visitors</p>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-6">

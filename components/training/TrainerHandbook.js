@@ -4,7 +4,7 @@ import {
   Search, Loader2, X, Plus, Send, ChevronRight, CheckCircle2, Flag, User
 } from 'lucide-react'
 
-// ─── Preset content (ride-along only — no Q&A) ────────────────────────────────
+// ─── Preset content (ride-along only, no Q&A) ────────────────────────────────
 const PRE_TRAINING = [
   'Hey! I hope you are having a great day. Are you ready to begin your training?',
   "Welcome to GSRP Staff Onboarding. Today, we'll assess your moderation skills through a brief ride-along. Make sure to use your best grammar.",
@@ -28,7 +28,7 @@ const RIDE_ALONG_BRIEF = [
 
 // The mandatory message every trainer must deliver to the trainee.
 const HANDLING_MESSAGE =
-  'All mod calls are to be handled by YOU. I am solely here to assist you — for example, if a member asks for something you physically cannot do. You will run every scene yourself.'
+  'All mod calls are to be handled by YOU. I am solely here to assist you, for example, if a member asks for something you physically cannot do. You will run every scene yourself.'
 
 const LOOK_OUT_FOR = [
   'Their adherence to traffic laws while driving.',
@@ -79,9 +79,9 @@ const POST_TRAINING = [
   'When dealing with player reports, always aim for fairness. Witnesses are not taken as proof since they could be biased towards the player being moderated.',
   'If there is a video or screenshot, that takes priority. If no evidence is available, de-escalate the situation and issue a verbal warning.',
   'The most important rule: only use command usernames with 4 or more letters in them.',
-  'Do not use commands like :to kol or :to k. Instead use :to kolt or :to samu — the first four letters of a username. An exception can be made for usernames with only 3 letters.',
+  'Do not use commands like :to kol or :to k. Instead use :to kolt or :to samu, the first four letters of a username. An exception can be made for usernames with only 3 letters.',
   'Watch out for troll usernames that contain "all" or "others" at the beginning. Notify a High Rank or administrator immediately if you see one.',
-  'If none are online, do not use :kick others — instead use :kick othe or :kick other. After kicking, make a ban BOLO.',
+  'If none are online, do not use :kick others, instead use :kick othe or :kick other. After kicking, make a ban BOLO.',
   'I will now send you your results. Keep watch in your DMs for your outcome.',
 ]
 
@@ -381,7 +381,7 @@ export default function TrainerHandbook({ trainee }) {
     setPostResult(null)
     // Fold mod-call notes into the posted notes so the trainee gets the detail.
     const modSummary = modCalls.map((m, i) =>
-      `Mod call ${i + 1}: ${m.verdict === 'handled' ? 'handled correctly' : 'had to overtake'}${m.note ? ` — ${m.note}` : ''}`
+      `Mod call ${i + 1}: ${m.verdict === 'handled' ? 'handled correctly' : 'had to overtake'}${m.note ? `, ${m.note}` : ''}`
     ).join('\n')
     const combinedNotes = [notes.trim(), modSummary].filter(Boolean).join('\n\n')
     try {
@@ -442,7 +442,7 @@ export default function TrainerHandbook({ trainee }) {
       </div>
 
       {/* Mandatory message */}
-      <SectionCard icon={MessageSquare} title="Tell the trainee this first" subtitle="Mandatory — send before the ride-along" accent="orange">
+      <SectionCard icon={MessageSquare} title="Tell the trainee this first" subtitle="Mandatory, send before the ride-along" accent="orange">
         <MessageRow text={HANDLING_MESSAGE} />
       </SectionCard>
 
@@ -481,7 +481,7 @@ export default function TrainerHandbook({ trainee }) {
       </SectionCard>
 
       {/* Mod call tracker */}
-      <SectionCard icon={Flag} title="Mod call marking" subtitle="Mark each scene as it happens — maximum of 3" accent="red">
+      <SectionCard icon={Flag} title="Mod call marking" subtitle="Mark each scene as it happens, maximum of 3" accent="red">
         <div className="space-y-2.5 mb-4">
           {modCalls.map((m, i) => (
             <div key={i} className="flex items-center gap-3 bg-gsrp-dark-surface/50 border border-gsrp-dark-border/40 rounded-xl p-3.5">
@@ -491,7 +491,7 @@ export default function TrainerHandbook({ trainee }) {
                 {m.verdict === 'handled' ? <CheckCircle2 size={16} /> : <AlertTriangle size={16} />}
               </span>
               <div className="flex-1 min-w-0">
-                <p className="text-sm text-white font-medium">Mod call {i + 1} — {m.verdict === 'handled' ? 'Handled correctly' : 'Had to overtake'}</p>
+                <p className="text-sm text-white font-medium">Mod call {i + 1}, {m.verdict === 'handled' ? 'Handled correctly' : 'Had to overtake'}</p>
                 {m.note && <p className="text-xs text-gsrp-teal-light/40 truncate">{m.note}</p>}
                 <p className="text-[11px] text-gsrp-teal-light/40">{m.checks.filter(Boolean).length}/{MOD_CALL_CHECKS.length} criteria met</p>
               </div>

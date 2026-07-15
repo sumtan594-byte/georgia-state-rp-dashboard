@@ -176,7 +176,7 @@ export default async function handler(req, res) {
           return res.status(403).json({ error: 'BOLO role required' });
         }
 
-        // Send Components V2 BOLO message — note: <@&ROLE_ID> for role pings
+        // Send Components V2 BOLO message, note: <@&ROLE_ID> for role pings
         const boloMsg = await sendComponentsV2(BOLO_CHANNEL, {
           allowed_mentions: { roles: [BOLO_PING] },
           components: [

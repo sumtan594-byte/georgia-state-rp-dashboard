@@ -256,7 +256,7 @@ export default function ApplicationsList() {
           </div>
         ) : (
           <>
-          {/* Mobile cards — visible on small screens */}
+          {/* Mobile cards, visible on small screens */}
           <div className="block md:hidden divide-y divide-gsrp-dark-border/30">
             {filtered.map((app) => (
               <div key={app._id} className="p-4 flex items-center gap-3">
@@ -304,7 +304,7 @@ export default function ApplicationsList() {
             ))}
           </div>
 
-          {/* Desktop table — hidden on small screens */}
+          {/* Desktop table, hidden on small screens */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left border-collapse">
               <thead>

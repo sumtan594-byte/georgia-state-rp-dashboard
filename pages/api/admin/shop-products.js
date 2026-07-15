@@ -12,7 +12,7 @@ import {
   REWARD_TYPES,
 } from '../../../lib/shop-products-db';
 
-// Full CRUD for shop products. System administrators only — the same set
+// Full CRUD for shop products. System administrators only, the same set
 // that populates session.user.isAdmin (ADMIN_USER_IDS env + admins collection).
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
@@ -22,7 +22,7 @@ export default async function handler(req, res) {
 
   const adminIds = await getAllAdminIds();
   if (!adminIds.includes(String(session.user.id))) {
-    return res.status(403).json({ error: 'Forbidden — system administrators only' });
+    return res.status(403).json({ error: 'Forbidden, system administrators only' });
   }
 
   res.setHeader('Cache-Control', 'no-store, max-age=0');

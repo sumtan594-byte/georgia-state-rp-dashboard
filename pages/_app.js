@@ -32,7 +32,7 @@ function AuthGuard({ isPublicPage, children }) {
   }, [status, isPublicPage, router]);
 
   // Public pages (landing, verify, policies, login) must render their real
-  // content immediately — even before the session resolves — so crawlers and
+  // content immediately, even before the session resolves, so crawlers and
   // first paint get the marketing/page HTML instead of a loading spinner.
   if (status === 'loading' && !isPublicPage) {
     return <div className="min-h-screen p-4 md:p-8"><PageSkeleton /></div>;
@@ -159,7 +159,7 @@ function VisitorTracker({ setProxyBlocked }) {
       data.avatar = session.user.image || '';
     } else {
       // Roblox verification visitors aren't logged in via Discord OAuth but
-      // carry a Discord ID in the URL state param — pass it so the tracking
+      // carry a Discord ID in the URL state param, pass it so the tracking
       // API can resolve their identity instead of logging an anonymous IP.
       try {
         const params = new URLSearchParams(window.location.search);

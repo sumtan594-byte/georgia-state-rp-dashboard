@@ -26,7 +26,7 @@ export default async function handler(req, res) {
   await ensureTranscriptDenyTable();
 
   if (req.method === 'GET') {
-    // Quick access check — used by the polling interval on the viewer page
+    // Quick access check, used by the polling interval on the viewer page
     if (req.query.check === '1') {
       let hasAccess = isAdmin;
 
@@ -53,7 +53,7 @@ export default async function handler(req, res) {
         }
       }
 
-      // Check transcript_deny table — denied admins lose access
+      // Check transcript_deny table, denied admins lose access
       if (hasAccess) {
         try {
           const [denyRows] = await pool.query(

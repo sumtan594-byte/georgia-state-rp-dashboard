@@ -393,7 +393,7 @@ export default function UsersPage({ canAccess }) {
                                   });
                                   if (res.ok) {
                                     setWhitelisted(prev => { const next = new Set(prev); next.add(id); return next; });
-                                    setWhitelistMsg({ ok: true, text: 'Proxy access granted — will no longer be blocked' });
+                                    setWhitelistMsg({ ok: true, text: 'Proxy access granted, will no longer be blocked' });
                                   } else {
                                     setWhitelistMsg({ ok: false, text: 'Failed to whitelist user' });
                                   }
