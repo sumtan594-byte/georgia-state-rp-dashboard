@@ -852,6 +852,33 @@ discord-messages {
   to { transform: translateX(100%); }
 }
 
+/* Loading logo — bright / dim / bright pulse */
+.loading-logo {
+  animation: loading-logo-pulse 1.8s ease-in-out infinite;
+}
+
+.loading-logo img {
+  filter: drop-shadow(0 0 10px rgba(45, 212, 191, 0.35));
+}
+
+@keyframes loading-logo-pulse {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.965);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-logo {
+    animation: none;
+    opacity: 0.85;
+  }
+}
+
 /* ===================== COMPONENT MOTION POLISH ===================== */
 .feature-card-sheen {
   position: absolute;

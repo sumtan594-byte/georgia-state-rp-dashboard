@@ -2,6 +2,18 @@ function SkeletonBlock({ className = '', ...props }) {
   return <div aria-hidden="true" className={`skeleton ${className}`} {...props} />;
 }
 
+export function LoadingLogo({ size = 'w-11 h-11', className = '' }) {
+  return (
+    <div className={`loading-logo ${className}`} aria-hidden="true">
+      <img
+        src="https://i.imgur.com/70GfmYd.gif"
+        alt=""
+        className={`${size} rounded-xl object-cover ring-1 ring-white/10 shadow-tac-1`}
+      />
+    </div>
+  );
+}
+
 export function SkeletonCard({ compact = false }) {
   return (
     <div className={`tac-panel rounded-2xl ${compact ? 'p-4' : 'p-5 md:p-6'}`} aria-hidden="true">
@@ -48,9 +60,12 @@ export function SkeletonTable({ rows = 6, cols = 4 }) {
 export function PageSkeleton({ variant = 'cards', rows = 6, className = '' }) {
   return (
     <div className={`max-w-6xl mx-auto w-full animate-fade-in-up ${className}`} role="status" aria-label="Loading content">
-      <div className="mb-8">
-        <SkeletonBlock className="h-8 w-56 max-w-[70vw] rounded-lg mb-3" />
-        <SkeletonBlock className="h-3.5 w-80 max-w-[82vw] rounded" />
+      <div className="mb-8 flex items-center gap-4">
+        <LoadingLogo />
+        <div className="flex-1">
+          <SkeletonBlock className="h-8 w-56 max-w-[70vw] rounded-lg mb-3" />
+          <SkeletonBlock className="h-3.5 w-80 max-w-[82vw] rounded" />
+        </div>
       </div>
       <div className="flex flex-wrap gap-3 mb-6">
         <SkeletonBlock className="h-10 w-56 rounded-xl" />
@@ -81,9 +96,12 @@ export function PageSkeleton({ variant = 'cards', rows = 6, className = '' }) {
 export function DashboardSkeleton() {
   return (
     <div className="max-w-5xl mx-auto w-full" role="status" aria-label="Loading dashboard">
-      <div className="mb-8">
-        <SkeletonBlock className="h-9 w-80 max-w-[80vw] rounded-lg mb-3" />
-        <SkeletonBlock className="h-3.5 w-52 rounded" />
+      <div className="mb-8 flex items-center gap-4">
+        <LoadingLogo />
+        <div className="flex-1">
+          <SkeletonBlock className="h-9 w-80 max-w-[80vw] rounded-lg mb-3" />
+          <SkeletonBlock className="h-3.5 w-52 rounded" />
+        </div>
       </div>
       <div className="flex items-center gap-3 mb-7">
         <SkeletonBlock className="h-3 w-28 rounded" />
@@ -110,7 +128,7 @@ export function AuthSkeleton() {
     <div className="min-h-screen flex items-center justify-center px-4" role="status" aria-label="Loading sign in">
       <div className="card-glass w-full max-w-md rounded-2xl p-7 md:p-8">
         <div className="flex items-center gap-3 mb-8">
-          <SkeletonBlock className="h-9 w-9 rounded-xl" />
+          <LoadingLogo size="w-9 h-9" />
           <SkeletonBlock className="h-4 w-48 rounded" />
         </div>
         <SkeletonBlock className="h-12 w-12 rounded-xl mb-7" />
@@ -141,7 +159,7 @@ export function MapSkeleton({ label = 'Loading live map' }) {
       ))}
       <div className="absolute left-1/2 top-1/2 w-64 max-w-[72%] -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-gsrp-dark-border/60 bg-gsrp-dark-card/80 p-4 shadow-tac-3 backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <SkeletonBlock className="h-11 w-11 shrink-0 rounded-xl" />
+          <LoadingLogo />
           <div className="flex-1">
             <SkeletonBlock className="h-3.5 w-28 rounded mb-2" />
             <SkeletonBlock className="h-3 w-full rounded" />
@@ -157,7 +175,10 @@ export function PanelSkeleton() {
   return (
     <div className="h-full flex flex-col" role="status" aria-label="Loading live panel">
       <div className="h-[58px] border-b border-gsrp-dark-border/50 bg-gsrp-dark-card/70 px-4 flex items-center justify-between">
-        <SkeletonBlock className="h-4 w-48 rounded" />
+        <div className="flex items-center gap-3">
+          <LoadingLogo size="w-8 h-8" />
+          <SkeletonBlock className="h-4 w-40 rounded" />
+        </div>
         <SkeletonBlock className="h-9 w-24 rounded-lg" />
       </div>
       <div className="hidden md:grid md:grid-cols-[320px_1fr_340px] gap-2 flex-1 p-2 min-h-0">
