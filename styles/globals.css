@@ -872,12 +872,6 @@ discord-messages {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .loading-logo {
-    animation: none;
-    opacity: 0.85;
-  }
-}
 
 /* ===================== TRAILER CTA + CINEMA ===================== */
 .trailer-cta {
@@ -965,11 +959,6 @@ discord-messages {
 @keyframes cinema-fade-up {
   from { opacity: 0; transform: translateY(16px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cinema-curtain { display: none; }
-  .cinema-screen, .cinema-ambient, .cinema-fade-up { animation: none; opacity: 1; transform: none; }
 }
 
 /* ===================== COMPONENT MOTION POLISH ===================== */
