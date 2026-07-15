@@ -2,16 +2,41 @@ import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Head from 'next/head';
 import { AlertCircle, CheckCircle2, ChevronRight, Crown, Heart, Loader2, RefreshCw, ShoppingCart } from 'lucide-react';
-import { DONATION_PERKS, PRODUCTS } from '../lib/shop-products';
+import { getShopIcon } from '../lib/shop-icons';
+
+// How often the storefront re-pulls the catalog so admin edits relay quickly.
+const CATALOG_POLL_MS = 15000;
 
 export default function Shop() {
-  const [activeTab, setActiveTab] = useState('premium');
+  const [activeTab, setActiveTab] = useState(null);
+  const [catalog, setCatalog] = useState({ products: {}, categories: [], loading: true });
   const [purchaseState, setPurchaseState] = useState({ loading: true, purchases: {}, roblox: null, message: '' });
   const [claimingProductId, setClaimingProductId] = useState(null);
   const [productMessages, setProductMessages] = useState({});
   const [purchaseErrorModal, setPurchaseErrorModal] = useState(null);
   const [confettiPieces, setConfettiPieces] = useState([]);
   const [mounted, setMounted] = useState(false);
+
+  const loadCatalog = async () => {
+    try {
+      const response = await fetch('/api/shop/products');
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to load shop');
+      setCatalog({
+        products: data.products || {},
+        categories: data.categories || [],
+        loading: false,
+      });
+      // Keep the active tab valid as categories change under real-time edits.
+      setActiveTab(prev => {
+        const keys = (data.categories || []).map(c => c.key);
+        if (prev && keys.includes(prev)) return prev;
+        return keys[0] || null;
+      });
+    } catch (error) {
+      setCatalog(prev => ({ ...prev, loading: false }));
+    }
+  };
 
   const loadPurchases = async () => {
     setPurchaseState(prev => ({ ...prev, loading: true, message: '' }));
@@ -38,6 +63,16 @@ export default function Shop() {
   useEffect(() => {
     setMounted(true);
     loadPurchases();
+    loadCatalog();
+
+    // Poll + refetch on focus so admin changes appear without a manual reload.
+    const interval = setInterval(loadCatalog, CATALOG_POLL_MS);
+    const onFocus = () => loadCatalog();
+    window.addEventListener('focus', onFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+    };
   }, []);
 
   const fireConfetti = () => {
@@ -58,21 +93,21 @@ export default function Shop() {
   };
 
   const handleClaimPurchase = async (product) => {
-    setClaimingProductId(product.id);
-    setProductMessages(prev => ({ ...prev, [product.id]: null }));
+    setClaimingProductId(product.productId);
+    setProductMessages(prev => ({ ...prev, [product.productId]: null }));
 
     try {
       const response = await fetch('/api/shop/purchases', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productId: product.id }),
+        body: JSON.stringify({ productId: product.productId }),
       });
       const data = await response.json();
 
       if (!response.ok) {
         setProductMessages(prev => ({
           ...prev,
-          [product.id]: { type: 'error', text: data.message || data.error || 'Purchase could not be verified.' },
+          [product.productId]: { type: 'error', text: data.message || data.error || 'Purchase could not be verified.' },
         }));
         return;
       }
@@ -90,12 +125,12 @@ export default function Shop() {
         roblox: data.roblox || prev.roblox,
         purchases: {
           ...prev.purchases,
-          [product.id]: { ...(prev.purchases?.[product.id] || {}), owned: true },
+          [product.productId]: { ...(prev.purchases?.[product.productId] || {}), owned: true },
         },
       }));
       setProductMessages(prev => ({
         ...prev,
-        [product.id]: { type: 'success', text: data.message || 'Purchase verified. Thank you for purchasing!' },
+        [product.productId]: { type: 'success', text: data.message || 'Purchase verified. Thank you for purchasing!' },
       }));
       fireConfetti();
 
@@ -105,7 +140,7 @@ export default function Shop() {
     } catch (error) {
       setProductMessages(prev => ({
         ...prev,
-        [product.id]: { type: 'error', text: error.message || 'Failed to verify purchase.' },
+        [product.productId]: { type: 'error', text: error.message || 'Failed to verify purchase.' },
       }));
     } finally {
       setClaimingProductId(null);
@@ -180,26 +215,36 @@ export default function Shop() {
       </div>
 
       <div className="flex space-x-2 mb-8 overflow-x-auto pb-2 scrollbar-none">
-        {['premium', 'advertisements', 'donations'].map((tab) => (
+        {catalog.categories.map((tab) => (
           <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
+            key={tab.key}
+            onClick={() => setActiveTab(tab.key)}
             className={`px-6 py-3 rounded-xl font-bold text-sm tracking-wide transition-all duration-300 capitalize flex-shrink-0 ${
-              activeTab === tab
+              activeTab === tab.key
                 ? 'bg-gsrp-orange text-white shadow-lg shadow-gsrp-orange/20 scale-105'
                 : 'bg-gsrp-dark-card/50 text-gsrp-teal-light/40 hover:bg-gsrp-dark-surface hover:text-white border border-gsrp-dark-border/50'
             }`}
           >
-            {tab === 'advertisements' ? 'Paid Advertisements' : tab}
+            {tab.label}
           </button>
         ))}
       </div>
 
+      {catalog.loading && catalog.categories.length === 0 ? (
+        <div className="flex items-center justify-center py-24 text-gsrp-teal-light/50">
+          <Loader2 className="w-6 h-6 animate-spin mr-3" /> Loading store…
+        </div>
+      ) : (activeTab && (catalog.products[activeTab] || []).length === 0) ? (
+        <div className="rounded-2xl border border-gsrp-dark-border/50 bg-gsrp-dark-card/40 py-20 text-center text-gsrp-teal-light/40 font-semibold">
+          No items in this category yet.
+        </div>
+      ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {PRODUCTS[activeTab].map((product, idx) => {
-          const owned = purchaseState.purchases?.[product.id]?.owned;
-          const productMessage = productMessages[product.id];
-          const isClaiming = claimingProductId === product.id;
+        {(catalog.products[activeTab] || []).map((product, idx) => {
+          const owned = purchaseState.purchases?.[product.productId]?.owned;
+          const productMessage = productMessages[product.productId];
+          const isClaiming = claimingProductId === product.productId;
+          const ProductIcon = getShopIcon(product.iconName);
 
           return (
           <div 
@@ -228,7 +273,7 @@ export default function Shop() {
             <div className="p-6 flex-1 flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <div className={`p-3 rounded-xl ${product.featured ? 'bg-gsrp-orange/10 text-gsrp-orange' : 'bg-gsrp-teal/10 text-gsrp-teal-light'}`}>
-                  {product.icon ? <product.icon className="w-6 h-6" /> : <Heart className="w-6 h-6" />}
+                  <ProductIcon className="w-6 h-6" />
                 </div>
                 <div className="text-right">
                   <span className="block text-2xl font-bold text-white">R$ {product.price}</span>
@@ -238,7 +283,7 @@ export default function Shop() {
               <h3 className="text-xl font-bold text-white mb-2 group-hover:text-gsrp-orange transition-colors">{product.name}</h3>
               
               <div className="mt-4 flex-1">
-                {(product.perks || DONATION_PERKS).map((perk, i) => (
+                {(product.perks || []).map((perk, i) => (
                   <div key={i} className="flex items-start gap-3 mb-3 text-sm text-gsrp-teal-light/60">
                     <ChevronRight className={`w-4 h-4 mt-0.5 flex-shrink-0 ${product.featured ? 'text-gsrp-orange' : 'text-gsrp-teal'}`} />
                     <span>{perk}</span>
@@ -294,6 +339,7 @@ export default function Shop() {
           );
         })}
       </div>
+      )}
 
       {mounted && purchaseErrorModal && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center px-4">

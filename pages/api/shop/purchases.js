@@ -3,7 +3,7 @@ import { authOptions } from '../../../lib/auth-options';
 import { addMemberRole } from '../../../lib/discord-v2';
 import { getPool } from '../../../lib/appdb';
 import { getLinkedRobloxUser } from '../../../lib/linked-roblox-user';
-import { findShopProduct, PRODUCT_LIST, SHOP_SUPPORT_CHANNEL_URL } from '../../../lib/shop-catalog';
+import { findProductById, getProductList, SHOP_SUPPORT_CHANNEL_URL } from '../../../lib/shop-products-db';
 
 const ROBLOX_ITEM_TYPE_GAME_PASS = 1;
 const NICE_TRY_MESSAGE = 'Nice try! But you have not actually purchased the gamepass. Please purchase it before pressing this button. Check your linked account at the top to ensure you are on the right account.';
@@ -34,15 +34,20 @@ async function checkGamePassOwnership(robloxUserId, gamePassId) {
 
 function serializeProductStatus(product, owned) {
   return {
-    id: product.id,
+    id: product.productId,
     gamePassId: product.gamePassId,
     owned: Boolean(owned),
   };
 }
 
 async function getUserPurchaseStatus(robloxUserId) {
+  const productList = await getProductList();
   const results = await Promise.all(
-    PRODUCT_LIST.map(async product => {
+    productList.map(async product => {
+      // Products without a configured game pass can't be ownership-checked.
+      if (!product.gamePassId) {
+        return serializeProductStatus(product, false);
+      }
       try {
         const owned = await checkGamePassOwnership(robloxUserId, product.gamePassId);
         return serializeProductStatus(product, owned);
@@ -145,10 +150,14 @@ export default async function handler(req, res) {
     }
 
     const { productId } = req.body || {};
-    const product = findShopProduct(productId);
+    const product = await findProductById(productId);
 
     if (!product) {
       return res.status(400).json({ error: 'Unknown shop product.' });
+    }
+
+    if (!product.gamePassId) {
+      return res.status(400).json({ error: 'This product has no game pass configured to verify.' });
     }
 
     const owned = await checkGamePassOwnership(linkedUser.roblox.id, product.gamePassId);
@@ -157,14 +166,14 @@ export default async function handler(req, res) {
         owned: false,
         message: NICE_TRY_MESSAGE,
         roblox: linkedUser.roblox,
-        productId: product.id,
+        productId: product.productId,
         gamePassId: product.gamePassId,
       });
     }
 
     let reward;
     if (product.rewardType === 'roles') {
-      const isFirstClaim = await reserveRoleClaim(session.user.id, product.id);
+      const isFirstClaim = await reserveRoleClaim(session.user.id, product.productId);
       if (isFirstClaim) {
         reward = await rewardProduct(product, session.user.id);
       } else {
@@ -181,7 +190,7 @@ export default async function handler(req, res) {
 
     return res.status(200).json({
       owned: true,
-      productId: product.id,
+      productId: product.productId,
       roblox: linkedUser.roblox,
       ...reward,
     });

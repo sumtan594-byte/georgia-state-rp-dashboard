@@ -124,6 +124,7 @@ export default function Sidebar({ open, onToggle }) {
         ...(canViewVisitorTracking ? [{ href: '/admin/users', icon: Users, label: 'Users' }] : []),
         ...(canViewVisitorTracking ? [{ href: '/admin/users/all-visits', icon: Globe, label: 'All Visits' }] : []),
         ...(canManageAuth ? [{ href: '/admin/authorization', icon: ShieldCheck, label: 'Authorisation' }] : []),
+        ...(isFullAdminUser ? [{ href: '/admin/shop', icon: ShoppingCart, label: 'Shop Manager' }] : []),
       ],
     },
   ];
