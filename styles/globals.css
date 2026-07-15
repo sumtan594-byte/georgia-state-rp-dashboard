@@ -961,6 +961,72 @@ discord-messages {
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* ===================== THEMED VIDEO CONTROLS ===================== */
+.gsrp-seek-wrap {
+  height: 16px;
+}
+
+/* Base range reset */
+.gsrp-range {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 16px;
+  background: transparent;
+  cursor: pointer;
+  outline: none;
+}
+.gsrp-range::-webkit-slider-runnable-track {
+  height: 5px;
+  background: transparent;
+  border-radius: 999px;
+}
+.gsrp-range::-moz-range-track {
+  height: 5px;
+  background: transparent;
+  border-radius: 999px;
+}
+.gsrp-range::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  margin-top: -4.5px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #F97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25), 0 2px 6px rgba(0, 0, 0, 0.5);
+  transform: scale(0);
+  transition: transform 0.15s var(--ease-out);
+}
+.gsrp-range::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  border: 2px solid #F97316;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.25), 0 2px 6px rgba(0, 0, 0, 0.5);
+  transform: scale(0);
+  transition: transform 0.15s var(--ease-out);
+}
+.gsrp-seek-wrap:hover .gsrp-range::-webkit-slider-thumb,
+.gsrp-range:focus-visible::-webkit-slider-thumb { transform: scale(1); }
+.gsrp-seek-wrap:hover .gsrp-range::-moz-range-thumb,
+.gsrp-range:focus-visible::-moz-range-thumb { transform: scale(1); }
+
+/* Volume slider has its own filled track */
+.gsrp-range-vol::-webkit-slider-runnable-track {
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #F97316 var(--val, 100%), rgba(255, 255, 255, 0.18) var(--val, 100%));
+}
+.gsrp-range-vol::-moz-range-track {
+  height: 5px;
+  border-radius: 999px;
+  background: linear-gradient(to right, #F97316 var(--val, 100%), rgba(255, 255, 255, 0.18) var(--val, 100%));
+}
+.gsrp-range-vol::-webkit-slider-thumb { transform: scale(1); width: 12px; height: 12px; margin-top: -3.5px; }
+.gsrp-range-vol::-moz-range-thumb { transform: scale(1); width: 12px; height: 12px; }
+
 /* ===================== COMPONENT MOTION POLISH ===================== */
 .feature-card-sheen {
   position: absolute;
