@@ -64,6 +64,7 @@ export default function PrivacyPolicy() {
 
               <h2 className="text-white font-bold text-lg mt-6 mb-2">Data Sharing</h2>
               <p>We do not sell or trade your personal information. Data is shared only with the third-party services listed above for the purpose of operating the dashboard, and application, intake, training, and moderation records are visible to authorized GSRP staff for review.</p>
+              <p><strong className="text-white">Your IP address is never shared with, sold to, or disclosed to any outside party.</strong> It is used only internally for anti-raid security and, in the case of geolocation, sent solely to our IP-lookup provider (ip-api.com) to determine your approximate location and proxy status. It is never published, handed to other members, or given to any third party for any other purpose.</p>
 
               <h2 className="text-white font-bold text-lg mt-6 mb-2">Your Rights</h2>
               <ul className="list-disc pl-5 space-y-1">

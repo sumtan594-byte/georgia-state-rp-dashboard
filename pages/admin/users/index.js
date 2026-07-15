@@ -10,7 +10,7 @@ import { PageSkeleton, SkeletonTable } from '../../../components/SkeletonLoader'
 import {
   Users, Globe, Monitor, Search, UserCheck, HelpCircle,
   Loader2, RefreshCw, ChevronDown, ChevronUp, Clock, Wifi, ExternalLink,
-  ShieldAlert, ShieldCheck, ChevronLeft, ChevronRight,
+  ShieldAlert, ShieldCheck, ChevronLeft, ChevronRight, Trash2,
 } from 'lucide-react';
 
 const PAGE_SIZE = 10;
@@ -28,6 +28,9 @@ export default function UsersPage({ canAccess }) {
   const [whitelistMsg, setWhitelistMsg] = useState(null);
   const [whitelisted, setWhitelisted] = useState(new Set());
   const [page, setPage] = useState(1);
+  const [purging, setPurging] = useState(null);
+  const [confirmPurge, setConfirmPurge] = useState(null);
+  const [purgeMsg, setPurgeMsg] = useState(null);
 
   useEffect(() => {
     if (status === 'unauthenticated') return;
@@ -159,7 +162,7 @@ export default function UsersPage({ canAccess }) {
 
       <div className="flex gap-2 mb-4">
         <button
-          onClick={() => { setActiveTab('discord'); setExpanded(null); setWhitelistMsg(null); }}
+          onClick={() => { setActiveTab('discord'); setExpanded(null); setWhitelistMsg(null); setConfirmPurge(null); setPurgeMsg(null); }}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
             activeTab === 'discord'
               ? 'bg-gsrp-orange text-white'
@@ -170,7 +173,7 @@ export default function UsersPage({ canAccess }) {
           Discord Users ({filteredDiscord.length})
         </button>
         <button
-          onClick={() => { setActiveTab('anonymous'); setExpanded(null); setWhitelistMsg(null); }}
+          onClick={() => { setActiveTab('anonymous'); setExpanded(null); setWhitelistMsg(null); setConfirmPurge(null); setPurgeMsg(null); }}
           className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
             activeTab === 'anonymous'
               ? 'bg-gsrp-orange text-white'
@@ -203,7 +206,7 @@ export default function UsersPage({ canAccess }) {
               className="bg-gsrp-dark-card/50 border border-gsrp-dark-border/50 rounded-xl overflow-hidden"
             >
               <button
-                onClick={() => { setWhitelistMsg(null); setExpanded(expanded === (p.userId || p.ip) ? null : (p.userId || p.ip)); }}
+                onClick={() => { setWhitelistMsg(null); setConfirmPurge(null); setPurgeMsg(null); setExpanded(expanded === (p.userId || p.ip) ? null : (p.userId || p.ip)); }}
                 className="w-full flex items-center gap-4 p-4 text-left hover:border-gsrp-orange/30 transition-colors cursor-pointer"
               >
                 {activeTab === 'discord' ? (
@@ -429,6 +432,68 @@ export default function UsersPage({ canAccess }) {
                             </span>
                           )}
                         </>
+                      );
+                    })()}
+                  </div>
+
+                  <div className="mt-4 pt-4 border-t border-gsrp-dark-border/50 flex flex-col items-start gap-2">
+                    <p className="text-[11px] text-gray-500">
+                      Erase every piece of this {activeTab === 'discord' ? "user's" : "IP's"} stored data on request. This is permanent and cannot be undone.
+                    </p>
+                    {(() => {
+                      const id = p.userId || p.ip;
+                      const isConfirming = confirmPurge === id;
+                      const isPurging = purging === id;
+                      return (
+                        <div className="flex items-center gap-3 flex-wrap">
+                          <button
+                            onClick={async () => {
+                              if (!isConfirming) {
+                                setPurgeMsg(null);
+                                setConfirmPurge(id);
+                                return;
+                              }
+                              setPurging(id);
+                              setPurgeMsg(null);
+                              try {
+                                const q = p.userId
+                                  ? `?userId=${encodeURIComponent(p.userId)}`
+                                  : `?ip=${encodeURIComponent(p.ip)}`;
+                                const res = await fetch(`/api/tracking/purge-user${q}`, { method: 'DELETE' });
+                                if (res.ok) {
+                                  setProfiles(prev => prev.filter(pr => (pr.userId || pr.ip) !== id));
+                                  setExpanded(null);
+                                  setPurgeMsg({ ok: true, text: 'All stored data deleted' });
+                                } else {
+                                  const body = await res.json().catch(() => ({}));
+                                  setPurgeMsg({ ok: false, text: body.error || 'Failed to delete data' });
+                                }
+                              } catch (_) {
+                                setPurgeMsg({ ok: false, text: 'Network error' });
+                              }
+                              setPurging(null);
+                              setConfirmPurge(null);
+                            }}
+                            disabled={isPurging}
+                            className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold border transition-colors cursor-pointer disabled:opacity-50 bg-red-500/10 text-red-400 hover:bg-red-500/20 border-red-500/20"
+                          >
+                            {isPurging ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                            {isConfirming ? 'Click again to confirm' : 'Delete all stored data'}
+                          </button>
+                          {isConfirming && !isPurging && (
+                            <button
+                              onClick={() => setConfirmPurge(null)}
+                              className="text-xs text-gray-400 hover:text-white transition-colors cursor-pointer"
+                            >
+                              Cancel
+                            </button>
+                          )}
+                          {purgeMsg && (
+                            <span className={`text-xs ${purgeMsg.ok ? 'text-green-400' : 'text-red-400'}`}>
+                              {purgeMsg.text}
+                            </span>
+                          )}
+                        </div>
                       );
                     })()}
                   </div>
