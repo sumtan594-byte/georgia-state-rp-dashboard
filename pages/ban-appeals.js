@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import Head from 'next/head';
 import Link from 'next/link';
-import { useSession, signIn } from 'next-auth/react';
+import { useSession, signIn, signOut } from 'next-auth/react';
 import {
   Gavel,
   Send,
@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Lock,
   Eye,
+  LogOut,
 } from 'lucide-react';
 
 const APPEAL_QUESTIONS = [
@@ -136,9 +137,27 @@ const StatusCard = ({ icon, tone = 'orange', title, children }) => {
 };
 
 function PageShell({ children }) {
+  const { data: session } = useSession();
   return (
     <div className="min-h-screen relative z-10 px-6 py-14">
       <Head><title>Ban Appeal | GSRP</title></Head>
+      {session && (
+        <div className="fixed top-5 right-5 z-20">
+          <button
+            onClick={() => signOut({ callbackUrl: '/ban-appeals' })}
+            className="flex items-center gap-2.5 bg-gsrp-dark-card/80 backdrop-blur-md border border-white/10 hover:border-gsrp-orange/40 rounded-2xl pl-2 pr-4 py-2 transition-colors group cursor-pointer"
+            title="Sign out"
+          >
+            {session.user?.image && (
+              <img src={session.user.image} alt="" className="w-7 h-7 rounded-full border border-white/10 object-cover" />
+            )}
+            <span className="text-white/70 text-xs font-bold max-w-[120px] truncate hidden sm:block">{session.user?.name}</span>
+            <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-gsrp-teal-light/50 group-hover:text-gsrp-orange transition-colors">
+              <LogOut size={12} /> Sign out
+            </span>
+          </button>
+        </div>
+      )}
       <div className="max-w-2xl mx-auto">
         <div className="flex flex-col items-center text-center mb-10 animate-fade-in-up">
           <div className="relative mb-5">
