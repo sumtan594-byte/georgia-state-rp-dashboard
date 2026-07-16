@@ -629,6 +629,16 @@ export default function ApplicationDetail() {
                 { id: 'melonly', label: 'How familiar are you with melonly?', type: 'radio', options: ['1 (What the hell?)', '2', '3', '4', '5 (Expert)'], required: true },
               ],
             });
+          } else if (data.type === 'ban_appeal') {
+            setAppType({
+              name: 'Ban Appeal',
+              slug: 'ban_appeal',
+              fields: [
+                { id: 'discord_user', label: 'Discord username', type: 'text', required: true },
+                { id: 'why_banned', label: 'Why were you banned?', type: 'textarea', sentences: 2, required: true },
+                { id: 'why_unban', label: 'Why should we unban you?', type: 'textarea', sentences: 2, required: true },
+              ],
+            });
           }
         }
       } catch (err) {

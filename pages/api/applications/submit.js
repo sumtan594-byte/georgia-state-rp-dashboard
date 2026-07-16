@@ -13,7 +13,7 @@ const MAX_TIMELINE_EVENTS_PER_FIELD = 20000;
 // Keep the typing timeline compact and well-formed. Unlike the other monitoring
 // arrays we truncate from the END (keeping the start), because reconstruction
 // depends on replaying diffs from the very first edit.
-function sanitizeTypingTimeline(data) {
+export function sanitizeTypingTimeline(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return {};
   const sanitized = {};
   for (const [fieldId, events] of Object.entries(data)) {
@@ -42,7 +42,7 @@ let typingColumnEnsured = false;
 // The applications table is provisioned outside this repo, so add the replay
 // column lazily and idempotently (mirrors the CREATE TABLE IF NOT EXISTS pattern
 // used by the auto-marker). Returns whether the column is available.
-async function ensureTypingColumn(pool) {
+export async function ensureTypingColumn(pool) {
   if (typingColumnEnsured) return true;
   try {
     const [rows] = await pool.execute(
@@ -61,7 +61,7 @@ async function ensureTypingColumn(pool) {
   }
 }
 
-function sanitizeMonitoringData(data) {
+export function sanitizeMonitoringData(data) {
   if (!data || typeof data !== 'object') return {};
   const sanitized = {};
   for (const [key, value] of Object.entries(data)) {
@@ -116,6 +116,12 @@ export default async function handler(req, res) {
     if (!application.type || !application.answers || typeof application.answers !== 'object') {
       console.error('[Application API] Missing required fields, type:', application.type);
       return res.status(400).json({ message: 'Missing required fields' });
+    }
+
+    // Ban appeals have their own endpoint that verifies the submitter is
+    // actually banned; don't let the generic endpoint mint them.
+    if (application.type === 'ban_appeal') {
+      return res.status(400).json({ message: 'Ban appeals must be submitted through /ban-appeals' });
     }
 
     if (Object.keys(application.answers).length === 0) {

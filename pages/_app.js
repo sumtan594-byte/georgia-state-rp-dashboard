@@ -25,11 +25,21 @@ function AuthGuard({ isPublicPage, children }) {
   const { accessDenied } = useRefreshedUser();
   const router = useRouter();
 
+  // Banned users may sign in solely to reach /ban-appeals; keep them out of
+  // the member-facing dashboard entirely.
+  const isBanned = session?.user?.banned === true;
+
   useEffect(() => {
     if (status === 'unauthenticated' && !isPublicPage) {
       router.replace('/login');
     }
   }, [status, isPublicPage, router]);
+
+  useEffect(() => {
+    if (isBanned && !isPublicPage) {
+      router.replace('/ban-appeals');
+    }
+  }, [isBanned, isPublicPage, router]);
 
   // Public pages (landing, verify, policies, login) must render their real
   // content immediately, even before the session resolves, so crawlers and
@@ -39,6 +49,10 @@ function AuthGuard({ isPublicPage, children }) {
   }
 
   if (status === 'unauthenticated' && !isPublicPage) {
+    return null;
+  }
+
+  if (isBanned && !isPublicPage) {
     return null;
   }
 
@@ -276,7 +290,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
   const [proxyBlocked, setProxyBlocked] = useState(false);
 
   useEffect(() => {
-    const publicRoutes = ['/', '/trailer', '/verify', '/privacy-policy', '/terms-of-service', '/login'];
+    const publicRoutes = ['/', '/trailer', '/verify', '/privacy-policy', '/terms-of-service', '/login', '/ban-appeals'];
     const isPublicPage = publicRoutes.includes(router.pathname);
 
     if (!isPublicPage && !sessionStorage.getItem('hasSeenWelcome')) {
