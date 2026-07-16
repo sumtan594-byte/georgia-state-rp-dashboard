@@ -1,7 +1,7 @@
 import { useSession } from 'next-auth/react';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { Loader2, Users, Search, Filter, ChevronDown, ChevronUp, Clock, RotateCcw } from 'lucide-react';
+import { Loader2, Users, Search, Filter, ChevronDown, ChevronUp, Clock, RotateCcw, Check, X } from 'lucide-react';
 import LoginScreen from '../../components/auth/LoginScreen';
 import { useRefreshedUser } from '../../lib/UserRefreshContext';
 import AccessDenied from '../../components/auth/AccessDenied';
@@ -362,7 +362,9 @@ export default function AttemptsPage() {
                                   {s.correct ? '✓ Correct' : '✗ Incorrect'}
                                 </p>
                                 <p className="text-gsrp-teal-light/40 text-[10px] mt-1">
-                                  Evidence: {s.evidenceViewed ? '✅' : '❌'} {s.correctCommand && `| Command: ;${s.correctCommand}`}
+                                  Evidence: {s.evidenceViewed
+                                    ? <Check className="inline w-3 h-3 text-green-400 align-[-1px]" />
+                                    : <X className="inline w-3 h-3 text-red-400 align-[-1px]" />} {s.correctCommand && `| Command: ;${s.correctCommand}`}
                                 </p>
                               </div>
                             ))}

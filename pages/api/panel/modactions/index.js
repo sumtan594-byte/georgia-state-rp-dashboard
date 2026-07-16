@@ -1,7 +1,8 @@
 import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../../lib/auth-options';
-import { ROLES, isAdmin } from '../../../../lib/auth';
+import { ROLES } from '../../../../lib/auth';
 import { requireAccess, requireAnyAccess } from '../../../../lib/access-check';
+import { isFullAdmin } from '../../../../lib/admin-helper';
 import { sendComponentsV2 } from '../../../../lib/discord-v2';
 import { addPanelPlayerOffence } from '../../../../lib/sessions-offences-db';
 import { enqueueErlcCommand, getErlcCommandQueueState } from '../../../../lib/erlc-command-queue';
@@ -132,9 +133,13 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Reason required' });
   }
 
-  const canBan = isAdmin(session) || (await requireAnyAccess(session, BAN_ROLE_IDS)).allowed;
-  const canBolo = isAdmin(session) || (await requireAccess(session, BOLO_ROLE_ID)).allowed;
-  const isNkz = isAdmin(session) || (await requireAccess(session, NKZ_ROLE_ID)).allowed;
+  // Server-authoritative admin check. The session-based isAdmin() from lib/auth
+  // is client-only (session.user.isAdmin is never set server-side), so it would
+  // always be false here and silently strip env-admins of their privileges.
+  const admin = await isFullAdmin(session.user?.id, session.user?.roles || []);
+  const canBan = admin || (await requireAnyAccess(session, BAN_ROLE_IDS)).allowed;
+  const canBolo = admin || (await requireAccess(session, BOLO_ROLE_ID)).allowed;
+  const isNkz = admin || (await requireAccess(session, NKZ_ROLE_ID)).allowed;
   if (!process.env.ERLC_API_KEY) {
     return res.status(500).json({ error: 'Missing ERLC_API_KEY env var' });
   }

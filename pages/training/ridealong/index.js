@@ -1,6 +1,6 @@
 import { useSession } from 'next-auth/react'
 import { useEffect, useState, useCallback, useRef } from 'react'
-import { Loader2, Shield, AlertTriangle, RotateCcw, ChevronRight, BookOpen, Ban } from 'lucide-react'
+import { Loader2, Shield, AlertTriangle, RotateCcw, ChevronRight, BookOpen, Ban, Siren, Video, Scale, FileText, ClipboardList, Hammer } from 'lucide-react'
 import { useRouter } from 'next/router'
 import LoginScreen from '../../../components/auth/LoginScreen'
 import { getServerSession } from 'next-auth'
@@ -480,42 +480,42 @@ export default function RidealongPage() {
             <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4">How It Works</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
-                  <span className="text-lg">🚨</span>
+                  <Siren className="w-5 h-5 text-gsrp-teal-light shrink-0" />
                   <div>
                     <p className="text-sm font-bold text-white">Receive Mod Call</p>
                     <p className="text-[10px] text-gsrp-teal-light/40">A popup appears with caller info</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
-                  <span className="text-lg">🎥</span>
+                  <Video className="w-5 h-5 text-gsrp-teal-light shrink-0" />
                   <div>
                     <p className="text-sm font-bold text-white">Review Evidence</p>
                     <p className="text-[10px] text-gsrp-teal-light/40">Review player-submitted clips before deciding</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
-                  <span className="text-lg">⚖️</span>
+                  <Scale className="w-5 h-5 text-gsrp-teal-light shrink-0" />
                   <div>
                     <p className="text-sm font-bold text-white">Take Action</p>
                     <p className="text-[10px] text-gsrp-teal-light/40">Choose the correct action</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
-                  <span className="text-lg">📝</span>
+                  <FileText className="w-5 h-5 text-gsrp-teal-light shrink-0" />
                   <div>
                     <p className="text-sm font-bold text-white">Get Feedback</p>
                     <p className="text-[10px] text-gsrp-teal-light/40">Immediate explanation of right/wrong</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
-                  <span className="text-lg">📋</span>
+                  <ClipboardList className="w-5 h-5 text-gsrp-teal-light shrink-0" />
                   <div>
                     <p className="text-sm font-bold text-white">RP Logging</p>
                     <p className="text-[10px] text-gsrp-teal-light/40">Check logs before approving RPs</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 p-3 bg-gsrp-dark-surface/40 rounded-xl">
-                  <span className="text-lg">🔨</span>
+                  <Hammer className="w-5 h-5 text-gsrp-teal-light shrink-0" />
                   <div>
                     <p className="text-sm font-bold text-white">Melonly Form</p>
                     <p className="text-[10px] text-gsrp-teal-light/40">Log punishments via melonly system</p>

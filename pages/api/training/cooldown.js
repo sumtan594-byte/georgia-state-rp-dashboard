@@ -1,12 +1,17 @@
 import clientPromise from '../../../lib/mongodb';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../../lib/auth-options';
 
 export default async function handler(req, res) {
   if (req.method === 'GET') {
-    const userId = req.query.userId || req.headers['x-user-id'];
-
-    if (!userId) {
-      return res.status(400).json({ error: 'User ID required' });
+    const session = await getServerSession(req, res, authOptions);
+    if (!session?.user?.id) {
+      return res.status(401).json({ error: 'Unauthorized' });
     }
+
+    // Identity comes from the session only; a client can never read another
+    // user's cooldown/pass state by naming their ID.
+    const userId = String(session.user.id);
 
     try {
       const client = await clientPromise;

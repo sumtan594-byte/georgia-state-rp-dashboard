@@ -327,7 +327,7 @@ export default function LiveMap({
           mkr._lastSelected = nowSelected;
           mkr._lastAvatarUrl = p.AvatarUrl || '';
         }
-        mkr.setTooltipContent(name + (isLocked ? ' 🔒' : ''));
+        mkr.setTooltipContent(name + (isLocked ? ' (locked)' : ''));
         const el = mkr.getElement();
         if (el) {
           el.style.display = '';

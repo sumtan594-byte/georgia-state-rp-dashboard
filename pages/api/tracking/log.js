@@ -1,11 +1,29 @@
 import clientPromise from '../../../lib/mongodb';
 import { enrichUserInfo } from '../../../lib/discord-api';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../../../lib/auth-options';
+import { getClientIp } from '../../../lib/client-ip';
 
 const BLOCKED_IDS = [];
 const BLOCKED_USERNAMES = [];
 const BLOCKED_IPS = ['122.148.185.222'];
 
 const geoCache = new Map();
+
+// Cache server-resolved Discord profiles so we don't enrich on every hit.
+const profileCache = new Map();
+const PROFILE_CACHE_TTL_MS = 10 * 60 * 1000;
+
+async function resolveProfile(id) {
+  const cached = profileCache.get(id);
+  if (cached && Date.now() - cached.ts < PROFILE_CACHE_TTL_MS) return cached.info;
+  const info = await enrichUserInfo(id);
+  if (profileCache.size > 500) {
+    [...profileCache.keys()].slice(0, 100).forEach(k => profileCache.delete(k));
+  }
+  profileCache.set(id, { info, ts: Date.now() });
+  return info;
+}
 
 function isBlocked(userId, username, ip) {
   if (userId && BLOCKED_IDS.includes(String(userId))) return true;
@@ -21,39 +39,44 @@ export default async function handler(req, res) {
     const client = await clientPromise;
     const db = client.db();
 
-    const ip = req.headers['x-forwarded-for']?.split(',')[0]?.trim()
-      || req.headers['x-real-ip']
-      || req.socket?.remoteAddress
-      || 'unknown';
+    const ip = getClientIp(req);
 
-    let { userId, username, avatar, userAgent, device, page, discordId } = req.body || {};
+    // `userAgent`, `device`, and `page` are non-authoritative display hints and
+    // are safe to take from the body. Identity (userId/username/avatar) is NOT
+    // trusted from the client — a caller could otherwise forge attributed log
+    // entries. We resolve it server-side from the session, or from the
+    // regex-gated Discord ID for pre-auth Roblox verification visitors.
+    const { userAgent, device, page, discordId: rawDiscordId } = req.body || {};
 
-    // Roblox verification visitors arrive without a session but carry a Discord
-    // ID in the URL state param. Resolve their Discord info so they get logged
-    // as identified users rather than anonymous IPs.
-    if (!userId && discordId && /^\d{17,20}$/.test(String(discordId).trim())) {
-      discordId = discordId.trim();
-      const info = await enrichUserInfo(discordId);
-      if (info && info.username && info.username !== discordId) {
-        userId = discordId;
+    let userId = null;
+    let username = '';
+    let avatar = '';
+
+    const session = await getServerSession(req, res, authOptions);
+    if (session?.user?.id) {
+      userId = String(session.user.id);
+    } else {
+      // Roblox verification visitors arrive without a session but carry a Discord
+      // ID in the URL state param. Resolve their Discord info server-side so they
+      // get logged as identified users rather than anonymous IPs.
+      const candidate = String(rawDiscordId || '').trim();
+      if (/^\d{17,20}$/.test(candidate)) userId = candidate;
+    }
+
+    if (userId) {
+      const info = await resolveProfile(userId);
+      if (info && info.username && info.username !== userId) {
         username = info.username;
         avatar = info.avatarUrl || '';
+      } else {
+        // Could not verify the identity against Discord; don't attribute it.
+        userId = null;
       }
     }
 
     if (isBlocked(userId, username, ip)) {
       return res.status(200).json({ ok: true, skipped: true });
     }
-
-    // ensure TTL index on the logs collection (7-day auto-clean)
-    db.collection('visitor_logs').createIndex(
-      { timestamp: 1 },
-      { expireAfterSeconds: 604800 },
-    ).catch(() => {});
-    db.collection('visitor_profiles').createIndex(
-      { lastSeen: 1 },
-      { expireAfterSeconds: 604800 },
-    ).catch(() => {});
 
     const ua = userAgent || req.headers['user-agent'] || '';
     const dev = device || parseDevice(ua);

@@ -2,6 +2,24 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from "../../../lib/auth-options";
 import pool, { ensureTranscriptDenyTable } from '../../../lib/ticketdb';
 
+// Runs the given statements as a single atomic transaction so a mid-delete
+// failure can't leave orphaned rows (e.g. transcript_messages pointing at an
+// already-deleted transcript). `work(conn)` receives a dedicated connection.
+async function withTransaction(work) {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    const result = await work(conn);
+    await conn.commit();
+    return result;
+  } catch (err) {
+    try { await conn.rollback(); } catch {}
+    throw err;
+  } finally {
+    conn.release();
+  }
+}
+
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
   if (!session) return res.status(401).json({ error: 'Not logged in' });
@@ -43,10 +61,12 @@ export default async function handler(req, res) {
         }
       }
 
-      await pool.query('DELETE FROM transcript_access WHERE transcript_id = ?', [id]);
-      await pool.query('DELETE FROM transcript_deny WHERE transcript_id = ?', [id]);
-      await pool.query('DELETE FROM transcript_messages WHERE transcript_id = ?', [id]);
-      await pool.query('DELETE FROM transcripts WHERE id = ?', [id]);
+      await withTransaction(async (conn) => {
+        await conn.query('DELETE FROM transcript_access WHERE transcript_id = ?', [id]);
+        await conn.query('DELETE FROM transcript_deny WHERE transcript_id = ?', [id]);
+        await conn.query('DELETE FROM transcript_messages WHERE transcript_id = ?', [id]);
+        await conn.query('DELETE FROM transcripts WHERE id = ?', [id]);
+      });
 
       return res.status(200).json({ success: true, deleted: [id] });
     }

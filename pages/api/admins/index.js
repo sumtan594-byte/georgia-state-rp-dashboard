@@ -2,6 +2,19 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '../../../lib/auth-options';
 import clientPromise from '../../../lib/mongodb';
 import { logAuditEvent } from '../../../lib/audit-log';
+import { enrichUserInfo } from '../../../lib/discord-api';
+
+// Resolve a Discord profile via the shared, TTL-cached helper so repeated
+// admin-list loads don't fire an uncached request per admin against a
+// rate-limited API. Never throws — returns a safe fallback.
+async function safeProfile(userId) {
+  if (!userId) return { username: null, avatarUrl: null };
+  try {
+    return await enrichUserInfo(userId);
+  } catch {
+    return { username: userId, avatarUrl: null };
+  }
+}
 
 const ADMIN_MANAGER_ROLE = '1486826723210428496';
 
@@ -40,40 +53,17 @@ export default async function handler(req, res) {
       const docs = await db.collection('admins').find({}).sort({ addedAt: -1 }).toArray();
 
       const enriched = await Promise.all(docs.map(async (doc) => {
-        let name = doc.userId;
-        let avatar = null;
-        try {
-          const userRes = await fetch(`https://discord.com/api/users/${doc.userId}`, {
-            headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` },
-          });
-          if (userRes.ok) {
-            const user = await userRes.json();
-            name = user.global_name || user.username || doc.userId;
-            avatar = user.avatar
-              ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png`
-              : null;
-          }
-        } catch {}
-
-        let addedByName = 'Unknown';
-        if (doc.addedBy) {
-          try {
-            const aRes = await fetch(`https://discord.com/api/users/${doc.addedBy}`, {
-              headers: { Authorization: `Bot ${process.env.DISCORD_BOT_TOKEN}` },
-            });
-            if (aRes.ok) {
-              const aUser = await aRes.json();
-              addedByName = aUser.global_name || aUser.username || doc.addedBy;
-            }
-          } catch {}
-        }
+        const [profile, addedByProfile] = await Promise.all([
+          safeProfile(doc.userId),
+          doc.addedBy ? safeProfile(doc.addedBy) : Promise.resolve(null),
+        ]);
 
         return {
           userId: doc.userId,
-          name,
-          avatar,
+          name: profile.username || doc.userId,
+          avatar: profile.avatarUrl || null,
           addedBy: doc.addedBy,
-          addedByName,
+          addedByName: addedByProfile?.username || (doc.addedBy ? doc.addedBy : 'Unknown'),
           addedAt: doc.addedAt,
         };
       }));

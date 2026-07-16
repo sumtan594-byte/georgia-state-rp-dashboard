@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import {
   CheckCircle2, Copy, Check, ChevronRight, Shield, ExternalLink,
-  Loader2, CheckCheck, ArrowRight
+  Loader2, CheckCheck, ArrowRight, AlertTriangle
 } from 'lucide-react'
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
@@ -286,7 +286,7 @@ export default function PostRidealongOrientation({
     if (step === 5) return (
       <div className="max-w-xl mx-auto w-full text-center">
         <div className="w-16 h-16 rounded-2xl bg-gsrp-sunset/10 border border-gsrp-sunset/30 flex items-center justify-center mx-auto mb-8">
-          <span className="text-3xl">⚠️</span>
+          <AlertTriangle className="w-8 h-8 text-gsrp-sunset" />
         </div>
         <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4 leading-tight">
           When getting off, always make sure to{' '}
@@ -320,7 +320,7 @@ export default function PostRidealongOrientation({
     if (step === 7) return (
       <div className="max-w-2xl mx-auto w-full">
         <div className="w-16 h-16 rounded-2xl bg-gsrp-orange/10 border border-gsrp-orange/30 flex items-center justify-center mx-auto mb-8">
-          <span className="text-3xl">‼️</span>
+          <AlertTriangle className="w-8 h-8 text-gsrp-orange" />
         </div>
         <h2 className="text-3xl sm:text-4xl font-bold text-white text-center mb-3 leading-tight">
           This is the most important thing!
@@ -331,7 +331,7 @@ export default function PostRidealongOrientation({
         <div className="grid grid-cols-2 gap-6 mb-10">
           {/* Bad column */}
           <div className="space-y-3">
-            <p className="text-gsrp-sunset text-xs font-bold uppercase tracking-widest text-center">NO 😞</p>
+            <p className="text-gsrp-sunset text-xs font-bold uppercase tracking-widest text-center">NO</p>
             {[':to kol', ':to ko', ':to k'].map(cmd => (
               <div key={cmd} className="bg-gsrp-sunset/8 border border-gsrp-sunset/25 rounded-xl px-4 py-3 text-center">
                 <code className="text-gsrp-sunset font-mono text-base font-bold">{cmd}</code>
@@ -340,7 +340,7 @@ export default function PostRidealongOrientation({
           </div>
           {/* Good column */}
           <div className="space-y-3">
-            <p className="text-gsrp-teal-light text-xs font-bold uppercase tracking-widest text-center">YES 😊</p>
+            <p className="text-gsrp-teal-light text-xs font-bold uppercase tracking-widest text-center">YES</p>
             {[':to kolt', ':to koltboy', ':to koltboy123'].map(cmd => (
               <div key={cmd} className="bg-gsrp-teal/8 border border-gsrp-teal/25 rounded-xl px-4 py-3 text-center">
                 <code className="text-gsrp-teal-light font-mono text-base font-bold">{cmd}</code>

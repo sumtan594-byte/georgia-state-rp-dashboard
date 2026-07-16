@@ -46,12 +46,50 @@ const SECURITY_HEADERS = {
   'Strict-Transport-Security': 'max-age=31536000; includeSubDomains; preload',
 };
 
+// `x-forwarded-for` is client-controllable — an attacker can prepend fake
+// entries to dodge IP rate limiting. Only the hops our own reverse proxy
+// appended can be trusted, so count TRUSTED_PROXY_HOPS from the RIGHT of the
+// chain rather than taking the leftmost (attacker-supplied) entry. Set
+// TRUSTED_PROXY_HOPS to the number of proxies in front of the app (default 1).
+const TRUSTED_PROXY_HOPS = Math.max(1, parseInt(process.env.TRUSTED_PROXY_HOPS || '1', 10) || 1);
+
 function getClientIp(request) {
   const forwarded = request.headers.get('x-forwarded-for');
-  return forwarded?.split(',')[0]?.trim()
-    || request.headers.get('x-real-ip')
-    || request.ip
-    || 'unknown';
+  if (forwarded) {
+    const parts = forwarded.split(',').map(p => p.trim()).filter(Boolean);
+    if (parts.length) {
+      return parts[Math.max(0, parts.length - TRUSTED_PROXY_HOPS)];
+    }
+  }
+  return request.headers.get('x-real-ip') || 'unknown';
+}
+
+// Cookie-authenticated, state-changing requests are protected against CSRF by
+// an Origin allow-list. Routes authenticated by a shared secret or signature
+// (not a cookie) are exempt: CSRF does not apply and they are legitimately
+// cross-origin.
+const CSRF_EXEMPT_PREFIXES = ['/api/auth/', '/api/webhooks/', '/api/cron/'];
+const CSRF_EXEMPT_EXACT = new Set(['/api/user/invalidate']);
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+function allowedOrigins() {
+  return (process.env.ALLOWED_ORIGINS || process.env.NEXTAUTH_URL || 'https://join-gsrp.com')
+    .split(',')
+    .map(o => o.trim())
+    .filter(Boolean);
+}
+
+function isCrossOriginBlocked(request, pathname) {
+  if (!MUTATING_METHODS.has(request.method)) return false;
+  if (CSRF_EXEMPT_EXACT.has(pathname)) return false;
+  if (CSRF_EXEMPT_PREFIXES.some(p => pathname.startsWith(p))) return false;
+
+  const origin = request.headers.get('origin');
+  // A cross-site browser request always sends Origin. Absent Origin means a
+  // same-origin request the browser chose not to label, or a non-browser
+  // server-to-server caller — neither is a CSRF vector, so allow it.
+  if (!origin) return false;
+  return !allowedOrigins().includes(origin);
 }
 
 function selectLimit(pathname, method) {
@@ -115,6 +153,15 @@ export function proxy(request) {
   }
 
   if (pathname.startsWith('/api/')) {
+    if (isCrossOriginBlocked(request, pathname)) {
+      const response = NextResponse.json(
+        { error: 'Cross-origin request blocked' },
+        { status: 403 },
+      );
+      applySecurityHeaders(response);
+      return response;
+    }
+
     const result = checkRateLimit(request, pathname);
 
     if (!result.allowed) {
