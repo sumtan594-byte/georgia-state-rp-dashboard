@@ -15,6 +15,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { EMBED_IMAGE, EMBED_THEME_COLOR, buildPageUrl, getRouteEmbed } from '../lib/discord-embeds';
 import { PageSkeleton } from '../components/SkeletonLoader';
 
+const PUBLIC_ROUTES = ['/', '/trailer', '/verify', '/privacy-policy', '/terms-of-service', '/login', '/ban-appeals'];
+
 function DebugSessionLogger() {
   const { status, data } = useSession();
   return null;
@@ -36,7 +38,7 @@ function AuthGuard({ isPublicPage, children }) {
   }, [status, isPublicPage, router]);
 
   useEffect(() => {
-    if (isBanned && !isPublicPage) {
+    if (isBanned && !isPublicPage && router.pathname !== '/ban-appeals') {
       router.replace('/ban-appeals');
     }
   }, [isBanned, isPublicPage, router]);
@@ -290,8 +292,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
   const [proxyBlocked, setProxyBlocked] = useState(false);
 
   useEffect(() => {
-    const publicRoutes = ['/', '/trailer', '/verify', '/privacy-policy', '/terms-of-service', '/login', '/ban-appeals'];
-    const isPublicPage = publicRoutes.includes(router.pathname);
+    const isPublicPage = PUBLIC_ROUTES.includes(router.pathname);
 
     if (!isPublicPage && !sessionStorage.getItem('hasSeenWelcome')) {
       setShowWelcome(true);
@@ -305,8 +306,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
     sessionStorage.setItem('hasSeenWelcome', 'true');
   };
 
-  const publicRoutes = ['/', '/trailer', '/verify', '/privacy-policy', '/terms-of-service', '/login'];
-  const isPublicPage = publicRoutes.includes(router.pathname);
+  const isPublicPage = PUBLIC_ROUTES.includes(router.pathname);
 
   return (
     <SessionProvider session={session}>
