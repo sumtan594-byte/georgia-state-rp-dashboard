@@ -3,7 +3,7 @@ import clientPromise from '../../../lib/mongodb';
 import { getServerSession } from "next-auth/next";
 import { authOptions } from "../../../lib/auth-options";
 import { canReviewApplications } from "../../../lib/admin-helper";
-import { sendComponentsV2, sendDM, addMemberRole, removeMemberRole } from "../../../lib/discord-v2";
+import { sendComponentsV2, sendDM, addMemberRole, removeMemberRole, unbanMember } from "../../../lib/discord-v2";
 import { logAuditEvent } from '../../../lib/audit-log';
 import { startTraineeTracking } from '../../../lib/trainee-tracking';
 
@@ -108,6 +108,17 @@ export default async function handler(req, res) {
       }
     } else {
       console.warn(`[Role Sync] No application type configuration found for slug: ${application.type}`);
+    }
+
+    // Ban appeals have no role automation config - accepting one means
+    // actually lifting the Discord ban, not adding/removing roles.
+    if (application.type === 'ban_appeal' && isAccepted) {
+      console.log(`[Ban Appeal] Unbanning ${application.userId} from guild ${guildId}`);
+      const unbanned = await unbanMember(guildId, application.userId, `Ban appeal accepted by ${session.user.name}`);
+      if (!unbanned) {
+        console.error(`[Ban Appeal] Failed to unban ${application.userId}`);
+        warnings.push('The appeal was accepted, but the Discord unban could not be completed. Please unban the user manually.');
+      }
     }
 
     // 1. Send Outcome notification
