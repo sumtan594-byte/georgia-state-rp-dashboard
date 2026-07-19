@@ -12,10 +12,10 @@ const app = next({ dev });
 const handle = app.getRequestHandler();
 
 if (!dev && process.env.SKIP_NEXT_BUILD !== '1') {
-    const build = spawnSync('npx', ['next', 'build'], {
+    const nextCli = require.resolve('next/dist/bin/next');
+    const build = spawnSync(process.execPath, [nextCli, 'build'], {
         cwd: __dirname,
         stdio: 'inherit',
-        shell: process.platform === 'win32',
     });
 
     if (build.status !== 0) {
