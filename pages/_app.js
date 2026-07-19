@@ -310,6 +310,9 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
 
   return (
     <SessionProvider session={session}>
+      <Head>
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+      </Head>
       <UserRefreshProvider>
         <ToastProvider>
           <DiscordEmbedHead asPath={router.asPath} pathname={router.pathname} />
