@@ -608,8 +608,10 @@ export default function Viewer({ htmlContent, fullHtml, id, meta: serverMeta, ca
         <div className="card-glass rounded-[1.5rem] shadow-2xl shadow-black/40 overflow-hidden animate-fade-in-up">
           {(fullHtml || htmlContent) ? (
             <iframe
+              title={`Discord transcript for ${meta.channelName || id}`}
               srcDoc={fullHtml || formatFallbackHtml(htmlContent)}
-              sandbox="allow-scripts"
+              sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
+              allow="clipboard-write"
               style={{ width: '100%', minHeight: '600px', border: 'none', display: 'block' }}
               onLoad={(e) => {
                 try {
@@ -743,8 +745,14 @@ export async function getServerSideProps(context) {
 
     const canManage = isAdmin || isOwner;
 
-    // Always re-render from transcript_messages via the worker (hydrated, no external scripts).
-    // Fall back to stored html_content only if no message rows exist.
+    // New bot-generated transcripts already contain the complete Discord-style
+    // document, including the original guild/channel metadata and interactions.
+    if (t.html_content?.includes('data-gsrp-transcript-version="2"')) {
+      return { props: { fullHtml: t.html_content, id, meta, canManage, isAdmin } };
+    }
+
+    // Upgrade legacy records at read time from their SQL message rows. This
+    // keeps old tickets on the same viewer without a destructive migration.
     try {
       const [msgRows] = await pool.query(
         'SELECT message_data, author_id, created_timestamp FROM transcript_messages WHERE transcript_id = ? ORDER BY sort_order ASC',
@@ -753,11 +761,15 @@ export async function getServerSideProps(context) {
 
       if (msgRows.length > 0) {
         const { generateTranscriptHTML } = require('../../lib/transcript-renderer');
-        const messages = msgRows.map(r => JSON.parse(r.message_data));
+        const messages = msgRows.map((row) => (
+          typeof row.message_data === 'string' ? JSON.parse(row.message_data) : row.message_data
+        ));
         const { fullHtml } = await generateTranscriptHTML({
           messages,
           channelName: t.channel_name,
-          guildName: 'GSRP',
+          channelId: id,
+          guildName: 'Florida State Roleplay',
+          generatedAt: t.closed_at,
         });
         return { props: { fullHtml, id, meta, canManage, isAdmin } };
       }
