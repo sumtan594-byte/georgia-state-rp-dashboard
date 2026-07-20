@@ -1,4 +1,5 @@
 import Head from 'next/head';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useSession } from 'next-auth/react';
 import { Reveal, ShowcaseSections, MediaMarquee } from '../components/landing/LandingMotion';
@@ -10,7 +11,7 @@ import {
 
 const DISCORD_INVITE = 'https://discord.gg/gsrp7';
 const ROBLOX_COMMUNITY = 'https://www.roblox.com/communities/5438941/Georgia-State-Roleplay#!/about';
-const BAN_APPEAL = 'https://melonly.xyz/forms/7330531173917003776';
+const BAN_APPEAL = '/ban-appeals';
 const SITE_URL = 'https://join-gsrp.com';
 const LOGO = '/media/gsrp-logo.png';
 
@@ -22,12 +23,12 @@ const STATS = [
 ];
 
 const DEPARTMENTS = [
-  { icon: Shield, name: 'Police Department', desc: 'Patrol the streets of Atlanta City, run traffic stops, and keep the peace with realistic ER:LC police roleplay.' },
-  { icon: Siren, name: "Sheriff's Office", desc: 'Join the Sheriff Team and handle county-wide patrols, pursuits, and high-priority calls.' },
-  { icon: Flame, name: 'Fire & EMS', desc: 'Respond to fires, crashes, and medical emergencies as a first responder in our ERLC roleplay server.' },
-  { icon: Lock, name: 'Homeland Security', desc: 'Work specialised operations within our DHS division for advanced roleplay scenarios.' },
-  { icon: Radio, name: 'Communications', desc: 'Run dispatch, coordinate units, and keep every ER:LC roleplay session organised and immersive.' },
-  { icon: Car, name: 'Civilian Operations', desc: 'Drive the story forward as a civilian: run a business, get into crime, or just live everyday life in Atlanta City.' },
+  { slug: 'police', icon: Shield, name: 'Police Department', desc: 'Patrol the streets of Atlanta City, run traffic stops, and keep the peace with realistic ER:LC police roleplay.' },
+  { slug: 'sheriff', icon: Siren, name: "Sheriff's Office", desc: 'Join the Sheriff Team and handle county-wide patrols, pursuits, and high-priority calls.' },
+  { slug: 'fire-ems', icon: Flame, name: 'Fire & EMS', desc: 'Respond to fires, crashes, and medical emergencies as a first responder in our ERLC roleplay server.' },
+  { slug: 'homeland-security', icon: Lock, name: 'Homeland Security', desc: 'Work specialised operations within our DHS division for advanced roleplay scenarios.' },
+  { slug: 'communications', icon: Radio, name: 'Communications', desc: 'Run dispatch, coordinate units, and keep every ER:LC roleplay session organised and immersive.' },
+  { slug: 'civilian', icon: Car, name: 'Civilian Operations', desc: 'Drive the story forward as a civilian: run a business, get into crime, or just live everyday life in Atlanta City.' },
 ];
 
 const FEATURES = [
@@ -60,8 +61,6 @@ const REVIEWS = [
   { name: 'FootballPuppy145', handle: '@udonemessedupaa_ron', rating: 5, text: 'Very supportive and helpful staff. Before I was staff I still loved the community, they always have players online.' },
   { name: 'alexisd4786', handle: 'GSRP member', rating: 5, text: "Really good server, it's pretty fun and there's always something happening." },
 ];
-
-const KEYWORDS = 'ERLC, Emergency Response Liberty County, ER:LC, ERLC Roleplay, Georgia State Roleplay, GSRP, Roblox roleplay, roleplay server, ERLC server, ERLC community, police roleplay, rp server, Atlanta City roleplay, best ERLC server, ERLC discord';
 
 function Stars({ n = 5 }) {
   return (
@@ -98,7 +97,7 @@ function ReviewCard({ r }) {
    - Scroll story sections: public/media/scroll-showcases/, keyed to copy by
      filename without extension (e.g. respond-to-emergencies.png).
    - Moving gallery: every image in public/media/landing-showcases/. */
-export async function getServerSideProps() {
+export async function getStaticProps() {
   const fs = require('fs');
   const path = require('path');
   const IMAGE_EXT = /\.(png|jpe?g|webp|gif|avif)$/i;
@@ -122,7 +121,7 @@ export async function getServerSideProps() {
 
   const gallery = readImages('landing-showcases').map((f) => `/media/landing-showcases/${f}`);
 
-  return { props: { showcase, gallery } };
+  return { props: { showcase, gallery }, revalidate: 3600 };
 }
 
 export default function Landing({ showcase = {}, gallery = [] }) {
@@ -133,35 +132,33 @@ export default function Landing({ showcase = {}, gallery = [] }) {
 
   const jsonLd = {
     '@context': 'https://schema.org',
-    '@type': 'Organization',
-    name: 'Georgia State Roleplay',
-    alternateName: 'GSRP',
-    url: SITE_URL,
-    logo: `${SITE_URL}${LOGO}`,
-    description:
-      'Georgia State Roleplay (GSRP) is one of the largest and most professional ER:LC roleplay communities on Roblox.',
-    sameAs: [DISCORD_INVITE, ROBLOX_COMMUNITY],
-    aggregateRating: {
-      '@type': 'AggregateRating',
-      ratingValue: '4.5',
-      reviewCount: '86',
-      bestRating: '5',
-    },
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': `${SITE_URL}/#organization`,
+        name: 'Georgia State Roleplay',
+        alternateName: 'GSRP',
+        url: `${SITE_URL}/`,
+        logo: { '@type': 'ImageObject', url: `${SITE_URL}${LOGO}`, width: 256, height: 256 },
+        description: 'Georgia State Roleplay is a professional Emergency Response: Liberty County roleplay community on Roblox.',
+        sameAs: [DISCORD_INVITE, ROBLOX_COMMUNITY],
+        aggregateRating: { '@type': 'AggregateRating', ratingValue: '4.5', reviewCount: '86', bestRating: '5' },
+      },
+      {
+        '@type': 'WebSite',
+        '@id': `${SITE_URL}/#website`,
+        url: `${SITE_URL}/`,
+        name: 'Georgia State Roleplay',
+        alternateName: 'GSRP',
+        publisher: { '@id': `${SITE_URL}/#organization` },
+        inLanguage: 'en',
+      },
+    ],
   };
 
   return (
     <>
       <Head>
-        <title key="title">Georgia State Roleplay (GSRP) | #1 ERLC Roleplay Server on Roblox</title>
-        <meta key="description" name="description" content="Join Georgia State Roleplay (GSRP), one of the largest, most professional ER:LC roleplay servers on Roblox. 9,000+ members, trained staff, realistic ERLC departments, and immersive police, fire & civilian roleplay." />
-        <meta name="keywords" content={KEYWORDS} />
-        <meta name="robots" content="index, follow" />
-        <link rel="canonical" href={SITE_URL} />
-        <meta key="og-title" property="og:title" content="Georgia State Roleplay (GSRP) | #1 ERLC Roleplay Server" />
-        <meta key="og-description" property="og:description" content="One of the largest & most professional ER:LC roleplay communities on Roblox. 9,000+ members and trained staff." />
-        <meta key="og-type" property="og:type" content="website" />
-        <meta key="og-url" property="og:url" content={SITE_URL} />
-        <meta name="twitter:card" content="summary_large_image" />
         <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       </Head>
 
@@ -170,16 +167,16 @@ export default function Landing({ showcase = {}, gallery = [] }) {
         <header className="sticky top-0 z-50 backdrop-blur-xl bg-gsrp-dark/55 border-b border-gsrp-dark-border/40">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
             <Link href="/" className="flex items-center gap-2.5 group">
-              <img src={LOGO} alt="Georgia State Roleplay logo" className="w-9 h-9 rounded-xl object-cover ring-1 ring-white/10" />
+              <Image src={LOGO} alt="Georgia State Roleplay logo" width={36} height={36} priority className="rounded-xl object-cover ring-1 ring-white/10" />
               <span className="font-display font-extrabold text-white tracking-tight text-[15px] leading-none">
                 Georgia State <span className="text-gsrp-orange">Roleplay</span>
               </span>
             </Link>
             <nav className="hidden md:flex items-center gap-7 text-[13.5px] font-semibold text-gsrp-teal-light/55">
-              <a href="#about" className="hover:text-white transition-colors">About</a>
+              <Link href="/about" className="hover:text-white transition-colors">About</Link>
               <a href="#departments" className="hover:text-white transition-colors">Departments</a>
-              <a href="#community" className="hover:text-white transition-colors">Community</a>
-              <a href="#reviews" className="hover:text-white transition-colors">Reviews</a>
+              <Link href="/how-to-join" className="hover:text-white transition-colors">How to Join</Link>
+              <Link href="/events" className="hover:text-white transition-colors">Events</Link>
             </nav>
             <div className="flex items-center gap-2.5">
               <Link href="/dashboard" className="hidden sm:inline-flex items-center text-[13px] font-semibold text-gsrp-teal-light/70 hover:text-white transition-colors px-3 py-2">
@@ -284,7 +281,7 @@ export default function Landing({ showcase = {}, gallery = [] }) {
               <div aria-hidden="true" className="absolute -inset-4 bg-gradient-to-br from-gsrp-orange/15 to-gsrp-teal/12 rounded-[2.5rem] blur-3xl" />
               <div className="relative tac-panel rounded-3xl p-8 shadow-tac-3">
                 <div className="flex items-center gap-4 mb-7">
-                  <img src={LOGO} alt="Georgia State Roleplay emblem" className="w-16 h-16 rounded-2xl object-cover ring-1 ring-white/10" />
+                  <Image src={LOGO} alt="Georgia State Roleplay emblem" width={64} height={64} className="rounded-2xl object-cover ring-1 ring-white/10" />
                   <div>
                     <p className="font-display font-extrabold text-white text-lg leading-tight">Georgia State Roleplay</p>
                     <div className="flex items-center gap-2 mt-1">
@@ -331,11 +328,14 @@ export default function Landing({ showcase = {}, gallery = [] }) {
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {DEPARTMENTS.map((d, i) => (
               <Reveal key={d.name} delay={(i % 3) * 0.08} className="tac-panel tac-panel-hover rounded-2xl p-6 group">
+                <Link href={`/departments/${d.slug}`} className="block" aria-label={`Learn about the ${d.name}`}>
                 <div className="w-11 h-11 rounded-xl bg-gradient-to-br from-gsrp-orange/15 to-gsrp-teal/12 border border-white/10 flex items-center justify-center mb-4">
                   <d.icon size={20} className="text-gsrp-orange" />
                 </div>
                 <h3 className="font-display text-white font-bold text-lg mb-2">{d.name}</h3>
                 <p className="text-gsrp-teal-light/55 text-[13px] leading-relaxed">{d.desc}</p>
+                <span className="mt-4 inline-flex items-center gap-1 text-xs font-bold text-gsrp-orange">Explore department <ArrowRight size={13} /></span>
+                </Link>
               </Reveal>
             ))}
           </div>
@@ -430,7 +430,7 @@ export default function Landing({ showcase = {}, gallery = [] }) {
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 mb-10">
               <div className="sm:col-span-2 lg:col-span-1">
                 <div className="flex items-center gap-2.5 mb-3">
-                  <img src={LOGO} alt="GSRP logo" className="w-8 h-8 rounded-lg object-cover ring-1 ring-white/10" />
+                  <Image src={LOGO} alt="GSRP logo" width={32} height={32} className="rounded-lg object-cover ring-1 ring-white/10" />
                   <span className="font-display font-extrabold text-white text-sm">Georgia State Roleplay</span>
                 </div>
                 <p className="text-gsrp-teal-light/45 text-[12.5px] leading-relaxed max-w-xs">
@@ -442,15 +442,19 @@ export default function Landing({ showcase = {}, gallery = [] }) {
                 <ul className="space-y-2 text-[13px] text-gsrp-teal-light/50">
                   <li><a href={DISCORD_INVITE} target="_blank" rel="noopener noreferrer" className="hover:text-gsrp-orange transition-colors">Join our Discord</a></li>
                   <li><a href={ROBLOX_COMMUNITY} target="_blank" rel="noopener noreferrer" className="hover:text-gsrp-orange transition-colors">Roblox Community</a></li>
-                  <li><a href={BAN_APPEAL} target="_blank" rel="noopener noreferrer" className="hover:text-gsrp-orange transition-colors">Ban Appeal Form</a></li>
+                  <li><Link href={BAN_APPEAL} className="hover:text-gsrp-orange transition-colors">Ban Appeal Form</Link></li>
                 </ul>
               </div>
               <div>
-                <p className="text-white font-bold text-[13px] mb-3">Dashboard</p>
+                <p className="text-white font-bold text-[13px] mb-3">Explore</p>
                 <ul className="space-y-2 text-[13px] text-gsrp-teal-light/50">
-                  <li><Link href="/dashboard" className="hover:text-gsrp-orange transition-colors">Open Dashboard</Link></li>
+                  <li><Link href="/about" className="hover:text-gsrp-orange transition-colors">About GSRP</Link></li>
+                  <li><Link href="/how-to-join" className="hover:text-gsrp-orange transition-colors">How to Join</Link></li>
+                  <li><Link href="/server-rules" className="hover:text-gsrp-orange transition-colors">Server Rules</Link></li>
+                  <li><Link href="/events" className="hover:text-gsrp-orange transition-colors">Events</Link></li>
+                  <li><Link href="/faq" className="hover:text-gsrp-orange transition-colors">FAQ</Link></li>
+                  <li><Link href="/shop" className="hover:text-gsrp-orange transition-colors">GSRP Store</Link></li>
                   <li><Link href="/apply" className="hover:text-gsrp-orange transition-colors">Apply Now</Link></li>
-                  <li><Link href="/verify" className="hover:text-gsrp-orange transition-colors">Roblox Verification</Link></li>
                 </ul>
               </div>
               <div>

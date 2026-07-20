@@ -1,5 +1,6 @@
 import { useRef } from 'react';
 import { motion, useScroll, useTransform } from 'framer-motion';
+import Image from 'next/image';
 
 const EASE = [0.16, 1, 0.3, 1];
 
@@ -83,13 +84,9 @@ function ShowcaseItem({ src, label, title, desc, flip }) {
           className="pointer-events-none absolute -inset-5 rounded-[2.25rem] bg-gradient-to-br from-gsrp-orange/12 to-gsrp-teal/10 blur-2xl"
         />
         <div className="relative aspect-[16/10] rounded-[1.5rem] overflow-hidden border border-white/10 shadow-tac-3">
-          <motion.img
-            src={src}
-            alt={title}
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover scale-[1.12]"
-            style={{ y }}
-          />
+          <motion.div className="absolute inset-0 scale-[1.12]" style={{ y }}>
+            <Image src={src} alt={title} fill sizes="(max-width: 1024px) 100vw, 50vw" className="object-cover" />
+          </motion.div>
           <div
             aria-hidden="true"
             className="absolute inset-0 bg-gradient-to-t from-gsrp-dark/45 via-transparent to-transparent"
@@ -157,11 +154,12 @@ function MarqueeRow({ images, reverse, duration }) {
           key={`${src}-${i}`}
           className="relative w-[300px] md:w-[380px] aspect-[16/9] flex-shrink-0 rounded-2xl overflow-hidden border border-white/10 shadow-tac-2"
         >
-          <img
+          <Image
             src={src}
-            alt="Georgia State Roleplay session screenshot"
-            loading="lazy"
-            className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 ease-out-expo hover:scale-105"
+            alt={`Georgia State Roleplay ER:LC session screenshot ${i % images.length + 1}`}
+            fill
+            sizes="(max-width: 768px) 300px, 380px"
+            className="object-cover transition-transform duration-500 ease-out-expo hover:scale-105"
           />
         </div>
       ))}

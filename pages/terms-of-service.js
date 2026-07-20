@@ -6,14 +6,13 @@ export default function TermsOfService() {
   return (
     <>
       <Head>
-        <title>Terms of Service, GSRP</title>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link href="https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;500;600;700&family=Source+Sans+3:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </Head>
       <div className="min-h-screen flex items-center justify-center p-6">
         <div className="max-w-2xl w-full animate-fade-in-up">
           <Link href="/" className="inline-flex items-center gap-2 text-gsrp-teal-light/40 hover:text-gsrp-orange-light text-[10px] font-bold uppercase tracking-widest transition-colors mb-8 cursor-pointer">
-            <ArrowLeft size={12} /> Back to Dashboard
+            <ArrowLeft size={12} /> Back to site
           </Link>
           <div className="card-glass rounded-2xl p-8 shadow-2xl">
             <h1 className="text-white font-bold text-2xl mb-6">Terms of Service</h1>

@@ -12,10 +12,9 @@ import { UserRefreshProvider, useRefreshedUser } from "../lib/UserRefreshContext
 import { ToastProvider } from "../lib/ToastContext";
 import { ShieldAlert } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { EMBED_IMAGE, EMBED_THEME_COLOR, buildPageUrl, getRouteEmbed } from '../lib/discord-embeds';
+import { EMBED_IMAGE, EMBED_THEME_COLOR, getRouteEmbed } from '../lib/discord-embeds';
+import { DEFAULT_SOCIAL_IMAGE, absoluteUrl, getSeoForPath, isPublicRoute } from '../lib/seo';
 import { PageSkeleton } from '../components/SkeletonLoader';
-
-const PUBLIC_ROUTES = ['/', '/trailer', '/verify', '/privacy-policy', '/terms-of-service', '/login', '/ban-appeals'];
 
 function DebugSessionLogger() {
   const { status, data } = useSession();
@@ -258,27 +257,31 @@ function RouteLoadingBar() {
   );
 }
 
-function DiscordEmbedHead({ asPath, pathname }) {
+function RouteHead({ asPath, pathname }) {
+  const seo = getSeoForPath(asPath);
   const embed = getRouteEmbed(pathname);
-
-  if (!embed) return null;
-
-  const title = `${embed.title} | GSRP`;
-  const url = buildPageUrl(asPath);
+  const title = seo.indexable ? seo.title : (embed ? `${embed.title} | GSRP` : seo.title);
+  const description = seo.indexable ? seo.description : (embed?.description || seo.description);
+  const url = absoluteUrl(seo.path);
+  const image = seo.image || DEFAULT_SOCIAL_IMAGE || EMBED_IMAGE;
 
   return (
     <Head>
       <title key="title">{title}</title>
-      <meta key="description" name="description" content={embed.description} />
-      <meta key="og-title" property="og:title" content={embed.title} />
-      <meta key="og-description" property="og:description" content={embed.description} />
-      <meta key="og-image" property="og:image" content={EMBED_IMAGE} />
-      <meta key="og-type" property="og:type" content="website" />
+      <meta key="description" name="description" content={description} />
+      <meta key="robots" name="robots" content={seo.indexable ? 'index, follow, max-image-preview:large' : 'noindex, nofollow, noarchive'} />
+      {seo.indexable ? <link key="canonical" rel="canonical" href={url} /> : null}
+      <meta key="og-title" property="og:title" content={title} />
+      <meta key="og-description" property="og:description" content={description} />
+      <meta key="og-image" property="og:image" content={image} />
+      <meta key="og-image-alt" property="og:image:alt" content="Georgia State Roleplay community" />
+      <meta key="og-type" property="og:type" content={seo.type || 'website'} />
       <meta key="og-url" property="og:url" content={url} />
+      <meta key="og-site-name" property="og:site_name" content="Georgia State Roleplay" />
       <meta key="twitter-card" name="twitter:card" content="summary_large_image" />
-      <meta key="twitter-title" name="twitter:title" content={embed.title} />
-      <meta key="twitter-description" name="twitter:description" content={embed.description} />
-      <meta key="twitter-image" name="twitter:image" content={EMBED_IMAGE} />
+      <meta key="twitter-title" name="twitter:title" content={title} />
+      <meta key="twitter-description" name="twitter:description" content={description} />
+      <meta key="twitter-image" name="twitter:image" content={image} />
       <meta key="theme-color" name="theme-color" content={EMBED_THEME_COLOR} />
     </Head>
   );
@@ -292,7 +295,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
   const [proxyBlocked, setProxyBlocked] = useState(false);
 
   useEffect(() => {
-    const isPublicPage = PUBLIC_ROUTES.includes(router.pathname);
+    const isPublicPage = isPublicRoute(router.asPath);
 
     if (!isPublicPage && !sessionStorage.getItem('hasSeenWelcome')) {
       setShowWelcome(true);
@@ -306,7 +309,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
     sessionStorage.setItem('hasSeenWelcome', 'true');
   };
 
-  const isPublicPage = PUBLIC_ROUTES.includes(router.pathname);
+  const isPublicPage = isPublicRoute(router.asPath);
 
   return (
     <SessionProvider session={session}>
@@ -315,7 +318,7 @@ export default function App({ Component, pageProps: { session, ...pageProps } })
       </Head>
       <UserRefreshProvider>
         <ToastProvider>
-          <DiscordEmbedHead asPath={router.asPath} pathname={router.pathname} />
+          <RouteHead asPath={router.asPath} pathname={router.pathname} />
           <RouteLoadingBar />
           <VisitorTracker setProxyBlocked={setProxyBlocked} />
 

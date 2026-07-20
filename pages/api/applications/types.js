@@ -9,18 +9,18 @@ const CACHE_TTL = 30000;
 
 export default async function handler(req, res) {
   const session = await getServerSession(req, res, authOptions);
-  
-  if (!session) {
-    return res.status(401).json({ message: 'Unauthorized' });
-  }
 
   const client = await clientPromise;
   const db = client.db("gsrp_staff");
-  const canReview = await canReviewApplications(session);
+  const canReview = session ? await canReviewApplications(session) : false;
 
   if (req.method === 'GET') {
     if (Date.now() - typesCache.ts < CACHE_TTL && typesCache.data) {
       const types = typesCache.data;
+      if (!session) {
+        res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+        return res.status(200).json(types.map(t => ({ name: t.name, slug: t.slug, description: t.description })));
+      }
       if (!canReview) {
         return res.status(200).json(types.map(t => ({
           name: t.name,
@@ -37,6 +37,10 @@ export default async function handler(req, res) {
     const types = await db.collection("application_types").find({}).toArray();
     typesCache.data = types;
     typesCache.ts = Date.now();
+    if (!session) {
+      res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=120');
+      return res.status(200).json(types.map(t => ({ name: t.name, slug: t.slug, description: t.description })));
+    }
     if (!canReview) {
       return res.status(200).json(types.map(t => ({
         name: t.name,
@@ -50,7 +54,7 @@ export default async function handler(req, res) {
   }
 
   // Only staff can manage types (POST/DELETE)
-  if (!canReview) {
+  if (!session || !canReview) {
     return res.status(403).json({ message: 'Forbidden' });
   }
 

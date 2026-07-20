@@ -1,10 +1,12 @@
 import Head from 'next/head';
+import Image from 'next/image';
 import Link from 'next/link';
 import { useRef, useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, Play, Pause, Maximize2, Minimize2, Volume2, Volume1, VolumeX, RotateCcw } from 'lucide-react';
 
 const VIDEO_SRC = '/media/Georgia_State_Roleplay_Ten_Thousand_Member_Anniversary.mp4';
 const LOGO = '/media/gsrp-logo.png';
+const POSTER = '/media/landing-showcases/img-1.png';
 
 function fmt(t) {
   if (!t || Number.isNaN(t)) return '0:00';
@@ -130,9 +132,17 @@ export default function Trailer() {
   return (
     <>
       <Head>
-        <title>Georgia State Roleplay Trailer</title>
-        <meta name="description" content="Watch the official Georgia State Roleplay trailer, celebrating our Ten Thousand Member anniversary." />
-        <meta name="robots" content="index, follow" />
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'VideoObject',
+          name: 'Georgia State Roleplay Ten Thousand Member Anniversary Trailer',
+          description: 'The official Georgia State Roleplay trailer featuring ER:LC departments, patrols, emergency response, community events, and roleplay scenes.',
+          thumbnailUrl: [`https://join-gsrp.com${POSTER}`],
+          uploadDate: '2026-07-15',
+          duration: 'PT1M23S',
+          contentUrl: `https://join-gsrp.com${VIDEO_SRC}`,
+          embedUrl: 'https://join-gsrp.com/trailer',
+        }) }} />
       </Head>
 
       {/* Opening curtains */}
@@ -153,7 +163,7 @@ export default function Trailer() {
             Back to site
           </Link>
           <div className="flex items-center gap-2.5">
-            <img src={LOGO} alt="" className="w-7 h-7 rounded-lg object-cover ring-1 ring-white/10" />
+            <Image src={LOGO} alt="" width={28} height={28} className="rounded-lg object-cover ring-1 ring-white/10" />
             <span className="font-display font-extrabold text-white text-[13.5px] tracking-tight hidden sm:block">
               Georgia State <span className="text-gsrp-orange">Roleplay</span>
             </span>
@@ -181,6 +191,7 @@ export default function Trailer() {
               ref={videoRef}
               className="absolute inset-0 h-full w-full rounded-[11px] object-contain bg-black cursor-pointer"
               src={VIDEO_SRC}
+              poster={POSTER}
               playsInline
               preload="metadata"
               onClick={togglePlay}
@@ -276,6 +287,14 @@ export default function Trailer() {
           <p className="cinema-fade-up mt-5 text-gsrp-teal-light/35 text-[12px] tracking-wide">
             Space / K play · M mute · F fullscreen · ← → seek
           </p>
+          <section className="cinema-fade-up mt-10 max-w-3xl rounded-2xl border border-white/10 bg-white/5 p-6 text-left">
+            <h2 className="font-display text-xl font-bold text-white">Inside the GSRP trailer</h2>
+            <p className="mt-3 text-sm leading-7 text-gsrp-teal-light/65">This anniversary trailer showcases Georgia State Roleplay sessions in Emergency Response: Liberty County, including law-enforcement patrols, Fire &amp; EMS response, coordinated operations, vehicle events, and community scenes around Atlanta City.</p>
+            <div className="mt-5 flex flex-wrap gap-3 text-sm font-bold">
+              <Link href="/how-to-join" className="rounded-xl bg-gsrp-orange px-4 py-2.5 text-white">Join GSRP</Link>
+              <Link href="/events" className="rounded-xl border border-white/10 px-4 py-2.5 text-gsrp-teal-light/80">Explore events</Link>
+            </div>
+          </section>
         </main>
       </div>
     </>

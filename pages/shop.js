@@ -1,15 +1,17 @@
 import { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import Head from 'next/head';
+import Link from 'next/link';
 import { AlertCircle, CheckCircle2, ChevronRight, Crown, Heart, Loader2, RefreshCw, ShoppingCart } from 'lucide-react';
 import { getShopIcon } from '../lib/shop-icons';
+import { PRODUCTS as STATIC_PRODUCTS } from '../lib/shop-catalog';
 
 // How often the storefront re-pulls the catalog so admin edits relay quickly.
 const CATALOG_POLL_MS = 15000;
 
-export default function Shop() {
-  const [activeTab, setActiveTab] = useState(null);
-  const [catalog, setCatalog] = useState({ products: {}, categories: [], loading: true });
+export default function Shop({ initialCatalog }) {
+  const [activeTab, setActiveTab] = useState(initialCatalog.categories[0]?.key || null);
+  const [catalog, setCatalog] = useState({ ...initialCatalog, loading: false });
   const [purchaseState, setPurchaseState] = useState({ loading: true, purchases: {}, roblox: null, message: '' });
   const [claimingProductId, setClaimingProductId] = useState(null);
   const [productMessages, setProductMessages] = useState({});
@@ -43,6 +45,17 @@ export default function Shop() {
     try {
       const response = await fetch('/api/shop/purchases');
       const data = await response.json();
+      if (response.status === 401) {
+        setPurchaseState({
+          loading: false,
+          purchases: {},
+          roblox: null,
+          message: 'Sign in with Discord to verify purchases and claim rewards.',
+          linked: false,
+          requiresLogin: true,
+        });
+        return;
+      }
       if (!response.ok) throw new Error(data.error || 'Failed to check purchases');
       setPurchaseState({
         loading: false,
@@ -150,7 +163,22 @@ export default function Shop() {
   return (
     <div className="max-w-7xl mx-auto animate-fade-in-up">
       <Head>
-        <title>Shop | GSRP Dashboard</title>
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'ItemList',
+          name: 'Georgia State Roleplay Store Products',
+          itemListElement: Object.values(initialCatalog.products).flat().map((product, index) => ({
+            '@type': 'ListItem',
+            position: index + 1,
+            item: {
+              '@type': 'Product',
+              name: product.name,
+              description: product.description || (product.perks || []).join(', '),
+              url: product.link || 'https://join-gsrp.com/shop',
+              additionalProperty: { '@type': 'PropertyValue', name: 'Price in Robux', value: product.price },
+            },
+          })),
+        }) }} />
       </Head>
       <style jsx global>{`
         @keyframes shop-confetti-fall {
@@ -165,6 +193,9 @@ export default function Shop() {
         }
       `}</style>
 
+      <nav aria-label="Breadcrumb" className="mb-5 flex items-center gap-2 text-xs text-gsrp-teal-light/45">
+        <Link href="/" className="hover:text-white">Home</Link><ChevronRight size={13} /><span>GSRP Store</span>
+      </nav>
       <div className="mb-8 p-8 rounded-2xl bg-card-gradient border border-gsrp-dark-border/50 relative overflow-hidden group">
         <div className="absolute inset-0 bg-gradient-to-r from-gsrp-orange/10 to-gsrp-teal/10 opacity-50 group-hover:opacity-100 transition-opacity duration-500" />
         <div className="absolute -top-24 -right-24 w-48 h-48 bg-gsrp-orange/20 rounded-full blur-3xl animate-pulse-glow" />
@@ -280,7 +311,8 @@ export default function Shop() {
                 </div>
               </div>
               
-              <h3 className="text-xl font-bold text-white mb-2 group-hover:text-gsrp-orange transition-colors">{product.name}</h3>
+              <h2 className="text-xl font-bold text-white mb-2 group-hover:text-gsrp-orange transition-colors">{product.name}</h2>
+              {product.description ? <p className="text-sm leading-6 text-gsrp-teal-light/55">{product.description}</p> : null}
               
               <div className="mt-4 flex-1">
                 {(product.perks || []).map((perk, i) => (
@@ -419,4 +451,28 @@ export default function Shop() {
       )}
     </div>
   );
+}
+
+function staticCatalog() {
+  const categories = Object.keys(STATIC_PRODUCTS).map((key) => ({
+    key,
+    label: key === 'premium' ? 'Premium' : key === 'advertisements' ? 'Paid Advertisements' : 'Donations',
+  }));
+  const products = Object.fromEntries(Object.entries(STATIC_PRODUCTS).map(([key, items]) => [
+    key,
+    items.map((product) => ({ ...product, productId: product.id, description: product.description || '' })),
+  ]));
+  return { products, categories };
+}
+
+export async function getServerSideProps({ res }) {
+  let initialCatalog = staticCatalog();
+  try {
+    const { getPublicProducts } = await import('../lib/shop-products-db');
+    initialCatalog = await getPublicProducts();
+  } catch (error) {
+    console.error('[Shop SSR]', error.message);
+  }
+  res.setHeader('Cache-Control', 'public, s-maxage=30, stale-while-revalidate=300');
+  return { props: { initialCatalog } };
 }
