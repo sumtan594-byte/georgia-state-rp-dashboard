@@ -8,6 +8,7 @@ import {
   Car, ArrowRight, CheckCircle2, MessageSquare, Trophy, Sparkles,
   Globe, Lock, ScrollText, Clock, Play,
 } from 'lucide-react';
+import { trustedStructuredData } from '../lib/structured-data';
 
 const DISCORD_INVITE = 'https://discord.gg/gsrp7';
 const ROBLOX_COMMUNITY = 'https://www.roblox.com/communities/5438941/Georgia-State-Roleplay#!/about';
@@ -97,7 +98,7 @@ function ReviewCard({ r }) {
    - Scroll story sections: public/media/scroll-showcases/, keyed to copy by
      filename without extension (e.g. respond-to-emergencies.png).
    - Moving gallery: every image in public/media/landing-showcases/. */
-export async function getStaticProps() {
+export async function getServerSideProps({ req }) {
   const fs = require('fs');
   const path = require('path');
   const IMAGE_EXT = /\.(png|jpe?g|webp|gif|avif)$/i;
@@ -121,10 +122,10 @@ export async function getStaticProps() {
 
   const gallery = readImages('landing-showcases').map((f) => `/media/landing-showcases/${f}`);
 
-  return { props: { showcase, gallery }, revalidate: 3600 };
+  return { props: { showcase, gallery, nonce: req.headers['x-nonce'] || null } };
 }
 
-export default function Landing({ showcase = {}, gallery = [] }) {
+export default function Landing({ showcase = {}, gallery = [], nonce = null }) {
   const { status } = useSession();
   const authed = status === 'authenticated';
   const primaryHref = authed ? '/dashboard' : DISCORD_INVITE;
@@ -159,7 +160,7 @@ export default function Landing({ showcase = {}, gallery = [] }) {
   return (
     <>
       <Head>
-        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+        <script nonce={nonce || undefined} type="application/ld+json" dangerouslySetInnerHTML={{ __html: trustedStructuredData(jsonLd) }} />
       </Head>
 
       <div className="relative z-10 min-h-screen">

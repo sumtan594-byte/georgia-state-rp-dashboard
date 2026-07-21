@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { ArrowRight, CheckCircle2, ChevronRight, MessageSquare } from 'lucide-react';
 import { DISCORD_INVITE, LINK_LABELS, ROBLOX_COMMUNITY } from '../../data/public-content';
 import { absoluteUrl } from '../../lib/seo';
+import { trustedStructuredData } from '../../lib/structured-data';
 
 const NAV_LINKS = ['/about', '/how-to-join', '/server-rules', '/events', '/faq'];
 
-export default function PublicContentPage({ page, path, department = false }) {
+export default function PublicContentPage({ page, path, department = false, nonce = null }) {
   const sections = department
     ? [
         { title: `What ${page.name} members do`, body: [page.intro] },
@@ -37,7 +38,7 @@ export default function PublicContentPage({ page, path, department = false }) {
     <div className="min-h-screen bg-gsrp-dark text-white">
       <Head>
         {structuredData.map((data, index) => (
-          <script key={`structured-data-${index}`} type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(data) }} />
+          <script key={`structured-data-${index}`} nonce={nonce || undefined} type="application/ld+json" dangerouslySetInnerHTML={{ __html: trustedStructuredData(data) }} />
         ))}
       </Head>
       <header className="sticky top-0 z-40 border-b border-white/10 bg-gsrp-dark/90 backdrop-blur-xl">

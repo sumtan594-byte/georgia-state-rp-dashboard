@@ -19,12 +19,18 @@ const RATE_LIMITS = [
 const DEFAULT_API_LIMIT = { key: 'api', max: 120, windowMs: WINDOW_MS };
 const WRITE_API_LIMIT = { key: 'api-write', max: 30, windowMs: WINDOW_MS };
 
-const scriptSrc = process.env.NODE_ENV === 'development'
-? "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net"
-: "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net";
+const HARDENED_PUBLIC_PATHS = new Set(['/', '/about', '/server-rules']);
 
-const SECURITY_HEADERS = {
-  'Content-Security-Policy': [
+function buildContentSecurityPolicy(pathname, nonce) {
+  const isDevelopment = process.env.NODE_ENV === 'development';
+  const useNonce = !isDevelopment && HARDENED_PUBLIC_PATHS.has(pathname);
+  const scriptSrc = useNonce
+    ? `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`
+    : isDevelopment
+      ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
+      : "script-src 'self' 'unsafe-inline'";
+
+  return [
     "default-src 'self'",
     "base-uri 'self'",
     "frame-ancestors 'none'",
@@ -34,9 +40,13 @@ const SECURITY_HEADERS = {
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
     "font-src 'self' https://fonts.gstatic.com data:",
     "img-src 'self' data: blob: https:",
-    "connect-src 'self' https://discord.com https://discordapp.com https://cdn.discordapp.com https://api.erlc.gg https://users.roblox.com https://thumbnails.roblox.com https://ip-api.com http://ip-api.com",
+    "connect-src 'self' https://discord.com https://discordapp.com https://cdn.discordapp.com https://api.erlc.gg https://users.roblox.com https://thumbnails.roblox.com https://ip-api.com",
+    ...(useNonce ? ["require-trusted-types-for 'script'", 'trusted-types default nextjs nextjs#bundler gsrp#structured-data'] : []),
     'upgrade-insecure-requests',
-  ].join('; '),
+  ].join('; ');
+}
+
+const SECURITY_HEADERS = {
   'Referrer-Policy': 'strict-origin-when-cross-origin',
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
@@ -128,10 +138,20 @@ function checkRateLimit(request, pathname) {
   return { allowed: true, limit, remaining: limit.max - bucket.count, resetAt: bucket.resetAt };
 }
 
-function applySecurityHeaders(response) {
+function applySecurityHeaders(response, contentSecurityPolicy) {
+  response.headers.set('Content-Security-Policy', contentSecurityPolicy);
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
     response.headers.set(name, value);
   }
+}
+
+function nextResponse(request, contentSecurityPolicy, nonce) {
+  const requestHeaders = new Headers(request.headers);
+  // Next.js reads the nonce from the request CSP and applies it to its runtime
+  // scripts. The browser receives the same policy on the response below.
+  requestHeaders.set('Content-Security-Policy', contentSecurityPolicy);
+  if (nonce) requestHeaders.set('x-nonce', nonce);
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 function applyRateLimitHeaders(response, result) {
@@ -145,10 +165,14 @@ const PANEL_STREAM_PATH = '/api/panel/events';
 
 export function proxy(request) {
   const { pathname } = request.nextUrl;
+  const nonce = process.env.NODE_ENV === 'development' || !HARDENED_PUBLIC_PATHS.has(pathname)
+    ? null
+    : crypto.randomUUID();
+  const contentSecurityPolicy = buildContentSecurityPolicy(pathname, nonce);
 
   if (pathname === ROLE_SYNC_PATH || pathname === PANEL_STREAM_PATH) {
-    const response = NextResponse.next();
-    applySecurityHeaders(response);
+    const response = nextResponse(request, contentSecurityPolicy, nonce);
+    applySecurityHeaders(response, contentSecurityPolicy);
     return response;
   }
 
@@ -158,7 +182,7 @@ export function proxy(request) {
         { error: 'Cross-origin request blocked' },
         { status: 403 },
       );
-      applySecurityHeaders(response);
+      applySecurityHeaders(response, contentSecurityPolicy);
       return response;
     }
 
@@ -170,20 +194,20 @@ export function proxy(request) {
         { error: 'Too many requests', retryAfter },
         { status: 429 },
       );
-      applySecurityHeaders(response);
+      applySecurityHeaders(response, contentSecurityPolicy);
       applyRateLimitHeaders(response, result);
       response.headers.set('Retry-After', String(retryAfter));
       return response;
     }
 
-    const response = NextResponse.next();
-    applySecurityHeaders(response);
+    const response = nextResponse(request, contentSecurityPolicy, nonce);
+    applySecurityHeaders(response, contentSecurityPolicy);
     applyRateLimitHeaders(response, result);
     return response;
   }
 
-  const response = NextResponse.next();
-  applySecurityHeaders(response);
+  const response = nextResponse(request, contentSecurityPolicy, nonce);
+  applySecurityHeaders(response, contentSecurityPolicy);
   return response;
 }
 
