@@ -61,6 +61,12 @@ const AutoMarkResult = ({ result, error, status, attempts, applicationStatus, on
     medium: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
     high: 'bg-red-500/10 text-red-400 border-red-500/20',
   };
+  const aiAssessment = result?.aiAssessment || {};
+  const aiRisk = ['low', 'medium', 'high'].includes(aiAssessment.risk) ? aiAssessment.risk : 'medium';
+  const aiRiskScore = Number.isFinite(Number(aiAssessment.riskScore)) ? Number(aiAssessment.riskScore) : null;
+  const aiSignals = Array.isArray(aiAssessment.signals) ? aiAssessment.signals : [];
+  const evidenceAgainst = Array.isArray(aiAssessment.evidenceAgainst) ? aiAssessment.evidenceAgainst : [];
+  const passLine = Number.isFinite(Number(result?.decisionThreshold)) ? Number(result.decisionThreshold) : 22;
 
   if (error) {
     return (
@@ -89,13 +95,17 @@ const AutoMarkResult = ({ result, error, status, attempts, applicationStatus, on
           <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-gsrp-orange mb-2 flex items-center gap-2"><Sparkles size={13} /> AI marking summary</p>
           <h2 className="text-2xl font-bold text-white">{result.score}<span className="text-white/25">/{result.maxScore}</span></h2>
           <p className="text-xs text-gsrp-teal-light/40 mt-1">SPaG and professionalism: <span className="text-white/70 font-bold">{result.spag.score}/100 · {result.spag.label}</span></p>
+          <p className="text-[11px] text-gsrp-teal-light/35 mt-1">
+            Pass line: {passLine}/36
+            {result.calibration?.mode === 'learned' ? ` · learned from ${result.calibration.reviewedExamples} reviewed results` : ' · default until more reviewed results exist'}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2 md:justify-end">
           <span className={`px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wider ${accepted ? 'bg-green-500/10 text-green-400 border-green-500/20' : 'bg-red-500/10 text-red-400 border-red-500/20'}`}>
             AI recommends {accepted ? 'accepting' : 'denying'}
           </span>
-          <span className={`px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wider ${aiRiskStyles[result.aiAssessment.risk]}`}>
-            AI risk: {result.aiAssessment.risk}
+          <span className={`px-3 py-1.5 rounded-full border text-xs font-bold uppercase tracking-wider ${aiRiskStyles[aiRisk]}`}>
+            AI risk: {aiRisk}{aiRiskScore !== null ? ` · ${aiRiskScore}/100` : ''}
           </span>
         </div>
       </div>
@@ -127,9 +137,15 @@ const AutoMarkResult = ({ result, error, status, attempts, applicationStatus, on
         </div>
         <div className="rounded-xl bg-gsrp-dark-surface/40 border border-white/5 p-5">
           <p className="text-[10px] font-bold uppercase tracking-widest text-gsrp-teal-light/35 mb-2 flex items-center gap-2"><Bot size={12} /> Potential AI writing</p>
-          <p className="text-sm text-white/75 leading-relaxed">{result.aiAssessment.explanation}</p>
-          {result.aiAssessment.signals.length > 0 && <ul className="mt-3 space-y-1">{result.aiAssessment.signals.map((signal, index) => <li key={index} className="text-xs text-amber-300/70">• {signal}</li>)}</ul>}
-          <p className="text-[10px] text-white/25 mt-3">Style detection is an indicator only, not proof of AI use.</p>
+          <p className="text-sm text-white/75 leading-relaxed">{aiAssessment.explanation}</p>
+          {aiSignals.length > 0 && <ul className="mt-3 space-y-1">{aiSignals.map((signal, index) => <li key={index} className="text-xs text-amber-300/70">• {signal}</li>)}</ul>}
+          {evidenceAgainst.length > 0 && (
+            <div className="mt-3 pt-3 border-t border-white/5">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-green-300/45 mb-1">Evidence against AI use</p>
+              <ul className="space-y-1">{evidenceAgainst.map((signal, index) => <li key={index} className="text-xs text-green-300/60">• {signal}</li>)}</ul>
+            </div>
+          )}
+          <p className="text-[10px] text-white/25 mt-3">Confidence: {aiAssessment.confidence || 'low'}. Writing and activity indicators are not proof of AI use.</p>
         </div>
       </div>
 
